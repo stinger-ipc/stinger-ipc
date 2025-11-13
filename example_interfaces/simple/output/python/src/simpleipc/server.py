@@ -24,6 +24,9 @@ from .method_codes import *
 from .interface_types import *
 
 
+from .property import SimpleInitialPropertyValues
+
+
 T = TypeVar("T")
 
 
@@ -44,7 +47,7 @@ class MethodControls:
 
 class SimpleServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues):
         self._logger = logging.getLogger(f"SimpleServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SimpleServer instance %s", instance_id)
@@ -54,7 +57,7 @@ class SimpleServer:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
 
-        self._property_school: PropertyControls[str, str] = PropertyControls()
+        self._property_school: PropertyControls[str] = PropertyControls()
         self._property_school.subscription_id = self._conn.subscribe("simple/{}/property/school/setValue".format(self._instance_id), self._receive_school_update_request_message)
 
         self._method_trade_numbers = MethodControls()
@@ -87,13 +90,50 @@ class SimpleServer:
             self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
 
     def _receive_school_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        payload_obj = json.loads(payload)
-        prop_value = str(payload_obj["name"])
-        with self._property_school.mutex:
-            self._property_school.value = prop_value
-            self._property_school.version += 1
-        for callback in self._property_school.callbacks:
-            callback(prop_value)
+        user_properties = properties.get("UserProperties", dict())  # type: Optional[Dict[str, str]]
+        prop_version = user_properties.get("Version", -1)  # type: int
+        correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
+        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
+
+        existing_prop_obj = SchoolProperty(name=self._property_school.value)
+
+        try:
+            if prop_version != self._property_school.version:
+                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", topic, prop_version, self._property_school.version)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic,
+                        existing_prop_obj,
+                        self._property_school.version,
+                        MethodReturnCode.OUT_OF_SYNC,
+                        correlation_id,
+                        f"Request version {prop_version} does not match current version {self._property_school.version}",
+                    )
+                return
+
+            payload_obj = json.loads(payload)
+            prop_value = str(payload_obj["name"])
+            with self._property_school.mutex:
+                self._property_school.value = prop_value
+                self._property_school.version += 1
+
+            if response_topic is not None:
+
+                prop_obj = SchoolProperty(name=self._property_school.value)
+
+                self._conn.publish_property_response(response_topic, prop_obj, self._property_school.version, MethodReturnCode.SUCCESS, correlation_id)
+            else:
+                self._logger.warning("No response topic provided for property update of %s", topic)
+
+            for callback in self._property_school.callbacks:
+                callback(prop_value)
+        except Exception as e:
+            self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
+            if response_topic is not None:
+
+                prop_obj = SchoolProperty(name=self._property_school.value)
+
+                self._conn.publish_property_response(response_topic, prop_obj, self._property_school.version, MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
@@ -176,7 +216,7 @@ class SimpleServer:
             with self._property_school.mutex:
                 self._property_school.value = prop_obj
                 self._property_school.version += 1
-            self._conn.publish("simple/{}/property/school/value".format(self._instance_id), payload, qos=1, retain=True)
+                self._conn.publish_property_state("simple/{}/property/school/value".format(self._instance_id), payload, self._property_school.version)
             for callback in self._property_school.callbacks:
                 callback(prop_obj.name)
 
@@ -217,8 +257,8 @@ class SimpleServerBuilder:
         """This method registers a callback to be called whenever a new 'school' property update is received."""
         self._school_property_callbacks.append(handler)
 
-    def build(self, connection: IBrokerConnection) -> SimpleServer:
-        new_server = SimpleServer(connection)
+    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues) -> SimpleServer:
+        new_server = SimpleServer(connection, instance_id, initial_property_values)
 
         if self._trade_numbers_method_handler is not None:
             new_server.handle_trade_numbers(self._trade_numbers_method_handler)

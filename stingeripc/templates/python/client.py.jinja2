@@ -23,6 +23,9 @@ from .interface_types import *
 import threading
 {%endif%}
 from .connection import IBrokerConnection
+{%if stinger.properties | length > 0 %}
+from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
+{%endif%}
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -60,9 +63,9 @@ class {{stinger.python.client_class_name}}:
         {%-for sig_name in stinger.signals.keys()-%}
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}: list[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
         {%endfor-%}
-        {%-for method_name, method in stinger.methods.items()-%}
-        self._conn.subscribe(f"{{method.response_topic('{self._conn.client_id}')}}", self._receive_{{method_name | snake_case}}_response_message)
-        {%endfor%}
+        {%-if stinger.methods|length > 0-%}
+        self._conn.subscribe(f"{{stinger.all_methods_response_topic('{self._conn.client_id}')}}", self._receive_any_method_response_message)
+        {%endif%}
 
     {%for prop_name, prop_spec in stinger.properties.items()-%}
     @property
@@ -124,8 +127,8 @@ class {{stinger.python.client_class_name}}:
         self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
     {%endfor%}{# end signal loop #}
 
-    {%-for method_name, method in stinger.methods.items()%}
-    def _receive_{{method_name | snake_case}}_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    {%-if stinger.methods|length > 0-%}
+    def _receive_any_method_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle '{{method_name}}' method response.
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
@@ -146,7 +149,7 @@ class {{stinger.python.client_class_name}}:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
-    {%endfor%}{# end method loop #}
+    {%endif%}{# end method response handler #}
 
     {%-for prop_name, prop_spec in stinger.properties.items()%}
     def _receive_{{prop_name | snake_case}}_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
@@ -198,8 +201,9 @@ class {{stinger.python.client_class_name}}:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling '{{method_name}}' method with payload %s", json_payload)
+        response_topic = f"{{stinger.all_methods_response_topic('{self._conn.client_id}')}}"
         self._conn.publish("{{method.topic}}".format(self._service_id), json_payload, qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=f"{{method.response_topic('{self._conn.client_id}')}}")
+                           correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
@@ -277,6 +281,10 @@ class {{stinger.python.client_class_name}}Builder:
         {%endfor%}
         return client
 
+@dataclass
+class DiscoveredInstance:
+    instance_id: str
+    {%if stinger.properties | length > 0 %}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}
 
 class {{stinger.python.client_class_name}}Discoverer:
     
@@ -289,11 +297,18 @@ class {{stinger.python.client_class_name}}Discoverer:
         self._logger.setLevel(logging.DEBUG)
         service_discovery_topic = "{{stinger.interface_info_topic}}".format('+')
         self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
+        self._conn.subscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value", self._process_property_value_message)
         self._mutex = threading.Lock()
-        self._discovered_services: Dict[str, InterfaceInfo] = {}
-        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
         self._pending_futures : List[futures.Future] = []
         self._removed_service_callbacks: List[Callable[[str], None]] = []
+        
+        # For partially discovered services
+        self._discovered_interface_infos = dict() # type: Dict[str, InterfaceInfo]
+        self._discovered_properties = dict() # type: Dict[str, Dict[str, Any]]
+
+        # For fully discovered services
+        self._discovered_services: Dict[str, InterfaceInfo] = {}
+        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
 
     def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
         """ Adds a callback to be called when a new service is discovered.
@@ -313,6 +328,12 @@ class {{stinger.python.client_class_name}}Discoverer:
         with self._mutex:
             return list(self._discovered_services.keys())
 
+    def get_discovery_info(self, instance_id: str) -> Optional[InterfaceInfo]:
+        """ Returns the InterfaceInfo for a discovered service instance ID, or None if not found.
+        """
+        with self._mutex:
+            return self._discovered_services.get(instance_id, None)
+
     def get_singleton_client(self) -> futures.Future[{{stinger.python.client_class_name}}]:
         """ Returns a {{stinger.python.client_class_name}} for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
@@ -330,6 +351,34 @@ class {{stinger.python.client_class_name}}Discoverer:
                 self._pending_futures.append(fut)
         return fut
 
+    def _check_for_fully_discovered(self, instance_id: str):
+        """ Checks if all properties have been discovered for the given instance ID.
+        """
+        with self._mutex:
+            if (instance_id in self._discovered_properties
+                    and len(self._discovered_properties[instance_id]) == {{(stinger.properties | length)*2}}
+                    and instance_id in self._discovered_interface_infos):
+
+                entry = DiscoveredInstance(
+                    instance_id=instance_id,
+                    {%if stinger.properties | length > 0 %}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id]){%endif%}
+                )
+
+                self._discovered_services[instance_id] = entry
+                while self._pending_futures:
+                    fut = self._pending_futures.pop(0)
+                    if not fut.done():
+                        if self._builder is not None:
+                            fut.set_result(self._builder.build(self._conn, entry))
+                        else:
+                            fut.set_result({{stinger.python.client_class_name}}(self._conn, entry))
+                if not instance_id in self._discovered_services:
+                    self._logger.info("Discovered service: %s.instance", instance_id)
+                    for cb in self._discovered_service_callbacks:
+                        cb(entry)
+                else:
+                    self._logger.debug("Updated info for service: %s", instance_id)
+
     def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ Processes a service discovery message.
         """
@@ -337,29 +386,50 @@ class {{stinger.python.client_class_name}}Discoverer:
         if len(payload) > 0:
             try:
                 service_info = InterfaceInfo.model_validate_json(payload)
+                with self._mutex:
+                    self._discovered_interface_infos[service_info.instance_id] = service_info
             except Exception as e:
                 self._logger.warning("Failed to process service discovery message: %s", e)
-            with self._mutex:
-                self._discovered_services[service_info.instance] = service_info
-                while self._pending_futures:
-                    fut = self._pending_futures.pop(0)
-                    if not fut.done():
-                        if self._builder is not None:
-                            fut.set_result(self._builder.build(self._conn, service_info.instance))
-                        else:
-                            fut.set_result({{stinger.python.client_class_name}}(self._conn, service_info.instance))
-                if not service_info.instance in self._discovered_services:
-                    self._logger.info("Discovered service: %s.instance", service_info.instance)
-                    for cb in self._discovered_service_callbacks:
-                        cb(service_info)
-                else:
-                    self._logger.debug("Updated info for service: %s", service_info.instance)
+            self._check_for_fully_discovered(service_info.instance_id)
+
         else: # Empty payload means the service is going away
             instance_id = topic.split('/')[-2]
             with self._mutex:
                 if instance_id in self._discovered_services:
                     self._logger.info("Service %s is going away", instance_id)
-                    del self._discovered_services[instance_id]
+                    if instance_id in self._discovered_services:
+                        del self._discovered_services[instance_id]
+                    if instance_id in self._discovered_interface_infos:
+                        del self._discovered_interface_infos[instance_id]
+                    if instance_id in self._discovered_properties:
+                        del self._discovered_properties[instance_id]
                     for cb in self._removed_service_callbacks:
-                            cb(instance_id)
+                        cb(instance_id)
 
+    def _process_property_value_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        """ Processes a property value message for discovery purposes.
+        """
+        self._logger.debug("Processing property value message on topic %s", topic)
+        instance_id = topic.split('/')[1]
+        property_name = topic.split('/')[3]
+        user_properties  = properties.get("UserProperty", {})
+        prop_version = user_properties.get("Version", -1)
+        try:
+            prop_obj = json.loads(payload)
+            with self._mutex:
+                if instance_id not in self._discovered_properties:
+                    self._discovered_properties[instance_id] = dict()
+                {%for prop_name, prop in stinger.properties.items()%}
+                {%if not loop.first%}el{%endif%}if property_name == "{{prop_name|lowerCamelCase}}":
+                    {%if prop.arg_list|length == 1%}
+                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}"] = prop_obj.get("{{prop.arg_list[0].name}}")
+                    {%else%}
+                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}"] = prop_obj
+                    {%endif%}
+                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}_version"] = prop_version
+                {%endfor%}
+            
+            self._check_for_fully_discovered(instance_id)
+
+        except Exception as e:
+            self._logger.warning("Failed to process property value message: %s", e)

@@ -32,6 +32,9 @@ async fn main() {
         .init();
 
     info!("Starting SignalOnly client demo...");
+
+    // Create an MQTT client that implements the MqttPubSub trait.
+    // Application code is responsible for managing the client object.
     let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-client-demo".to_string())
@@ -40,7 +43,10 @@ async fn main() {
     let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
     let _ = mqttier_client.start().await;
 
+    // We need to discover a service instance before we can create the client.
+    // For this demo, we assume a singleton server.
     let service_discovery = SignalOnlyDiscovery::new(&mut mqttier_client).await.unwrap();
+    // The `discovered_singleton` struct contains the service_id and initial property values.
     let discovered_singleton = service_discovery.get_singleton_service().await;
 
     #[cfg(feature = "metrics")]

@@ -64,127 +64,127 @@ TestAbleClient::TestAbleClient(std::shared_ptr<IBrokerConnection> broker, const 
     _arrayOfEveryTypeSignalSubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/signal/arrayOfEveryType") % _instanceId).str(), 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callWithNothing/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callWithNothing/methodResponse") % _broker->GetClientId();
         _callWithNothingMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneInteger/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOneInteger/methodResponse") % _broker->GetClientId();
         _callOneIntegerMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalInteger/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOptionalInteger/methodResponse") % _broker->GetClientId();
         _callOptionalIntegerMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeIntegers/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callThreeIntegers/methodResponse") % _broker->GetClientId();
         _callThreeIntegersMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneString/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOneString/methodResponse") % _broker->GetClientId();
         _callOneStringMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalString/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOptionalString/methodResponse") % _broker->GetClientId();
         _callOptionalStringMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeStrings/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callThreeStrings/methodResponse") % _broker->GetClientId();
         _callThreeStringsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneEnum/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOneEnum/methodResponse") % _broker->GetClientId();
         _callOneEnumMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalEnum/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOptionalEnum/methodResponse") % _broker->GetClientId();
         _callOptionalEnumMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeEnums/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callThreeEnums/methodResponse") % _broker->GetClientId();
         _callThreeEnumsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneStruct/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOneStruct/methodResponse") % _broker->GetClientId();
         _callOneStructMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalStruct/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOptionalStruct/methodResponse") % _broker->GetClientId();
         _callOptionalStructMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeStructs/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callThreeStructs/methodResponse") % _broker->GetClientId();
         _callThreeStructsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneDateTime/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOneDateTime/methodResponse") % _broker->GetClientId();
         _callOneDateTimeMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalDateTime/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOptionalDateTime/methodResponse") % _broker->GetClientId();
         _callOptionalDateTimeMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeDateTimes/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callThreeDateTimes/methodResponse") % _broker->GetClientId();
         _callThreeDateTimesMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneDuration/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOneDuration/methodResponse") % _broker->GetClientId();
         _callOneDurationMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalDuration/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOptionalDuration/methodResponse") % _broker->GetClientId();
         _callOptionalDurationMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeDurations/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callThreeDurations/methodResponse") % _broker->GetClientId();
         _callThreeDurationsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneBinary/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOneBinary/methodResponse") % _broker->GetClientId();
         _callOneBinaryMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalBinary/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOptionalBinary/methodResponse") % _broker->GetClientId();
         _callOptionalBinaryMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeBinaries/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callThreeBinaries/methodResponse") % _broker->GetClientId();
         _callThreeBinariesMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneListOfIntegers/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOneListOfIntegers/methodResponse") % _broker->GetClientId();
         _callOneListOfIntegersMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalListOfFloats/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callOptionalListOfFloats/methodResponse") % _broker->GetClientId();
         _callOptionalListOfFloatsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callTwoLists/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/callTwoLists/methodResponse") % _broker->GetClientId();
         _callTwoListsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     _readWriteIntegerPropertySubscriptionId = _broker->Subscribe((boost::format("testAble/%1%/property/readWriteInteger/value") % _instanceId).str(), 1);
@@ -1713,127 +1713,127 @@ void TestAbleClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _callWithNothingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callWithNothing/response") && mqttProps.correlationId))
+    if ((subscriptionId == _callWithNothingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callWithNothing/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callWithNothing response");
         _handleCallWithNothingResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOneIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneInteger/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOneIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneInteger/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneInteger response");
         _handleCallOneIntegerResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOptionalIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalInteger/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOptionalIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalInteger/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalInteger response");
         _handleCallOptionalIntegerResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callThreeIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeIntegers/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callThreeIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeIntegers/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeIntegers response");
         _handleCallThreeIntegersResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOneStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneString/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOneStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneString/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneString response");
         _handleCallOneStringResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOptionalStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalString/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOptionalStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalString/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalString response");
         _handleCallOptionalStringResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callThreeStringsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeStrings/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callThreeStringsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeStrings/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeStrings response");
         _handleCallThreeStringsResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOneEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneEnum/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOneEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneEnum/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneEnum response");
         _handleCallOneEnumResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOptionalEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalEnum/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOptionalEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalEnum/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalEnum response");
         _handleCallOptionalEnumResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callThreeEnumsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeEnums/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callThreeEnumsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeEnums/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeEnums response");
         _handleCallThreeEnumsResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOneStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneStruct/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOneStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneStruct/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneStruct response");
         _handleCallOneStructResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOptionalStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalStruct/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOptionalStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalStruct/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalStruct response");
         _handleCallOptionalStructResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callThreeStructsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeStructs/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callThreeStructsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeStructs/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeStructs response");
         _handleCallThreeStructsResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOneDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneDateTime/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOneDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneDateTime/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneDateTime response");
         _handleCallOneDateTimeResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOptionalDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalDateTime/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOptionalDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalDateTime/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalDateTime response");
         _handleCallOptionalDateTimeResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callThreeDateTimesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeDateTimes/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callThreeDateTimesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeDateTimes/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeDateTimes response");
         _handleCallThreeDateTimesResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOneDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneDuration/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOneDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneDuration/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneDuration response");
         _handleCallOneDurationResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOptionalDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalDuration/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOptionalDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalDuration/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalDuration response");
         _handleCallOptionalDurationResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callThreeDurationsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeDurations/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callThreeDurationsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeDurations/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeDurations response");
         _handleCallThreeDurationsResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOneBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneBinary/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOneBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneBinary/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneBinary response");
         _handleCallOneBinaryResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOptionalBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalBinary/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOptionalBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalBinary/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalBinary response");
         _handleCallOptionalBinaryResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callThreeBinariesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeBinaries/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callThreeBinariesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callThreeBinaries/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callThreeBinaries response");
         _handleCallThreeBinariesResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOneListOfIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneListOfIntegers/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOneListOfIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOneListOfIntegers/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOneListOfIntegers response");
         _handleCallOneListOfIntegersResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callOptionalListOfFloatsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalListOfFloats/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callOptionalListOfFloatsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callOptionalListOfFloats/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callOptionalListOfFloats response");
         _handleCallOptionalListOfFloatsResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _callTwoListsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callTwoLists/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _callTwoListsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/callTwoLists/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for callTwoLists response");
         _handleCallTwoListsResponse(topic, payload, mqttProps);
@@ -2107,7 +2107,7 @@ boost::future<void> TestAbleClient::callWithNothing()
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callWithNothing/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callWithNothing/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2160,7 +2160,7 @@ boost::future<int> TestAbleClient::callOneInteger(int input1)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneInteger/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOneInteger/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2227,7 +2227,7 @@ boost::future<boost::optional<int>> TestAbleClient::callOptionalInteger(boost::o
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalInteger/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOptionalInteger/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2298,7 +2298,7 @@ boost::future<CallThreeIntegersReturnValues> TestAbleClient::callThreeIntegers(i
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeIntegers/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callThreeIntegers/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2368,7 +2368,7 @@ boost::future<std::string> TestAbleClient::callOneString(std::string input1)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneString/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOneString/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2439,7 +2439,7 @@ boost::future<boost::optional<std::string>> TestAbleClient::callOptionalString(b
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalString/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOptionalString/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2522,7 +2522,7 @@ boost::future<CallThreeStringsReturnValues> TestAbleClient::callThreeStrings(std
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeStrings/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callThreeStrings/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2588,7 +2588,7 @@ boost::future<Numbers> TestAbleClient::callOneEnum(Numbers input1)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneEnum/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOneEnum/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2654,7 +2654,7 @@ boost::future<boost::optional<Numbers>> TestAbleClient::callOptionalEnum(boost::
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalEnum/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOptionalEnum/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2724,7 +2724,7 @@ boost::future<CallThreeEnumsReturnValues> TestAbleClient::callThreeEnums(Numbers
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeEnums/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callThreeEnums/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2797,7 +2797,7 @@ boost::future<AllTypes> TestAbleClient::callOneStruct(AllTypes input1)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneStruct/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOneStruct/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2875,7 +2875,7 @@ boost::future<boost::optional<AllTypes>> TestAbleClient::callOptionalStruct(boos
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalStruct/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOptionalStruct/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -2971,7 +2971,7 @@ boost::future<CallThreeStructsReturnValues> TestAbleClient::callThreeStructs(boo
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeStructs/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callThreeStructs/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3042,7 +3042,7 @@ boost::future<std::chrono::time_point<std::chrono::system_clock>> TestAbleClient
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneDateTime/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOneDateTime/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3113,7 +3113,7 @@ boost::future<boost::optional<std::chrono::time_point<std::chrono::system_clock>
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalDateTime/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOptionalDateTime/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3198,7 +3198,7 @@ boost::future<CallThreeDateTimesReturnValues> TestAbleClient::callThreeDateTimes
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeDateTimes/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callThreeDateTimes/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3269,7 +3269,7 @@ boost::future<std::chrono::duration<double>> TestAbleClient::callOneDuration(std
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneDuration/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOneDuration/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3340,7 +3340,7 @@ boost::future<boost::optional<std::chrono::duration<double>>> TestAbleClient::ca
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalDuration/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOptionalDuration/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3425,7 +3425,7 @@ boost::future<CallThreeDurationsReturnValues> TestAbleClient::callThreeDurations
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeDurations/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callThreeDurations/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3496,7 +3496,7 @@ boost::future<std::vector<uint8_t>> TestAbleClient::callOneBinary(std::vector<ui
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneBinary/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOneBinary/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3567,7 +3567,7 @@ boost::future<boost::optional<std::vector<uint8_t>>> TestAbleClient::callOptiona
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalBinary/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOptionalBinary/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3652,7 +3652,7 @@ boost::future<CallThreeBinariesReturnValues> TestAbleClient::callThreeBinaries(s
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeBinaries/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callThreeBinaries/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3726,7 +3726,7 @@ boost::future<std::vector<int>> TestAbleClient::callOneListOfIntegers(std::vecto
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneListOfIntegers/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOneListOfIntegers/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3800,7 +3800,7 @@ boost::future<boost::optional<std::vector<double>>> TestAbleClient::callOptional
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalListOfFloats/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callOptionalListOfFloats/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -3886,7 +3886,7 @@ boost::future<CallTwoListsReturnValues> TestAbleClient::callTwoLists(std::vector
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callTwoLists/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/callTwoLists/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();

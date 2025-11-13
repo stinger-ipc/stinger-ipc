@@ -10,6 +10,7 @@ TODO: Get license text from stinger file
 use std::any::Any;
 
 use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
+use simple_ipc::property::SimpleInitialPropertyValues;
 use simple_ipc::server::{SimpleMethodHandlers, SimpleServer};
 use tokio::time::{sleep, Duration};
 
@@ -62,6 +63,7 @@ async fn main() {
         )
         .init();
 
+    // Set up an MQTT client connection.
     let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
@@ -70,27 +72,30 @@ async fn main() {
     let mut connection = MqttierClient::new(mqttier_options).unwrap();
     let _ = connection.start().await.unwrap();
 
+    let initial_property_values = SimpleInitialPropertyValues {
+        school: "apples".to_string(),
+        school_version: 1,
+    };
+
+    // Create an object that implements the method handlers.
     let handlers: Arc<Mutex<Box<dyn SimpleMethodHandlers<MqttierClient>>>> =
         Arc::new(Mutex::new(Box::new(SimpleMethodImpl::new())));
 
+    // Create the server object.
     let mut server = SimpleServer::new(
         connection,
         handlers.clone(),
         "rust-server-demo:1".to_string(),
+        initial_property_values,
     )
     .await;
 
+    // Start the server connection loop in a separate task.
     let mut looping_server = server.clone();
     let _loop_join_handle = tokio::spawn(async move {
         println!("Starting connection loop");
         let _conn_loop = looping_server.run_loop().await;
     });
-
-    println!("Setting initial value for property 'school'");
-    let prop_init_future = server.set_school("apples".to_string()).await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'school': {:?}", e);
-    }
 
     let mut server_clone1 = server.clone();
     let signal_publish_task = tokio::spawn(async move {
@@ -110,16 +115,17 @@ async fn main() {
         }
     });
 
-    let mut server_clone2 = server.clone();
+    let school_property = server.get_school_handle();
     let property_publish_task = tokio::spawn(async move {
         loop {
             sleep(Duration::from_secs(51)).await;
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'school'");
-            let prop_change_future = server_clone2.set_school("foo".to_string()).await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'school': {:?}", e);
+            {
+                println!("Changing property 'school'");
+                let mut school_guard = school_property.write().await;
+                *school_guard = "foo".to_string();
+                // Value is changed and published when school_guard goes out of scope and is dropped.
             }
         }
     });

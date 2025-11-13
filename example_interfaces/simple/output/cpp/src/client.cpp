@@ -40,7 +40,7 @@ SimpleClient::SimpleClient(std::shared_ptr<IBrokerConnection> broker, const std:
     _personEnteredSignalSubscriptionId = _broker->Subscribe((boost::format("simple/%1%/signal/personEntered") % _instanceId).str(), 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/trade_numbers/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/tradeNumbers/methodResponse") % _broker->GetClientId();
         _tradeNumbersMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     _schoolPropertySubscriptionId = _broker->Subscribe((boost::format("simple/%1%/property/school/value") % _instanceId).str(), 1);
@@ -111,7 +111,7 @@ void SimpleClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _tradeNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/trade_numbers/response") && mqttProps.correlationId))
+    if ((subscriptionId == _tradeNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/tradeNumbers/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for trade_numbers response");
         _handleTradeNumbersResponse(topic, payload, mqttProps);
@@ -143,7 +143,7 @@ boost::future<int> SimpleClient::tradeNumbers(int yourNumber)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/trade_numbers/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/tradeNumbers/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();

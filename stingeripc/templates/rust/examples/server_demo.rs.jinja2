@@ -11,6 +11,9 @@ use std::any::Any;
 
 use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
 use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
+{%-if stinger.properties|length > 0%}
+use {{stinger.rust.package_name}}::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
+{%endif-%}
 use tokio::time::{sleep, Duration};
 {%if stinger.methods|length > 0%}
 use std::sync::Arc;
@@ -21,6 +24,7 @@ use async_trait::async_trait;
 use tokio::join;
 #[allow(unused_imports)]
 use {{stinger.rust.package_name}}::payloads::{MethodReturnCode, *};
+
 
 {%if stinger.methods|length > 0%}
 struct {{stinger.name | UpperCamelCase }}MethodImpl {
@@ -89,6 +93,7 @@ async fn main() {
         )
         .init();
 
+    // Set up an MQTT client connection. 
     let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
@@ -96,36 +101,39 @@ async fn main() {
     let mut connection = MqttierClient::new(mqttier_options).unwrap();
     let _ = connection.start().await.unwrap();
 
+    {%if stinger.properties|length > 0%}
+    let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
+        {%for prop_name, prop in stinger.properties.items()%}
+        {{prop_name | snake_case}}: 
+        {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
+        {%-else-%}
+        {{prop.rust_type}} {
+            {%-for arg in prop.arg_list %}
+                {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
+            {%-endfor%}
+        },
+        {%-endif%}
+        {{prop_name | snake_case}}_version: 1,
+        {%endfor%}
+    };
+    {%endif%}
     {%if stinger.methods|length > 0%}
+    // Create an object that implements the method handlers.
     let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient>>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
 
-    let mut server = {{stinger.rust.server_struct_name}}::new(connection, handlers.clone(), "rust-server-demo:1".to_string()).await;
+    // Create the server object.
+    let mut server = {{stinger.rust.server_struct_name}}::new(connection, handlers.clone(), "rust-server-demo:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}).await;
     {%else%}
-    let mut server = {{stinger.rust.server_struct_name}}::new(connection, "rust-server-demo:1".to_string()).await;
+    // Create the server object.
+    let mut server = {{stinger.rust.server_struct_name}}::new(connection, "rust-server-demo:1".to_string(){%if stinger.properties|length > 0 %} initial_property_values, {%endif%}).await;
     {%endif%}
 
+    // Start the server connection loop in a separate task.
     let mut looping_server = server.clone();
     let _loop_join_handle = tokio::spawn(async move {
         println!("Starting connection loop");
         let _conn_loop = looping_server.run_loop().await;
     });
-
-    {%for prop_name, prop in stinger.properties.items()%}
-    println!("Setting initial value for property '{{prop_name}}'");
-    {%-if prop.arg_list | length == 1 %}
-    let prop_init_future = server.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
-    {%-else%}{# many args in property #}
-    let new_value = {{prop.rust_type}} {
-        {%-for arg in prop.arg_list %}
-            {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-        {%-endfor%}
-    };
-    let prop_init_future = server.set_{{prop_name | snake_case}}(new_value).await;
-    {%endif%}
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property '{{prop_name}}': {:?}", e);
-    }
-    {%endfor%}{# property initialization -#}
 
     {% if stinger.signals|length > 0 %}
     let mut server_clone1 = server.clone();{%endif%}
@@ -141,34 +149,36 @@ async fn main() {
             sleep(Duration::from_secs(67)).await;
         }
     });
-
     {%if stinger.properties|length > 0 %}
-    let mut server_clone2 = server.clone();{%endif%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    let {{prop_name | snake_case}}_property = server.get_{{prop_name | snake_case}}_handle();
+    {%endfor-%}
     let property_publish_task = tokio::spawn(async move {
         loop {
             sleep(Duration::from_secs(51)).await;
-            
             {%for prop_name, prop in stinger.properties.items()%}
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property '{{prop_name}}'");
-            {%-if prop.arg_list | length == 1 %}
-            let prop_change_future = server_clone2.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}}).await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property '{{prop_name}}': {:?}", e);
+            {
+                println!("Changing property '{{prop_name}}'");
+                let mut {{prop_name|snake_case}}_guard = {{prop_name | snake_case}}_property.write().await;
+                {%-if prop.arg_list | length == 1 %}
+                *{{prop_name|snake_case}}_guard = {{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}};
+                {%else%}
+                let new_{{prop_name|snake_case}}_value = {{prop.rust_type}} {
+                    {%-for arg in prop.arg_list %}
+                        {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
+                    {%-endfor%}
+                };
+                *{{prop_name|snake_case}}_guard = new_{{prop_name|snake_case}}_value;
+                {%endif-%}
+                // Value is changed and published when {{prop_name|snake_case}}_guard goes out of scope and is dropped.
             }
-            {%-else%}{# many args in property #}
-            let new_value = {{prop.rust_type}} {
-                {%-for arg in prop.arg_list %}
-                    {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
-                {%-endfor%}
-            };
-            let _ = server_clone2.set_{{prop_name | snake_case}}(new_value).await;
-            {%endif%}
             {%endfor%}{# property updates -#}
         }
     });
+    {%endif%}
 
-    let _ = join!(signal_publish_task, property_publish_task);
+    let _ = join!(signal_publish_task{%if stinger.properties|length > 0 %}, property_publish_task{%endif%});
 
     // Ctrl-C to stop
 }

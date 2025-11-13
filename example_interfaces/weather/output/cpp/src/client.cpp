@@ -40,17 +40,17 @@ WeatherClient::WeatherClient(std::shared_ptr<IBrokerConnection> broker, const st
     _currentTimeSignalSubscriptionId = _broker->Subscribe((boost::format("weather/%1%/signal/currentTime") % _instanceId).str(), 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/refresh_daily_forecast/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/refreshDailyForecast/methodResponse") % _broker->GetClientId();
         _refreshDailyForecastMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/refresh_hourly_forecast/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/refreshHourlyForecast/methodResponse") % _broker->GetClientId();
         _refreshHourlyForecastMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/refresh_current_conditions/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/refreshCurrentConditions/methodResponse") % _broker->GetClientId();
         _refreshCurrentConditionsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     _locationPropertySubscriptionId = _broker->Subscribe((boost::format("weather/%1%/property/location/value") % _instanceId).str(), 1);
@@ -129,17 +129,17 @@ void WeatherClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _refreshDailyForecastMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refresh_daily_forecast/response") && mqttProps.correlationId))
+    if ((subscriptionId == _refreshDailyForecastMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refreshDailyForecast/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for refresh_daily_forecast response");
         _handleRefreshDailyForecastResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _refreshHourlyForecastMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refresh_hourly_forecast/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _refreshHourlyForecastMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refreshHourlyForecast/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for refresh_hourly_forecast response");
         _handleRefreshHourlyForecastResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _refreshCurrentConditionsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refresh_current_conditions/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _refreshCurrentConditionsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/refreshCurrentConditions/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for refresh_current_conditions response");
         _handleRefreshCurrentConditionsResponse(topic, payload, mqttProps);
@@ -197,7 +197,7 @@ boost::future<void> WeatherClient::refreshDailyForecast()
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/refresh_daily_forecast/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/refreshDailyForecast/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -248,7 +248,7 @@ boost::future<void> WeatherClient::refreshHourlyForecast()
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/refresh_hourly_forecast/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/refreshHourlyForecast/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -299,7 +299,7 @@ boost::future<void> WeatherClient::refreshCurrentConditions()
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/refresh_current_conditions/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/refreshCurrentConditions/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();

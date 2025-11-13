@@ -27,6 +27,7 @@ async fn main() {
         )
         .init();
 
+    // Set up an MQTT client connection.
     let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
@@ -35,8 +36,10 @@ async fn main() {
     let mut connection = MqttierClient::new(mqttier_options).unwrap();
     let _ = connection.start().await.unwrap();
 
+    // Create the server object.
     let mut server = SignalOnlyServer::new(connection, "rust-server-demo:1".to_string()).await;
 
+    // Start the server connection loop in a separate task.
     let mut looping_server = server.clone();
     let _loop_join_handle = tokio::spawn(async move {
         println!("Starting connection loop");
@@ -84,13 +87,7 @@ async fn main() {
         }
     });
 
-    let property_publish_task = tokio::spawn(async move {
-        loop {
-            sleep(Duration::from_secs(51)).await;
-        }
-    });
-
-    let _ = join!(signal_publish_task, property_publish_task);
+    let _ = join!(signal_publish_task);
 
     // Ctrl-C to stop
 }

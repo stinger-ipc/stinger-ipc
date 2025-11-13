@@ -754,7 +754,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_with_nothing": {
             "name": "callWithNothing",
             "mqtt_topic": "testAble/{}/method/callWithNothing",
-            "response_topic": "client/"+clientId+"/callWithNothing/response",
+            "response_topic": "client/"+clientId+"/callWithNothing/methodResponse",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -763,7 +763,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_one_integer": {
             "name": "callOneInteger",
             "mqtt_topic": "testAble/{}/method/callOneInteger",
-            "response_topic": "client/"+clientId+"/callOneInteger/response",
+            "response_topic": "client/"+clientId+"/callOneInteger/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -777,7 +777,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_optional_integer": {
             "name": "callOptionalInteger",
             "mqtt_topic": "testAble/{}/method/callOptionalInteger",
-            "response_topic": "client/"+clientId+"/callOptionalInteger/response",
+            "response_topic": "client/"+clientId+"/callOptionalInteger/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -791,7 +791,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_three_integers": {
             "name": "callThreeIntegers",
             "mqtt_topic": "testAble/{}/method/callThreeIntegers",
-            "response_topic": "client/"+clientId+"/callThreeIntegers/response",
+            "response_topic": "client/"+clientId+"/callThreeIntegers/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -815,7 +815,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_one_string": {
             "name": "callOneString",
             "mqtt_topic": "testAble/{}/method/callOneString",
-            "response_topic": "client/"+clientId+"/callOneString/response",
+            "response_topic": "client/"+clientId+"/callOneString/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -829,7 +829,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_optional_string": {
             "name": "callOptionalString",
             "mqtt_topic": "testAble/{}/method/callOptionalString",
-            "response_topic": "client/"+clientId+"/callOptionalString/response",
+            "response_topic": "client/"+clientId+"/callOptionalString/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -843,7 +843,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_three_strings": {
             "name": "callThreeStrings",
             "mqtt_topic": "testAble/{}/method/callThreeStrings",
-            "response_topic": "client/"+clientId+"/callThreeStrings/response",
+            "response_topic": "client/"+clientId+"/callThreeStrings/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -867,7 +867,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_one_enum": {
             "name": "callOneEnum",
             "mqtt_topic": "testAble/{}/method/callOneEnum",
-            "response_topic": "client/"+clientId+"/callOneEnum/response",
+            "response_topic": "client/"+clientId+"/callOneEnum/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -881,7 +881,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_optional_enum": {
             "name": "callOptionalEnum",
             "mqtt_topic": "testAble/{}/method/callOptionalEnum",
-            "response_topic": "client/"+clientId+"/callOptionalEnum/response",
+            "response_topic": "client/"+clientId+"/callOptionalEnum/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -895,7 +895,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_three_enums": {
             "name": "callThreeEnums",
             "mqtt_topic": "testAble/{}/method/callThreeEnums",
-            "response_topic": "client/"+clientId+"/callThreeEnums/response",
+            "response_topic": "client/"+clientId+"/callThreeEnums/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -919,7 +919,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_one_struct": {
             "name": "callOneStruct",
             "mqtt_topic": "testAble/{}/method/callOneStruct",
-            "response_topic": "client/"+clientId+"/callOneStruct/response",
+            "response_topic": "client/"+clientId+"/callOneStruct/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -933,7 +933,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_optional_struct": {
             "name": "callOptionalStruct",
             "mqtt_topic": "testAble/{}/method/callOptionalStruct",
-            "response_topic": "client/"+clientId+"/callOptionalStruct/response",
+            "response_topic": "client/"+clientId+"/callOptionalStruct/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -947,7 +947,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_three_structs": {
             "name": "callThreeStructs",
             "mqtt_topic": "testAble/{}/method/callThreeStructs",
-            "response_topic": "client/"+clientId+"/callThreeStructs/response",
+            "response_topic": "client/"+clientId+"/callThreeStructs/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -971,7 +971,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_one_date_time": {
             "name": "callOneDateTime",
             "mqtt_topic": "testAble/{}/method/callOneDateTime",
-            "response_topic": "client/"+clientId+"/callOneDateTime/response",
+            "response_topic": "client/"+clientId+"/callOneDateTime/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -985,7 +985,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_optional_date_time": {
             "name": "callOptionalDateTime",
             "mqtt_topic": "testAble/{}/method/callOptionalDateTime",
-            "response_topic": "client/"+clientId+"/callOptionalDateTime/response",
+            "response_topic": "client/"+clientId+"/callOptionalDateTime/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -999,7 +999,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_three_date_times": {
             "name": "callThreeDateTimes",
             "mqtt_topic": "testAble/{}/method/callThreeDateTimes",
-            "response_topic": "client/"+clientId+"/callThreeDateTimes/response",
+            "response_topic": "client/"+clientId+"/callThreeDateTimes/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -1023,7 +1023,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_one_duration": {
             "name": "callOneDuration",
             "mqtt_topic": "testAble/{}/method/callOneDuration",
-            "response_topic": "client/"+clientId+"/callOneDuration/response",
+            "response_topic": "client/"+clientId+"/callOneDuration/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -1037,7 +1037,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_optional_duration": {
             "name": "callOptionalDuration",
             "mqtt_topic": "testAble/{}/method/callOptionalDuration",
-            "response_topic": "client/"+clientId+"/callOptionalDuration/response",
+            "response_topic": "client/"+clientId+"/callOptionalDuration/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -1051,7 +1051,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_three_durations": {
             "name": "callThreeDurations",
             "mqtt_topic": "testAble/{}/method/callThreeDurations",
-            "response_topic": "client/"+clientId+"/callThreeDurations/response",
+            "response_topic": "client/"+clientId+"/callThreeDurations/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -1075,7 +1075,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_one_binary": {
             "name": "callOneBinary",
             "mqtt_topic": "testAble/{}/method/callOneBinary",
-            "response_topic": "client/"+clientId+"/callOneBinary/response",
+            "response_topic": "client/"+clientId+"/callOneBinary/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -1089,7 +1089,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_optional_binary": {
             "name": "callOptionalBinary",
             "mqtt_topic": "testAble/{}/method/callOptionalBinary",
-            "response_topic": "client/"+clientId+"/callOptionalBinary/response",
+            "response_topic": "client/"+clientId+"/callOptionalBinary/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -1103,7 +1103,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_three_binaries": {
             "name": "callThreeBinaries",
             "mqtt_topic": "testAble/{}/method/callThreeBinaries",
-            "response_topic": "client/"+clientId+"/callThreeBinaries/response",
+            "response_topic": "client/"+clientId+"/callThreeBinaries/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -1127,7 +1127,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_one_list_of_integers": {
             "name": "callOneListOfIntegers",
             "mqtt_topic": "testAble/{}/method/callOneListOfIntegers",
-            "response_topic": "client/"+clientId+"/callOneListOfIntegers/response",
+            "response_topic": "client/"+clientId+"/callOneListOfIntegers/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -1141,7 +1141,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_optional_list_of_floats": {
             "name": "callOptionalListOfFloats",
             "mqtt_topic": "testAble/{}/method/callOptionalListOfFloats",
-            "response_topic": "client/"+clientId+"/callOptionalListOfFloats/response",
+            "response_topic": "client/"+clientId+"/callOptionalListOfFloats/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {
@@ -1155,7 +1155,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "call_two_lists": {
             "name": "callTwoLists",
             "mqtt_topic": "testAble/{}/method/callTwoLists",
-            "response_topic": "client/"+clientId+"/callTwoLists/response",
+            "response_topic": "client/"+clientId+"/callTwoLists/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "input1": {

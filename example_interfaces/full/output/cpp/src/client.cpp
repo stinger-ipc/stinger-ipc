@@ -40,37 +40,37 @@ FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker, const std::str
     _todayIsSignalSubscriptionId = _broker->Subscribe((boost::format("full/%1%/signal/todayIs") % _instanceId).str(), 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/addNumbers/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/addNumbers/methodResponse") % _broker->GetClientId();
         _addNumbersMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/doSomething/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/doSomething/methodResponse") % _broker->GetClientId();
         _doSomethingMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/echo/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/echo/methodResponse") % _broker->GetClientId();
         _echoMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/what_time_is_it/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/whatTimeIsIt/methodResponse") % _broker->GetClientId();
         _whatTimeIsItMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/set_the_time/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/setTheTime/methodResponse") % _broker->GetClientId();
         _setTheTimeMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/forward_time/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/forwardTime/methodResponse") % _broker->GetClientId();
         _forwardTimeMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/how_off_is_the_clock/response") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("client/%1%/howOffIsTheClock/methodResponse") % _broker->GetClientId();
         _howOffIsTheClockMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     _favoriteNumberPropertySubscriptionId = _broker->Subscribe((boost::format("full/%1%/property/favoriteNumber/value") % _instanceId).str(), 1);
@@ -207,37 +207,37 @@ void FullClient::_receiveMessage(
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _addNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/addNumbers/response") && mqttProps.correlationId))
+    if ((subscriptionId == _addNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/addNumbers/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for addNumbers response");
         _handleAddNumbersResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _doSomethingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/doSomething/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _doSomethingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/doSomething/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for doSomething response");
         _handleDoSomethingResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _echoMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/echo/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _echoMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/echo/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for echo response");
         _handleEchoResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _whatTimeIsItMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/what_time_is_it/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _whatTimeIsItMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/whatTimeIsIt/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for what_time_is_it response");
         _handleWhatTimeIsItResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _setTheTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/set_the_time/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _setTheTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/setTheTime/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for set_the_time response");
         _handleSetTheTimeResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _forwardTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/forward_time/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _forwardTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/forwardTime/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for forward_time response");
         _handleForwardTimeResponse(topic, payload, mqttProps);
     }
-    else if ((subscriptionId == _howOffIsTheClockMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/how_off_is_the_clock/response") && mqttProps.correlationId))
+    else if ((subscriptionId == _howOffIsTheClockMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "client/+/howOffIsTheClock/methodResponse") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for how_off_is_the_clock response");
         _handleHowOffIsTheClockResponse(topic, payload, mqttProps);
@@ -298,7 +298,7 @@ boost::future<int> FullClient::addNumbers(int first, int second, boost::optional
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/addNumbers/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/addNumbers/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -368,7 +368,7 @@ boost::future<DoSomethingReturnValues> FullClient::doSomething(std::string aStri
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/doSomething/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/doSomething/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -438,7 +438,7 @@ boost::future<std::string> FullClient::echo(std::string message)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/echo/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/echo/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -509,7 +509,7 @@ boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::wh
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/what_time_is_it/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/whatTimeIsIt/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -587,7 +587,7 @@ boost::future<SetTheTimeReturnValues> FullClient::setTheTime(std::chrono::time_p
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/set_the_time/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/setTheTime/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -658,7 +658,7 @@ boost::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::fo
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/forward_time/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/forwardTime/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();
@@ -729,7 +729,7 @@ boost::future<std::chrono::duration<double>> FullClient::howOffIsTheClock(std::c
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/how_off_is_the_clock/response") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("client/%1%/howOffIsTheClock/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();

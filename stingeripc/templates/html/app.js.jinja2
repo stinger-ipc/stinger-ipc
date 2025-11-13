@@ -61,7 +61,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "{{method_name | snake_case}}": {
             "name": "{{method_name}}",
             "mqtt_topic": "{{method.topic}}",
-            "response_topic": "{{method.response_topic('"+clientId+"')}}",
+            "response_topic": "{{method.response_topic((method.name|lowerCamelCase), '"+clientId+"')}}",
             "pending_correlation_id": null,
             "args": { {%-for arg in method.arg_list %}
                 "{{arg.name|snake_case}}": {

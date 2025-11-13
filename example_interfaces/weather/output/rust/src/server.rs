@@ -25,12 +25,16 @@ use tokio::sync::Mutex as AsyncMutex;
 use serde_json;
 use tokio::sync::{broadcast, watch};
 
+use crate::property::WeatherInitialPropertyValues;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use std::future::Future;
 use std::pin::Pin;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError, MqttPublishSuccess};
+use stinger_rwlock_watch::RwLockWatch;
+#[allow(unused_imports)]
+use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
@@ -57,31 +61,21 @@ struct WeatherServerSubscriptionIds {
 
 #[derive(Clone)]
 struct WeatherProperties {
-    location: Arc<AsyncMutex<Option<LocationProperty>>>,
-    location_tx_channel: watch::Sender<Option<LocationProperty>>,
+    pub location: Arc<RwLockWatch<LocationProperty>>,
     location_version: Arc<AtomicU32>,
-    current_temperature: Arc<AsyncMutex<Option<CurrentTemperatureProperty>>>,
-    current_temperature_tx_channel: watch::Sender<Option<f32>>,
+    pub current_temperature: Arc<RwLockWatch<f32>>,
     current_temperature_version: Arc<AtomicU32>,
-    current_condition: Arc<AsyncMutex<Option<CurrentConditionProperty>>>,
-    current_condition_tx_channel: watch::Sender<Option<CurrentConditionProperty>>,
+    pub current_condition: Arc<RwLockWatch<CurrentConditionProperty>>,
     current_condition_version: Arc<AtomicU32>,
-    daily_forecast: Arc<AsyncMutex<Option<DailyForecastProperty>>>,
-    daily_forecast_tx_channel: watch::Sender<Option<DailyForecastProperty>>,
+    pub daily_forecast: Arc<RwLockWatch<DailyForecastProperty>>,
     daily_forecast_version: Arc<AtomicU32>,
-    hourly_forecast: Arc<AsyncMutex<Option<HourlyForecastProperty>>>,
-    hourly_forecast_tx_channel: watch::Sender<Option<HourlyForecastProperty>>,
+    pub hourly_forecast: Arc<RwLockWatch<HourlyForecastProperty>>,
     hourly_forecast_version: Arc<AtomicU32>,
-    current_condition_refresh_interval:
-        Arc<AsyncMutex<Option<CurrentConditionRefreshIntervalProperty>>>,
-    current_condition_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
+    pub current_condition_refresh_interval: Arc<RwLockWatch<i32>>,
     current_condition_refresh_interval_version: Arc<AtomicU32>,
-    hourly_forecast_refresh_interval:
-        Arc<AsyncMutex<Option<HourlyForecastRefreshIntervalProperty>>>,
-    hourly_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
+    pub hourly_forecast_refresh_interval: Arc<RwLockWatch<i32>>,
     hourly_forecast_refresh_interval_version: Arc<AtomicU32>,
-    daily_forecast_refresh_interval: Arc<AsyncMutex<Option<DailyForecastRefreshIntervalProperty>>>,
-    daily_forecast_refresh_interval_tx_channel: watch::Sender<Option<i32>>,
+    pub daily_forecast_refresh_interval: Arc<RwLockWatch<i32>>,
     daily_forecast_refresh_interval_version: Arc<AtomicU32>,
 }
 
@@ -119,6 +113,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         mut connection: C,
         method_handlers: Arc<AsyncMutex<Box<dyn WeatherMethodHandlers<C>>>>,
         instance_id: String,
+        initial_property_values: WeatherInitialPropertyValues,
     ) -> Self {
         // Create a channel for messages to get from the Mqtt5PubSub object to this WeatherServer object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -221,30 +216,50 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         };
 
         let property_values = WeatherProperties {
-            location: Arc::new(AsyncMutex::new(None)),
-            location_tx_channel: watch::channel(None).0,
-            location_version: Arc::new(AtomicU32::new(0)),
-            current_temperature: Arc::new(AsyncMutex::new(None)),
-            current_temperature_tx_channel: watch::channel(None).0,
-            current_temperature_version: Arc::new(AtomicU32::new(0)),
-            current_condition: Arc::new(AsyncMutex::new(None)),
-            current_condition_tx_channel: watch::channel(None).0,
-            current_condition_version: Arc::new(AtomicU32::new(0)),
-            daily_forecast: Arc::new(AsyncMutex::new(None)),
-            daily_forecast_tx_channel: watch::channel(None).0,
-            daily_forecast_version: Arc::new(AtomicU32::new(0)),
-            hourly_forecast: Arc::new(AsyncMutex::new(None)),
-            hourly_forecast_tx_channel: watch::channel(None).0,
-            hourly_forecast_version: Arc::new(AtomicU32::new(0)),
-            current_condition_refresh_interval: Arc::new(AsyncMutex::new(None)),
-            current_condition_refresh_interval_tx_channel: watch::channel(None).0,
-            current_condition_refresh_interval_version: Arc::new(AtomicU32::new(0)),
-            hourly_forecast_refresh_interval: Arc::new(AsyncMutex::new(None)),
-            hourly_forecast_refresh_interval_tx_channel: watch::channel(None).0,
-            hourly_forecast_refresh_interval_version: Arc::new(AtomicU32::new(0)),
-            daily_forecast_refresh_interval: Arc::new(AsyncMutex::new(None)),
-            daily_forecast_refresh_interval_tx_channel: watch::channel(None).0,
-            daily_forecast_refresh_interval_version: Arc::new(AtomicU32::new(0)),
+            location: Arc::new(RwLockWatch::new(initial_property_values.location)),
+            location_version: Arc::new(AtomicU32::new(initial_property_values.location_version)),
+
+            current_temperature: Arc::new(RwLockWatch::new(
+                initial_property_values.current_temperature,
+            )),
+            current_temperature_version: Arc::new(AtomicU32::new(
+                initial_property_values.current_temperature_version,
+            )),
+            current_condition: Arc::new(RwLockWatch::new(
+                initial_property_values.current_condition,
+            )),
+            current_condition_version: Arc::new(AtomicU32::new(
+                initial_property_values.current_condition_version,
+            )),
+            daily_forecast: Arc::new(RwLockWatch::new(initial_property_values.daily_forecast)),
+            daily_forecast_version: Arc::new(AtomicU32::new(
+                initial_property_values.daily_forecast_version,
+            )),
+            hourly_forecast: Arc::new(RwLockWatch::new(initial_property_values.hourly_forecast)),
+            hourly_forecast_version: Arc::new(AtomicU32::new(
+                initial_property_values.hourly_forecast_version,
+            )),
+
+            current_condition_refresh_interval: Arc::new(RwLockWatch::new(
+                initial_property_values.current_condition_refresh_interval,
+            )),
+            current_condition_refresh_interval_version: Arc::new(AtomicU32::new(
+                initial_property_values.current_condition_refresh_interval_version,
+            )),
+
+            hourly_forecast_refresh_interval: Arc::new(RwLockWatch::new(
+                initial_property_values.hourly_forecast_refresh_interval,
+            )),
+            hourly_forecast_refresh_interval_version: Arc::new(AtomicU32::new(
+                initial_property_values.hourly_forecast_refresh_interval_version,
+            )),
+
+            daily_forecast_refresh_interval: Arc::new(RwLockWatch::new(
+                initial_property_values.daily_forecast_refresh_interval,
+            )),
+            daily_forecast_refresh_interval_version: Arc::new(AtomicU32::new(
+                initial_property_values.daily_forecast_refresh_interval_version,
+            )),
         };
 
         WeatherServer {
@@ -261,7 +276,8 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         }
     }
 
-    pub async fn oneshot_to_future(
+    /// Converts a oneshot channel receiver into a future.
+    async fn oneshot_to_future(
         ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
@@ -285,7 +301,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         })
     }
 
-    pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
+    async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
                 MethodReturnCode::Success(_) => Ok(()),
@@ -459,747 +475,725 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         }
     }
 
-    async fn publish_location_value(
-        mut publisher: C,
-        topic: String,
-        data: LocationProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        WeatherServer::<C>::oneshot_to_future(ch).await
-    }
-
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_location_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<LocationProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<LocationProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<LocationProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: LocationProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'location' property: {:?}", e);
-                    return WeatherServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'location' payload".to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'location' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<LocationProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'location' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'location' payload".to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        WeatherServer::publish_location_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!(
+                        "Error occurred while handling property update for 'location': {:?}",
+                        &err
+                    );
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'location'.");
+        }
     }
 
-    pub async fn watch_location(&self) -> watch::Receiver<Option<LocationProperty>> {
-        self.properties.location_tx_channel.subscribe()
+    /// Watch for changes to the `location` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_location(&self) -> watch::Receiver<LocationProperty> {
+        self.properties.location.subscribe()
+    }
+
+    pub fn get_location_handle(&self) -> WriteRequestLockWatch<LocationProperty> {
+        self.properties.location.write_request()
     }
 
     /// Sets the values of the location property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_location(&mut self, data: LocationProperty) -> SentMessageFuture {
-        let prop = self.properties.location.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .location_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'location' value not changed, so not notifying watchers.");
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("weather/{}/property/location/value", self.instance_id);
-            let new_version = self
-                .properties
-                .location_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            WeatherServer::<C>::publish_location_value(publisher2, topic2, prop_obj, new_version)
+    pub async fn set_location(&mut self, value: LocationProperty) -> SentMessageFuture {
+        let write_request_lock = self.get_location_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
                 .await
-        } else {
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
-    async fn publish_current_temperature_value(
-        mut publisher: C,
-        topic: String,
-        data: CurrentTemperatureProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        WeatherServer::<C>::oneshot_to_future(ch).await
+    /// Watch for changes to the `current_temperature` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_current_temperature(&self) -> watch::Receiver<f32> {
+        self.properties.current_temperature.subscribe()
+    }
+
+    pub fn get_current_temperature_handle(&self) -> WriteRequestLockWatch<f32> {
+        self.properties.current_temperature.write_request()
     }
 
     /// Sets the value of the current_temperature property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_current_temperature(&mut self, data: f32) -> SentMessageFuture {
-        let prop = self.properties.current_temperature.clone();
-
-        let new_prop_obj = CurrentTemperatureProperty {
-            temperature_f: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .current_temperature_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'current_temperature' value not changed, so not notifying watchers.");
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "weather/{}/property/currentTemperature/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .current_temperature_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            WeatherServer::<C>::publish_current_temperature_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+    pub async fn set_current_temperature(&mut self, value: f32) -> SentMessageFuture {
+        let write_request_lock = self.get_current_temperature_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
-    async fn publish_current_condition_value(
-        mut publisher: C,
-        topic: String,
-        data: CurrentConditionProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        WeatherServer::<C>::oneshot_to_future(ch).await
+    /// Watch for changes to the `current_condition` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_current_condition(&self) -> watch::Receiver<CurrentConditionProperty> {
+        self.properties.current_condition.subscribe()
+    }
+
+    pub fn get_current_condition_handle(&self) -> WriteRequestLockWatch<CurrentConditionProperty> {
+        self.properties.current_condition.write_request()
     }
 
     /// Sets the values of the current_condition property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_current_condition(
         &mut self,
-        data: CurrentConditionProperty,
+        value: CurrentConditionProperty,
     ) -> SentMessageFuture {
-        let prop = self.properties.current_condition.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .current_condition_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'current_condition' value not changed, so not notifying watchers.");
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "weather/{}/property/currentCondition/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .current_condition_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            WeatherServer::<C>::publish_current_condition_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+        let write_request_lock = self.get_current_condition_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
-    async fn publish_daily_forecast_value(
-        mut publisher: C,
-        topic: String,
-        data: DailyForecastProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        WeatherServer::<C>::oneshot_to_future(ch).await
+    /// Watch for changes to the `daily_forecast` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_daily_forecast(&self) -> watch::Receiver<DailyForecastProperty> {
+        self.properties.daily_forecast.subscribe()
+    }
+
+    pub fn get_daily_forecast_handle(&self) -> WriteRequestLockWatch<DailyForecastProperty> {
+        self.properties.daily_forecast.write_request()
     }
 
     /// Sets the values of the daily_forecast property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_daily_forecast(&mut self, data: DailyForecastProperty) -> SentMessageFuture {
-        let prop = self.properties.daily_forecast.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result =
-            self.properties
-                .daily_forecast_tx_channel
-                .send_if_modified(|current_data| {
-                    if current_data != &data_to_send_to_watchers {
-                        *current_data = data_to_send_to_watchers;
-                        true
-                    } else {
-                        false
-                    }
-                });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'daily_forecast' value not changed, so not notifying watchers.");
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("weather/{}/property/dailyForecast/value", self.instance_id);
-            let new_version = self
-                .properties
-                .daily_forecast_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            WeatherServer::<C>::publish_daily_forecast_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+    pub async fn set_daily_forecast(&mut self, value: DailyForecastProperty) -> SentMessageFuture {
+        let write_request_lock = self.get_daily_forecast_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
-    async fn publish_hourly_forecast_value(
-        mut publisher: C,
-        topic: String,
-        data: HourlyForecastProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        WeatherServer::<C>::oneshot_to_future(ch).await
+    /// Watch for changes to the `hourly_forecast` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_hourly_forecast(&self) -> watch::Receiver<HourlyForecastProperty> {
+        self.properties.hourly_forecast.subscribe()
+    }
+
+    pub fn get_hourly_forecast_handle(&self) -> WriteRequestLockWatch<HourlyForecastProperty> {
+        self.properties.hourly_forecast.write_request()
     }
 
     /// Sets the values of the hourly_forecast property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_hourly_forecast(&mut self, data: HourlyForecastProperty) -> SentMessageFuture {
-        let prop = self.properties.hourly_forecast.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result =
-            self.properties
-                .hourly_forecast_tx_channel
-                .send_if_modified(|current_data| {
-                    if current_data != &data_to_send_to_watchers {
-                        *current_data = data_to_send_to_watchers;
-                        true
-                    } else {
-                        false
-                    }
-                });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'hourly_forecast' value not changed, so not notifying watchers.");
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("weather/{}/property/hourlyForecast/value", self.instance_id);
-            let new_version = self
-                .properties
-                .hourly_forecast_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            WeatherServer::<C>::publish_hourly_forecast_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_current_condition_refresh_interval_value(
-        mut publisher: C,
-        topic: String,
-        data: CurrentConditionRefreshIntervalProperty,
-        property_version: u32,
+    pub async fn set_hourly_forecast(
+        &mut self,
+        value: HourlyForecastProperty,
     ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        WeatherServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_hourly_forecast_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_current_condition_refresh_interval_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<CurrentConditionRefreshIntervalProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<i32>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<i32>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: CurrentConditionRefreshIntervalProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'current_condition_refresh_interval' property: {:?}", e);
-                    return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'current_condition_refresh_interval' payload".to_string())).await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<CurrentConditionRefreshIntervalProperty>(&payload_str)
+                {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.seconds.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'current_condition_refresh_interval' property: {:?}", e);
+                        // Single value property.  Use the seconds field of the struct.
+                        *write_request = new_property_structure.seconds.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'current_condition_refresh_interval' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'current_condition_refresh_interval' payload".to_string());
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        WeatherServer::publish_current_condition_refresh_interval_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    CurrentConditionRefreshIntervalProperty { seconds: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    CurrentConditionRefreshIntervalProperty {
+                        seconds: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'current_condition_refresh_interval': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'current_condition_refresh_interval'.");
+        }
     }
 
-    pub async fn watch_current_condition_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+    /// Watch for changes to the `current_condition_refresh_interval` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_current_condition_refresh_interval(&self) -> watch::Receiver<i32> {
         self.properties
-            .current_condition_refresh_interval_tx_channel
+            .current_condition_refresh_interval
             .subscribe()
+    }
+
+    pub fn get_current_condition_refresh_interval_handle(&self) -> WriteRequestLockWatch<i32> {
+        self.properties
+            .current_condition_refresh_interval
+            .write_request()
     }
 
     /// Sets the value of the current_condition_refresh_interval property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_current_condition_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
-        let prop = self.properties.current_condition_refresh_interval.clone();
-
-        let new_prop_obj = CurrentConditionRefreshIntervalProperty {
-            seconds: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .current_condition_refresh_interval_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'current_condition_refresh_interval' value not changed, so not notifying watchers.");
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "weather/{}/property/currentConditionRefreshInterval/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .current_condition_refresh_interval_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            WeatherServer::<C>::publish_current_condition_refresh_interval_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_hourly_forecast_refresh_interval_value(
-        mut publisher: C,
-        topic: String,
-        data: HourlyForecastRefreshIntervalProperty,
-        property_version: u32,
+    pub async fn set_current_condition_refresh_interval(
+        &mut self,
+        value: i32,
     ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        WeatherServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_current_condition_refresh_interval_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_hourly_forecast_refresh_interval_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<HourlyForecastRefreshIntervalProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<i32>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<i32>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: HourlyForecastRefreshIntervalProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'hourly_forecast_refresh_interval' property: {:?}", e);
-                    return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'hourly_forecast_refresh_interval' payload".to_string())).await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<HourlyForecastRefreshIntervalProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.seconds.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'hourly_forecast_refresh_interval' property: {:?}", e);
+                        // Single value property.  Use the seconds field of the struct.
+                        *write_request = new_property_structure.seconds.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'hourly_forecast_refresh_interval' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'hourly_forecast_refresh_interval' payload".to_string());
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        WeatherServer::publish_hourly_forecast_refresh_interval_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    HourlyForecastRefreshIntervalProperty { seconds: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    HourlyForecastRefreshIntervalProperty {
+                        seconds: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'hourly_forecast_refresh_interval': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'hourly_forecast_refresh_interval'.");
+        }
     }
 
-    pub async fn watch_hourly_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+    /// Watch for changes to the `hourly_forecast_refresh_interval` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_hourly_forecast_refresh_interval(&self) -> watch::Receiver<i32> {
+        self.properties.hourly_forecast_refresh_interval.subscribe()
+    }
+
+    pub fn get_hourly_forecast_refresh_interval_handle(&self) -> WriteRequestLockWatch<i32> {
         self.properties
-            .hourly_forecast_refresh_interval_tx_channel
-            .subscribe()
+            .hourly_forecast_refresh_interval
+            .write_request()
     }
 
     /// Sets the value of the hourly_forecast_refresh_interval property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_hourly_forecast_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
-        let prop = self.properties.hourly_forecast_refresh_interval.clone();
-
-        let new_prop_obj = HourlyForecastRefreshIntervalProperty {
-            seconds: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .hourly_forecast_refresh_interval_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'hourly_forecast_refresh_interval' value not changed, so not notifying watchers.");
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "weather/{}/property/hourlyForecastRefreshInterval/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .hourly_forecast_refresh_interval_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            WeatherServer::<C>::publish_hourly_forecast_refresh_interval_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_daily_forecast_refresh_interval_value(
-        mut publisher: C,
-        topic: String,
-        data: DailyForecastRefreshIntervalProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        WeatherServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_hourly_forecast_refresh_interval(&mut self, value: i32) -> SentMessageFuture {
+        let write_request_lock = self.get_hourly_forecast_refresh_interval_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_daily_forecast_refresh_interval_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<DailyForecastRefreshIntervalProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<i32>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<i32>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: DailyForecastRefreshIntervalProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'daily_forecast_refresh_interval' property: {:?}", e);
-                    return WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'daily_forecast_refresh_interval' payload".to_string())).await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<DailyForecastRefreshIntervalProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.seconds.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'daily_forecast_refresh_interval' property: {:?}", e);
+                        // Single value property.  Use the seconds field of the struct.
+                        *write_request = new_property_structure.seconds.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'daily_forecast_refresh_interval' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError("Failed to deserialize property 'daily_forecast_refresh_interval' payload".to_string());
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        WeatherServer::publish_daily_forecast_refresh_interval_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    DailyForecastRefreshIntervalProperty { seconds: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    DailyForecastRefreshIntervalProperty {
+                        seconds: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'daily_forecast_refresh_interval': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'daily_forecast_refresh_interval'.");
+        }
     }
 
-    pub async fn watch_daily_forecast_refresh_interval(&self) -> watch::Receiver<Option<i32>> {
+    /// Watch for changes to the `daily_forecast_refresh_interval` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_daily_forecast_refresh_interval(&self) -> watch::Receiver<i32> {
+        self.properties.daily_forecast_refresh_interval.subscribe()
+    }
+
+    pub fn get_daily_forecast_refresh_interval_handle(&self) -> WriteRequestLockWatch<i32> {
         self.properties
-            .daily_forecast_refresh_interval_tx_channel
-            .subscribe()
+            .daily_forecast_refresh_interval
+            .write_request()
     }
 
     /// Sets the value of the daily_forecast_refresh_interval property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_daily_forecast_refresh_interval(&mut self, data: i32) -> SentMessageFuture {
-        let prop = self.properties.daily_forecast_refresh_interval.clone();
-
-        let new_prop_obj = DailyForecastRefreshIntervalProperty {
-            seconds: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .daily_forecast_refresh_interval_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'daily_forecast_refresh_interval' value not changed, so not notifying watchers.");
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "weather/{}/property/dailyForecastRefreshInterval/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .daily_forecast_refresh_interval_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            WeatherServer::<C>::publish_daily_forecast_refresh_interval_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            WeatherServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+    pub async fn set_daily_forecast_refresh_interval(&mut self, value: i32) -> SentMessageFuture {
+        let write_request_lock = self.get_daily_forecast_refresh_interval_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// Starts the tasks that process messages received.
@@ -1229,7 +1223,406 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqtt_client.clone();
 
-        let properties = self.properties.clone();
+        let props = self.properties.clone();
+        {
+            // Set up property change request handling task
+            let instance_id_for_location_prop = self.instance_id.clone();
+            let mut publisher_for_location_prop = self.mqtt_client.clone();
+            let location_prop_version = props.location_version.clone();
+            if let Some(mut rx_for_location_prop) = props.location.take_request_receiver() {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) = rx_for_location_prop.recv().await {
+                        let payload_obj = request.clone();
+
+                        let version_value = location_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "weather/{}/property/location/value",
+                            instance_id_for_location_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_location_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'location' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'location' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_current_temperature_prop = self.instance_id.clone();
+            let mut publisher_for_current_temperature_prop = self.mqtt_client.clone();
+            let current_temperature_prop_version = props.current_temperature_version.clone();
+            if let Some(mut rx_for_current_temperature_prop) =
+                props.current_temperature.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_current_temperature_prop.recv().await
+                    {
+                        let payload_obj = CurrentTemperatureProperty {
+                            temperature_f: request.clone(),
+                        };
+
+                        let version_value = current_temperature_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "weather/{}/property/currentTemperature/value",
+                            instance_id_for_current_temperature_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_current_temperature_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'current_temperature' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'current_temperature' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_current_condition_prop = self.instance_id.clone();
+            let mut publisher_for_current_condition_prop = self.mqtt_client.clone();
+            let current_condition_prop_version = props.current_condition_version.clone();
+            if let Some(mut rx_for_current_condition_prop) =
+                props.current_condition.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_current_condition_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = current_condition_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "weather/{}/property/currentCondition/value",
+                            instance_id_for_current_condition_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_current_condition_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'current_condition' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'current_condition' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_daily_forecast_prop = self.instance_id.clone();
+            let mut publisher_for_daily_forecast_prop = self.mqtt_client.clone();
+            let daily_forecast_prop_version = props.daily_forecast_version.clone();
+            if let Some(mut rx_for_daily_forecast_prop) =
+                props.daily_forecast.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_daily_forecast_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = daily_forecast_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "weather/{}/property/dailyForecast/value",
+                            instance_id_for_daily_forecast_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_daily_forecast_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'daily_forecast' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'daily_forecast' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_hourly_forecast_prop = self.instance_id.clone();
+            let mut publisher_for_hourly_forecast_prop = self.mqtt_client.clone();
+            let hourly_forecast_prop_version = props.hourly_forecast_version.clone();
+            if let Some(mut rx_for_hourly_forecast_prop) =
+                props.hourly_forecast.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_hourly_forecast_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = hourly_forecast_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "weather/{}/property/hourlyForecast/value",
+                            instance_id_for_hourly_forecast_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_hourly_forecast_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'hourly_forecast' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'hourly_forecast' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_current_condition_refresh_interval_prop = self.instance_id.clone();
+            let mut publisher_for_current_condition_refresh_interval_prop =
+                self.mqtt_client.clone();
+            let current_condition_refresh_interval_prop_version =
+                props.current_condition_refresh_interval_version.clone();
+            if let Some(mut rx_for_current_condition_refresh_interval_prop) = props
+                .current_condition_refresh_interval
+                .take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_current_condition_refresh_interval_prop.recv().await
+                    {
+                        let payload_obj = CurrentConditionRefreshIntervalProperty {
+                            seconds: request.clone(),
+                        };
+
+                        let version_value = current_condition_refresh_interval_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "weather/{}/property/currentConditionRefreshInterval/value",
+                            instance_id_for_current_condition_refresh_interval_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_current_condition_refresh_interval_prop
+                                        .publish(msg)
+                                        .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'current_condition_refresh_interval' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'current_condition_refresh_interval' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_hourly_forecast_refresh_interval_prop = self.instance_id.clone();
+            let mut publisher_for_hourly_forecast_refresh_interval_prop = self.mqtt_client.clone();
+            let hourly_forecast_refresh_interval_prop_version =
+                props.hourly_forecast_refresh_interval_version.clone();
+            if let Some(mut rx_for_hourly_forecast_refresh_interval_prop) = props
+                .hourly_forecast_refresh_interval
+                .take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_hourly_forecast_refresh_interval_prop.recv().await
+                    {
+                        let payload_obj = HourlyForecastRefreshIntervalProperty {
+                            seconds: request.clone(),
+                        };
+
+                        let version_value = hourly_forecast_refresh_interval_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "weather/{}/property/hourlyForecastRefreshInterval/value",
+                            instance_id_for_hourly_forecast_refresh_interval_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_hourly_forecast_refresh_interval_prop
+                                        .publish(msg)
+                                        .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'hourly_forecast_refresh_interval' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'hourly_forecast_refresh_interval' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_daily_forecast_refresh_interval_prop = self.instance_id.clone();
+            let mut publisher_for_daily_forecast_refresh_interval_prop = self.mqtt_client.clone();
+            let daily_forecast_refresh_interval_prop_version =
+                props.daily_forecast_refresh_interval_version.clone();
+            if let Some(mut rx_for_daily_forecast_refresh_interval_prop) = props
+                .daily_forecast_refresh_interval
+                .take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_daily_forecast_refresh_interval_prop.recv().await
+                    {
+                        let payload_obj = DailyForecastRefreshIntervalProperty {
+                            seconds: request.clone(),
+                        };
+
+                        let version_value = daily_forecast_refresh_interval_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "weather/{}/property/dailyForecastRefreshInterval/value",
+                            instance_id_for_daily_forecast_refresh_interval_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_daily_forecast_refresh_interval_prop
+                                        .publish(msg)
+                                        .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'daily_forecast_refresh_interval' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'daily_forecast_refresh_interval' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
@@ -1252,115 +1645,93 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
             }
         });
 
-        let instance_id = self.instance_id.clone();
+        let properties = self.properties.clone();
         let loop_task = tokio::spawn(async move {
             loop {
                 match message_receiver.recv().await {
                     Ok(msg) => {
-                        let opt_resp_topic = msg.response_topic.clone();
-                        let opt_corr_data = msg.correlation_data.clone();
-
                         if let Some(subscription_id) = msg.subscription_id {
-                            if subscription_id == sub_ids.refresh_daily_forecast_method_req {
-                                WeatherServer::<C>::handle_refresh_daily_forecast_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.refresh_hourly_forecast_method_req
-                            {
-                                WeatherServer::<C>::handle_refresh_hourly_forecast_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id
-                                == sub_ids.refresh_current_conditions_method_req
-                            {
-                                WeatherServer::<C>::handle_refresh_current_conditions_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else {
-                                let update_prop_future = {
-                                    if subscription_id == sub_ids.location_property_update {
-                                        let prop_topic = format!(
-                                            "weather/{}/property/location/value",
-                                            instance_id
-                                        );
-                                        WeatherServer::<C>::update_location_value(
+                            match subscription_id {
+                                _i if _i == sub_ids.refresh_daily_forecast_method_req => {
+                                    debug!("Received refresh_daily_forecast method invocation message.");
+                                    WeatherServer::<C>::handle_refresh_daily_forecast_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.refresh_hourly_forecast_method_req => {
+                                    debug!("Received refresh_hourly_forecast method invocation message.");
+                                    WeatherServer::<C>::handle_refresh_hourly_forecast_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.refresh_current_conditions_method_req => {
+                                    debug!("Received refresh_current_conditions method invocation message.");
+                                    WeatherServer::<C>::handle_refresh_current_conditions_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.location_property_update => {
+                                    debug!("Received location property update request message.");
+                                    WeatherServer::<C>::update_location_value(
+                                        publisher.clone(),
+                                        properties.location.clone(),
+                                        properties.location_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i
+                                    == sub_ids
+                                        .current_condition_refresh_interval_property_update =>
+                                {
+                                    debug!("Received current_condition_refresh_interval property update request message.");
+                                    WeatherServer::<C>::update_current_condition_refresh_interval_value(
                                             publisher.clone(),
-                                            prop_topic,
-                                            properties.location.clone(),
-                                            properties.location_version.clone(),
-                                            properties.location_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids
-                                            .current_condition_refresh_interval_property_update
-                                    {
-                                        let prop_topic = format!("weather/{}/property/currentConditionRefreshInterval/value", instance_id);
-                                        WeatherServer::<C>::update_current_condition_refresh_interval_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.current_condition_refresh_interval.clone(),
-                                                    properties.current_condition_refresh_interval_version.clone(),
-                                                    properties.current_condition_refresh_interval_tx_channel.clone(),
-                                                    msg).await
-                                    } else if subscription_id
-                                        == sub_ids.hourly_forecast_refresh_interval_property_update
-                                    {
-                                        let prop_topic = format!("weather/{}/property/hourlyForecastRefreshInterval/value", instance_id);
-                                        WeatherServer::<C>::update_hourly_forecast_refresh_interval_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.hourly_forecast_refresh_interval.clone(),
-                                                    properties.hourly_forecast_refresh_interval_version.clone(),
-                                                    properties.hourly_forecast_refresh_interval_tx_channel.clone(),
-                                                    msg).await
-                                    } else if subscription_id
-                                        == sub_ids.daily_forecast_refresh_interval_property_update
-                                    {
-                                        let prop_topic = format!("weather/{}/property/dailyForecastRefreshInterval/value", instance_id);
-                                        WeatherServer::<C>::update_daily_forecast_refresh_interval_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.daily_forecast_refresh_interval.clone(),
-                                                    properties.daily_forecast_refresh_interval_version.clone(),
-                                                    properties.daily_forecast_refresh_interval_tx_channel.clone(),
-                                                    msg).await
-                                    } else {
-                                        WeatherServer::<C>::wrap_return_code_in_future(
-                                            MethodReturnCode::NotImplemented(
-                                                "Could not find a property matching the request"
-                                                    .to_string(),
-                                            ),
-                                        )
-                                        .await
-                                    }
-                                };
-                                match update_prop_future.await {
-                                    Ok(_) => debug!("Successfully processed update  property"),
-                                    Err(e) => {
-                                        error!("Error processing update to '' property: {:?}", e);
-                                        if let Some(resp_topic) = opt_resp_topic {
-                                            WeatherServer::<C>::publish_error_response(
-                                                publisher.clone(),
-                                                Some(resp_topic),
-                                                opt_corr_data,
-                                                e,
-                                            )
-                                            .await;
-                                        } else {
-                                            warn!("No response topic found in message properties; cannot send error response.");
-                                        }
-                                    }
+                                            properties.current_condition_refresh_interval.clone(),
+                                            properties.current_condition_refresh_interval_version.clone(),
+                                            msg
+                                    ).await;
+                                }
+
+                                _i if _i
+                                    == sub_ids.hourly_forecast_refresh_interval_property_update =>
+                                {
+                                    debug!("Received hourly_forecast_refresh_interval property update request message.");
+                                    WeatherServer::<C>::update_hourly_forecast_refresh_interval_value(
+                                            publisher.clone(),
+                                            properties.hourly_forecast_refresh_interval.clone(),
+                                            properties.hourly_forecast_refresh_interval_version.clone(),
+                                            msg
+                                    ).await;
+                                }
+
+                                _i if _i
+                                    == sub_ids.daily_forecast_refresh_interval_property_update =>
+                                {
+                                    debug!("Received daily_forecast_refresh_interval property update request message.");
+                                    WeatherServer::<C>::update_daily_forecast_refresh_interval_value(
+                                            publisher.clone(),
+                                            properties.daily_forecast_refresh_interval.clone(),
+                                            properties.daily_forecast_refresh_interval_version.clone(),
+                                            msg
+                                    ).await;
+                                }
+
+                                _ => {
+                                    error!(
+                                        "Received MQTT message with unknown subscription id: {}",
+                                        subscription_id
+                                    );
                                 }
                             }
                         } else {
@@ -1373,6 +1744,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
                 }
             }
         });
+
         let _ = tokio::join!(loop_task);
 
         warn!("Server receive loop completed. Exiting run_loop.");

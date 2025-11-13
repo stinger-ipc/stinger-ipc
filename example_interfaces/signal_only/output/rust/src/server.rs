@@ -21,6 +21,9 @@ use std::future::Future;
 use std::pin::Pin;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError, MqttPublishSuccess};
+use stinger_rwlock_watch::RwLockWatch;
+#[allow(unused_imports)]
+use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
@@ -49,7 +52,8 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         }
     }
 
-    pub async fn oneshot_to_future(
+    /// Converts a oneshot channel receiver into a future.
+    async fn oneshot_to_future(
         ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
@@ -73,7 +77,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         })
     }
 
-    pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
+    async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
                 MethodReturnCode::Success(_) => Ok(()),

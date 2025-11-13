@@ -45,7 +45,7 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     {%-for method_name, method in stinger.methods.items() %}
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
+        responseTopicStringStream << boost::format("{{method.response_topic((method_name|lowerCamelCase), '%1%')}}") % _broker->GetClientId();
         _{{method_name | lowerCamelCase}}MethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     {%-endfor%}
@@ -140,7 +140,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
     {%-endfor%}{# for signals #}
 
     {%-for method_name, method in stinger.methods.items() %}
-    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | lowerCamelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{method.response_topic('+')}}") && mqttProps.correlationId))
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | lowerCamelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{method.response_topic((method_name|lowerCamelCase), '+')}}") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for {{method_name}} response");
         _handle{{method_name|UpperCamelCase}}Response(topic, payload, mqttProps);
@@ -181,7 +181,7 @@ boost::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("{{method.response_topic('%1%')}}") % _broker->GetClientId();
+    responseTopicStringStream << boost::format("{{method.response_topic((method_name|lowerCamelCase), '%1%')}}") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationIdStr;
     mqttProps.responseTopic = responseTopicStringStream.str();

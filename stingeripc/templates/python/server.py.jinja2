@@ -22,6 +22,9 @@ from .connection import IBrokerConnection
 from .method_codes import *
 from .interface_types import *
 {%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
+{%if stinger.properties | length > 0 %}
+from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
+{%endif%}
 
 T = TypeVar('T')
 
@@ -38,9 +41,11 @@ class MethodControls:
     subscription_id: Optional[int] = None
     callback: Optional[Callable] = None
 
+
+
 class {{stinger.python.server_class_name}}:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str):
+    def __init__(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}):
         self._logger = logging.getLogger(f'{{stinger.python.server_class_name}}:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
@@ -50,7 +55,7 @@ class {{stinger.python.server_class_name}}:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
         {%for prop_name, prop in stinger.properties.items()%}
-        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}, {%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}] = PropertyControls()
+        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}] = PropertyControls()
         self._property_{{prop_name|snake_case}}.subscription_id = self._conn.subscribe("{{prop.update_topic}}".format(self._instance_id), self._receive_{{prop_name|snake_case}}_update_request_message)
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()%}
@@ -89,26 +94,66 @@ class {{stinger.python.server_class_name}}:
 
     {%for prop_name, prop in stinger.properties.items()%}
     def _receive_{{prop_name|snake_case}}_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        {%if prop.arg_list | length > 1 -%}
+        user_properties = properties.get('UserProperties', dict()) # type: Optional[Dict[str, str]]
+        prop_version = user_properties.get('Version', -1) # type: int
+        correlation_id = properties.get('CorrelationData', '') # type: Optional[bytes]
+        response_topic = properties.get('ResponseTopic') # type: Optional[str]
+        {% if prop.arg_list | length == 1%}
+        existing_prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.value)
+        {%else%}
+        existing_prop_obj = self._property_{{prop_name|snake_case}}.value
+        {%endif%}
+
         try:
-            prop_value = {{prop.python_class}}.model_validate_json(payload)
-        except ValidationError as e:
-            self._logger.error("Failed to validate payload for %s: %s", topic, e)
-            self._send_reply_error_message(MethodReturnCode.DESERIALIZATION_ERROR, properties, str(e))
-            return
-        {%else-%}
-        payload_obj = json.loads(payload)
-        prop_value = {{prop.arg_list[0].python_class}}(payload_obj["{{prop.arg_list[0].name}}"])
-        {%endif-%}
-        with self._property_{{prop_name|snake_case}}.mutex:
-            self._property_{{prop_name|snake_case}}.value = prop_value
-            self._property_{{prop_name|snake_case}}.version += 1
-        for callback in self._property_{{prop_name|snake_case}}.callbacks:
-            {%-if prop.arg_list | length > 1%}
-                callback({%for arg in prop.arg_list %}prop_value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
-            {%-else%}
-            callback(prop_value)
-            {%-endif%}
+            if prop_version != self._property_{{prop_name|snake_case}}.version:
+                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", topic, prop_version, self._property_{{prop_name|snake_case}}.version)
+                if response_topic is not None:
+                    self._conn.publish_property_response(response_topic, existing_prop_obj, self._property_{{prop_name|snake_case}}.version, MethodReturnCode.OUT_OF_SYNC, correlation_id, f"Request version {prop_version} does not match current version {self._property_{{prop_name|snake_case}}.version}")
+                return
+
+            {%if prop.arg_list | length > 1 -%}
+            try:
+                prop_value = {{prop.python_class}}.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                self._conn.publish_property_response(response_topic, existing_prop_obj, self._property_{{prop_name|snake_case}}.version, MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e))
+                return
+            {%else-%}
+            payload_obj = json.loads(payload)
+            prop_value = {{prop.arg_list[0].python_class}}(payload_obj["{{prop.arg_list[0].name}}"])
+            {%endif-%}
+            with self._property_{{prop_name|snake_case}}.mutex:
+                self._property_{{prop_name|snake_case}}.value = prop_value
+                self._property_{{prop_name|snake_case}}.version += 1
+            
+            if response_topic is not None:
+                {% if prop.arg_list | length == 1%}
+                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.value)
+                {%else%}
+                prop_obj = self._property_{{prop_name|snake_case}}.value
+                {%endif%}
+                self._conn.publish_property_response(response_topic, prop_obj, self._property_{{prop_name|snake_case}}.version, MethodReturnCode.SUCCESS, correlation_id)
+            else:
+                self._logger.warning("No response topic provided for property update of %s", topic)
+
+            for callback in self._property_{{prop_name|snake_case}}.callbacks:
+                {%-if prop.arg_list | length > 1%}
+                    callback({%for arg in prop.arg_list %}prop_value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
+                {%-else%}
+                callback(prop_value)
+                {%-endif%}
+        except Exception as e:
+            self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
+            if response_topic is not None:
+                {% if prop.arg_list | length == 1%}
+                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.value)
+                {%else%}
+                prop_obj = self._property_{{prop_name|snake_case}}.value
+                {%endif%}
+                self._conn.publish_property_response(response_topic, prop_obj, self._property_{{prop_name|snake_case}}.version, MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
+
+
     {%endfor%}
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
@@ -210,7 +255,7 @@ class {{stinger.python.server_class_name}}:
             with self._property_{{prop_name|snake_case}}.mutex:
                 self._property_{{prop_name|snake_case}}.value = prop_obj
                 self._property_{{prop_name|snake_case}}.version += 1
-            self._conn.publish("{{prop.value_topic}}".format(self._instance_id), payload, qos=1, retain=True)
+                self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), payload, self._property_{{prop_name|snake_case}}.version)
             for callback in self._property_{{prop_name|snake_case}}.callbacks:
                 callback(prop_obj.{{arg.name|snake_case}})
     {%else%} {# property with multiple arguments #}
@@ -235,7 +280,7 @@ class {{stinger.python.server_class_name}}:
             with self._property_{{prop_name|snake_case}}.mutex:
                 self._property_{{prop_name|snake_case}}.value = value
                 self._property_{{prop_name|snake_case}}.version += 1
-            self._conn.publish("{{prop.value_topic}}".format(self._instance_id), payload, qos=1, retain=True)
+                self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), payload, self._property_{{prop_name|snake_case}}.version)
             for callback in self._property_{{prop_name|snake_case}}.callbacks:
                 callback({%for arg in prop.arg_list %}value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
     {%endif%}
@@ -293,8 +338,8 @@ class {{stinger.python.server_class_name}}Builder:
         """
         self._{{prop_name|snake_case}}_property_callbacks.append(handler)
     {%endfor%}
-    def build(self, connection: IBrokerConnection) -> {{stinger.python.server_class_name}}:
-        new_server = {{stinger.python.server_class_name}}(connection)
+    def build(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}) -> {{stinger.python.server_class_name}}:
+        new_server = {{stinger.python.server_class_name}}(connection, instance_id{%if stinger.properties | length > 0 %}, initial_property_values{%endif%})
         {%for method_name, method in stinger.methods.items()%}
         if self._{{method_name|snake_case}}_method_handler is not None:
             new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler)

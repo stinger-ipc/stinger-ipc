@@ -18,6 +18,7 @@ from isodate import parse_duration
 
 from .connection import IBrokerConnection
 
+
 logging.basicConfig(level=logging.DEBUG)
 
 AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]
@@ -209,6 +210,11 @@ class SignalOnlyClientBuilder:
         return client
 
 
+@dataclass
+class DiscoveredInstance:
+    instance_id: str
+
+
 class SignalOnlyClientDiscoverer:
 
     def __init__(self, connection: IBrokerConnection, builder: Optional[SignalOnlyClientBuilder] = None):
@@ -219,11 +225,18 @@ class SignalOnlyClientDiscoverer:
         self._logger.setLevel(logging.DEBUG)
         service_discovery_topic = "signalOnly/{}/interface".format("+")
         self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
+        self._conn.subscribe("signalOnly/+/property/+/value", self._process_property_value_message)
         self._mutex = threading.Lock()
-        self._discovered_services: Dict[str, InterfaceInfo] = {}
-        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
         self._pending_futures: List[futures.Future] = []
         self._removed_service_callbacks: List[Callable[[str], None]] = []
+
+        # For partially discovered services
+        self._discovered_interface_infos = dict()  # type: Dict[str, InterfaceInfo]
+        self._discovered_properties = dict()  # type: Dict[str, Dict[str, Any]]
+
+        # For fully discovered services
+        self._discovered_services: Dict[str, InterfaceInfo] = {}
+        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
 
     def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
         """Adds a callback to be called when a new service is discovered."""
@@ -239,6 +252,11 @@ class SignalOnlyClientDiscoverer:
         """Returns a list of currently discovered service instance IDs."""
         with self._mutex:
             return list(self._discovered_services.keys())
+
+    def get_discovery_info(self, instance_id: str) -> Optional[InterfaceInfo]:
+        """Returns the InterfaceInfo for a discovered service instance ID, or None if not found."""
+        with self._mutex:
+            return self._discovered_services.get(instance_id, None)
 
     def get_singleton_client(self) -> futures.Future[SignalOnlyClient]:
         """Returns a SignalOnlyClient for the single discovered service.
@@ -257,34 +275,70 @@ class SignalOnlyClientDiscoverer:
                 self._pending_futures.append(fut)
         return fut
 
+    def _check_for_fully_discovered(self, instance_id: str):
+        """Checks if all properties have been discovered for the given instance ID."""
+        with self._mutex:
+            if instance_id in self._discovered_properties and len(self._discovered_properties[instance_id]) == 0 and instance_id in self._discovered_interface_infos:
+
+                entry = DiscoveredInstance(
+                    instance_id=instance_id,
+                )
+
+                self._discovered_services[instance_id] = entry
+                while self._pending_futures:
+                    fut = self._pending_futures.pop(0)
+                    if not fut.done():
+                        if self._builder is not None:
+                            fut.set_result(self._builder.build(self._conn, entry))
+                        else:
+                            fut.set_result(SignalOnlyClient(self._conn, entry))
+                if not instance_id in self._discovered_services:
+                    self._logger.info("Discovered service: %s.instance", instance_id)
+                    for cb in self._discovered_service_callbacks:
+                        cb(entry)
+                else:
+                    self._logger.debug("Updated info for service: %s", instance_id)
+
     def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """Processes a service discovery message."""
         self._logger.debug("Processing service discovery message on topic %s", topic)
         if len(payload) > 0:
             try:
                 service_info = InterfaceInfo.model_validate_json(payload)
+                with self._mutex:
+                    self._discovered_interface_infos[service_info.instance_id] = service_info
             except Exception as e:
                 self._logger.warning("Failed to process service discovery message: %s", e)
-            with self._mutex:
-                self._discovered_services[service_info.instance] = service_info
-                while self._pending_futures:
-                    fut = self._pending_futures.pop(0)
-                    if not fut.done():
-                        if self._builder is not None:
-                            fut.set_result(self._builder.build(self._conn, service_info.instance))
-                        else:
-                            fut.set_result(SignalOnlyClient(self._conn, service_info.instance))
-                if not service_info.instance in self._discovered_services:
-                    self._logger.info("Discovered service: %s.instance", service_info.instance)
-                    for cb in self._discovered_service_callbacks:
-                        cb(service_info)
-                else:
-                    self._logger.debug("Updated info for service: %s", service_info.instance)
+            self._check_for_fully_discovered(service_info.instance_id)
+
         else:  # Empty payload means the service is going away
             instance_id = topic.split("/")[-2]
             with self._mutex:
                 if instance_id in self._discovered_services:
                     self._logger.info("Service %s is going away", instance_id)
-                    del self._discovered_services[instance_id]
+                    if instance_id in self._discovered_services:
+                        del self._discovered_services[instance_id]
+                    if instance_id in self._discovered_interface_infos:
+                        del self._discovered_interface_infos[instance_id]
+                    if instance_id in self._discovered_properties:
+                        del self._discovered_properties[instance_id]
                     for cb in self._removed_service_callbacks:
                         cb(instance_id)
+
+    def _process_property_value_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        """Processes a property value message for discovery purposes."""
+        self._logger.debug("Processing property value message on topic %s", topic)
+        instance_id = topic.split("/")[1]
+        property_name = topic.split("/")[3]
+        user_properties = properties.get("UserProperty", {})
+        prop_version = user_properties.get("Version", -1)
+        try:
+            prop_obj = json.loads(payload)
+            with self._mutex:
+                if instance_id not in self._discovered_properties:
+                    self._discovered_properties[instance_id] = dict()
+
+            self._check_for_fully_discovered(instance_id)
+
+        except Exception as e:
+            self._logger.warning("Failed to process property value message: %s", e)

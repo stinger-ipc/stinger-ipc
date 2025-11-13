@@ -25,12 +25,16 @@ use tokio::sync::Mutex as AsyncMutex;
 use serde_json;
 use tokio::sync::{broadcast, watch};
 
+use crate::property::FullInitialPropertyValues;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use std::future::Future;
 use std::pin::Pin;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError, MqttPublishSuccess};
+use stinger_rwlock_watch::RwLockWatch;
+#[allow(unused_imports)]
+use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
@@ -67,26 +71,19 @@ struct FullServerSubscriptionIds {
 
 #[derive(Clone)]
 struct FullProperties {
-    favorite_number: Arc<AsyncMutex<Option<FavoriteNumberProperty>>>,
-    favorite_number_tx_channel: watch::Sender<Option<i32>>,
+    pub favorite_number: Arc<RwLockWatch<i32>>,
     favorite_number_version: Arc<AtomicU32>,
-    favorite_foods: Arc<AsyncMutex<Option<FavoriteFoodsProperty>>>,
-    favorite_foods_tx_channel: watch::Sender<Option<FavoriteFoodsProperty>>,
+    pub favorite_foods: Arc<RwLockWatch<FavoriteFoodsProperty>>,
     favorite_foods_version: Arc<AtomicU32>,
-    lunch_menu: Arc<AsyncMutex<Option<LunchMenuProperty>>>,
-    lunch_menu_tx_channel: watch::Sender<Option<LunchMenuProperty>>,
+    pub lunch_menu: Arc<RwLockWatch<LunchMenuProperty>>,
     lunch_menu_version: Arc<AtomicU32>,
-    family_name: Arc<AsyncMutex<Option<FamilyNameProperty>>>,
-    family_name_tx_channel: watch::Sender<Option<String>>,
+    pub family_name: Arc<RwLockWatch<String>>,
     family_name_version: Arc<AtomicU32>,
-    last_breakfast_time: Arc<AsyncMutex<Option<LastBreakfastTimeProperty>>>,
-    last_breakfast_time_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+    pub last_breakfast_time: Arc<RwLockWatch<chrono::DateTime<chrono::Utc>>>,
     last_breakfast_time_version: Arc<AtomicU32>,
-    breakfast_length: Arc<AsyncMutex<Option<BreakfastLengthProperty>>>,
-    breakfast_length_tx_channel: watch::Sender<Option<chrono::Duration>>,
+    pub breakfast_length: Arc<RwLockWatch<chrono::Duration>>,
     breakfast_length_version: Arc<AtomicU32>,
-    last_birthdays: Arc<AsyncMutex<Option<LastBirthdaysProperty>>>,
-    last_birthdays_tx_channel: watch::Sender<Option<LastBirthdaysProperty>>,
+    pub last_birthdays: Arc<RwLockWatch<LastBirthdaysProperty>>,
     last_birthdays_version: Arc<AtomicU32>,
 }
 
@@ -124,6 +121,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         mut connection: C,
         method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
         instance_id: String,
+        initial_property_values: FullInitialPropertyValues,
     ) -> Self {
         // Create a channel for messages to get from the Mqtt5PubSub object to this FullServer object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -290,27 +288,39 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         };
 
         let property_values = FullProperties {
-            favorite_number: Arc::new(AsyncMutex::new(None)),
-            favorite_number_tx_channel: watch::channel(None).0,
-            favorite_number_version: Arc::new(AtomicU32::new(0)),
-            favorite_foods: Arc::new(AsyncMutex::new(None)),
-            favorite_foods_tx_channel: watch::channel(None).0,
-            favorite_foods_version: Arc::new(AtomicU32::new(0)),
-            lunch_menu: Arc::new(AsyncMutex::new(None)),
-            lunch_menu_tx_channel: watch::channel(None).0,
-            lunch_menu_version: Arc::new(AtomicU32::new(0)),
-            family_name: Arc::new(AsyncMutex::new(None)),
-            family_name_tx_channel: watch::channel(None).0,
-            family_name_version: Arc::new(AtomicU32::new(0)),
-            last_breakfast_time: Arc::new(AsyncMutex::new(None)),
-            last_breakfast_time_tx_channel: watch::channel(None).0,
-            last_breakfast_time_version: Arc::new(AtomicU32::new(0)),
-            breakfast_length: Arc::new(AsyncMutex::new(None)),
-            breakfast_length_tx_channel: watch::channel(None).0,
-            breakfast_length_version: Arc::new(AtomicU32::new(0)),
-            last_birthdays: Arc::new(AsyncMutex::new(None)),
-            last_birthdays_tx_channel: watch::channel(None).0,
-            last_birthdays_version: Arc::new(AtomicU32::new(0)),
+            favorite_number: Arc::new(RwLockWatch::new(initial_property_values.favorite_number)),
+            favorite_number_version: Arc::new(AtomicU32::new(
+                initial_property_values.favorite_number_version,
+            )),
+            favorite_foods: Arc::new(RwLockWatch::new(initial_property_values.favorite_foods)),
+            favorite_foods_version: Arc::new(AtomicU32::new(
+                initial_property_values.favorite_foods_version,
+            )),
+            lunch_menu: Arc::new(RwLockWatch::new(initial_property_values.lunch_menu)),
+            lunch_menu_version: Arc::new(AtomicU32::new(
+                initial_property_values.lunch_menu_version,
+            )),
+
+            family_name: Arc::new(RwLockWatch::new(initial_property_values.family_name)),
+            family_name_version: Arc::new(AtomicU32::new(
+                initial_property_values.family_name_version,
+            )),
+
+            last_breakfast_time: Arc::new(RwLockWatch::new(
+                initial_property_values.last_breakfast_time,
+            )),
+            last_breakfast_time_version: Arc::new(AtomicU32::new(
+                initial_property_values.last_breakfast_time_version,
+            )),
+
+            breakfast_length: Arc::new(RwLockWatch::new(initial_property_values.breakfast_length)),
+            breakfast_length_version: Arc::new(AtomicU32::new(
+                initial_property_values.breakfast_length_version,
+            )),
+            last_birthdays: Arc::new(RwLockWatch::new(initial_property_values.last_birthdays)),
+            last_birthdays_version: Arc::new(AtomicU32::new(
+                initial_property_values.last_birthdays_version,
+            )),
         };
 
         FullServer {
@@ -327,7 +337,8 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         }
     }
 
-    pub async fn oneshot_to_future(
+    /// Converts a oneshot channel receiver into a future.
+    async fn oneshot_to_future(
         ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
@@ -351,7 +362,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         })
     }
 
-    pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
+    async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
                 MethodReturnCode::Success(_) => Ok(()),
@@ -858,840 +869,1066 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         }
     }
 
-    async fn publish_favorite_number_value(
-        mut publisher: C,
-        topic: String,
-        data: FavoriteNumberProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        FullServer::<C>::oneshot_to_future(ch).await
-    }
-
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_favorite_number_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<FavoriteNumberProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<i32>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<i32>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: FavoriteNumberProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'favorite_number' property: {:?}", e);
-                    return FullServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'favorite_number' payload".to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.number.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'favorite_number' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<FavoriteNumberProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the number field of the struct.
+                        *write_request = new_property_structure.number.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'favorite_number' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'favorite_number' payload".to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        FullServer::publish_favorite_number_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    FavoriteNumberProperty { number: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    FavoriteNumberProperty {
+                        number: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!(
+                        "Error occurred while handling property update for 'favorite_number': {:?}",
+                        &err
+                    );
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'favorite_number'.");
+        }
     }
 
-    pub async fn watch_favorite_number(&self) -> watch::Receiver<Option<i32>> {
-        self.properties.favorite_number_tx_channel.subscribe()
+    /// Watch for changes to the `favorite_number` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_favorite_number(&self) -> watch::Receiver<i32> {
+        self.properties.favorite_number.subscribe()
+    }
+
+    pub fn get_favorite_number_handle(&self) -> WriteRequestLockWatch<i32> {
+        self.properties.favorite_number.write_request()
     }
 
     /// Sets the value of the favorite_number property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_favorite_number(&mut self, data: i32) -> SentMessageFuture {
-        let prop = self.properties.favorite_number.clone();
-
-        let new_prop_obj = FavoriteNumberProperty {
-            number: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result =
-            self.properties
-                .favorite_number_tx_channel
-                .send_if_modified(|current_data| {
-                    if current_data != &data_to_send_to_watchers {
-                        *current_data = data_to_send_to_watchers;
-                        true
-                    } else {
-                        false
-                    }
-                });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'favorite_number' value not changed, so not notifying watchers.");
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("full/{}/property/favoriteNumber/value", self.instance_id);
-            let new_version = self
-                .properties
-                .favorite_number_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            FullServer::<C>::publish_favorite_number_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_favorite_foods_value(
-        mut publisher: C,
-        topic: String,
-        data: FavoriteFoodsProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        FullServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_favorite_number(&mut self, value: i32) -> SentMessageFuture {
+        let write_request_lock = self.get_favorite_number_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_favorite_foods_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<FavoriteFoodsProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<FavoriteFoodsProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<FavoriteFoodsProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 3 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: FavoriteFoodsProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'favorite_foods' property: {:?}", e);
-                    return FullServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'favorite_foods' payload".to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'favorite_foods' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<FavoriteFoodsProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'favorite_foods' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'favorite_foods' payload".to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        FullServer::publish_favorite_foods_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!(
+                        "Error occurred while handling property update for 'favorite_foods': {:?}",
+                        &err
+                    );
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'favorite_foods'.");
+        }
     }
 
-    pub async fn watch_favorite_foods(&self) -> watch::Receiver<Option<FavoriteFoodsProperty>> {
-        self.properties.favorite_foods_tx_channel.subscribe()
+    /// Watch for changes to the `favorite_foods` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_favorite_foods(&self) -> watch::Receiver<FavoriteFoodsProperty> {
+        self.properties.favorite_foods.subscribe()
+    }
+
+    pub fn get_favorite_foods_handle(&self) -> WriteRequestLockWatch<FavoriteFoodsProperty> {
+        self.properties.favorite_foods.write_request()
     }
 
     /// Sets the values of the favorite_foods property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_favorite_foods(&mut self, data: FavoriteFoodsProperty) -> SentMessageFuture {
-        let prop = self.properties.favorite_foods.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result =
-            self.properties
-                .favorite_foods_tx_channel
-                .send_if_modified(|current_data| {
-                    if current_data != &data_to_send_to_watchers {
-                        *current_data = data_to_send_to_watchers;
-                        true
-                    } else {
-                        false
-                    }
-                });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'favorite_foods' value not changed, so not notifying watchers.");
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("full/{}/property/favoriteFoods/value", self.instance_id);
-            let new_version = self
-                .properties
-                .favorite_foods_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            FullServer::<C>::publish_favorite_foods_value(publisher2, topic2, prop_obj, new_version)
+    pub async fn set_favorite_foods(&mut self, value: FavoriteFoodsProperty) -> SentMessageFuture {
+        let write_request_lock = self.get_favorite_foods_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
                 .await
-        } else {
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_lunch_menu_value(
-        mut publisher: C,
-        topic: String,
-        data: LunchMenuProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        FullServer::<C>::oneshot_to_future(ch).await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_lunch_menu_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<LunchMenuProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<LunchMenuProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<LunchMenuProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: LunchMenuProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'lunch_menu' property: {:?}", e);
-                    return FullServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'lunch_menu' payload".to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'lunch_menu' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<LunchMenuProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'lunch_menu' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'lunch_menu' payload".to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        FullServer::publish_lunch_menu_value(publisher, topic2, new_property_structure, new_version)
-            .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!(
+                        "Error occurred while handling property update for 'lunch_menu': {:?}",
+                        &err
+                    );
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'lunch_menu'.");
+        }
     }
 
-    pub async fn watch_lunch_menu(&self) -> watch::Receiver<Option<LunchMenuProperty>> {
-        self.properties.lunch_menu_tx_channel.subscribe()
+    /// Watch for changes to the `lunch_menu` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_lunch_menu(&self) -> watch::Receiver<LunchMenuProperty> {
+        self.properties.lunch_menu.subscribe()
+    }
+
+    pub fn get_lunch_menu_handle(&self) -> WriteRequestLockWatch<LunchMenuProperty> {
+        self.properties.lunch_menu.write_request()
     }
 
     /// Sets the values of the lunch_menu property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_lunch_menu(&mut self, data: LunchMenuProperty) -> SentMessageFuture {
-        let prop = self.properties.lunch_menu.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .lunch_menu_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'lunch_menu' value not changed, so not notifying watchers.");
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("full/{}/property/lunchMenu/value", self.instance_id);
-            let new_version = self
-                .properties
-                .lunch_menu_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            FullServer::<C>::publish_lunch_menu_value(publisher2, topic2, prop_obj, new_version)
+    pub async fn set_lunch_menu(&mut self, value: LunchMenuProperty) -> SentMessageFuture {
+        let write_request_lock = self.get_lunch_menu_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
                 .await
-        } else {
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_family_name_value(
-        mut publisher: C,
-        topic: String,
-        data: FamilyNameProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        FullServer::<C>::oneshot_to_future(ch).await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_family_name_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<FamilyNameProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<String>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<String>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: FamilyNameProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'family_name' property: {:?}", e);
-                    return FullServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'family_name' payload".to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.family_name.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'family_name' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<FamilyNameProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the family_name field of the struct.
+                        *write_request = new_property_structure.family_name.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'family_name' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'family_name' payload".to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        FullServer::publish_family_name_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    FamilyNameProperty {
+                        family_name: new_value,
+                    }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    FamilyNameProperty {
+                        family_name: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!(
+                        "Error occurred while handling property update for 'family_name': {:?}",
+                        &err
+                    );
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'family_name'.");
+        }
     }
 
-    pub async fn watch_family_name(&self) -> watch::Receiver<Option<String>> {
-        self.properties.family_name_tx_channel.subscribe()
+    /// Watch for changes to the `family_name` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_family_name(&self) -> watch::Receiver<String> {
+        self.properties.family_name.subscribe()
+    }
+
+    pub fn get_family_name_handle(&self) -> WriteRequestLockWatch<String> {
+        self.properties.family_name.write_request()
     }
 
     /// Sets the value of the family_name property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_family_name(&mut self, data: String) -> SentMessageFuture {
-        let prop = self.properties.family_name.clone();
-
-        let new_prop_obj = FamilyNameProperty {
-            family_name: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .family_name_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'family_name' value not changed, so not notifying watchers.");
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("full/{}/property/familyName/value", self.instance_id);
-            let new_version = self
-                .properties
-                .family_name_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            FullServer::<C>::publish_family_name_value(publisher2, topic2, prop_obj, new_version)
+    pub async fn set_family_name(&mut self, value: String) -> SentMessageFuture {
+        let write_request_lock = self.get_family_name_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
                 .await
-        } else {
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_last_breakfast_time_value(
-        mut publisher: C,
-        topic: String,
-        data: LastBreakfastTimeProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        FullServer::<C>::oneshot_to_future(ch).await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_last_breakfast_time_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<LastBreakfastTimeProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<chrono::DateTime<chrono::Utc>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: LastBreakfastTimeProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'last_breakfast_time' property: {:?}", e);
-                    return FullServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'last_breakfast_time' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.timestamp.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'last_breakfast_time' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<LastBreakfastTimeProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the timestamp field of the struct.
+                        *write_request = new_property_structure.timestamp.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'last_breakfast_time' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'last_breakfast_time' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        FullServer::publish_last_breakfast_time_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    LastBreakfastTimeProperty {
+                        timestamp: new_value,
+                    }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    LastBreakfastTimeProperty {
+                        timestamp: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'last_breakfast_time': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'last_breakfast_time'.");
+        }
     }
 
-    pub async fn watch_last_breakfast_time(
+    /// Watch for changes to the `last_breakfast_time` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_last_breakfast_time(&self) -> watch::Receiver<chrono::DateTime<chrono::Utc>> {
+        self.properties.last_breakfast_time.subscribe()
+    }
+
+    pub fn get_last_breakfast_time_handle(
         &self,
-    ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
-        self.properties.last_breakfast_time_tx_channel.subscribe()
+    ) -> WriteRequestLockWatch<chrono::DateTime<chrono::Utc>> {
+        self.properties.last_breakfast_time.write_request()
     }
 
     /// Sets the value of the last_breakfast_time property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_last_breakfast_time(
         &mut self,
-        data: chrono::DateTime<chrono::Utc>,
+        value: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
-        let prop = self.properties.last_breakfast_time.clone();
-
-        let new_prop_obj = LastBreakfastTimeProperty {
-            timestamp: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .last_breakfast_time_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'last_breakfast_time' value not changed, so not notifying watchers.");
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("full/{}/property/lastBreakfastTime/value", self.instance_id);
-            let new_version = self
-                .properties
-                .last_breakfast_time_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            FullServer::<C>::publish_last_breakfast_time_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_breakfast_length_value(
-        mut publisher: C,
-        topic: String,
-        data: BreakfastLengthProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        FullServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_last_breakfast_time_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_breakfast_length_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<BreakfastLengthProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<chrono::Duration>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<chrono::Duration>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: BreakfastLengthProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'breakfast_length' property: {:?}", e);
-                    return FullServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'breakfast_length' payload".to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.length.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'breakfast_length' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<BreakfastLengthProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the length field of the struct.
+                        *write_request = new_property_structure.length.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'breakfast_length' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'breakfast_length' payload".to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        FullServer::publish_breakfast_length_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    BreakfastLengthProperty { length: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    BreakfastLengthProperty {
+                        length: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'breakfast_length': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'breakfast_length'.");
+        }
     }
 
-    pub async fn watch_breakfast_length(&self) -> watch::Receiver<Option<chrono::Duration>> {
-        self.properties.breakfast_length_tx_channel.subscribe()
+    /// Watch for changes to the `breakfast_length` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_breakfast_length(&self) -> watch::Receiver<chrono::Duration> {
+        self.properties.breakfast_length.subscribe()
+    }
+
+    pub fn get_breakfast_length_handle(&self) -> WriteRequestLockWatch<chrono::Duration> {
+        self.properties.breakfast_length.write_request()
     }
 
     /// Sets the value of the breakfast_length property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_breakfast_length(&mut self, data: chrono::Duration) -> SentMessageFuture {
-        let prop = self.properties.breakfast_length.clone();
-
-        let new_prop_obj = BreakfastLengthProperty {
-            length: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .breakfast_length_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'breakfast_length' value not changed, so not notifying watchers.");
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("full/{}/property/breakfastLength/value", self.instance_id);
-            let new_version = self
-                .properties
-                .breakfast_length_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            FullServer::<C>::publish_breakfast_length_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_last_birthdays_value(
-        mut publisher: C,
-        topic: String,
-        data: LastBirthdaysProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        FullServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_breakfast_length(&mut self, value: chrono::Duration) -> SentMessageFuture {
+        let write_request_lock = self.get_breakfast_length_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_last_birthdays_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<LastBirthdaysProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<LastBirthdaysProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<LastBirthdaysProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 4 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: LastBirthdaysProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'last_birthdays' property: {:?}", e);
-                    return FullServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'last_birthdays' payload".to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'last_birthdays' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<LastBirthdaysProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'last_birthdays' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'last_birthdays' payload".to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        FullServer::publish_last_birthdays_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!(
+                        "Error occurred while handling property update for 'last_birthdays': {:?}",
+                        &err
+                    );
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'last_birthdays'.");
+        }
     }
 
-    pub async fn watch_last_birthdays(&self) -> watch::Receiver<Option<LastBirthdaysProperty>> {
-        self.properties.last_birthdays_tx_channel.subscribe()
+    /// Watch for changes to the `last_birthdays` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_last_birthdays(&self) -> watch::Receiver<LastBirthdaysProperty> {
+        self.properties.last_birthdays.subscribe()
+    }
+
+    pub fn get_last_birthdays_handle(&self) -> WriteRequestLockWatch<LastBirthdaysProperty> {
+        self.properties.last_birthdays.write_request()
     }
 
     /// Sets the values of the last_birthdays property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_last_birthdays(&mut self, data: LastBirthdaysProperty) -> SentMessageFuture {
-        let prop = self.properties.last_birthdays.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result =
-            self.properties
-                .last_birthdays_tx_channel
-                .send_if_modified(|current_data| {
-                    if current_data != &data_to_send_to_watchers {
-                        *current_data = data_to_send_to_watchers;
-                        true
-                    } else {
-                        false
-                    }
-                });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'last_birthdays' value not changed, so not notifying watchers.");
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("full/{}/property/lastBirthdays/value", self.instance_id);
-            let new_version = self
-                .properties
-                .last_birthdays_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            FullServer::<C>::publish_last_birthdays_value(publisher2, topic2, prop_obj, new_version)
+    pub async fn set_last_birthdays(&mut self, value: LastBirthdaysProperty) -> SentMessageFuture {
+        let write_request_lock = self.get_last_birthdays_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
                 .await
-        } else {
-            FullServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// Starts the tasks that process messages received.
@@ -1721,7 +1958,343 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqtt_client.clone();
 
-        let properties = self.properties.clone();
+        let props = self.properties.clone();
+        {
+            // Set up property change request handling task
+            let instance_id_for_favorite_number_prop = self.instance_id.clone();
+            let mut publisher_for_favorite_number_prop = self.mqtt_client.clone();
+            let favorite_number_prop_version = props.favorite_number_version.clone();
+            if let Some(mut rx_for_favorite_number_prop) =
+                props.favorite_number.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_favorite_number_prop.recv().await
+                    {
+                        let payload_obj = FavoriteNumberProperty {
+                            number: request.clone(),
+                        };
+
+                        let version_value = favorite_number_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "full/{}/property/favoriteNumber/value",
+                            instance_id_for_favorite_number_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_favorite_number_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'favorite_number' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'favorite_number' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_favorite_foods_prop = self.instance_id.clone();
+            let mut publisher_for_favorite_foods_prop = self.mqtt_client.clone();
+            let favorite_foods_prop_version = props.favorite_foods_version.clone();
+            if let Some(mut rx_for_favorite_foods_prop) =
+                props.favorite_foods.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_favorite_foods_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = favorite_foods_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "full/{}/property/favoriteFoods/value",
+                            instance_id_for_favorite_foods_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_favorite_foods_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'favorite_foods' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'favorite_foods' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_lunch_menu_prop = self.instance_id.clone();
+            let mut publisher_for_lunch_menu_prop = self.mqtt_client.clone();
+            let lunch_menu_prop_version = props.lunch_menu_version.clone();
+            if let Some(mut rx_for_lunch_menu_prop) = props.lunch_menu.take_request_receiver() {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) = rx_for_lunch_menu_prop.recv().await {
+                        let payload_obj = request.clone();
+
+                        let version_value = lunch_menu_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "full/{}/property/lunchMenu/value",
+                            instance_id_for_lunch_menu_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_lunch_menu_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'lunch_menu' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'lunch_menu' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_family_name_prop = self.instance_id.clone();
+            let mut publisher_for_family_name_prop = self.mqtt_client.clone();
+            let family_name_prop_version = props.family_name_version.clone();
+            if let Some(mut rx_for_family_name_prop) = props.family_name.take_request_receiver() {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) = rx_for_family_name_prop.recv().await
+                    {
+                        let payload_obj = FamilyNameProperty {
+                            family_name: request.clone(),
+                        };
+
+                        let version_value = family_name_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "full/{}/property/familyName/value",
+                            instance_id_for_family_name_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_family_name_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'family_name' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'family_name' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_last_breakfast_time_prop = self.instance_id.clone();
+            let mut publisher_for_last_breakfast_time_prop = self.mqtt_client.clone();
+            let last_breakfast_time_prop_version = props.last_breakfast_time_version.clone();
+            if let Some(mut rx_for_last_breakfast_time_prop) =
+                props.last_breakfast_time.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_last_breakfast_time_prop.recv().await
+                    {
+                        let payload_obj = LastBreakfastTimeProperty {
+                            timestamp: request.clone(),
+                        };
+
+                        let version_value = last_breakfast_time_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "full/{}/property/lastBreakfastTime/value",
+                            instance_id_for_last_breakfast_time_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_last_breakfast_time_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'last_breakfast_time' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'last_breakfast_time' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_breakfast_length_prop = self.instance_id.clone();
+            let mut publisher_for_breakfast_length_prop = self.mqtt_client.clone();
+            let breakfast_length_prop_version = props.breakfast_length_version.clone();
+            if let Some(mut rx_for_breakfast_length_prop) =
+                props.breakfast_length.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_breakfast_length_prop.recv().await
+                    {
+                        let payload_obj = BreakfastLengthProperty {
+                            length: request.clone(),
+                        };
+
+                        let version_value = breakfast_length_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "full/{}/property/breakfastLength/value",
+                            instance_id_for_breakfast_length_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_breakfast_length_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'breakfast_length' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'breakfast_length' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_last_birthdays_prop = self.instance_id.clone();
+            let mut publisher_for_last_birthdays_prop = self.mqtt_client.clone();
+            let last_birthdays_prop_version = props.last_birthdays_version.clone();
+            if let Some(mut rx_for_last_birthdays_prop) =
+                props.last_birthdays.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_last_birthdays_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = last_birthdays_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "full/{}/property/lastBirthdays/value",
+                            instance_id_for_last_birthdays_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_last_birthdays_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'last_birthdays' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'last_birthdays' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
@@ -1744,200 +2317,166 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
             }
         });
 
-        let instance_id = self.instance_id.clone();
+        let properties = self.properties.clone();
         let loop_task = tokio::spawn(async move {
             loop {
                 match message_receiver.recv().await {
                     Ok(msg) => {
-                        let opt_resp_topic = msg.response_topic.clone();
-                        let opt_corr_data = msg.correlation_data.clone();
-
                         if let Some(subscription_id) = msg.subscription_id {
-                            if subscription_id == sub_ids.add_numbers_method_req {
-                                FullServer::<C>::handle_add_numbers_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.do_something_method_req {
-                                FullServer::<C>::handle_do_something_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.echo_method_req {
-                                FullServer::<C>::handle_echo_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.what_time_is_it_method_req {
-                                FullServer::<C>::handle_what_time_is_it_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.set_the_time_method_req {
-                                FullServer::<C>::handle_set_the_time_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.forward_time_method_req {
-                                FullServer::<C>::handle_forward_time_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.how_off_is_the_clock_method_req {
-                                FullServer::<C>::handle_how_off_is_the_clock_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else {
-                                let update_prop_future = {
-                                    if subscription_id == sub_ids.favorite_number_property_update {
-                                        let prop_topic = format!(
-                                            "full/{}/property/favoriteNumber/value",
-                                            instance_id
-                                        );
-                                        FullServer::<C>::update_favorite_number_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.favorite_number.clone(),
-                                            properties.favorite_number_version.clone(),
-                                            properties.favorite_number_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.favorite_foods_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "full/{}/property/favoriteFoods/value",
-                                            instance_id
-                                        );
-                                        FullServer::<C>::update_favorite_foods_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.favorite_foods.clone(),
-                                            properties.favorite_foods_version.clone(),
-                                            properties.favorite_foods_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id == sub_ids.lunch_menu_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "full/{}/property/lunchMenu/value",
-                                            instance_id
-                                        );
-                                        FullServer::<C>::update_lunch_menu_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.lunch_menu.clone(),
-                                            properties.lunch_menu_version.clone(),
-                                            properties.lunch_menu_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id == sub_ids.family_name_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "full/{}/property/familyName/value",
-                                            instance_id
-                                        );
-                                        FullServer::<C>::update_family_name_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.family_name.clone(),
-                                            properties.family_name_version.clone(),
-                                            properties.family_name_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.last_breakfast_time_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "full/{}/property/lastBreakfastTime/value",
-                                            instance_id
-                                        );
-                                        FullServer::<C>::update_last_breakfast_time_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.last_breakfast_time.clone(),
-                                            properties.last_breakfast_time_version.clone(),
-                                            properties.last_breakfast_time_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.breakfast_length_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "full/{}/property/breakfastLength/value",
-                                            instance_id
-                                        );
-                                        FullServer::<C>::update_breakfast_length_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.breakfast_length.clone(),
-                                            properties.breakfast_length_version.clone(),
-                                            properties.breakfast_length_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.last_birthdays_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "full/{}/property/lastBirthdays/value",
-                                            instance_id
-                                        );
-                                        FullServer::<C>::update_last_birthdays_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.last_birthdays.clone(),
-                                            properties.last_birthdays_version.clone(),
-                                            properties.last_birthdays_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else {
-                                        FullServer::<C>::wrap_return_code_in_future(
-                                            MethodReturnCode::NotImplemented(
-                                                "Could not find a property matching the request"
-                                                    .to_string(),
-                                            ),
-                                        )
-                                        .await
-                                    }
-                                };
-                                match update_prop_future.await {
-                                    Ok(_) => debug!("Successfully processed update  property"),
-                                    Err(e) => {
-                                        error!("Error processing update to '' property: {:?}", e);
-                                        if let Some(resp_topic) = opt_resp_topic {
-                                            FullServer::<C>::publish_error_response(
-                                                publisher.clone(),
-                                                Some(resp_topic),
-                                                opt_corr_data,
-                                                e,
-                                            )
-                                            .await;
-                                        } else {
-                                            warn!("No response topic found in message properties; cannot send error response.");
-                                        }
-                                    }
+                            match subscription_id {
+                                _i if _i == sub_ids.add_numbers_method_req => {
+                                    debug!("Received addNumbers method invocation message.");
+                                    FullServer::<C>::handle_add_numbers_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.do_something_method_req => {
+                                    debug!("Received doSomething method invocation message.");
+                                    FullServer::<C>::handle_do_something_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.echo_method_req => {
+                                    debug!("Received echo method invocation message.");
+                                    FullServer::<C>::handle_echo_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.what_time_is_it_method_req => {
+                                    debug!("Received what_time_is_it method invocation message.");
+                                    FullServer::<C>::handle_what_time_is_it_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.set_the_time_method_req => {
+                                    debug!("Received set_the_time method invocation message.");
+                                    FullServer::<C>::handle_set_the_time_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.forward_time_method_req => {
+                                    debug!("Received forward_time method invocation message.");
+                                    FullServer::<C>::handle_forward_time_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.how_off_is_the_clock_method_req => {
+                                    debug!(
+                                        "Received how_off_is_the_clock method invocation message."
+                                    );
+                                    FullServer::<C>::handle_how_off_is_the_clock_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.favorite_number_property_update => {
+                                    debug!(
+                                        "Received favorite_number property update request message."
+                                    );
+                                    FullServer::<C>::update_favorite_number_value(
+                                        publisher.clone(),
+                                        properties.favorite_number.clone(),
+                                        properties.favorite_number_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.favorite_foods_property_update => {
+                                    debug!(
+                                        "Received favorite_foods property update request message."
+                                    );
+                                    FullServer::<C>::update_favorite_foods_value(
+                                        publisher.clone(),
+                                        properties.favorite_foods.clone(),
+                                        properties.favorite_foods_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.lunch_menu_property_update => {
+                                    debug!("Received lunch_menu property update request message.");
+                                    FullServer::<C>::update_lunch_menu_value(
+                                        publisher.clone(),
+                                        properties.lunch_menu.clone(),
+                                        properties.lunch_menu_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.family_name_property_update => {
+                                    debug!("Received family_name property update request message.");
+                                    FullServer::<C>::update_family_name_value(
+                                        publisher.clone(),
+                                        properties.family_name.clone(),
+                                        properties.family_name_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.last_breakfast_time_property_update => {
+                                    debug!("Received last_breakfast_time property update request message.");
+                                    FullServer::<C>::update_last_breakfast_time_value(
+                                        publisher.clone(),
+                                        properties.last_breakfast_time.clone(),
+                                        properties.last_breakfast_time_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.breakfast_length_property_update => {
+                                    debug!("Received breakfast_length property update request message.");
+                                    FullServer::<C>::update_breakfast_length_value(
+                                        publisher.clone(),
+                                        properties.breakfast_length.clone(),
+                                        properties.breakfast_length_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.last_birthdays_property_update => {
+                                    debug!(
+                                        "Received last_birthdays property update request message."
+                                    );
+                                    FullServer::<C>::update_last_birthdays_value(
+                                        publisher.clone(),
+                                        properties.last_birthdays.clone(),
+                                        properties.last_birthdays_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _ => {
+                                    error!(
+                                        "Received MQTT message with unknown subscription id: {}",
+                                        subscription_id
+                                    );
                                 }
                             }
                         } else {
@@ -1950,6 +2489,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
                 }
             }
         });
+
         let _ = tokio::join!(loop_task);
 
         warn!("Server receive loop completed. Exiting run_loop.");

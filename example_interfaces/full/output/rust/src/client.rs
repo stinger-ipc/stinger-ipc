@@ -29,24 +29,19 @@ use tokio::task::JoinError;
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
+#[allow(unused_imports)]
 use std::sync::atomic::{AtomicU32, Ordering};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::ReadOnlyLockWatch;
 use stinger_rwlock_watch::RwLockWatch;
 #[allow(unused_imports)]
-use stinger_rwlock_watch::WriteRequestLockWatch;
+use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct FullSubscriptionIds {
-    add_numbers_method_resp: u32,
-    do_something_method_resp: u32,
-    echo_method_resp: u32,
-    what_time_is_it_method_resp: u32,
-    set_the_time_method_resp: u32,
-    forward_time_method_resp: u32,
-    how_off_is_the_clock_method_resp: u32,
+    any_method_response: u32,
 
     today_is_signal: Option<u32>,
     favorite_number_property_value: u32,
@@ -56,6 +51,8 @@ struct FullSubscriptionIds {
     last_breakfast_time_property_value: u32,
     breakfast_length_property_value: u32,
     last_birthdays_property_value: u32,
+
+    any_property_update_response: u32,
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -131,105 +128,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         let client_id = connection.get_client_id();
 
-        let topic_add_numbers_method_resp = format!("client/{}/addNumbers/response", client_id);
-        let subscription_id_add_numbers_method_resp = connection
+        let topic_any_method_response = format!("client/{}/Full/methodResponse", client_id);
+        let subscription_id_any_method_response = connection
             .subscribe(
-                topic_add_numbers_method_resp,
+                topic_any_method_response,
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
-        let subscription_id_add_numbers_method_resp =
-            subscription_id_add_numbers_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'addNumbers'",
-            subscription_id_add_numbers_method_resp
-        );
-        let topic_do_something_method_resp = format!("client/{}/doSomething/response", client_id);
-        let subscription_id_do_something_method_resp = connection
-            .subscribe(
-                topic_do_something_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_do_something_method_resp =
-            subscription_id_do_something_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'doSomething'",
-            subscription_id_do_something_method_resp
-        );
-        let topic_echo_method_resp = format!("client/{}/echo/response", client_id);
-        let subscription_id_echo_method_resp = connection
-            .subscribe(
-                topic_echo_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_echo_method_resp = subscription_id_echo_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'echo'",
-            subscription_id_echo_method_resp
-        );
-        let topic_what_time_is_it_method_resp =
-            format!("client/{}/what_time_is_it/response", client_id);
-        let subscription_id_what_time_is_it_method_resp = connection
-            .subscribe(
-                topic_what_time_is_it_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_what_time_is_it_method_resp =
-            subscription_id_what_time_is_it_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'what_time_is_it'",
-            subscription_id_what_time_is_it_method_resp
-        );
-        let topic_set_the_time_method_resp = format!("client/{}/set_the_time/response", client_id);
-        let subscription_id_set_the_time_method_resp = connection
-            .subscribe(
-                topic_set_the_time_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_set_the_time_method_resp =
-            subscription_id_set_the_time_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'set_the_time'",
-            subscription_id_set_the_time_method_resp
-        );
-        let topic_forward_time_method_resp = format!("client/{}/forward_time/response", client_id);
-        let subscription_id_forward_time_method_resp = connection
-            .subscribe(
-                topic_forward_time_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_forward_time_method_resp =
-            subscription_id_forward_time_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'forward_time'",
-            subscription_id_forward_time_method_resp
-        );
-        let topic_how_off_is_the_clock_method_resp =
-            format!("client/{}/how_off_is_the_clock/response", client_id);
-        let subscription_id_how_off_is_the_clock_method_resp = connection
-            .subscribe(
-                topic_how_off_is_the_clock_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_how_off_is_the_clock_method_resp =
-            subscription_id_how_off_is_the_clock_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'how_off_is_the_clock'",
-            subscription_id_how_off_is_the_clock_method_resp
-        );
+        let subscription_id_any_method_response =
+            subscription_id_any_method_response.unwrap_or(u32::MAX);
 
         // Subscribe to all the topics needed for signals.
         let topic_today_is_signal = format!(
@@ -377,6 +285,22 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             subscription_id_last_birthdays_property_value
         );
 
+        let topic_any_property_update_response =
+            format!("client/{}/Full/propertyUpdateResponse", client_id);
+        let subscription_id_any_property_update_response = connection
+            .subscribe(
+                topic_any_property_update_response,
+                QoS::AtLeastOnce,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_any_property_update_response =
+            subscription_id_any_property_update_response.unwrap_or(u32::MAX);
+        debug!(
+            "Subscription (id={}) to any property update response topic",
+            subscription_id_any_property_update_response
+        );
+
         let property_values = FullProperties {
             favorite_number: Arc::new(RwLockWatch::new(discovery_info.properties.favorite_number)),
             favorite_number_version: Arc::new(AtomicU32::new(
@@ -417,13 +341,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         // Create structure for subscription ids.
         let sub_ids = FullSubscriptionIds {
-            add_numbers_method_resp: subscription_id_add_numbers_method_resp,
-            do_something_method_resp: subscription_id_do_something_method_resp,
-            echo_method_resp: subscription_id_echo_method_resp,
-            what_time_is_it_method_resp: subscription_id_what_time_is_it_method_resp,
-            set_the_time_method_resp: subscription_id_set_the_time_method_resp,
-            forward_time_method_resp: subscription_id_forward_time_method_resp,
-            how_off_is_the_clock_method_resp: subscription_id_how_off_is_the_clock_method_resp,
+            any_method_response: subscription_id_any_method_response,
             today_is_signal: Some(subscription_id_today_is_signal),
             favorite_number_property_value: subscription_id_favorite_number_property_value,
             favorite_foods_property_value: subscription_id_favorite_foods_property_value,
@@ -432,6 +350,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             last_breakfast_time_property_value: subscription_id_last_breakfast_time_property_value,
             breakfast_length_property_value: subscription_id_breakfast_length_property_value,
             last_birthdays_property_value: subscription_id_last_birthdays_property_value,
+
+            any_property_update_response: subscription_id_any_property_update_response,
         };
 
         // Create structure for the tx side of broadcast channels for signals.
@@ -482,7 +402,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             third,
         };
 
-        let response_topic: String = format!("client/{}/addNumbers/response", self.client_id);
+        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
             &format!("full/{}/method/addNumbers", self.service_instance_id),
             &data,
@@ -543,7 +463,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         let data = DoSomethingRequestObject { a_string };
 
-        let response_topic: String = format!("client/{}/doSomething/response", self.client_id);
+        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
             &format!("full/{}/method/doSomething", self.service_instance_id),
             &data,
@@ -599,7 +519,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         let data = EchoRequestObject { message };
 
-        let response_topic: String = format!("client/{}/echo/response", self.client_id);
+        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
             &format!("full/{}/method/echo", self.service_instance_id),
             &data,
@@ -652,7 +572,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         let data = WhatTimeIsItRequestObject { the_first_time };
 
-        let response_topic: String = format!("client/{}/what_time_is_it/response", self.client_id);
+        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
             &format!("full/{}/method/whatTimeIsIt", self.service_instance_id),
             &data,
@@ -715,7 +635,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             the_second_time,
         };
 
-        let response_topic: String = format!("client/{}/set_the_time/response", self.client_id);
+        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
             &format!("full/{}/method/setTheTime", self.service_instance_id),
             &data,
@@ -777,7 +697,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         let data = ForwardTimeRequestObject { adjustment };
 
-        let response_topic: String = format!("client/{}/forward_time/response", self.client_id);
+        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
             &format!("full/{}/method/forwardTime", self.service_instance_id),
             &data,
@@ -836,8 +756,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         let data = HowOffIsTheClockRequestObject { actual_time };
 
-        let response_topic: String =
-            format!("client/{}/how_off_is_the_clock/response", self.client_id);
+        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
             &format!("full/{}/method/howOffIsTheClock", self.service_instance_id),
             &data,
@@ -890,33 +809,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
     /// Sets the `favorite_number` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_favorite_number(&mut self, value: i32) -> MethodReturnCode {
-        let data = FavoriteNumberProperty { number: value };
-        let topic: String = format!(
-            "full/{}/property/favoriteNumber/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_favorite_number_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .favorite_number_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_favorite_number_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
@@ -931,33 +832,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
     /// Sets the `favorite_foods` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_favorite_foods(&mut self, value: FavoriteFoodsProperty) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "full/{}/property/favoriteFoods/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_favorite_foods_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .favorite_foods_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_favorite_foods_handle(&self) -> Arc<WriteRequestLockWatch<FavoriteFoodsProperty>> {
@@ -972,31 +855,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
     /// Sets the `lunch_menu` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_lunch_menu(&mut self, value: LunchMenuProperty) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "full/{}/property/lunchMenu/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_lunch_menu_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties.lunch_menu_version.load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_lunch_menu_handle(&self) -> Arc<WriteRequestLockWatch<LunchMenuProperty>> {
@@ -1011,31 +878,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
     /// Sets the `family_name` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_family_name(&mut self, value: String) -> MethodReturnCode {
-        let data = FamilyNameProperty { family_name: value };
-        let topic: String = format!(
-            "full/{}/property/familyName/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_family_name_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties.family_name_version.load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_family_name_handle(&self) -> Arc<WriteRequestLockWatch<String>> {
@@ -1053,33 +904,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         &mut self,
         value: chrono::DateTime<chrono::Utc>,
     ) -> MethodReturnCode {
-        let data = LastBreakfastTimeProperty { timestamp: value };
-        let topic: String = format!(
-            "full/{}/property/lastBreakfastTime/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_last_breakfast_time_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .last_breakfast_time_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_last_breakfast_time_handle(
@@ -1096,33 +929,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
     /// Sets the `breakfast_length` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_breakfast_length(&mut self, value: chrono::Duration) -> MethodReturnCode {
-        let data = BreakfastLengthProperty { length: value };
-        let topic: String = format!(
-            "full/{}/property/breakfastLength/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_breakfast_length_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .breakfast_length_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_breakfast_length_handle(&self) -> Arc<WriteRequestLockWatch<chrono::Duration>> {
@@ -1137,33 +952,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
     /// Sets the `last_birthdays` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_last_birthdays(&mut self, value: LastBirthdaysProperty) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "full/{}/property/lastBirthdays/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_last_birthdays_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .last_birthdays_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_last_birthdays_handle(&self) -> Arc<WriteRequestLockWatch<LastBirthdaysProperty>> {
@@ -1205,26 +1002,91 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_favorite_number_prop = self.service_instance_id.clone();
+            let client_id_for_favorite_number_prop = self.client_id.clone();
             let mut publisher_for_favorite_number_prop = self.mqtt_client.clone();
             let favorite_number_prop_version = props.favorite_number_version.clone();
+            let resp_map_for_favorite_number_prop = self.pending_responses.clone();
             if let Some(mut rx_for_favorite_number_prop) =
                 props.favorite_number.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_favorite_number_prop.recv().await {
-                        let payload_obj = FavoriteNumberProperty { number: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_favorite_number_prop.recv().await
+                    {
+                        let payload_obj = FavoriteNumberProperty { number: value };
 
                         let topic: String = format!(
                             "full/{}/property/favoriteNumber/setValue",
                             instance_id_for_favorite_number_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            favorite_number_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_favorite_number_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Full/propertyUpdateResponse",
+                                client_id_for_favorite_number_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_favorite_number_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                favorite_number_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_favorite_number_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<FavoriteNumberProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.number));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'favorite_number'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'favorite_number' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'favorite_number': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                favorite_number_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_favorite_number_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'favorite_number': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1233,26 +1095,90 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_favorite_foods_prop = self.service_instance_id.clone();
+            let client_id_for_favorite_foods_prop = self.client_id.clone();
             let mut publisher_for_favorite_foods_prop = self.mqtt_client.clone();
             let favorite_foods_prop_version = props.favorite_foods_version.clone();
+            let resp_map_for_favorite_foods_prop = self.pending_responses.clone();
             if let Some(mut rx_for_favorite_foods_prop) =
                 props.favorite_foods.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_favorite_foods_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) = rx_for_favorite_foods_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "full/{}/property/favoriteFoods/setValue",
                             instance_id_for_favorite_foods_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            favorite_foods_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_favorite_foods_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Full/propertyUpdateResponse",
+                                client_id_for_favorite_foods_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_favorite_foods_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                favorite_foods_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_favorite_foods_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<FavoriteFoodsProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'favorite_foods'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'favorite_foods' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'favorite_foods': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                favorite_foods_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_favorite_foods_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'favorite_foods': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1261,24 +1187,85 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_lunch_menu_prop = self.service_instance_id.clone();
+            let client_id_for_lunch_menu_prop = self.client_id.clone();
             let mut publisher_for_lunch_menu_prop = self.mqtt_client.clone();
             let lunch_menu_prop_version = props.lunch_menu_version.clone();
+            let resp_map_for_lunch_menu_prop = self.pending_responses.clone();
             if let Some(mut rx_for_lunch_menu_prop) = props.lunch_menu.take_request_receiver() {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_lunch_menu_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) = rx_for_lunch_menu_prop.recv().await {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "full/{}/property/lunchMenu/setValue",
                             instance_id_for_lunch_menu_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            lunch_menu_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_lunch_menu_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Full/propertyUpdateResponse",
+                                client_id_for_lunch_menu_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_lunch_menu_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                lunch_menu_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_lunch_menu_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<LunchMenuProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'lunch_menu'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'lunch_menu' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'lunch_menu': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                lunch_menu_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_lunch_menu_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'lunch_menu': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1287,26 +1274,85 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_family_name_prop = self.service_instance_id.clone();
+            let client_id_for_family_name_prop = self.client_id.clone();
             let mut publisher_for_family_name_prop = self.mqtt_client.clone();
             let family_name_prop_version = props.family_name_version.clone();
+            let resp_map_for_family_name_prop = self.pending_responses.clone();
             if let Some(mut rx_for_family_name_prop) = props.family_name.take_request_receiver() {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_family_name_prop.recv().await {
-                        let payload_obj = FamilyNameProperty {
-                            family_name: request,
-                        };
+                    while let Some((value, opt_responder)) = rx_for_family_name_prop.recv().await {
+                        let payload_obj = FamilyNameProperty { family_name: value };
 
                         let topic: String = format!(
                             "full/{}/property/familyName/setValue",
                             instance_id_for_family_name_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            family_name_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_family_name_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Full/propertyUpdateResponse",
+                                client_id_for_family_name_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_family_name_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                family_name_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_family_name_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<FamilyNameProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.family_name));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'family_name'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'family_name' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'family_name': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                family_name_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_family_name_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'family_name': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1315,28 +1361,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_last_breakfast_time_prop = self.service_instance_id.clone();
+            let client_id_for_last_breakfast_time_prop = self.client_id.clone();
             let mut publisher_for_last_breakfast_time_prop = self.mqtt_client.clone();
             let last_breakfast_time_prop_version = props.last_breakfast_time_version.clone();
+            let resp_map_for_last_breakfast_time_prop = self.pending_responses.clone();
             if let Some(mut rx_for_last_breakfast_time_prop) =
                 props.last_breakfast_time.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_last_breakfast_time_prop.recv().await {
-                        let payload_obj = LastBreakfastTimeProperty { timestamp: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_last_breakfast_time_prop.recv().await
+                    {
+                        let payload_obj = LastBreakfastTimeProperty { timestamp: value };
 
                         let topic: String = format!(
                             "full/{}/property/lastBreakfastTime/setValue",
                             instance_id_for_last_breakfast_time_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            last_breakfast_time_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_last_breakfast_time_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Full/propertyUpdateResponse",
+                                client_id_for_last_breakfast_time_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_last_breakfast_time_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                last_breakfast_time_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_last_breakfast_time_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    LastBreakfastTimeProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.timestamp));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'last_breakfast_time'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'last_breakfast_time' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'last_breakfast_time': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                last_breakfast_time_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_last_breakfast_time_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'last_breakfast_time': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1345,28 +1455,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_breakfast_length_prop = self.service_instance_id.clone();
+            let client_id_for_breakfast_length_prop = self.client_id.clone();
             let mut publisher_for_breakfast_length_prop = self.mqtt_client.clone();
             let breakfast_length_prop_version = props.breakfast_length_version.clone();
+            let resp_map_for_breakfast_length_prop = self.pending_responses.clone();
             if let Some(mut rx_for_breakfast_length_prop) =
                 props.breakfast_length.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_breakfast_length_prop.recv().await {
-                        let payload_obj = BreakfastLengthProperty { length: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_breakfast_length_prop.recv().await
+                    {
+                        let payload_obj = BreakfastLengthProperty { length: value };
 
                         let topic: String = format!(
                             "full/{}/property/breakfastLength/setValue",
                             instance_id_for_breakfast_length_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            breakfast_length_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_breakfast_length_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Full/propertyUpdateResponse",
+                                client_id_for_breakfast_length_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_breakfast_length_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                breakfast_length_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_breakfast_length_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    BreakfastLengthProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.length));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'breakfast_length'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'breakfast_length' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'breakfast_length': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                breakfast_length_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_breakfast_length_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'breakfast_length': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1375,26 +1549,90 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_last_birthdays_prop = self.service_instance_id.clone();
+            let client_id_for_last_birthdays_prop = self.client_id.clone();
             let mut publisher_for_last_birthdays_prop = self.mqtt_client.clone();
             let last_birthdays_prop_version = props.last_birthdays_version.clone();
+            let resp_map_for_last_birthdays_prop = self.pending_responses.clone();
             if let Some(mut rx_for_last_birthdays_prop) =
                 props.last_birthdays.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_last_birthdays_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) = rx_for_last_birthdays_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "full/{}/property/lastBirthdays/setValue",
                             instance_id_for_last_birthdays_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            last_birthdays_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_last_birthdays_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Full/propertyUpdateResponse",
+                                client_id_for_last_birthdays_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_last_birthdays_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                last_birthdays_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_last_birthdays_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<LastBirthdaysProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'last_birthdays'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'last_birthdays' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'last_birthdays': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                last_birthdays_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_last_birthdays_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'last_birthdays': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1413,435 +1651,298 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             .and_then(|s| Uuid::parse_str(&s).ok())
                     }
                 });
+                let return_code = FullClient::<C>::get_return_code_from_message(&msg);
 
                 if let Some(subscription_id) = msg.subscription_id {
-                    let return_code = FullClient::<C>::get_return_code_from_message(&msg);
-                    if subscription_id == sub_ids.add_numbers_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'addNumbers' to waiting receiver");
+                    match subscription_id {
+                        _i if _i == sub_ids.any_method_response => {
+                            debug!("Received method response message");
+                            if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id.and_then(|uuid| {
+                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                    hashmap.remove(&uuid)
+                                });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!(
+                                            "Failed to send method response  to waiting receiver"
+                                        );
+                                    }
+                                }
+                            } else {
+                                warn!("Received method response without correlation ID");
+                            }
+                        }
+
+                        _i if _i == sub_ids.any_property_update_response => {
+                            debug!("Received property update response message");
+                            if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id.and_then(|uuid| {
+                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                    hashmap.remove(&uuid)
+                                });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!(
+                                            "Failed to send method response  to waiting receiver"
+                                        );
+                                    }
+                                }
+                            } else {
+                                warn!("Received method response without correlation ID");
+                            }
+                        }
+
+                        _i if sub_ids.today_is_signal == Some(_i) => {
+                            debug!("Received todayIs signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.today_is_sender.clone();
+
+                            // 5 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<TodayIsSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into TodayIsSignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
                                 }
                             }
-                        } else {
-                            warn!(
-                                "Received method response for 'addNumbers' without correlation ID"
+                        }
+
+                        _i if _i == sub_ids.favorite_number_property_value => {
+                            debug!("Received message for favorite_number property value");
+                            // JSON deserialize into FavoriteNumberProperty struct
+                            match serde_json::from_slice::<FavoriteNumberProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.favorite_number.write().await;
+
+                                    *guard = pl.number.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.favorite_number_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.favorite_foods_property_value => {
+                            debug!("Received message for favorite_foods property value");
+                            // JSON deserialize into FavoriteFoodsProperty struct
+                            match serde_json::from_slice::<FavoriteFoodsProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.favorite_foods.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.favorite_foods_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.lunch_menu_property_value => {
+                            debug!("Received message for lunch_menu property value");
+                            // JSON deserialize into LunchMenuProperty struct
+                            match serde_json::from_slice::<LunchMenuProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.lunch_menu.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.lunch_menu_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.family_name_property_value => {
+                            debug!("Received message for family_name property value");
+                            // JSON deserialize into FamilyNameProperty struct
+                            match serde_json::from_slice::<FamilyNameProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.family_name.write().await;
+
+                                    *guard = pl.family_name.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.family_name_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.last_breakfast_time_property_value => {
+                            debug!("Received message for last_breakfast_time property value");
+                            // JSON deserialize into LastBreakfastTimeProperty struct
+                            match serde_json::from_slice::<LastBreakfastTimeProperty>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.last_breakfast_time.write().await;
+
+                                    *guard = pl.timestamp.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.last_breakfast_time_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.breakfast_length_property_value => {
+                            debug!("Received message for breakfast_length property value");
+                            // JSON deserialize into BreakfastLengthProperty struct
+                            match serde_json::from_slice::<BreakfastLengthProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.breakfast_length.write().await;
+
+                                    *guard = pl.length.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.breakfast_length_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.last_birthdays_property_value => {
+                            debug!("Received message for last_birthdays property value");
+                            // JSON deserialize into LastBirthdaysProperty struct
+                            match serde_json::from_slice::<LastBirthdaysProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.last_birthdays.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.last_birthdays_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        unhandled_subscription_id => {
+                            error!(
+                                "Received message with unmatched subscription id: {}",
+                                unhandled_subscription_id
                             );
                         }
                     }
-                    // end addNumbers method response handling
-                    else if subscription_id == sub_ids.do_something_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'doSomething' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!(
-                                "Received method response for 'doSomething' without correlation ID"
-                            );
-                        }
-                    }
-                    // end doSomething method response handling
-                    else if subscription_id == sub_ids.echo_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'echo' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'echo' without correlation ID");
-                        }
-                    }
-                    // end echo method response handling
-                    else if subscription_id == sub_ids.what_time_is_it_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'what_time_is_it' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'what_time_is_it' without correlation ID");
-                        }
-                    }
-                    // end what_time_is_it method response handling
-                    else if subscription_id == sub_ids.set_the_time_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'set_the_time' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'set_the_time' without correlation ID");
-                        }
-                    }
-                    // end set_the_time method response handling
-                    else if subscription_id == sub_ids.forward_time_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'forward_time' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'forward_time' without correlation ID");
-                        }
-                    }
-                    // end forward_time method response handling
-                    else if subscription_id == sub_ids.how_off_is_the_clock_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'how_off_is_the_clock' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'how_off_is_the_clock' without correlation ID");
-                        }
-                    } // end how_off_is_the_clock method response handling
-                    if Some(subscription_id) == sub_ids.today_is_signal {
-                        let chan = sig_chans.today_is_sender.clone();
-
-                        match serde_json::from_slice::<TodayIsSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into TodayIsSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    } // end todayIs signal handling
-
-                    if subscription_id == sub_ids.favorite_number_property_value {
-                        match serde_json::from_slice::<FavoriteNumberProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.favorite_number.write().await;
-
-                                *guard = pl.number.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.favorite_number_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end favorite_number property value update
-                    else if subscription_id == sub_ids.favorite_foods_property_value {
-                        match serde_json::from_slice::<FavoriteFoodsProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.favorite_foods.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.favorite_foods_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end favorite_foods property value update
-                    else if subscription_id == sub_ids.lunch_menu_property_value {
-                        match serde_json::from_slice::<LunchMenuProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.lunch_menu.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.lunch_menu_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end lunch_menu property value update
-                    else if subscription_id == sub_ids.family_name_property_value {
-                        match serde_json::from_slice::<FamilyNameProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.family_name.write().await;
-
-                                *guard = pl.family_name.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.family_name_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end family_name property value update
-                    else if subscription_id == sub_ids.last_breakfast_time_property_value {
-                        match serde_json::from_slice::<LastBreakfastTimeProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.last_breakfast_time.write().await;
-
-                                *guard = pl.timestamp.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.last_breakfast_time_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end last_breakfast_time property value update
-                    else if subscription_id == sub_ids.breakfast_length_property_value {
-                        match serde_json::from_slice::<BreakfastLengthProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.breakfast_length.write().await;
-
-                                *guard = pl.length.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.breakfast_length_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end breakfast_length property value update
-                    else if subscription_id == sub_ids.last_birthdays_property_value {
-                        match serde_json::from_slice::<LastBirthdaysProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.last_birthdays.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.last_birthdays_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    } // end last_birthdays property value update
+                } else {
+                    error!("Received message without a subscription id");
                 }
             }
         });

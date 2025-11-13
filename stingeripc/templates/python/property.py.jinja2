@@ -1,0 +1,7 @@
+{%if stinger.properties | length > 0 %}
+@dataclass
+class {{stinger.name|UpperCamelCase}}InitialPropertyValues:
+    {%for prop_name, prop in stinger.properties.items()%}
+    {{prop_name | snake_case}}: {{prop.python_annotation}}
+    {%endfor%}
+{%endif%}

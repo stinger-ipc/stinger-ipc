@@ -29,20 +29,19 @@ use tokio::task::JoinError;
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
+#[allow(unused_imports)]
 use std::sync::atomic::{AtomicU32, Ordering};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::ReadOnlyLockWatch;
 use stinger_rwlock_watch::RwLockWatch;
 #[allow(unused_imports)]
-use stinger_rwlock_watch::WriteRequestLockWatch;
+use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct WeatherSubscriptionIds {
-    refresh_daily_forecast_method_resp: u32,
-    refresh_hourly_forecast_method_resp: u32,
-    refresh_current_conditions_method_resp: u32,
+    any_method_response: u32,
 
     current_time_signal: Option<u32>,
     location_property_value: u32,
@@ -53,6 +52,8 @@ struct WeatherSubscriptionIds {
     current_condition_refresh_interval_property_value: u32,
     hourly_forecast_refresh_interval_property_value: u32,
     daily_forecast_refresh_interval_property_value: u32,
+
+    any_property_update_response: u32,
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -131,51 +132,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         let client_id = connection.get_client_id();
 
-        let topic_refresh_daily_forecast_method_resp =
-            format!("client/{}/refresh_daily_forecast/response", client_id);
-        let subscription_id_refresh_daily_forecast_method_resp = connection
+        let topic_any_method_response = format!("client/{}/weather/methodResponse", client_id);
+        let subscription_id_any_method_response = connection
             .subscribe(
-                topic_refresh_daily_forecast_method_resp,
+                topic_any_method_response,
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
-        let subscription_id_refresh_daily_forecast_method_resp =
-            subscription_id_refresh_daily_forecast_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'refresh_daily_forecast'",
-            subscription_id_refresh_daily_forecast_method_resp
-        );
-        let topic_refresh_hourly_forecast_method_resp =
-            format!("client/{}/refresh_hourly_forecast/response", client_id);
-        let subscription_id_refresh_hourly_forecast_method_resp = connection
-            .subscribe(
-                topic_refresh_hourly_forecast_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_refresh_hourly_forecast_method_resp =
-            subscription_id_refresh_hourly_forecast_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'refresh_hourly_forecast'",
-            subscription_id_refresh_hourly_forecast_method_resp
-        );
-        let topic_refresh_current_conditions_method_resp =
-            format!("client/{}/refresh_current_conditions/response", client_id);
-        let subscription_id_refresh_current_conditions_method_resp = connection
-            .subscribe(
-                topic_refresh_current_conditions_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_refresh_current_conditions_method_resp =
-            subscription_id_refresh_current_conditions_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'refresh_current_conditions'",
-            subscription_id_refresh_current_conditions_method_resp
-        );
+        let subscription_id_any_method_response =
+            subscription_id_any_method_response.unwrap_or(u32::MAX);
 
         // Subscribe to all the topics needed for signals.
         let topic_current_time_signal = format!(
@@ -342,6 +308,22 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             subscription_id_daily_forecast_refresh_interval_property_value
         );
 
+        let topic_any_property_update_response =
+            format!("client/{}/weather/propertyUpdateResponse", client_id);
+        let subscription_id_any_property_update_response = connection
+            .subscribe(
+                topic_any_property_update_response,
+                QoS::AtLeastOnce,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_any_property_update_response =
+            subscription_id_any_property_update_response.unwrap_or(u32::MAX);
+        debug!(
+            "Subscription (id={}) to any property update response topic",
+            subscription_id_any_property_update_response
+        );
+
         let property_values = WeatherProperties {
             location: Arc::new(RwLockWatch::new(discovery_info.properties.location)),
             location_version: Arc::new(AtomicU32::new(discovery_info.properties.location_version)),
@@ -397,11 +379,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         // Create structure for subscription ids.
         let sub_ids = WeatherSubscriptionIds {
-            refresh_daily_forecast_method_resp: subscription_id_refresh_daily_forecast_method_resp,
-            refresh_hourly_forecast_method_resp:
-                subscription_id_refresh_hourly_forecast_method_resp,
-            refresh_current_conditions_method_resp:
-                subscription_id_refresh_current_conditions_method_resp,
+            any_method_response: subscription_id_any_method_response,
             current_time_signal: Some(subscription_id_current_time_signal),
             location_property_value: subscription_id_location_property_value,
             current_temperature_property_value: subscription_id_current_temperature_property_value,
@@ -414,6 +392,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                 subscription_id_hourly_forecast_refresh_interval_property_value,
             daily_forecast_refresh_interval_property_value:
                 subscription_id_daily_forecast_refresh_interval_property_value,
+
+            any_property_update_response: subscription_id_any_property_update_response,
         };
 
         // Create structure for the tx side of broadcast channels for signals.
@@ -455,8 +435,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         let data = RefreshDailyForecastRequestObject {};
 
-        let response_topic: String =
-            format!("client/{}/refresh_daily_forecast/response", self.client_id);
+        let response_topic: String = format!("client/{}/weather/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "weather/{}/method/refreshDailyForecast",
@@ -509,8 +488,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         let data = RefreshHourlyForecastRequestObject {};
 
-        let response_topic: String =
-            format!("client/{}/refresh_hourly_forecast/response", self.client_id);
+        let response_topic: String = format!("client/{}/weather/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "weather/{}/method/refreshHourlyForecast",
@@ -563,10 +541,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
         let data = RefreshCurrentConditionsRequestObject {};
 
-        let response_topic: String = format!(
-            "client/{}/refresh_current_conditions/response",
-            self.client_id
-        );
+        let response_topic: String = format!("client/{}/weather/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "weather/{}/method/refreshCurrentConditions",
@@ -616,31 +591,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
     /// Sets the `location` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_location(&mut self, value: LocationProperty) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "weather/{}/property/location/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_location_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties.location_version.load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_location_handle(&self) -> Arc<WriteRequestLockWatch<LocationProperty>> {
@@ -697,33 +656,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
     /// Sets the `current_condition_refresh_interval` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_current_condition_refresh_interval(&mut self, value: i32) -> MethodReturnCode {
-        let data = CurrentConditionRefreshIntervalProperty { seconds: value };
-        let topic: String = format!(
-            "weather/{}/property/currentConditionRefreshInterval/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_current_condition_refresh_interval_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .current_condition_refresh_interval_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_current_condition_refresh_interval_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
@@ -741,33 +682,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
     /// Sets the `hourly_forecast_refresh_interval` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_hourly_forecast_refresh_interval(&mut self, value: i32) -> MethodReturnCode {
-        let data = HourlyForecastRefreshIntervalProperty { seconds: value };
-        let topic: String = format!(
-            "weather/{}/property/hourlyForecastRefreshInterval/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_hourly_forecast_refresh_interval_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .hourly_forecast_refresh_interval_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_hourly_forecast_refresh_interval_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
@@ -785,33 +708,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
 
     /// Sets the `daily_forecast_refresh_interval` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_daily_forecast_refresh_interval(&mut self, value: i32) -> MethodReturnCode {
-        let data = DailyForecastRefreshIntervalProperty { seconds: value };
-        let topic: String = format!(
-            "weather/{}/property/dailyForecastRefreshInterval/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_daily_forecast_refresh_interval_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .daily_forecast_refresh_interval_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_daily_forecast_refresh_interval_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
@@ -856,24 +761,85 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_location_prop = self.service_instance_id.clone();
+            let client_id_for_location_prop = self.client_id.clone();
             let mut publisher_for_location_prop = self.mqtt_client.clone();
             let location_prop_version = props.location_version.clone();
+            let resp_map_for_location_prop = self.pending_responses.clone();
             if let Some(mut rx_for_location_prop) = props.location.take_request_receiver() {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_location_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) = rx_for_location_prop.recv().await {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "weather/{}/property/location/setValue",
                             instance_id_for_location_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            location_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_location_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/weather/propertyUpdateResponse",
+                                client_id_for_location_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_location_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                location_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_location_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<LocationProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'location'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'location' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'location': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                location_prop_version.load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_location_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'location': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -882,30 +848,95 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_current_temperature_prop = self.service_instance_id.clone();
+            let client_id_for_current_temperature_prop = self.client_id.clone();
             let mut publisher_for_current_temperature_prop = self.mqtt_client.clone();
             let current_temperature_prop_version = props.current_temperature_version.clone();
+            let resp_map_for_current_temperature_prop = self.pending_responses.clone();
             if let Some(mut rx_for_current_temperature_prop) =
                 props.current_temperature.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_current_temperature_prop.recv().await {
+                    while let Some((value, opt_responder)) =
+                        rx_for_current_temperature_prop.recv().await
+                    {
                         let payload_obj = CurrentTemperatureProperty {
-                            temperature_f: request,
+                            temperature_f: value,
                         };
 
                         let topic: String = format!(
                             "weather/{}/property/currentTemperature/setValue",
                             instance_id_for_current_temperature_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            current_temperature_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_current_temperature_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/weather/propertyUpdateResponse",
+                                client_id_for_current_temperature_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_current_temperature_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                current_temperature_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_current_temperature_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    CurrentTemperatureProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ =
+                                                    responder.send(Some(resp_obj.temperature_f));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'current_temperature'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'current_temperature' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'current_temperature': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                current_temperature_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_current_temperature_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'current_temperature': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -914,28 +945,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_current_condition_prop = self.service_instance_id.clone();
+            let client_id_for_current_condition_prop = self.client_id.clone();
             let mut publisher_for_current_condition_prop = self.mqtt_client.clone();
             let current_condition_prop_version = props.current_condition_version.clone();
+            let resp_map_for_current_condition_prop = self.pending_responses.clone();
             if let Some(mut rx_for_current_condition_prop) =
                 props.current_condition.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_current_condition_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_current_condition_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "weather/{}/property/currentCondition/setValue",
                             instance_id_for_current_condition_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            current_condition_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_current_condition_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/weather/propertyUpdateResponse",
+                                client_id_for_current_condition_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_current_condition_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                current_condition_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_current_condition_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    CurrentConditionProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'current_condition'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'current_condition' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'current_condition': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                current_condition_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_current_condition_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'current_condition': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -944,26 +1039,90 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_daily_forecast_prop = self.service_instance_id.clone();
+            let client_id_for_daily_forecast_prop = self.client_id.clone();
             let mut publisher_for_daily_forecast_prop = self.mqtt_client.clone();
             let daily_forecast_prop_version = props.daily_forecast_version.clone();
+            let resp_map_for_daily_forecast_prop = self.pending_responses.clone();
             if let Some(mut rx_for_daily_forecast_prop) =
                 props.daily_forecast.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_daily_forecast_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) = rx_for_daily_forecast_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "weather/{}/property/dailyForecast/setValue",
                             instance_id_for_daily_forecast_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            daily_forecast_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_daily_forecast_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/weather/propertyUpdateResponse",
+                                client_id_for_daily_forecast_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_daily_forecast_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                daily_forecast_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_daily_forecast_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<DailyForecastProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'daily_forecast'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'daily_forecast' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'daily_forecast': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                daily_forecast_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_daily_forecast_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'daily_forecast': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -972,26 +1131,91 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_hourly_forecast_prop = self.service_instance_id.clone();
+            let client_id_for_hourly_forecast_prop = self.client_id.clone();
             let mut publisher_for_hourly_forecast_prop = self.mqtt_client.clone();
             let hourly_forecast_prop_version = props.hourly_forecast_version.clone();
+            let resp_map_for_hourly_forecast_prop = self.pending_responses.clone();
             if let Some(mut rx_for_hourly_forecast_prop) =
                 props.hourly_forecast.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_hourly_forecast_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_hourly_forecast_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "weather/{}/property/hourlyForecast/setValue",
                             instance_id_for_hourly_forecast_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            hourly_forecast_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_hourly_forecast_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/weather/propertyUpdateResponse",
+                                client_id_for_hourly_forecast_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_hourly_forecast_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                hourly_forecast_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_hourly_forecast_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<HourlyForecastProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'hourly_forecast'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'hourly_forecast' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'hourly_forecast': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                hourly_forecast_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_hourly_forecast_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'hourly_forecast': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1001,35 +1225,101 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             // Set up property change request handling task
             let instance_id_for_current_condition_refresh_interval_prop =
                 self.service_instance_id.clone();
+            let client_id_for_current_condition_refresh_interval_prop = self.client_id.clone();
             let mut publisher_for_current_condition_refresh_interval_prop =
                 self.mqtt_client.clone();
             let current_condition_refresh_interval_prop_version =
                 props.current_condition_refresh_interval_version.clone();
+            let resp_map_for_current_condition_refresh_interval_prop =
+                self.pending_responses.clone();
             if let Some(mut rx_for_current_condition_refresh_interval_prop) = props
                 .current_condition_refresh_interval
                 .take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) =
+                    while let Some((value, opt_responder)) =
                         rx_for_current_condition_refresh_interval_prop.recv().await
                     {
                         let payload_obj =
-                            CurrentConditionRefreshIntervalProperty { seconds: request };
+                            CurrentConditionRefreshIntervalProperty { seconds: value };
 
                         let topic: String = format!(
                             "weather/{}/property/currentConditionRefreshInterval/setValue",
                             instance_id_for_current_condition_refresh_interval_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            current_condition_refresh_interval_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_current_condition_refresh_interval_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/weather/propertyUpdateResponse",
+                                client_id_for_current_condition_refresh_interval_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap =
+                                    resp_map_for_current_condition_refresh_interval_prop
+                                        .lock()
+                                        .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                current_condition_refresh_interval_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_current_condition_refresh_interval_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    CurrentConditionRefreshIntervalProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.seconds));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'current_condition_refresh_interval'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'current_condition_refresh_interval' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'current_condition_refresh_interval': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                current_condition_refresh_interval_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_current_condition_refresh_interval_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'current_condition_refresh_interval': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1039,34 +1329,98 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             // Set up property change request handling task
             let instance_id_for_hourly_forecast_refresh_interval_prop =
                 self.service_instance_id.clone();
+            let client_id_for_hourly_forecast_refresh_interval_prop = self.client_id.clone();
             let mut publisher_for_hourly_forecast_refresh_interval_prop = self.mqtt_client.clone();
             let hourly_forecast_refresh_interval_prop_version =
                 props.hourly_forecast_refresh_interval_version.clone();
+            let resp_map_for_hourly_forecast_refresh_interval_prop = self.pending_responses.clone();
             if let Some(mut rx_for_hourly_forecast_refresh_interval_prop) = props
                 .hourly_forecast_refresh_interval
                 .take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) =
+                    while let Some((value, opt_responder)) =
                         rx_for_hourly_forecast_refresh_interval_prop.recv().await
                     {
-                        let payload_obj =
-                            HourlyForecastRefreshIntervalProperty { seconds: request };
+                        let payload_obj = HourlyForecastRefreshIntervalProperty { seconds: value };
 
                         let topic: String = format!(
                             "weather/{}/property/hourlyForecastRefreshInterval/setValue",
                             instance_id_for_hourly_forecast_refresh_interval_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            hourly_forecast_refresh_interval_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_hourly_forecast_refresh_interval_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/weather/propertyUpdateResponse",
+                                client_id_for_hourly_forecast_refresh_interval_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap =
+                                    resp_map_for_hourly_forecast_refresh_interval_prop
+                                        .lock()
+                                        .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                hourly_forecast_refresh_interval_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_hourly_forecast_refresh_interval_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    HourlyForecastRefreshIntervalProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.seconds));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'hourly_forecast_refresh_interval'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'hourly_forecast_refresh_interval' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'hourly_forecast_refresh_interval': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                hourly_forecast_refresh_interval_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_hourly_forecast_refresh_interval_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'hourly_forecast_refresh_interval': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1076,33 +1430,97 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
             // Set up property change request handling task
             let instance_id_for_daily_forecast_refresh_interval_prop =
                 self.service_instance_id.clone();
+            let client_id_for_daily_forecast_refresh_interval_prop = self.client_id.clone();
             let mut publisher_for_daily_forecast_refresh_interval_prop = self.mqtt_client.clone();
             let daily_forecast_refresh_interval_prop_version =
                 props.daily_forecast_refresh_interval_version.clone();
+            let resp_map_for_daily_forecast_refresh_interval_prop = self.pending_responses.clone();
             if let Some(mut rx_for_daily_forecast_refresh_interval_prop) = props
                 .daily_forecast_refresh_interval
                 .take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) =
+                    while let Some((value, opt_responder)) =
                         rx_for_daily_forecast_refresh_interval_prop.recv().await
                     {
-                        let payload_obj = DailyForecastRefreshIntervalProperty { seconds: request };
+                        let payload_obj = DailyForecastRefreshIntervalProperty { seconds: value };
 
                         let topic: String = format!(
                             "weather/{}/property/dailyForecastRefreshInterval/setValue",
                             instance_id_for_daily_forecast_refresh_interval_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            daily_forecast_refresh_interval_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_daily_forecast_refresh_interval_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/weather/propertyUpdateResponse",
+                                client_id_for_daily_forecast_refresh_interval_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_daily_forecast_refresh_interval_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                daily_forecast_refresh_interval_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_daily_forecast_refresh_interval_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    DailyForecastRefreshIntervalProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.seconds));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'daily_forecast_refresh_interval'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'daily_forecast_refresh_interval' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'daily_forecast_refresh_interval': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                daily_forecast_refresh_interval_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_daily_forecast_refresh_interval_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'daily_forecast_refresh_interval': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -1121,418 +1539,334 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                             .and_then(|s| Uuid::parse_str(&s).ok())
                     }
                 });
+                let return_code = WeatherClient::<C>::get_return_code_from_message(&msg);
 
                 if let Some(subscription_id) = msg.subscription_id {
-                    let return_code = WeatherClient::<C>::get_return_code_from_message(&msg);
-                    if subscription_id == sub_ids.refresh_daily_forecast_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'refresh_daily_forecast' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'refresh_daily_forecast' without correlation ID");
-                        }
-                    }
-                    // end refresh_daily_forecast method response handling
-                    else if subscription_id == sub_ids.refresh_hourly_forecast_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'refresh_hourly_forecast' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'refresh_hourly_forecast' without correlation ID");
-                        }
-                    }
-                    // end refresh_hourly_forecast method response handling
-                    else if subscription_id == sub_ids.refresh_current_conditions_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'refresh_current_conditions' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'refresh_current_conditions' without correlation ID");
-                        }
-                    } // end refresh_current_conditions method response handling
-                    if Some(subscription_id) == sub_ids.current_time_signal {
-                        let chan = sig_chans.current_time_sender.clone();
-
-                        match serde_json::from_slice::<CurrentTimeSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.current_time);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into CurrentTimeSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    } // end current_time signal handling
-
-                    if subscription_id == sub_ids.location_property_value {
-                        match serde_json::from_slice::<LocationProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.location.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.location_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
+                    match subscription_id {
+                        _i if _i == sub_ids.any_method_response => {
+                            debug!("Received method response message");
+                            if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id.and_then(|uuid| {
+                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                    hashmap.remove(&uuid)
+                                });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!(
+                                            "Failed to send method response  to waiting receiver"
                                         );
                                     }
                                 }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
+                            } else {
+                                warn!("Received method response without correlation ID");
                             }
                         }
-                    }
-                    // end location property value update
-                    else if subscription_id == sub_ids.current_temperature_property_value {
-                        match serde_json::from_slice::<CurrentTemperatureProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.current_temperature.write().await;
 
-                                *guard = pl.temperature_f.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.current_temperature_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
+                        _i if _i == sub_ids.any_property_update_response => {
+                            debug!("Received property update response message");
+                            if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id.and_then(|uuid| {
+                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                    hashmap.remove(&uuid)
+                                });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!(
+                                            "Failed to send method response  to waiting receiver"
                                         );
                                     }
                                 }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
+                            } else {
+                                warn!("Received method response without correlation ID");
+                            }
+                        }
+
+                        _i if sub_ids.current_time_signal == Some(_i) => {
+                            debug!("Received current_time signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.current_time_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<CurrentTimeSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.current_time);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into CurrentTimeSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.location_property_value => {
+                            debug!("Received message for location property value");
+                            // JSON deserialize into LocationProperty struct
+                            match serde_json::from_slice::<LocationProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.location.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.location_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
                                         }
                                     }
                                 }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
                             }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
+                        }
+
+                        _i if _i == sub_ids.current_temperature_property_value => {
+                            debug!("Received message for current_temperature property value");
+                            // JSON deserialize into CurrentTemperatureProperty struct
+                            match serde_json::from_slice::<CurrentTemperatureProperty>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.current_temperature.write().await;
+
+                                    *guard = pl.temperature_f.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.current_temperature_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
                             }
+                        }
+
+                        _i if _i == sub_ids.current_condition_property_value => {
+                            debug!("Received message for current_condition property value");
+                            // JSON deserialize into CurrentConditionProperty struct
+                            match serde_json::from_slice::<CurrentConditionProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.current_condition.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.current_condition_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.daily_forecast_property_value => {
+                            debug!("Received message for daily_forecast property value");
+                            // JSON deserialize into DailyForecastProperty struct
+                            match serde_json::from_slice::<DailyForecastProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.daily_forecast.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.daily_forecast_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.hourly_forecast_property_value => {
+                            debug!("Received message for hourly_forecast property value");
+                            // JSON deserialize into HourlyForecastProperty struct
+                            match serde_json::from_slice::<HourlyForecastProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.hourly_forecast.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.hourly_forecast_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.current_condition_refresh_interval_property_value => {
+                            debug!("Received message for current_condition_refresh_interval property value");
+                            // JSON deserialize into CurrentConditionRefreshIntervalProperty struct
+                            match serde_json::from_slice::<CurrentConditionRefreshIntervalProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard =
+                                        props.current_condition_refresh_interval.write().await;
+
+                                    *guard = pl.seconds.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.current_condition_refresh_interval_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.hourly_forecast_refresh_interval_property_value => {
+                            debug!("Received message for hourly_forecast_refresh_interval property value");
+                            // JSON deserialize into HourlyForecastRefreshIntervalProperty struct
+                            match serde_json::from_slice::<HourlyForecastRefreshIntervalProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard =
+                                        props.hourly_forecast_refresh_interval.write().await;
+
+                                    *guard = pl.seconds.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.hourly_forecast_refresh_interval_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.daily_forecast_refresh_interval_property_value => {
+                            debug!("Received message for daily_forecast_refresh_interval property value");
+                            // JSON deserialize into DailyForecastRefreshIntervalProperty struct
+                            match serde_json::from_slice::<DailyForecastRefreshIntervalProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard =
+                                        props.daily_forecast_refresh_interval.write().await;
+
+                                    *guard = pl.seconds.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.daily_forecast_refresh_interval_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        unhandled_subscription_id => {
+                            error!(
+                                "Received message with unmatched subscription id: {}",
+                                unhandled_subscription_id
+                            );
                         }
                     }
-                    // end current_temperature property value update
-                    else if subscription_id == sub_ids.current_condition_property_value {
-                        match serde_json::from_slice::<CurrentConditionProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.current_condition.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.current_condition_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end current_condition property value update
-                    else if subscription_id == sub_ids.daily_forecast_property_value {
-                        match serde_json::from_slice::<DailyForecastProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.daily_forecast.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.daily_forecast_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end daily_forecast property value update
-                    else if subscription_id == sub_ids.hourly_forecast_property_value {
-                        match serde_json::from_slice::<HourlyForecastProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.hourly_forecast.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.hourly_forecast_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end hourly_forecast property value update
-                    else if subscription_id
-                        == sub_ids.current_condition_refresh_interval_property_value
-                    {
-                        match serde_json::from_slice::<CurrentConditionRefreshIntervalProperty>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let mut guard =
-                                    props.current_condition_refresh_interval.write().await;
-
-                                *guard = pl.seconds.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.current_condition_refresh_interval_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end current_condition_refresh_interval property value update
-                    else if subscription_id
-                        == sub_ids.hourly_forecast_refresh_interval_property_value
-                    {
-                        match serde_json::from_slice::<HourlyForecastRefreshIntervalProperty>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let mut guard =
-                                    props.hourly_forecast_refresh_interval.write().await;
-
-                                *guard = pl.seconds.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.hourly_forecast_refresh_interval_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end hourly_forecast_refresh_interval property value update
-                    else if subscription_id
-                        == sub_ids.daily_forecast_refresh_interval_property_value
-                    {
-                        match serde_json::from_slice::<DailyForecastRefreshIntervalProperty>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let mut guard = props.daily_forecast_refresh_interval.write().await;
-
-                                *guard = pl.seconds.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.daily_forecast_refresh_interval_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    } // end daily_forecast_refresh_interval property value update
+                } else {
+                    error!("Received message without a subscription id");
                 }
             }
         });

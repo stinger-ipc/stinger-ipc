@@ -280,12 +280,11 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
     /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_school_value(
-        publisher: C,
-        instance_id: String,
+        mut publisher: C,
         property_pointer: Arc<RwLockWatch<String>>, // Arc to the property value
         version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
         // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
 
@@ -344,7 +343,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
                 match serde_json::from_str::<SchoolProperty>(&payload_str) {
                     Ok(new_property_structure) => {
                         let request_lock = property_pointer.write_request();
-                        let write_request = request_lock.write().await;
+                        let mut write_request = request_lock.write().await;
 
                         // Single value property.  Use the name field of the struct.
                         *write_request = new_property_structure.name.clone();
@@ -353,7 +352,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
                         write_request
                             .commit(std::time::Duration::from_secs(2))
                             .await;
-                        Some(*write_request)
+                        Some((*write_request).clone())
                     }
                     Err(e) => {
                         error!("Failed to parse JSON received over MQTT to update 'school' property: {:?}", e);
@@ -375,7 +374,9 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
                 } else {
                     let prop_lock = property_pointer.read().await;
 
-                    SchoolProperty { name: *prop_lock }
+                    SchoolProperty {
+                        name: (*prop_lock).clone(),
+                    }
                 }
             };
             match message::property_update_response(
@@ -405,20 +406,26 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         self.properties.school.subscribe()
     }
 
-    pub fn get_school_handler(&self) -> Arc<WriteRequestLockWatch<String>> {
+    pub fn get_school_handle(&self) -> WriteRequestLockWatch<String> {
         self.properties.school.write_request()
     }
 
     /// Sets the value of the school property.
     pub async fn set_school(&mut self, value: String) -> SentMessageFuture {
-        let write_request_lock = self.get_school_handler();
+        let write_request_lock = self.get_school_handle();
         Box::pin(async move {
             let mut write_request = write_request_lock.write().await;
             *write_request = value;
-            write_request
+            match write_request
                 .commit(std::time::Duration::from_secs(2))
-                .await;
-        });
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// Starts the tasks that process messages received.
@@ -451,13 +458,15 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         let props = self.properties.clone();
         {
             // Set up property change request handling task
-            let instance_id_for_school_prop = self.service_instance_id.clone();
+            let instance_id_for_school_prop = self.instance_id.clone();
             let mut publisher_for_school_prop = self.mqtt_client.clone();
             let school_prop_version = props.school_version.clone();
             if let Some(mut rx_for_school_prop) = props.school.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_school_prop.recv().await {
-                        let payload_obj = SchoolProperty { name: request };
+                        let payload_obj = SchoolProperty {
+                            name: request.clone(),
+                        };
 
                         let version_value =
                             school_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -471,7 +480,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
                                 if let Some(responder) = opt_responder {
                                     match publish_result {
                                         Ok(_) => {
-                                            let _ = responder.send(request);
+                                            let _ = responder.send(Some(request));
                                         }
                                         Err(_) => {
                                             error!("Error publishing updated value for 'school' property");
@@ -513,60 +522,38 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
             }
         });
 
-        let instance_id = self.instance_id.clone();
         let properties = self.properties.clone();
         let loop_task = tokio::spawn(async move {
             loop {
                 match message_receiver.recv().await {
                     Ok(msg) => {
-                        let opt_resp_topic = msg.response_topic.clone();
-                        let opt_corr_data = msg.correlation_data.clone();
-
                         if let Some(subscription_id) = msg.subscription_id {
-                            if subscription_id == sub_ids.trade_numbers_method_req {
-                                SimpleServer::<C>::handle_trade_numbers_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else {
-                                let update_prop_future = {
-                                    if subscription_id == sub_ids.school_property_update {
-                                        SimpleServer::<C>::update_school_value(
-                                            publisher.clone(),
-                                            instance_id.clone(),
-                                            properties.school.clone(),
-                                            properties.school_version.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else {
-                                        SimpleServer::<C>::wrap_return_code_in_future(
-                                            MethodReturnCode::NotImplemented(
-                                                "Could not find a property matching the request"
-                                                    .to_string(),
-                                            ),
-                                        )
-                                        .await
-                                    }
-                                };
-                                match update_prop_future.await {
-                                    Ok(_) => debug!("Successfully processed update  property"),
-                                    Err(e) => {
-                                        error!("Error processing update to '' property: {:?}", e);
-                                        if let Some(resp_topic) = opt_resp_topic {
-                                            SimpleServer::<C>::publish_error_response(
-                                                publisher.clone(),
-                                                Some(resp_topic),
-                                                opt_corr_data,
-                                                e,
-                                            )
-                                            .await;
-                                        } else {
-                                            warn!("No response topic found in message properties; cannot send error response.");
-                                        }
-                                    }
+                            match subscription_id {
+                                _i if _i == sub_ids.trade_numbers_method_req => {
+                                    debug!("Received trade_numbers method invocation message.");
+                                    SimpleServer::<C>::handle_trade_numbers_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.school_property_update => {
+                                    debug!("Received school property update request message.");
+                                    SimpleServer::<C>::update_school_value(
+                                        publisher.clone(),
+                                        properties.school.clone(),
+                                        properties.school_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _ => {
+                                    error!(
+                                        "Received MQTT message with unknown subscription id: {}",
+                                        subscription_id
+                                    );
                                 }
                             }
                         } else {
@@ -579,6 +566,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
                 }
             }
         });
+
         let _ = tokio::join!(loop_task);
 
         warn!("Server receive loop completed. Exiting run_loop.");

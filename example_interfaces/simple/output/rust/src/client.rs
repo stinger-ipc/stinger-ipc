@@ -425,82 +425,108 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
                             .and_then(|s| Uuid::parse_str(&s).ok())
                     }
                 });
+                let return_code = SimpleClient::<C>::get_return_code_from_message(&msg);
 
                 if let Some(subscription_id) = msg.subscription_id {
-                    let return_code = SimpleClient::<C>::get_return_code_from_message(&msg);
-
-                    if subscription_id == sub_ids.any_method_response
-                        || subscription_id == sub_ids.any_property_update_response
-                    {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response  to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response without correlation ID");
-                        }
-                    } // end  method response handling
-                    if Some(subscription_id) == sub_ids.person_entered_signal {
-                        let chan = sig_chans.person_entered_sender.clone();
-
-                        match serde_json::from_slice::<PersonEnteredSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.person);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into PersonEnteredSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    } // end person_entered signal handling
-
-                    if subscription_id == sub_ids.school_property_value {
-                        match serde_json::from_slice::<SchoolProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.school.write().await;
-
-                                *guard = pl.name.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.school_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
+                    match subscription_id {
+                        _i if _i == sub_ids.any_method_response => {
+                            debug!("Received method response message");
+                            if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id.and_then(|uuid| {
+                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                    hashmap.remove(&uuid)
+                                });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!(
+                                            "Failed to send method response  to waiting receiver"
                                         );
                                     }
                                 }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
+                            } else {
+                                warn!("Received method response without correlation ID");
+                            }
+                        }
+
+                        _i if _i == sub_ids.any_property_update_response => {
+                            debug!("Received property update response message");
+                            if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id.and_then(|uuid| {
+                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                    hashmap.remove(&uuid)
+                                });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!(
+                                            "Failed to send method response  to waiting receiver"
+                                        );
+                                    }
+                                }
+                            } else {
+                                warn!("Received method response without correlation ID");
+                            }
+                        }
+
+                        _i if sub_ids.person_entered_signal == Some(_i) => {
+                            debug!("Received person_entered signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.person_entered_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<PersonEnteredSignalPayload>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.person);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into PersonEnteredSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.school_property_value => {
+                            debug!("Received message for school property value");
+                            // JSON deserialize into SchoolProperty struct
+                            match serde_json::from_slice::<SchoolProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.school.write().await;
+
+                                    *guard = pl.name.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.school_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
                                         }
                                     }
                                 }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
                             }
                         }
-                    } // end school property value update
+
+                        unhandled_subscription_id => {
+                            error!(
+                                "Received message with unmatched subscription id: {}",
+                                unhandled_subscription_id
+                            );
+                        }
+                    }
+                } else {
+                    error!("Received message without a subscription id");
                 }
             }
         });

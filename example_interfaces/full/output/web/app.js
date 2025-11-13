@@ -167,7 +167,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "add_numbers": {
             "name": "addNumbers",
             "mqtt_topic": "full/{}/method/addNumbers",
-            "response_topic": "client/"+clientId+"/addNumbers/response",
+            "response_topic": "client/"+clientId+"/addNumbers/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "first": {
@@ -191,7 +191,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "do_something": {
             "name": "doSomething",
             "mqtt_topic": "full/{}/method/doSomething",
-            "response_topic": "client/"+clientId+"/doSomething/response",
+            "response_topic": "client/"+clientId+"/doSomething/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "a_string": {
@@ -205,7 +205,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "echo": {
             "name": "echo",
             "mqtt_topic": "full/{}/method/echo",
-            "response_topic": "client/"+clientId+"/echo/response",
+            "response_topic": "client/"+clientId+"/echo/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "message": {
@@ -219,7 +219,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "what_time_is_it": {
             "name": "what_time_is_it",
             "mqtt_topic": "full/{}/method/whatTimeIsIt",
-            "response_topic": "client/"+clientId+"/what_time_is_it/response",
+            "response_topic": "client/"+clientId+"/whatTimeIsIt/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "the_first_time": {
@@ -233,7 +233,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "set_the_time": {
             "name": "set_the_time",
             "mqtt_topic": "full/{}/method/setTheTime",
-            "response_topic": "client/"+clientId+"/set_the_time/response",
+            "response_topic": "client/"+clientId+"/setTheTime/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "the_first_time": {
@@ -252,7 +252,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "forward_time": {
             "name": "forward_time",
             "mqtt_topic": "full/{}/method/forwardTime",
-            "response_topic": "client/"+clientId+"/forward_time/response",
+            "response_topic": "client/"+clientId+"/forwardTime/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "adjustment": {
@@ -266,7 +266,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "how_off_is_the_clock": {
             "name": "how_off_is_the_clock",
             "mqtt_topic": "full/{}/method/howOffIsTheClock",
-            "response_topic": "client/"+clientId+"/how_off_is_the_clock/response",
+            "response_topic": "client/"+clientId+"/howOffIsTheClock/methodResponse",
             "pending_correlation_id": null,
             "args": {
                 "actual_time": {

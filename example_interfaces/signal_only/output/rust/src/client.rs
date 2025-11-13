@@ -257,92 +257,110 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SignalOnlyClient<C> {
         let _loop_task = tokio::spawn(async move {
             while let Ok(msg) = message_receiver.recv().await {
                 if let Some(subscription_id) = msg.subscription_id {
-                    let return_code = SignalOnlyClient::<C>::get_return_code_from_message(&msg);
-                    if Some(subscription_id) == sub_ids.another_signal_signal {
-                        let chan = sig_chans.another_signal_sender.clone();
+                    match subscription_id {
+                        _i if sub_ids.another_signal_signal == Some(_i) => {
+                            debug!("Received anotherSignal signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.another_signal_sender.clone();
 
-                        match serde_json::from_slice::<AnotherSignalSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
+                            // 3 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<AnotherSignalSignalPayload>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into AnotherSignalSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
                             }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into AnotherSignalSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
+                        }
+
+                        _i if sub_ids.bark_signal == Some(_i) => {
+                            debug!("Received bark signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.bark_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<BarkSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.word);
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into BarkSignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
                             }
+                        }
+
+                        _i if sub_ids.maybe_number_signal == Some(_i) => {
+                            debug!("Received maybe_number signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.maybe_number_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<MaybeNumberSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.number);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into MaybeNumberSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.maybe_name_signal == Some(_i) => {
+                            debug!("Received maybe_name signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.maybe_name_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<MaybeNameSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.name);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into MaybeNameSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.now_signal == Some(_i) => {
+                            debug!("Received now signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.now_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<NowSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.timestamp);
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into NowSignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        unhandled_subscription_id => {
+                            error!(
+                                "Received message with unmatched subscription id: {}",
+                                unhandled_subscription_id
+                            );
                         }
                     }
-                    // end anotherSignal signal handling
-                    else if Some(subscription_id) == sub_ids.bark_signal {
-                        let chan = sig_chans.bark_sender.clone();
-
-                        match serde_json::from_slice::<BarkSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.word);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into BarkSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end bark signal handling
-                    else if Some(subscription_id) == sub_ids.maybe_number_signal {
-                        let chan = sig_chans.maybe_number_sender.clone();
-
-                        match serde_json::from_slice::<MaybeNumberSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.number);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into MaybeNumberSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end maybe_number signal handling
-                    else if Some(subscription_id) == sub_ids.maybe_name_signal {
-                        let chan = sig_chans.maybe_name_sender.clone();
-
-                        match serde_json::from_slice::<MaybeNameSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.name);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into MaybeNameSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end maybe_name signal handling
-                    else if Some(subscription_id) == sub_ids.now_signal {
-                        let chan = sig_chans.now_sender.clone();
-
-                        match serde_json::from_slice::<NowSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.timestamp);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into NowSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    } // end now signal handling
+                } else {
+                    error!("Received message without a subscription id");
                 }
             }
         });

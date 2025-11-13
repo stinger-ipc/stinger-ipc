@@ -29,42 +29,19 @@ use tokio::task::JoinError;
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
+#[allow(unused_imports)]
 use std::sync::atomic::{AtomicU32, Ordering};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::ReadOnlyLockWatch;
 use stinger_rwlock_watch::RwLockWatch;
 #[allow(unused_imports)]
-use stinger_rwlock_watch::WriteRequestLockWatch;
+use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct TestAbleSubscriptionIds {
-    call_with_nothing_method_resp: u32,
-    call_one_integer_method_resp: u32,
-    call_optional_integer_method_resp: u32,
-    call_three_integers_method_resp: u32,
-    call_one_string_method_resp: u32,
-    call_optional_string_method_resp: u32,
-    call_three_strings_method_resp: u32,
-    call_one_enum_method_resp: u32,
-    call_optional_enum_method_resp: u32,
-    call_three_enums_method_resp: u32,
-    call_one_struct_method_resp: u32,
-    call_optional_struct_method_resp: u32,
-    call_three_structs_method_resp: u32,
-    call_one_date_time_method_resp: u32,
-    call_optional_date_time_method_resp: u32,
-    call_three_date_times_method_resp: u32,
-    call_one_duration_method_resp: u32,
-    call_optional_duration_method_resp: u32,
-    call_three_durations_method_resp: u32,
-    call_one_binary_method_resp: u32,
-    call_optional_binary_method_resp: u32,
-    call_three_binaries_method_resp: u32,
-    call_one_list_of_integers_method_resp: u32,
-    call_optional_list_of_floats_method_resp: u32,
-    call_two_lists_method_resp: u32,
+    any_method_response: u32,
 
     empty_signal: Option<u32>,
     single_int_signal: Option<u32>,
@@ -117,6 +94,8 @@ struct TestAbleSubscriptionIds {
     read_write_two_binaries_property_value: u32,
     read_write_list_of_strings_property_value: u32,
     read_write_lists_property_value: u32,
+
+    any_property_update_response: u32,
 }
 
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
@@ -273,380 +252,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let client_id = connection.get_client_id();
 
-        let topic_call_with_nothing_method_resp =
-            format!("client/{}/callWithNothing/response", client_id);
-        let subscription_id_call_with_nothing_method_resp = connection
+        let topic_any_method_response = format!("client/{}/Test Able/methodResponse", client_id);
+        let subscription_id_any_method_response = connection
             .subscribe(
-                topic_call_with_nothing_method_resp,
+                topic_any_method_response,
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
             .await;
-        let subscription_id_call_with_nothing_method_resp =
-            subscription_id_call_with_nothing_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callWithNothing'",
-            subscription_id_call_with_nothing_method_resp
-        );
-        let topic_call_one_integer_method_resp =
-            format!("client/{}/callOneInteger/response", client_id);
-        let subscription_id_call_one_integer_method_resp = connection
-            .subscribe(
-                topic_call_one_integer_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_one_integer_method_resp =
-            subscription_id_call_one_integer_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOneInteger'",
-            subscription_id_call_one_integer_method_resp
-        );
-        let topic_call_optional_integer_method_resp =
-            format!("client/{}/callOptionalInteger/response", client_id);
-        let subscription_id_call_optional_integer_method_resp = connection
-            .subscribe(
-                topic_call_optional_integer_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_optional_integer_method_resp =
-            subscription_id_call_optional_integer_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOptionalInteger'",
-            subscription_id_call_optional_integer_method_resp
-        );
-        let topic_call_three_integers_method_resp =
-            format!("client/{}/callThreeIntegers/response", client_id);
-        let subscription_id_call_three_integers_method_resp = connection
-            .subscribe(
-                topic_call_three_integers_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_three_integers_method_resp =
-            subscription_id_call_three_integers_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callThreeIntegers'",
-            subscription_id_call_three_integers_method_resp
-        );
-        let topic_call_one_string_method_resp =
-            format!("client/{}/callOneString/response", client_id);
-        let subscription_id_call_one_string_method_resp = connection
-            .subscribe(
-                topic_call_one_string_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_one_string_method_resp =
-            subscription_id_call_one_string_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOneString'",
-            subscription_id_call_one_string_method_resp
-        );
-        let topic_call_optional_string_method_resp =
-            format!("client/{}/callOptionalString/response", client_id);
-        let subscription_id_call_optional_string_method_resp = connection
-            .subscribe(
-                topic_call_optional_string_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_optional_string_method_resp =
-            subscription_id_call_optional_string_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOptionalString'",
-            subscription_id_call_optional_string_method_resp
-        );
-        let topic_call_three_strings_method_resp =
-            format!("client/{}/callThreeStrings/response", client_id);
-        let subscription_id_call_three_strings_method_resp = connection
-            .subscribe(
-                topic_call_three_strings_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_three_strings_method_resp =
-            subscription_id_call_three_strings_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callThreeStrings'",
-            subscription_id_call_three_strings_method_resp
-        );
-        let topic_call_one_enum_method_resp = format!("client/{}/callOneEnum/response", client_id);
-        let subscription_id_call_one_enum_method_resp = connection
-            .subscribe(
-                topic_call_one_enum_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_one_enum_method_resp =
-            subscription_id_call_one_enum_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOneEnum'",
-            subscription_id_call_one_enum_method_resp
-        );
-        let topic_call_optional_enum_method_resp =
-            format!("client/{}/callOptionalEnum/response", client_id);
-        let subscription_id_call_optional_enum_method_resp = connection
-            .subscribe(
-                topic_call_optional_enum_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_optional_enum_method_resp =
-            subscription_id_call_optional_enum_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOptionalEnum'",
-            subscription_id_call_optional_enum_method_resp
-        );
-        let topic_call_three_enums_method_resp =
-            format!("client/{}/callThreeEnums/response", client_id);
-        let subscription_id_call_three_enums_method_resp = connection
-            .subscribe(
-                topic_call_three_enums_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_three_enums_method_resp =
-            subscription_id_call_three_enums_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callThreeEnums'",
-            subscription_id_call_three_enums_method_resp
-        );
-        let topic_call_one_struct_method_resp =
-            format!("client/{}/callOneStruct/response", client_id);
-        let subscription_id_call_one_struct_method_resp = connection
-            .subscribe(
-                topic_call_one_struct_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_one_struct_method_resp =
-            subscription_id_call_one_struct_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOneStruct'",
-            subscription_id_call_one_struct_method_resp
-        );
-        let topic_call_optional_struct_method_resp =
-            format!("client/{}/callOptionalStruct/response", client_id);
-        let subscription_id_call_optional_struct_method_resp = connection
-            .subscribe(
-                topic_call_optional_struct_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_optional_struct_method_resp =
-            subscription_id_call_optional_struct_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOptionalStruct'",
-            subscription_id_call_optional_struct_method_resp
-        );
-        let topic_call_three_structs_method_resp =
-            format!("client/{}/callThreeStructs/response", client_id);
-        let subscription_id_call_three_structs_method_resp = connection
-            .subscribe(
-                topic_call_three_structs_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_three_structs_method_resp =
-            subscription_id_call_three_structs_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callThreeStructs'",
-            subscription_id_call_three_structs_method_resp
-        );
-        let topic_call_one_date_time_method_resp =
-            format!("client/{}/callOneDateTime/response", client_id);
-        let subscription_id_call_one_date_time_method_resp = connection
-            .subscribe(
-                topic_call_one_date_time_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_one_date_time_method_resp =
-            subscription_id_call_one_date_time_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOneDateTime'",
-            subscription_id_call_one_date_time_method_resp
-        );
-        let topic_call_optional_date_time_method_resp =
-            format!("client/{}/callOptionalDateTime/response", client_id);
-        let subscription_id_call_optional_date_time_method_resp = connection
-            .subscribe(
-                topic_call_optional_date_time_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_optional_date_time_method_resp =
-            subscription_id_call_optional_date_time_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOptionalDateTime'",
-            subscription_id_call_optional_date_time_method_resp
-        );
-        let topic_call_three_date_times_method_resp =
-            format!("client/{}/callThreeDateTimes/response", client_id);
-        let subscription_id_call_three_date_times_method_resp = connection
-            .subscribe(
-                topic_call_three_date_times_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_three_date_times_method_resp =
-            subscription_id_call_three_date_times_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callThreeDateTimes'",
-            subscription_id_call_three_date_times_method_resp
-        );
-        let topic_call_one_duration_method_resp =
-            format!("client/{}/callOneDuration/response", client_id);
-        let subscription_id_call_one_duration_method_resp = connection
-            .subscribe(
-                topic_call_one_duration_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_one_duration_method_resp =
-            subscription_id_call_one_duration_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOneDuration'",
-            subscription_id_call_one_duration_method_resp
-        );
-        let topic_call_optional_duration_method_resp =
-            format!("client/{}/callOptionalDuration/response", client_id);
-        let subscription_id_call_optional_duration_method_resp = connection
-            .subscribe(
-                topic_call_optional_duration_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_optional_duration_method_resp =
-            subscription_id_call_optional_duration_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOptionalDuration'",
-            subscription_id_call_optional_duration_method_resp
-        );
-        let topic_call_three_durations_method_resp =
-            format!("client/{}/callThreeDurations/response", client_id);
-        let subscription_id_call_three_durations_method_resp = connection
-            .subscribe(
-                topic_call_three_durations_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_three_durations_method_resp =
-            subscription_id_call_three_durations_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callThreeDurations'",
-            subscription_id_call_three_durations_method_resp
-        );
-        let topic_call_one_binary_method_resp =
-            format!("client/{}/callOneBinary/response", client_id);
-        let subscription_id_call_one_binary_method_resp = connection
-            .subscribe(
-                topic_call_one_binary_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_one_binary_method_resp =
-            subscription_id_call_one_binary_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOneBinary'",
-            subscription_id_call_one_binary_method_resp
-        );
-        let topic_call_optional_binary_method_resp =
-            format!("client/{}/callOptionalBinary/response", client_id);
-        let subscription_id_call_optional_binary_method_resp = connection
-            .subscribe(
-                topic_call_optional_binary_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_optional_binary_method_resp =
-            subscription_id_call_optional_binary_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOptionalBinary'",
-            subscription_id_call_optional_binary_method_resp
-        );
-        let topic_call_three_binaries_method_resp =
-            format!("client/{}/callThreeBinaries/response", client_id);
-        let subscription_id_call_three_binaries_method_resp = connection
-            .subscribe(
-                topic_call_three_binaries_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_three_binaries_method_resp =
-            subscription_id_call_three_binaries_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callThreeBinaries'",
-            subscription_id_call_three_binaries_method_resp
-        );
-        let topic_call_one_list_of_integers_method_resp =
-            format!("client/{}/callOneListOfIntegers/response", client_id);
-        let subscription_id_call_one_list_of_integers_method_resp = connection
-            .subscribe(
-                topic_call_one_list_of_integers_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_one_list_of_integers_method_resp =
-            subscription_id_call_one_list_of_integers_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOneListOfIntegers'",
-            subscription_id_call_one_list_of_integers_method_resp
-        );
-        let topic_call_optional_list_of_floats_method_resp =
-            format!("client/{}/callOptionalListOfFloats/response", client_id);
-        let subscription_id_call_optional_list_of_floats_method_resp = connection
-            .subscribe(
-                topic_call_optional_list_of_floats_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_optional_list_of_floats_method_resp =
-            subscription_id_call_optional_list_of_floats_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callOptionalListOfFloats'",
-            subscription_id_call_optional_list_of_floats_method_resp
-        );
-        let topic_call_two_lists_method_resp =
-            format!("client/{}/callTwoLists/response", client_id);
-        let subscription_id_call_two_lists_method_resp = connection
-            .subscribe(
-                topic_call_two_lists_method_resp,
-                QoS::ExactlyOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_call_two_lists_method_resp =
-            subscription_id_call_two_lists_method_resp.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to method response topic for 'callTwoLists'",
-            subscription_id_call_two_lists_method_resp
-        );
+        let subscription_id_any_method_response =
+            subscription_id_any_method_response.unwrap_or(u32::MAX);
 
         // Subscribe to all the topics needed for signals.
         let topic_empty_signal = format!(
@@ -1544,6 +1159,22 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             subscription_id_read_write_lists_property_value
         );
 
+        let topic_any_property_update_response =
+            format!("client/{}/Test Able/propertyUpdateResponse", client_id);
+        let subscription_id_any_property_update_response = connection
+            .subscribe(
+                topic_any_property_update_response,
+                QoS::AtLeastOnce,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_any_property_update_response =
+            subscription_id_any_property_update_response.unwrap_or(u32::MAX);
+        debug!(
+            "Subscription (id={}) to any property update response topic",
+            subscription_id_any_property_update_response
+        );
+
         let property_values = TestAbleProperties {
             read_write_integer: Arc::new(RwLockWatch::new(
                 discovery_info.properties.read_write_integer,
@@ -1724,34 +1355,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         // Create structure for subscription ids.
         let sub_ids = TestAbleSubscriptionIds {
-            call_with_nothing_method_resp: subscription_id_call_with_nothing_method_resp,
-            call_one_integer_method_resp: subscription_id_call_one_integer_method_resp,
-            call_optional_integer_method_resp: subscription_id_call_optional_integer_method_resp,
-            call_three_integers_method_resp: subscription_id_call_three_integers_method_resp,
-            call_one_string_method_resp: subscription_id_call_one_string_method_resp,
-            call_optional_string_method_resp: subscription_id_call_optional_string_method_resp,
-            call_three_strings_method_resp: subscription_id_call_three_strings_method_resp,
-            call_one_enum_method_resp: subscription_id_call_one_enum_method_resp,
-            call_optional_enum_method_resp: subscription_id_call_optional_enum_method_resp,
-            call_three_enums_method_resp: subscription_id_call_three_enums_method_resp,
-            call_one_struct_method_resp: subscription_id_call_one_struct_method_resp,
-            call_optional_struct_method_resp: subscription_id_call_optional_struct_method_resp,
-            call_three_structs_method_resp: subscription_id_call_three_structs_method_resp,
-            call_one_date_time_method_resp: subscription_id_call_one_date_time_method_resp,
-            call_optional_date_time_method_resp:
-                subscription_id_call_optional_date_time_method_resp,
-            call_three_date_times_method_resp: subscription_id_call_three_date_times_method_resp,
-            call_one_duration_method_resp: subscription_id_call_one_duration_method_resp,
-            call_optional_duration_method_resp: subscription_id_call_optional_duration_method_resp,
-            call_three_durations_method_resp: subscription_id_call_three_durations_method_resp,
-            call_one_binary_method_resp: subscription_id_call_one_binary_method_resp,
-            call_optional_binary_method_resp: subscription_id_call_optional_binary_method_resp,
-            call_three_binaries_method_resp: subscription_id_call_three_binaries_method_resp,
-            call_one_list_of_integers_method_resp:
-                subscription_id_call_one_list_of_integers_method_resp,
-            call_optional_list_of_floats_method_resp:
-                subscription_id_call_optional_list_of_floats_method_resp,
-            call_two_lists_method_resp: subscription_id_call_two_lists_method_resp,
+            any_method_response: subscription_id_any_method_response,
             empty_signal: Some(subscription_id_empty_signal),
             single_int_signal: Some(subscription_id_single_int_signal),
             single_optional_int_signal: Some(subscription_id_single_optional_int_signal),
@@ -1820,6 +1424,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             read_write_list_of_strings_property_value:
                 subscription_id_read_write_list_of_strings_property_value,
             read_write_lists_property_value: subscription_id_read_write_lists_property_value,
+
+            any_property_update_response: subscription_id_any_property_update_response,
         };
 
         // Create structure for the tx side of broadcast channels for signals.
@@ -2031,7 +1637,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallWithNothingRequestObject {};
 
-        let response_topic: String = format!("client/{}/callWithNothing/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callWithNothing",
@@ -2084,7 +1690,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOneIntegerRequestObject { input1 };
 
-        let response_topic: String = format!("client/{}/callOneInteger/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOneInteger",
@@ -2146,8 +1752,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOptionalIntegerRequestObject { input1 };
 
-        let response_topic: String =
-            format!("client/{}/callOptionalInteger/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOptionalInteger",
@@ -2218,8 +1823,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             input3,
         };
 
-        let response_topic: String =
-            format!("client/{}/callThreeIntegers/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callThreeIntegers",
@@ -2286,7 +1890,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOneStringRequestObject { input1 };
 
-        let response_topic: String = format!("client/{}/callOneString/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!("testAble/{}/method/callOneString", self.service_instance_id),
             &data,
@@ -2342,8 +1946,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOptionalStringRequestObject { input1 };
 
-        let response_topic: String =
-            format!("client/{}/callOptionalString/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOptionalString",
@@ -2414,7 +2017,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             input3,
         };
 
-        let response_topic: String = format!("client/{}/callThreeStrings/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callThreeStrings",
@@ -2481,7 +2084,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOneEnumRequestObject { input1 };
 
-        let response_topic: String = format!("client/{}/callOneEnum/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!("testAble/{}/method/callOneEnum", self.service_instance_id),
             &data,
@@ -2537,7 +2140,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOptionalEnumRequestObject { input1 };
 
-        let response_topic: String = format!("client/{}/callOptionalEnum/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOptionalEnum",
@@ -2608,7 +2211,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             input3,
         };
 
-        let response_topic: String = format!("client/{}/callThreeEnums/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callThreeEnums",
@@ -2675,7 +2278,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOneStructRequestObject { input1 };
 
-        let response_topic: String = format!("client/{}/callOneStruct/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!("testAble/{}/method/callOneStruct", self.service_instance_id),
             &data,
@@ -2734,8 +2337,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOptionalStructRequestObject { input1 };
 
-        let response_topic: String =
-            format!("client/{}/callOptionalStruct/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOptionalStruct",
@@ -2806,7 +2408,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             input3,
         };
 
-        let response_topic: String = format!("client/{}/callThreeStructs/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callThreeStructs",
@@ -2873,7 +2475,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOneDateTimeRequestObject { input1 };
 
-        let response_topic: String = format!("client/{}/callOneDateTime/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOneDateTime",
@@ -2938,8 +2540,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOptionalDateTimeRequestObject { input1 };
 
-        let response_topic: String =
-            format!("client/{}/callOptionalDateTime/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOptionalDateTime",
@@ -3010,8 +2611,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             input3,
         };
 
-        let response_topic: String =
-            format!("client/{}/callThreeDateTimes/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callThreeDateTimes",
@@ -3080,7 +2680,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOneDurationRequestObject { input1 };
 
-        let response_topic: String = format!("client/{}/callOneDuration/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOneDuration",
@@ -3145,8 +2745,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOptionalDurationRequestObject { input1 };
 
-        let response_topic: String =
-            format!("client/{}/callOptionalDuration/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOptionalDuration",
@@ -3217,8 +2816,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             input3,
         };
 
-        let response_topic: String =
-            format!("client/{}/callThreeDurations/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callThreeDurations",
@@ -3287,7 +2885,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOneBinaryRequestObject { input1 };
 
-        let response_topic: String = format!("client/{}/callOneBinary/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!("testAble/{}/method/callOneBinary", self.service_instance_id),
             &data,
@@ -3343,8 +2941,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOptionalBinaryRequestObject { input1 };
 
-        let response_topic: String =
-            format!("client/{}/callOptionalBinary/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOptionalBinary",
@@ -3415,8 +3012,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             input3,
         };
 
-        let response_topic: String =
-            format!("client/{}/callThreeBinaries/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callThreeBinaries",
@@ -3483,8 +3079,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOneListOfIntegersRequestObject { input1 };
 
-        let response_topic: String =
-            format!("client/{}/callOneListOfIntegers/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOneListOfIntegers",
@@ -3549,10 +3144,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallOptionalListOfFloatsRequestObject { input1 };
 
-        let response_topic: String = format!(
-            "client/{}/callOptionalListOfFloats/response",
-            self.client_id
-        );
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!(
                 "testAble/{}/method/callOptionalListOfFloats",
@@ -3618,7 +3210,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
         let data = CallTwoListsRequestObject { input1, input2 };
 
-        let response_topic: String = format!("client/{}/callTwoLists/response", self.client_id);
+        let response_topic: String = format!("client/{}/Test Able/methodResponse", self.client_id);
         let msg = message::request(
             &format!("testAble/{}/method/callTwoLists", self.service_instance_id),
             &data,
@@ -3672,33 +3264,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Sets the `read_write_integer` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_read_write_integer(&mut self, value: i32) -> MethodReturnCode {
-        let data = ReadWriteIntegerProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteInteger/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_integer_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_integer_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_integer_handle(&self) -> Arc<WriteRequestLockWatch<i32>> {
@@ -3726,33 +3300,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: Option<i32>,
     ) -> MethodReturnCode {
-        let data = ReadWriteOptionalIntegerProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteOptionalInteger/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_optional_integer_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_optional_integer_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_optional_integer_handle(
@@ -3775,33 +3331,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: ReadWriteTwoIntegersProperty,
     ) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "testAble/{}/property/readWriteTwoIntegers/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_two_integers_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_two_integers_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_two_integers_handle(
@@ -3831,33 +3369,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Sets the `read_write_string` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_read_write_string(&mut self, value: String) -> MethodReturnCode {
-        let data = ReadWriteStringProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteString/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_string_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_string_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_string_handle(&self) -> Arc<WriteRequestLockWatch<String>> {
@@ -3875,33 +3395,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: Option<String>,
     ) -> MethodReturnCode {
-        let data = ReadWriteOptionalStringProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteOptionalString/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_optional_string_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_optional_string_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_optional_string_handle(
@@ -3924,33 +3426,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: ReadWriteTwoStringsProperty,
     ) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "testAble/{}/property/readWriteTwoStrings/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_two_strings_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_two_strings_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_two_strings_handle(
@@ -3970,33 +3454,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Sets the `read_write_struct` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_read_write_struct(&mut self, value: AllTypes) -> MethodReturnCode {
-        let data = ReadWriteStructProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteStruct/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_struct_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_struct_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_struct_handle(&self) -> Arc<WriteRequestLockWatch<AllTypes>> {
@@ -4014,33 +3480,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: Option<AllTypes>,
     ) -> MethodReturnCode {
-        let data = ReadWriteOptionalStructProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteOptionalStruct/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_optional_struct_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_optional_struct_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_optional_struct_handle(
@@ -4063,33 +3511,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: ReadWriteTwoStructsProperty,
     ) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "testAble/{}/property/readWriteTwoStructs/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_two_structs_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_two_structs_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_two_structs_handle(
@@ -4119,33 +3549,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Sets the `read_write_enum` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_read_write_enum(&mut self, value: Numbers) -> MethodReturnCode {
-        let data = ReadWriteEnumProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteEnum/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_enum_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_enum_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_enum_handle(&self) -> Arc<WriteRequestLockWatch<Numbers>> {
@@ -4163,33 +3575,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: Option<Numbers>,
     ) -> MethodReturnCode {
-        let data = ReadWriteOptionalEnumProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteOptionalEnum/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_optional_enum_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_optional_enum_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_optional_enum_handle(
@@ -4212,33 +3606,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: ReadWriteTwoEnumsProperty,
     ) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "testAble/{}/property/readWriteTwoEnums/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_two_enums_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_two_enums_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_two_enums_handle(
@@ -4258,33 +3634,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: chrono::DateTime<chrono::Utc>,
     ) -> MethodReturnCode {
-        let data = ReadWriteDatetimeProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteDatetime/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_datetime_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_datetime_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_datetime_handle(
@@ -4306,33 +3664,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: Option<chrono::DateTime<chrono::Utc>>,
     ) -> MethodReturnCode {
-        let data = ReadWriteOptionalDatetimeProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteOptionalDatetime/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_optional_datetime_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_optional_datetime_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_optional_datetime_handle(
@@ -4355,33 +3695,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: ReadWriteTwoDatetimesProperty,
     ) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "testAble/{}/property/readWriteTwoDatetimes/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_two_datetimes_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_two_datetimes_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_two_datetimes_handle(
@@ -4401,33 +3723,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Sets the `read_write_duration` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_read_write_duration(&mut self, value: chrono::Duration) -> MethodReturnCode {
-        let data = ReadWriteDurationProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteDuration/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_duration_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_duration_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_duration_handle(&self) -> Arc<WriteRequestLockWatch<chrono::Duration>> {
@@ -4445,33 +3749,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: Option<chrono::Duration>,
     ) -> MethodReturnCode {
-        let data = ReadWriteOptionalDurationProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteOptionalDuration/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_optional_duration_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_optional_duration_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_optional_duration_handle(
@@ -4494,33 +3780,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: ReadWriteTwoDurationsProperty,
     ) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "testAble/{}/property/readWriteTwoDurations/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_two_durations_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_two_durations_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_two_durations_handle(
@@ -4540,33 +3808,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Sets the `read_write_binary` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_read_write_binary(&mut self, value: Vec<u8>) -> MethodReturnCode {
-        let data = ReadWriteBinaryProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteBinary/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_binary_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_binary_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_binary_handle(&self) -> Arc<WriteRequestLockWatch<Vec<u8>>> {
@@ -4584,33 +3834,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: Option<Vec<u8>>,
     ) -> MethodReturnCode {
-        let data = ReadWriteOptionalBinaryProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteOptionalBinary/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_optional_binary_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_optional_binary_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_optional_binary_handle(
@@ -4633,33 +3865,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: ReadWriteTwoBinariesProperty,
     ) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "testAble/{}/property/readWriteTwoBinaries/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_two_binaries_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_two_binaries_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_two_binaries_handle(
@@ -4679,33 +3893,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
 
     /// Sets the `read_write_list_of_strings` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_read_write_list_of_strings(&mut self, value: Vec<String>) -> MethodReturnCode {
-        let data = ReadWriteListOfStringsProperty { value: value };
-        let topic: String = format!(
-            "testAble/{}/property/readWriteListOfStrings/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_list_of_strings_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_list_of_strings_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_list_of_strings_handle(&self) -> Arc<WriteRequestLockWatch<Vec<String>>> {
@@ -4726,33 +3922,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         &mut self,
         value: ReadWriteListsProperty,
     ) -> MethodReturnCode {
-        let data = value;
-        let topic: String = format!(
-            "testAble/{}/property/readWriteLists/setValue",
-            self.service_instance_id
-        );
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id.clone(), sender);
+        let write_request_lock = self.get_read_write_lists_handle();
+        let mut writer = write_request_lock.write().await;
+        *writer = value;
+        match writer.commit(std::time::Duration::from_secs(5)).await {
+            CommitResult::Applied(_) => MethodReturnCode::Success(None),
+            CommitResult::TimedOut => MethodReturnCode::Timeout(
+                "Timeout waiting for property update acknowledgment".to_string(),
+            ),
         }
-        let msg = message::property_update_request_message(
-            &topic,
-            &data,
-            self.properties
-                .read_write_lists_version
-                .load(Ordering::Relaxed),
-            correlation_id,
-        )
-        .unwrap();
-        let _publish_result = self.mqtt_client.publish(msg);
-
-        receiver.await.unwrap_or_else(|_| {
-            MethodReturnCode::ClientError(
-                "Failed to receive property set acknowledgment".to_string(),
-            )
-        })
     }
 
     pub fn get_read_write_lists_handle(
@@ -4796,28 +3974,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_integer_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_integer_prop = self.client_id.clone();
             let mut publisher_for_read_write_integer_prop = self.mqtt_client.clone();
             let read_write_integer_prop_version = props.read_write_integer_version.clone();
+            let resp_map_for_read_write_integer_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_integer_prop) =
                 props.read_write_integer.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_integer_prop.recv().await {
-                        let payload_obj = ReadWriteIntegerProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_integer_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteIntegerProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteInteger/setValue",
                             instance_id_for_read_write_integer_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_integer_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_integer_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_integer_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_integer_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_integer_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_integer_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteIntegerProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_integer'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_integer' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_integer': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_integer_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_integer_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_integer': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -4826,28 +4068,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_only_integer_prop = self.service_instance_id.clone();
+            let client_id_for_read_only_integer_prop = self.client_id.clone();
             let mut publisher_for_read_only_integer_prop = self.mqtt_client.clone();
             let read_only_integer_prop_version = props.read_only_integer_version.clone();
+            let resp_map_for_read_only_integer_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_only_integer_prop) =
                 props.read_only_integer.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_only_integer_prop.recv().await {
-                        let payload_obj = ReadOnlyIntegerProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_only_integer_prop.recv().await
+                    {
+                        let payload_obj = ReadOnlyIntegerProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readOnlyInteger/setValue",
                             instance_id_for_read_only_integer_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_only_integer_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_only_integer_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_only_integer_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_only_integer_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_only_integer_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_only_integer_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadOnlyIntegerProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_only_integer'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_only_integer' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_only_integer': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_only_integer_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_only_integer_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_only_integer': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -4856,30 +4162,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_optional_integer_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_optional_integer_prop = self.client_id.clone();
             let mut publisher_for_read_write_optional_integer_prop = self.mqtt_client.clone();
             let read_write_optional_integer_prop_version =
                 props.read_write_optional_integer_version.clone();
+            let resp_map_for_read_write_optional_integer_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_optional_integer_prop) =
                 props.read_write_optional_integer.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_optional_integer_prop.recv().await {
-                        let payload_obj = ReadWriteOptionalIntegerProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_optional_integer_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalIntegerProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalInteger/setValue",
                             instance_id_for_read_write_optional_integer_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_optional_integer_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_optional_integer_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_optional_integer_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_optional_integer_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_integer_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_integer_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteOptionalIntegerProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_optional_integer'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_optional_integer' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_integer': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_integer_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_integer_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_integer': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -4888,30 +4260,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_two_integers_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_two_integers_prop = self.client_id.clone();
             let mut publisher_for_read_write_two_integers_prop = self.mqtt_client.clone();
             let read_write_two_integers_prop_version =
                 props.read_write_two_integers_version.clone();
+            let resp_map_for_read_write_two_integers_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_two_integers_prop) =
                 props.read_write_two_integers.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_two_integers_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_two_integers_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoIntegers/setValue",
                             instance_id_for_read_write_two_integers_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_two_integers_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_two_integers_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_two_integers_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_two_integers_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_integers_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_integers_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteTwoIntegersProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_two_integers'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_two_integers' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_integers': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_integers_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_integers_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_integers': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -4920,28 +4358,91 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_only_string_prop = self.service_instance_id.clone();
+            let client_id_for_read_only_string_prop = self.client_id.clone();
             let mut publisher_for_read_only_string_prop = self.mqtt_client.clone();
             let read_only_string_prop_version = props.read_only_string_version.clone();
+            let resp_map_for_read_only_string_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_only_string_prop) =
                 props.read_only_string.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_only_string_prop.recv().await {
-                        let payload_obj = ReadOnlyStringProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_only_string_prop.recv().await
+                    {
+                        let payload_obj = ReadOnlyStringProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readOnlyString/setValue",
                             instance_id_for_read_only_string_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_only_string_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_only_string_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_only_string_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_only_string_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_only_string_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_only_string_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<ReadOnlyStringProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_only_string'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_only_string' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_only_string': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_only_string_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_only_string_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_only_string': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -4950,28 +4451,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_string_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_string_prop = self.client_id.clone();
             let mut publisher_for_read_write_string_prop = self.mqtt_client.clone();
             let read_write_string_prop_version = props.read_write_string_version.clone();
+            let resp_map_for_read_write_string_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_string_prop) =
                 props.read_write_string.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_string_prop.recv().await {
-                        let payload_obj = ReadWriteStringProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_string_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteStringProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteString/setValue",
                             instance_id_for_read_write_string_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_string_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_string_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_string_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_string_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_string_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_string_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteStringProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_string'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_string' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_string': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_string_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_string_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_string': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -4980,30 +4545,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_optional_string_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_optional_string_prop = self.client_id.clone();
             let mut publisher_for_read_write_optional_string_prop = self.mqtt_client.clone();
             let read_write_optional_string_prop_version =
                 props.read_write_optional_string_version.clone();
+            let resp_map_for_read_write_optional_string_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_optional_string_prop) =
                 props.read_write_optional_string.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_optional_string_prop.recv().await {
-                        let payload_obj = ReadWriteOptionalStringProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_optional_string_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalStringProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalString/setValue",
                             instance_id_for_read_write_optional_string_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_optional_string_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_optional_string_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_optional_string_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_optional_string_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_string_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_string_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteOptionalStringProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_optional_string'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_optional_string' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_string': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_string_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_string_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_string': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5012,28 +4643,93 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_two_strings_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_two_strings_prop = self.client_id.clone();
             let mut publisher_for_read_write_two_strings_prop = self.mqtt_client.clone();
             let read_write_two_strings_prop_version = props.read_write_two_strings_version.clone();
+            let resp_map_for_read_write_two_strings_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_two_strings_prop) =
                 props.read_write_two_strings.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_two_strings_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_two_strings_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoStrings/setValue",
                             instance_id_for_read_write_two_strings_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_two_strings_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_two_strings_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_two_strings_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_two_strings_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_strings_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result = publisher_for_read_write_two_strings_prop
+                                        .publish(msg)
+                                        .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteTwoStringsProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_two_strings'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_two_strings' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_strings': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_strings_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result = publisher_for_read_write_two_strings_prop
+                                        .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_strings': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5042,28 +4738,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_struct_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_struct_prop = self.client_id.clone();
             let mut publisher_for_read_write_struct_prop = self.mqtt_client.clone();
             let read_write_struct_prop_version = props.read_write_struct_version.clone();
+            let resp_map_for_read_write_struct_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_struct_prop) =
                 props.read_write_struct.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_struct_prop.recv().await {
-                        let payload_obj = ReadWriteStructProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_struct_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteStructProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteStruct/setValue",
                             instance_id_for_read_write_struct_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_struct_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_struct_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_struct_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_struct_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_struct_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_struct_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteStructProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_struct'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_struct' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_struct': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_struct_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_struct_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_struct': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5072,30 +4832,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_optional_struct_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_optional_struct_prop = self.client_id.clone();
             let mut publisher_for_read_write_optional_struct_prop = self.mqtt_client.clone();
             let read_write_optional_struct_prop_version =
                 props.read_write_optional_struct_version.clone();
+            let resp_map_for_read_write_optional_struct_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_optional_struct_prop) =
                 props.read_write_optional_struct.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_optional_struct_prop.recv().await {
-                        let payload_obj = ReadWriteOptionalStructProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_optional_struct_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalStructProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalStruct/setValue",
                             instance_id_for_read_write_optional_struct_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_optional_struct_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_optional_struct_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_optional_struct_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_optional_struct_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_struct_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_struct_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteOptionalStructProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_optional_struct'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_optional_struct' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_struct': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_struct_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_struct_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_struct': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5104,28 +4930,93 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_two_structs_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_two_structs_prop = self.client_id.clone();
             let mut publisher_for_read_write_two_structs_prop = self.mqtt_client.clone();
             let read_write_two_structs_prop_version = props.read_write_two_structs_version.clone();
+            let resp_map_for_read_write_two_structs_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_two_structs_prop) =
                 props.read_write_two_structs.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_two_structs_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_two_structs_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoStructs/setValue",
                             instance_id_for_read_write_two_structs_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_two_structs_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_two_structs_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_two_structs_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_two_structs_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_structs_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result = publisher_for_read_write_two_structs_prop
+                                        .publish(msg)
+                                        .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteTwoStructsProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_two_structs'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_two_structs' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_structs': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_structs_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result = publisher_for_read_write_two_structs_prop
+                                        .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_structs': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5134,26 +5025,90 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_only_enum_prop = self.service_instance_id.clone();
+            let client_id_for_read_only_enum_prop = self.client_id.clone();
             let mut publisher_for_read_only_enum_prop = self.mqtt_client.clone();
             let read_only_enum_prop_version = props.read_only_enum_version.clone();
+            let resp_map_for_read_only_enum_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_only_enum_prop) =
                 props.read_only_enum.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_only_enum_prop.recv().await {
-                        let payload_obj = ReadOnlyEnumProperty { value: request };
+                    while let Some((value, opt_responder)) = rx_for_read_only_enum_prop.recv().await
+                    {
+                        let payload_obj = ReadOnlyEnumProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readOnlyEnum/setValue",
                             instance_id_for_read_only_enum_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_only_enum_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_only_enum_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_only_enum_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_only_enum_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_only_enum_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_only_enum_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<ReadOnlyEnumProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_only_enum'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_only_enum' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_only_enum': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_only_enum_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_only_enum_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_only_enum': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5162,26 +5117,91 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_enum_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_enum_prop = self.client_id.clone();
             let mut publisher_for_read_write_enum_prop = self.mqtt_client.clone();
             let read_write_enum_prop_version = props.read_write_enum_version.clone();
+            let resp_map_for_read_write_enum_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_enum_prop) =
                 props.read_write_enum.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_enum_prop.recv().await {
-                        let payload_obj = ReadWriteEnumProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_enum_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteEnumProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteEnum/setValue",
                             instance_id_for_read_write_enum_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_enum_prop_version.load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_enum_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_enum_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_enum_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_enum_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_enum_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<ReadWriteEnumProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_enum'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_enum' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_enum': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_enum_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_enum_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_enum': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5190,30 +5210,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_optional_enum_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_optional_enum_prop = self.client_id.clone();
             let mut publisher_for_read_write_optional_enum_prop = self.mqtt_client.clone();
             let read_write_optional_enum_prop_version =
                 props.read_write_optional_enum_version.clone();
+            let resp_map_for_read_write_optional_enum_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_optional_enum_prop) =
                 props.read_write_optional_enum.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_optional_enum_prop.recv().await {
-                        let payload_obj = ReadWriteOptionalEnumProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_optional_enum_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalEnumProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalEnum/setValue",
                             instance_id_for_read_write_optional_enum_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_optional_enum_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_optional_enum_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_optional_enum_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_optional_enum_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_enum_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_enum_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteOptionalEnumProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_optional_enum'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_optional_enum' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_enum': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_enum_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_enum_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_enum': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5222,28 +5308,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_two_enums_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_two_enums_prop = self.client_id.clone();
             let mut publisher_for_read_write_two_enums_prop = self.mqtt_client.clone();
             let read_write_two_enums_prop_version = props.read_write_two_enums_version.clone();
+            let resp_map_for_read_write_two_enums_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_two_enums_prop) =
                 props.read_write_two_enums.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_two_enums_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_two_enums_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoEnums/setValue",
                             instance_id_for_read_write_two_enums_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_two_enums_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_two_enums_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_two_enums_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_two_enums_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_enums_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_enums_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteTwoEnumsProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_two_enums'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_two_enums' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_enums': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_enums_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_enums_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_enums': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5252,28 +5402,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_datetime_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_datetime_prop = self.client_id.clone();
             let mut publisher_for_read_write_datetime_prop = self.mqtt_client.clone();
             let read_write_datetime_prop_version = props.read_write_datetime_version.clone();
+            let resp_map_for_read_write_datetime_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_datetime_prop) =
                 props.read_write_datetime.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_datetime_prop.recv().await {
-                        let payload_obj = ReadWriteDatetimeProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_datetime_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteDatetimeProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteDatetime/setValue",
                             instance_id_for_read_write_datetime_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_datetime_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_datetime_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_datetime_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_datetime_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_datetime_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_datetime_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteDatetimeProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_datetime'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_datetime' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_datetime': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_datetime_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_datetime_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_datetime': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5283,31 +5497,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             // Set up property change request handling task
             let instance_id_for_read_write_optional_datetime_prop =
                 self.service_instance_id.clone();
+            let client_id_for_read_write_optional_datetime_prop = self.client_id.clone();
             let mut publisher_for_read_write_optional_datetime_prop = self.mqtt_client.clone();
             let read_write_optional_datetime_prop_version =
                 props.read_write_optional_datetime_version.clone();
+            let resp_map_for_read_write_optional_datetime_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_optional_datetime_prop) =
                 props.read_write_optional_datetime.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_optional_datetime_prop.recv().await
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_optional_datetime_prop.recv().await
                     {
-                        let payload_obj = ReadWriteOptionalDatetimeProperty { value: request };
+                        let payload_obj = ReadWriteOptionalDatetimeProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalDatetime/setValue",
                             instance_id_for_read_write_optional_datetime_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_optional_datetime_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_optional_datetime_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_optional_datetime_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_optional_datetime_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_datetime_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_datetime_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteOptionalDatetimeProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_optional_datetime'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_optional_datetime' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_datetime': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_datetime_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_datetime_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_datetime': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5316,30 +5595,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_two_datetimes_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_two_datetimes_prop = self.client_id.clone();
             let mut publisher_for_read_write_two_datetimes_prop = self.mqtt_client.clone();
             let read_write_two_datetimes_prop_version =
                 props.read_write_two_datetimes_version.clone();
+            let resp_map_for_read_write_two_datetimes_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_two_datetimes_prop) =
                 props.read_write_two_datetimes.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_two_datetimes_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_two_datetimes_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoDatetimes/setValue",
                             instance_id_for_read_write_two_datetimes_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_two_datetimes_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_two_datetimes_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_two_datetimes_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_two_datetimes_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_datetimes_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_datetimes_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteTwoDatetimesProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_two_datetimes'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_two_datetimes' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_datetimes': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_datetimes_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_datetimes_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_datetimes': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5348,28 +5693,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_duration_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_duration_prop = self.client_id.clone();
             let mut publisher_for_read_write_duration_prop = self.mqtt_client.clone();
             let read_write_duration_prop_version = props.read_write_duration_version.clone();
+            let resp_map_for_read_write_duration_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_duration_prop) =
                 props.read_write_duration.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_duration_prop.recv().await {
-                        let payload_obj = ReadWriteDurationProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_duration_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteDurationProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteDuration/setValue",
                             instance_id_for_read_write_duration_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_duration_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_duration_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_duration_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_duration_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_duration_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_duration_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteDurationProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_duration'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_duration' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_duration': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_duration_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_duration_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_duration': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5379,31 +5788,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
             // Set up property change request handling task
             let instance_id_for_read_write_optional_duration_prop =
                 self.service_instance_id.clone();
+            let client_id_for_read_write_optional_duration_prop = self.client_id.clone();
             let mut publisher_for_read_write_optional_duration_prop = self.mqtt_client.clone();
             let read_write_optional_duration_prop_version =
                 props.read_write_optional_duration_version.clone();
+            let resp_map_for_read_write_optional_duration_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_optional_duration_prop) =
                 props.read_write_optional_duration.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_optional_duration_prop.recv().await
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_optional_duration_prop.recv().await
                     {
-                        let payload_obj = ReadWriteOptionalDurationProperty { value: request };
+                        let payload_obj = ReadWriteOptionalDurationProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalDuration/setValue",
                             instance_id_for_read_write_optional_duration_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_optional_duration_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_optional_duration_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_optional_duration_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_optional_duration_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_duration_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_duration_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteOptionalDurationProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_optional_duration'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_optional_duration' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_duration': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_duration_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_duration_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_duration': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5412,30 +5886,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_two_durations_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_two_durations_prop = self.client_id.clone();
             let mut publisher_for_read_write_two_durations_prop = self.mqtt_client.clone();
             let read_write_two_durations_prop_version =
                 props.read_write_two_durations_version.clone();
+            let resp_map_for_read_write_two_durations_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_two_durations_prop) =
                 props.read_write_two_durations.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_two_durations_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_two_durations_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoDurations/setValue",
                             instance_id_for_read_write_two_durations_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_two_durations_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_two_durations_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_two_durations_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_two_durations_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_durations_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_durations_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteTwoDurationsProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_two_durations'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_two_durations' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_durations': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_durations_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_durations_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_durations': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5444,28 +5984,92 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_binary_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_binary_prop = self.client_id.clone();
             let mut publisher_for_read_write_binary_prop = self.mqtt_client.clone();
             let read_write_binary_prop_version = props.read_write_binary_version.clone();
+            let resp_map_for_read_write_binary_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_binary_prop) =
                 props.read_write_binary.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_binary_prop.recv().await {
-                        let payload_obj = ReadWriteBinaryProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_binary_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteBinaryProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteBinary/setValue",
                             instance_id_for_read_write_binary_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_binary_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_binary_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_binary_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_binary_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_binary_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_binary_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteBinaryProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_binary'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_binary' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_binary': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_binary_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_binary_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_binary': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5474,30 +6078,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_optional_binary_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_optional_binary_prop = self.client_id.clone();
             let mut publisher_for_read_write_optional_binary_prop = self.mqtt_client.clone();
             let read_write_optional_binary_prop_version =
                 props.read_write_optional_binary_version.clone();
+            let resp_map_for_read_write_optional_binary_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_optional_binary_prop) =
                 props.read_write_optional_binary.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_optional_binary_prop.recv().await {
-                        let payload_obj = ReadWriteOptionalBinaryProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_optional_binary_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalBinaryProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteOptionalBinary/setValue",
                             instance_id_for_read_write_optional_binary_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_optional_binary_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_optional_binary_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_optional_binary_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_optional_binary_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_binary_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_binary_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteOptionalBinaryProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_optional_binary'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_optional_binary' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_binary': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_optional_binary_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_optional_binary_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_optional_binary': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5506,30 +6176,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_two_binaries_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_two_binaries_prop = self.client_id.clone();
             let mut publisher_for_read_write_two_binaries_prop = self.mqtt_client.clone();
             let read_write_two_binaries_prop_version =
                 props.read_write_two_binaries_version.clone();
+            let resp_map_for_read_write_two_binaries_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_two_binaries_prop) =
                 props.read_write_two_binaries.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_two_binaries_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_two_binaries_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteTwoBinaries/setValue",
                             instance_id_for_read_write_two_binaries_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_two_binaries_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_two_binaries_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_two_binaries_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_two_binaries_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_binaries_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_binaries_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteTwoBinariesProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_two_binaries'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_two_binaries' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_binaries': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_two_binaries_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_two_binaries_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_two_binaries': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5538,30 +6274,96 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_list_of_strings_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_list_of_strings_prop = self.client_id.clone();
             let mut publisher_for_read_write_list_of_strings_prop = self.mqtt_client.clone();
             let read_write_list_of_strings_prop_version =
                 props.read_write_list_of_strings_version.clone();
+            let resp_map_for_read_write_list_of_strings_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_list_of_strings_prop) =
                 props.read_write_list_of_strings.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_list_of_strings_prop.recv().await {
-                        let payload_obj = ReadWriteListOfStringsProperty { value: request };
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_list_of_strings_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteListOfStringsProperty { value: value };
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteListOfStrings/setValue",
                             instance_id_for_read_write_list_of_strings_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_list_of_strings_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result = publisher_for_read_write_list_of_strings_prop
-                            .publish(msg)
-                            .await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_list_of_strings_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_list_of_strings_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_list_of_strings_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_list_of_strings_prop
+                                            .publish(msg)
+                                            .await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj = serde_json::from_str::<
+                                                    ReadWriteListOfStringsProperty,
+                                                >(
+                                                    response_text.as_ref()
+                                                )
+                                                .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj.value));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_list_of_strings'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_list_of_strings' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_list_of_strings': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_list_of_strings_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_list_of_strings_prop
+                                            .publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_list_of_strings': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5570,28 +6372,91 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
         {
             // Set up property change request handling task
             let instance_id_for_read_write_lists_prop = self.service_instance_id.clone();
+            let client_id_for_read_write_lists_prop = self.client_id.clone();
             let mut publisher_for_read_write_lists_prop = self.mqtt_client.clone();
             let read_write_lists_prop_version = props.read_write_lists_version.clone();
+            let resp_map_for_read_write_lists_prop = self.pending_responses.clone();
             if let Some(mut rx_for_read_write_lists_prop) =
                 props.read_write_lists.take_request_receiver()
             {
                 tokio::spawn(async move {
-                    while let Some(request) = rx_for_read_write_lists_prop.recv().await {
-                        let payload_obj = request;
+                    while let Some((value, opt_responder)) =
+                        rx_for_read_write_lists_prop.recv().await
+                    {
+                        let payload_obj = value;
 
                         let topic: String = format!(
                             "testAble/{}/property/readWriteLists/setValue",
                             instance_id_for_read_write_lists_prop
                         );
-                        let msg = message::property_update_message(
-                            &topic,
-                            &payload_obj,
-                            read_write_lists_prop_version
-                                .load(std::sync::atomic::Ordering::Relaxed),
-                        )
-                        .unwrap();
-                        let _publish_result =
-                            publisher_for_read_write_lists_prop.publish(msg).await;
+                        if let Some(responder) = opt_responder {
+                            let resp_topic = format!(
+                                "client/{}/Test Able/propertyUpdateResponse",
+                                client_id_for_read_write_lists_prop
+                            );
+                            let correlation_id = Uuid::new_v4();
+                            let (sender, receiver) = oneshot::channel();
+                            {
+                                let mut hashmap = resp_map_for_read_write_lists_prop
+                                    .lock()
+                                    .expect("Mutex was poisoned");
+                                hashmap.insert(correlation_id.clone(), sender);
+                            }
+                            match message::property_update_request(
+                                &topic,
+                                &payload_obj,
+                                read_write_lists_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                correlation_id,
+                                resp_topic,
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_lists_prop.publish(msg).await;
+                                    let result = receiver.await;
+                                    match result {
+                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                            if let Some(response_text) = opt_response_text {
+                                                let resp_obj =
+                                                    serde_json::from_str::<ReadWriteListsProperty>(
+                                                        response_text.as_ref(),
+                                                    )
+                                                    .unwrap();
+
+                                                let _ = responder.send(Some(resp_obj));
+                                            } else {
+                                                warn!("No response payload received for property update request for 'read_write_lists'");
+                                                let _ = responder.send(None);
+                                            }
+                                        }
+                                        _ => {
+                                            warn!("Property update request for 'read_write_lists' failed: {:?}", result);
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_lists': {:?}", e);
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        } else {
+                            match message::property_update(
+                                &topic,
+                                &payload_obj,
+                                read_write_lists_prop_version
+                                    .load(std::sync::atomic::Ordering::Relaxed),
+                            ) {
+                                Ok(msg) => {
+                                    let _publish_result =
+                                        publisher_for_read_write_lists_prop.publish_nowait(msg);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create property update message for 'read_write_lists': {:?}", e);
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -5610,1913 +6475,1364 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestAbleClient<C> {
                             .and_then(|s| Uuid::parse_str(&s).ok())
                     }
                 });
+                let return_code = TestAbleClient::<C>::get_return_code_from_message(&msg);
 
                 if let Some(subscription_id) = msg.subscription_id {
-                    let return_code = TestAbleClient::<C>::get_return_code_from_message(&msg);
-                    if subscription_id == sub_ids.call_with_nothing_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callWithNothing' to waiting receiver");
+                    match subscription_id {
+                        _i if _i == sub_ids.any_method_response => {
+                            debug!("Received method response message");
+                            if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id.and_then(|uuid| {
+                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                    hashmap.remove(&uuid)
+                                });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!(
+                                            "Failed to send method response  to waiting receiver"
+                                        );
+                                    }
                                 }
+                            } else {
+                                warn!("Received method response without correlation ID");
                             }
-                        } else {
-                            warn!("Received method response for 'callWithNothing' without correlation ID");
                         }
-                    }
-                    // end callWithNothing method response handling
-                    else if subscription_id == sub_ids.call_one_integer_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOneInteger' to waiting receiver");
+
+                        _i if _i == sub_ids.any_property_update_response => {
+                            debug!("Received property update response message");
+                            if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id.and_then(|uuid| {
+                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                    hashmap.remove(&uuid)
+                                });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!(
+                                            "Failed to send method response  to waiting receiver"
+                                        );
+                                    }
                                 }
+                            } else {
+                                warn!("Received method response without correlation ID");
                             }
-                        } else {
-                            warn!("Received method response for 'callOneInteger' without correlation ID");
                         }
-                    }
-                    // end callOneInteger method response handling
-                    else if subscription_id == sub_ids.call_optional_integer_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOptionalInteger' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOptionalInteger' without correlation ID");
+
+                        _i if sub_ids.empty_signal == Some(_i) => {
+                            debug!("Received empty signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.empty_sender.clone();
+
+                            // No arguments, send () to channel.
+                            let _send_result = chan.send(());
                         }
-                    }
-                    // end callOptionalInteger method response handling
-                    else if subscription_id == sub_ids.call_three_integers_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callThreeIntegers' to waiting receiver");
+
+                        _i if sub_ids.single_int_signal == Some(_i) => {
+                            debug!("Received singleInt signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_int_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleIntSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleIntSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
                                 }
                             }
-                        } else {
-                            warn!("Received method response for 'callThreeIntegers' without correlation ID");
                         }
-                    }
-                    // end callThreeIntegers method response handling
-                    else if subscription_id == sub_ids.call_one_string_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOneString' to waiting receiver");
+
+                        _i if sub_ids.single_optional_int_signal == Some(_i) => {
+                            debug!("Received singleOptionalInt signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_optional_int_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleOptionalIntSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleOptionalIntSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
                                 }
                             }
-                        } else {
-                            warn!("Received method response for 'callOneString' without correlation ID");
                         }
-                    }
-                    // end callOneString method response handling
-                    else if subscription_id == sub_ids.call_optional_string_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOptionalString' to waiting receiver");
+
+                        _i if sub_ids.three_integers_signal == Some(_i) => {
+                            debug!("Received threeIntegers signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.three_integers_sender.clone();
+
+                            // 3 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<ThreeIntegersSignalPayload>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into ThreeIntegersSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
                                 }
                             }
-                        } else {
-                            warn!("Received method response for 'callOptionalString' without correlation ID");
                         }
-                    }
-                    // end callOptionalString method response handling
-                    else if subscription_id == sub_ids.call_three_strings_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callThreeStrings' to waiting receiver");
+
+                        _i if sub_ids.single_string_signal == Some(_i) => {
+                            debug!("Received singleString signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_string_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleStringSignalPayload>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleStringSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
                                 }
                             }
-                        } else {
-                            warn!("Received method response for 'callThreeStrings' without correlation ID");
                         }
-                    }
-                    // end callThreeStrings method response handling
-                    else if subscription_id == sub_ids.call_one_enum_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOneEnum' to waiting receiver");
+
+                        _i if sub_ids.single_optional_string_signal == Some(_i) => {
+                            debug!("Received singleOptionalString signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_optional_string_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleOptionalStringSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleOptionalStringSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
                                 }
                             }
-                        } else {
-                            warn!(
-                                "Received method response for 'callOneEnum' without correlation ID"
+                        }
+
+                        _i if sub_ids.three_strings_signal == Some(_i) => {
+                            debug!("Received threeStrings signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.three_strings_sender.clone();
+
+                            // 3 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<ThreeStringsSignalPayload>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into ThreeStringsSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_enum_signal == Some(_i) => {
+                            debug!("Received singleEnum signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_enum_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleEnumSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleEnumSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_optional_enum_signal == Some(_i) => {
+                            debug!("Received singleOptionalEnum signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_optional_enum_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleOptionalEnumSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleOptionalEnumSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.three_enums_signal == Some(_i) => {
+                            debug!("Received threeEnums signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.three_enums_sender.clone();
+
+                            // 3 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<ThreeEnumsSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into ThreeEnumsSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_struct_signal == Some(_i) => {
+                            debug!("Received singleStruct signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_struct_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleStructSignalPayload>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleStructSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_optional_struct_signal == Some(_i) => {
+                            debug!("Received singleOptionalStruct signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_optional_struct_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleOptionalStructSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleOptionalStructSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.three_structs_signal == Some(_i) => {
+                            debug!("Received threeStructs signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.three_structs_sender.clone();
+
+                            // 3 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<ThreeStructsSignalPayload>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into ThreeStructsSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_date_time_signal == Some(_i) => {
+                            debug!("Received singleDateTime signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_date_time_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleDateTimeSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleDateTimeSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_optional_datetime_signal == Some(_i) => {
+                            debug!("Received singleOptionalDatetime signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_optional_datetime_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleOptionalDatetimeSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleOptionalDatetimeSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.three_date_times_signal == Some(_i) => {
+                            debug!("Received threeDateTimes signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.three_date_times_sender.clone();
+
+                            // 3 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<ThreeDateTimesSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into ThreeDateTimesSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_duration_signal == Some(_i) => {
+                            debug!("Received singleDuration signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_duration_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleDurationSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleDurationSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_optional_duration_signal == Some(_i) => {
+                            debug!("Received singleOptionalDuration signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_optional_duration_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleOptionalDurationSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleOptionalDurationSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.three_durations_signal == Some(_i) => {
+                            debug!("Received threeDurations signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.three_durations_sender.clone();
+
+                            // 3 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<ThreeDurationsSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into ThreeDurationsSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_binary_signal == Some(_i) => {
+                            debug!("Received singleBinary signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_binary_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleBinarySignalPayload>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleBinarySignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_optional_binary_signal == Some(_i) => {
+                            debug!("Received singleOptionalBinary signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_optional_binary_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleOptionalBinarySignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.value);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleOptionalBinarySignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.three_binaries_signal == Some(_i) => {
+                            debug!("Received threeBinaries signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.three_binaries_sender.clone();
+
+                            // 3 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<ThreeBinariesSignalPayload>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into ThreeBinariesSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_array_of_integers_signal == Some(_i) => {
+                            debug!("Received singleArrayOfIntegers signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_array_of_integers_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleArrayOfIntegersSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.values);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleArrayOfIntegersSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.single_optional_array_of_strings_signal == Some(_i) => {
+                            debug!("Received singleOptionalArrayOfStrings signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.single_optional_array_of_strings_sender.clone();
+
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<SingleOptionalArrayOfStringsSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.values);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into SingleOptionalArrayOfStringsSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.array_of_every_type_signal == Some(_i) => {
+                            debug!("Received arrayOfEveryType signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.array_of_every_type_sender.clone();
+
+                            // 8 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<ArrayOfEveryTypeSignalPayload>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into ArrayOfEveryTypeSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_integer_property_value => {
+                            debug!("Received message for read_write_integer property value");
+                            // JSON deserialize into ReadWriteIntegerProperty struct
+                            match serde_json::from_slice::<ReadWriteIntegerProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_integer.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_integer_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_only_integer_property_value => {
+                            debug!("Received message for read_only_integer property value");
+                            // JSON deserialize into ReadOnlyIntegerProperty struct
+                            match serde_json::from_slice::<ReadOnlyIntegerProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_only_integer.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_only_integer_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_optional_integer_property_value => {
+                            debug!(
+                                "Received message for read_write_optional_integer property value"
+                            );
+                            // JSON deserialize into ReadWriteOptionalIntegerProperty struct
+                            match serde_json::from_slice::<ReadWriteOptionalIntegerProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_optional_integer.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_optional_integer_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_two_integers_property_value => {
+                            debug!("Received message for read_write_two_integers property value");
+                            // JSON deserialize into ReadWriteTwoIntegersProperty struct
+                            match serde_json::from_slice::<ReadWriteTwoIntegersProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_two_integers.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_two_integers_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_only_string_property_value => {
+                            debug!("Received message for read_only_string property value");
+                            // JSON deserialize into ReadOnlyStringProperty struct
+                            match serde_json::from_slice::<ReadOnlyStringProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_only_string.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_only_string_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_string_property_value => {
+                            debug!("Received message for read_write_string property value");
+                            // JSON deserialize into ReadWriteStringProperty struct
+                            match serde_json::from_slice::<ReadWriteStringProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_string.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_string_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_optional_string_property_value => {
+                            debug!(
+                                "Received message for read_write_optional_string property value"
+                            );
+                            // JSON deserialize into ReadWriteOptionalStringProperty struct
+                            match serde_json::from_slice::<ReadWriteOptionalStringProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_optional_string.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_optional_string_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_two_strings_property_value => {
+                            debug!("Received message for read_write_two_strings property value");
+                            // JSON deserialize into ReadWriteTwoStringsProperty struct
+                            match serde_json::from_slice::<ReadWriteTwoStringsProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_two_strings.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_two_strings_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_struct_property_value => {
+                            debug!("Received message for read_write_struct property value");
+                            // JSON deserialize into ReadWriteStructProperty struct
+                            match serde_json::from_slice::<ReadWriteStructProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_struct.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_struct_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_optional_struct_property_value => {
+                            debug!(
+                                "Received message for read_write_optional_struct property value"
+                            );
+                            // JSON deserialize into ReadWriteOptionalStructProperty struct
+                            match serde_json::from_slice::<ReadWriteOptionalStructProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_optional_struct.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_optional_struct_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_two_structs_property_value => {
+                            debug!("Received message for read_write_two_structs property value");
+                            // JSON deserialize into ReadWriteTwoStructsProperty struct
+                            match serde_json::from_slice::<ReadWriteTwoStructsProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_two_structs.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_two_structs_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_only_enum_property_value => {
+                            debug!("Received message for read_only_enum property value");
+                            // JSON deserialize into ReadOnlyEnumProperty struct
+                            match serde_json::from_slice::<ReadOnlyEnumProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_only_enum.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_only_enum_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_enum_property_value => {
+                            debug!("Received message for read_write_enum property value");
+                            // JSON deserialize into ReadWriteEnumProperty struct
+                            match serde_json::from_slice::<ReadWriteEnumProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_enum.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_enum_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_optional_enum_property_value => {
+                            debug!("Received message for read_write_optional_enum property value");
+                            // JSON deserialize into ReadWriteOptionalEnumProperty struct
+                            match serde_json::from_slice::<ReadWriteOptionalEnumProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_optional_enum.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_optional_enum_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_two_enums_property_value => {
+                            debug!("Received message for read_write_two_enums property value");
+                            // JSON deserialize into ReadWriteTwoEnumsProperty struct
+                            match serde_json::from_slice::<ReadWriteTwoEnumsProperty>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_two_enums.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_two_enums_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_datetime_property_value => {
+                            debug!("Received message for read_write_datetime property value");
+                            // JSON deserialize into ReadWriteDatetimeProperty struct
+                            match serde_json::from_slice::<ReadWriteDatetimeProperty>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_datetime.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_datetime_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_optional_datetime_property_value => {
+                            debug!(
+                                "Received message for read_write_optional_datetime property value"
+                            );
+                            // JSON deserialize into ReadWriteOptionalDatetimeProperty struct
+                            match serde_json::from_slice::<ReadWriteOptionalDatetimeProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard =
+                                        props.read_write_optional_datetime.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_optional_datetime_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_two_datetimes_property_value => {
+                            debug!("Received message for read_write_two_datetimes property value");
+                            // JSON deserialize into ReadWriteTwoDatetimesProperty struct
+                            match serde_json::from_slice::<ReadWriteTwoDatetimesProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_two_datetimes.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_two_datetimes_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_duration_property_value => {
+                            debug!("Received message for read_write_duration property value");
+                            // JSON deserialize into ReadWriteDurationProperty struct
+                            match serde_json::from_slice::<ReadWriteDurationProperty>(&msg.payload)
+                            {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_duration.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_duration_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_optional_duration_property_value => {
+                            debug!(
+                                "Received message for read_write_optional_duration property value"
+                            );
+                            // JSON deserialize into ReadWriteOptionalDurationProperty struct
+                            match serde_json::from_slice::<ReadWriteOptionalDurationProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard =
+                                        props.read_write_optional_duration.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_optional_duration_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_two_durations_property_value => {
+                            debug!("Received message for read_write_two_durations property value");
+                            // JSON deserialize into ReadWriteTwoDurationsProperty struct
+                            match serde_json::from_slice::<ReadWriteTwoDurationsProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_two_durations.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_two_durations_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_binary_property_value => {
+                            debug!("Received message for read_write_binary property value");
+                            // JSON deserialize into ReadWriteBinaryProperty struct
+                            match serde_json::from_slice::<ReadWriteBinaryProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_binary.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_binary_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_optional_binary_property_value => {
+                            debug!(
+                                "Received message for read_write_optional_binary property value"
+                            );
+                            // JSON deserialize into ReadWriteOptionalBinaryProperty struct
+                            match serde_json::from_slice::<ReadWriteOptionalBinaryProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_optional_binary.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_optional_binary_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_two_binaries_property_value => {
+                            debug!("Received message for read_write_two_binaries property value");
+                            // JSON deserialize into ReadWriteTwoBinariesProperty struct
+                            match serde_json::from_slice::<ReadWriteTwoBinariesProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_two_binaries.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_two_binaries_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_list_of_strings_property_value => {
+                            debug!(
+                                "Received message for read_write_list_of_strings property value"
+                            );
+                            // JSON deserialize into ReadWriteListOfStringsProperty struct
+                            match serde_json::from_slice::<ReadWriteListOfStringsProperty>(
+                                &msg.payload,
+                            ) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_list_of_strings.write().await;
+
+                                    *guard = pl.value.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_list_of_strings_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if _i == sub_ids.read_write_lists_property_value => {
+                            debug!("Received message for read_write_lists property value");
+                            // JSON deserialize into ReadWriteListsProperty struct
+                            match serde_json::from_slice::<ReadWriteListsProperty>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.read_write_lists.write().await;
+
+                                    *guard = pl.clone();
+
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.read_write_lists_version.store(
+                                                version_num,
+                                                std::sync::atomic::Ordering::Relaxed,
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to deserialize '{}' into SignalPayload: {}",
+                                        String::from_utf8_lossy(&msg.payload),
+                                        e
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        unhandled_subscription_id => {
+                            error!(
+                                "Received message with unmatched subscription id: {}",
+                                unhandled_subscription_id
                             );
                         }
                     }
-                    // end callOneEnum method response handling
-                    else if subscription_id == sub_ids.call_optional_enum_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOptionalEnum' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOptionalEnum' without correlation ID");
-                        }
-                    }
-                    // end callOptionalEnum method response handling
-                    else if subscription_id == sub_ids.call_three_enums_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callThreeEnums' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callThreeEnums' without correlation ID");
-                        }
-                    }
-                    // end callThreeEnums method response handling
-                    else if subscription_id == sub_ids.call_one_struct_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOneStruct' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOneStruct' without correlation ID");
-                        }
-                    }
-                    // end callOneStruct method response handling
-                    else if subscription_id == sub_ids.call_optional_struct_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOptionalStruct' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOptionalStruct' without correlation ID");
-                        }
-                    }
-                    // end callOptionalStruct method response handling
-                    else if subscription_id == sub_ids.call_three_structs_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callThreeStructs' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callThreeStructs' without correlation ID");
-                        }
-                    }
-                    // end callThreeStructs method response handling
-                    else if subscription_id == sub_ids.call_one_date_time_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOneDateTime' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOneDateTime' without correlation ID");
-                        }
-                    }
-                    // end callOneDateTime method response handling
-                    else if subscription_id == sub_ids.call_optional_date_time_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOptionalDateTime' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOptionalDateTime' without correlation ID");
-                        }
-                    }
-                    // end callOptionalDateTime method response handling
-                    else if subscription_id == sub_ids.call_three_date_times_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callThreeDateTimes' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callThreeDateTimes' without correlation ID");
-                        }
-                    }
-                    // end callThreeDateTimes method response handling
-                    else if subscription_id == sub_ids.call_one_duration_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOneDuration' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOneDuration' without correlation ID");
-                        }
-                    }
-                    // end callOneDuration method response handling
-                    else if subscription_id == sub_ids.call_optional_duration_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOptionalDuration' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOptionalDuration' without correlation ID");
-                        }
-                    }
-                    // end callOptionalDuration method response handling
-                    else if subscription_id == sub_ids.call_three_durations_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callThreeDurations' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callThreeDurations' without correlation ID");
-                        }
-                    }
-                    // end callThreeDurations method response handling
-                    else if subscription_id == sub_ids.call_one_binary_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOneBinary' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOneBinary' without correlation ID");
-                        }
-                    }
-                    // end callOneBinary method response handling
-                    else if subscription_id == sub_ids.call_optional_binary_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOptionalBinary' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOptionalBinary' without correlation ID");
-                        }
-                    }
-                    // end callOptionalBinary method response handling
-                    else if subscription_id == sub_ids.call_three_binaries_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callThreeBinaries' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callThreeBinaries' without correlation ID");
-                        }
-                    }
-                    // end callThreeBinaries method response handling
-                    else if subscription_id == sub_ids.call_one_list_of_integers_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOneListOfIntegers' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOneListOfIntegers' without correlation ID");
-                        }
-                    }
-                    // end callOneListOfIntegers method response handling
-                    else if subscription_id == sub_ids.call_optional_list_of_floats_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callOptionalListOfFloats' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callOptionalListOfFloats' without correlation ID");
-                        }
-                    }
-                    // end callOptionalListOfFloats method response handling
-                    else if subscription_id == sub_ids.call_two_lists_method_resp {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id.and_then(|uuid| {
-                                let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                hashmap.remove(&uuid)
-                            });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response for 'callTwoLists' to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response for 'callTwoLists' without correlation ID");
-                        }
-                    } // end callTwoLists method response handling
-                    if Some(subscription_id) == sub_ids.empty_signal {
-                        let chan = sig_chans.empty_sender.clone();
-
-                        let _send_result = chan.send(());
-                    }
-                    // end empty signal handling
-                    else if Some(subscription_id) == sub_ids.single_int_signal {
-                        let chan = sig_chans.single_int_sender.clone();
-
-                        match serde_json::from_slice::<SingleIntSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SingleIntSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleInt signal handling
-                    else if Some(subscription_id) == sub_ids.single_optional_int_signal {
-                        let chan = sig_chans.single_optional_int_sender.clone();
-
-                        match serde_json::from_slice::<SingleOptionalIntSignalPayload>(&msg.payload)
-                        {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleOptionalIntSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleOptionalInt signal handling
-                    else if Some(subscription_id) == sub_ids.three_integers_signal {
-                        let chan = sig_chans.three_integers_sender.clone();
-
-                        match serde_json::from_slice::<ThreeIntegersSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into ThreeIntegersSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end threeIntegers signal handling
-                    else if Some(subscription_id) == sub_ids.single_string_signal {
-                        let chan = sig_chans.single_string_sender.clone();
-
-                        match serde_json::from_slice::<SingleStringSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SingleStringSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleString signal handling
-                    else if Some(subscription_id) == sub_ids.single_optional_string_signal {
-                        let chan = sig_chans.single_optional_string_sender.clone();
-
-                        match serde_json::from_slice::<SingleOptionalStringSignalPayload>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleOptionalStringSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleOptionalString signal handling
-                    else if Some(subscription_id) == sub_ids.three_strings_signal {
-                        let chan = sig_chans.three_strings_sender.clone();
-
-                        match serde_json::from_slice::<ThreeStringsSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into ThreeStringsSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end threeStrings signal handling
-                    else if Some(subscription_id) == sub_ids.single_enum_signal {
-                        let chan = sig_chans.single_enum_sender.clone();
-
-                        match serde_json::from_slice::<SingleEnumSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SingleEnumSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleEnum signal handling
-                    else if Some(subscription_id) == sub_ids.single_optional_enum_signal {
-                        let chan = sig_chans.single_optional_enum_sender.clone();
-
-                        match serde_json::from_slice::<SingleOptionalEnumSignalPayload>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleOptionalEnumSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleOptionalEnum signal handling
-                    else if Some(subscription_id) == sub_ids.three_enums_signal {
-                        let chan = sig_chans.three_enums_sender.clone();
-
-                        match serde_json::from_slice::<ThreeEnumsSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into ThreeEnumsSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end threeEnums signal handling
-                    else if Some(subscription_id) == sub_ids.single_struct_signal {
-                        let chan = sig_chans.single_struct_sender.clone();
-
-                        match serde_json::from_slice::<SingleStructSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SingleStructSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleStruct signal handling
-                    else if Some(subscription_id) == sub_ids.single_optional_struct_signal {
-                        let chan = sig_chans.single_optional_struct_sender.clone();
-
-                        match serde_json::from_slice::<SingleOptionalStructSignalPayload>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleOptionalStructSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleOptionalStruct signal handling
-                    else if Some(subscription_id) == sub_ids.three_structs_signal {
-                        let chan = sig_chans.three_structs_sender.clone();
-
-                        match serde_json::from_slice::<ThreeStructsSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into ThreeStructsSignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end threeStructs signal handling
-                    else if Some(subscription_id) == sub_ids.single_date_time_signal {
-                        let chan = sig_chans.single_date_time_sender.clone();
-
-                        match serde_json::from_slice::<SingleDateTimeSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleDateTimeSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleDateTime signal handling
-                    else if Some(subscription_id) == sub_ids.single_optional_datetime_signal {
-                        let chan = sig_chans.single_optional_datetime_sender.clone();
-
-                        match serde_json::from_slice::<SingleOptionalDatetimeSignalPayload>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleOptionalDatetimeSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleOptionalDatetime signal handling
-                    else if Some(subscription_id) == sub_ids.three_date_times_signal {
-                        let chan = sig_chans.three_date_times_sender.clone();
-
-                        match serde_json::from_slice::<ThreeDateTimesSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into ThreeDateTimesSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end threeDateTimes signal handling
-                    else if Some(subscription_id) == sub_ids.single_duration_signal {
-                        let chan = sig_chans.single_duration_sender.clone();
-
-                        match serde_json::from_slice::<SingleDurationSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleDurationSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleDuration signal handling
-                    else if Some(subscription_id) == sub_ids.single_optional_duration_signal {
-                        let chan = sig_chans.single_optional_duration_sender.clone();
-
-                        match serde_json::from_slice::<SingleOptionalDurationSignalPayload>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleOptionalDurationSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleOptionalDuration signal handling
-                    else if Some(subscription_id) == sub_ids.three_durations_signal {
-                        let chan = sig_chans.three_durations_sender.clone();
-
-                        match serde_json::from_slice::<ThreeDurationsSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into ThreeDurationsSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end threeDurations signal handling
-                    else if Some(subscription_id) == sub_ids.single_binary_signal {
-                        let chan = sig_chans.single_binary_sender.clone();
-
-                        match serde_json::from_slice::<SingleBinarySignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SingleBinarySignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleBinary signal handling
-                    else if Some(subscription_id) == sub_ids.single_optional_binary_signal {
-                        let chan = sig_chans.single_optional_binary_sender.clone();
-
-                        match serde_json::from_slice::<SingleOptionalBinarySignalPayload>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.value);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleOptionalBinarySignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleOptionalBinary signal handling
-                    else if Some(subscription_id) == sub_ids.three_binaries_signal {
-                        let chan = sig_chans.three_binaries_sender.clone();
-
-                        match serde_json::from_slice::<ThreeBinariesSignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into ThreeBinariesSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end threeBinaries signal handling
-                    else if Some(subscription_id) == sub_ids.single_array_of_integers_signal {
-                        let chan = sig_chans.single_array_of_integers_sender.clone();
-
-                        match serde_json::from_slice::<SingleArrayOfIntegersSignalPayload>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.values);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleArrayOfIntegersSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleArrayOfIntegers signal handling
-                    else if Some(subscription_id)
-                        == sub_ids.single_optional_array_of_strings_signal
-                    {
-                        let chan = sig_chans.single_optional_array_of_strings_sender.clone();
-
-                        match serde_json::from_slice::<SingleOptionalArrayOfStringsSignalPayload>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.values);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into SingleOptionalArrayOfStringsSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    }
-                    // end singleOptionalArrayOfStrings signal handling
-                    else if Some(subscription_id) == sub_ids.array_of_every_type_signal {
-                        let chan = sig_chans.array_of_every_type_sender.clone();
-
-                        match serde_json::from_slice::<ArrayOfEveryTypeSignalPayload>(&msg.payload)
-                        {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into ArrayOfEveryTypeSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                    } // end arrayOfEveryType signal handling
-
-                    if subscription_id == sub_ids.read_write_integer_property_value {
-                        match serde_json::from_slice::<ReadWriteIntegerProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_integer.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_integer_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_integer property value update
-                    else if subscription_id == sub_ids.read_only_integer_property_value {
-                        match serde_json::from_slice::<ReadOnlyIntegerProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_only_integer.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_only_integer_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_only_integer property value update
-                    else if subscription_id == sub_ids.read_write_optional_integer_property_value
-                    {
-                        match serde_json::from_slice::<ReadWriteOptionalIntegerProperty>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_optional_integer.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_optional_integer_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_optional_integer property value update
-                    else if subscription_id == sub_ids.read_write_two_integers_property_value {
-                        match serde_json::from_slice::<ReadWriteTwoIntegersProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_two_integers.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_two_integers_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_two_integers property value update
-                    else if subscription_id == sub_ids.read_only_string_property_value {
-                        match serde_json::from_slice::<ReadOnlyStringProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_only_string.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_only_string_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_only_string property value update
-                    else if subscription_id == sub_ids.read_write_string_property_value {
-                        match serde_json::from_slice::<ReadWriteStringProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_string.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_string_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_string property value update
-                    else if subscription_id == sub_ids.read_write_optional_string_property_value {
-                        match serde_json::from_slice::<ReadWriteOptionalStringProperty>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_optional_string.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_optional_string_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_optional_string property value update
-                    else if subscription_id == sub_ids.read_write_two_strings_property_value {
-                        match serde_json::from_slice::<ReadWriteTwoStringsProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_two_strings.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_two_strings_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_two_strings property value update
-                    else if subscription_id == sub_ids.read_write_struct_property_value {
-                        match serde_json::from_slice::<ReadWriteStructProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_struct.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_struct_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_struct property value update
-                    else if subscription_id == sub_ids.read_write_optional_struct_property_value {
-                        match serde_json::from_slice::<ReadWriteOptionalStructProperty>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_optional_struct.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_optional_struct_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_optional_struct property value update
-                    else if subscription_id == sub_ids.read_write_two_structs_property_value {
-                        match serde_json::from_slice::<ReadWriteTwoStructsProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_two_structs.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_two_structs_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_two_structs property value update
-                    else if subscription_id == sub_ids.read_only_enum_property_value {
-                        match serde_json::from_slice::<ReadOnlyEnumProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_only_enum.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_only_enum_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_only_enum property value update
-                    else if subscription_id == sub_ids.read_write_enum_property_value {
-                        match serde_json::from_slice::<ReadWriteEnumProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_enum.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_enum_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_enum property value update
-                    else if subscription_id == sub_ids.read_write_optional_enum_property_value {
-                        match serde_json::from_slice::<ReadWriteOptionalEnumProperty>(&msg.payload)
-                        {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_optional_enum.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_optional_enum_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_optional_enum property value update
-                    else if subscription_id == sub_ids.read_write_two_enums_property_value {
-                        match serde_json::from_slice::<ReadWriteTwoEnumsProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_two_enums.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_two_enums_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_two_enums property value update
-                    else if subscription_id == sub_ids.read_write_datetime_property_value {
-                        match serde_json::from_slice::<ReadWriteDatetimeProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_datetime.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_datetime_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_datetime property value update
-                    else if subscription_id == sub_ids.read_write_optional_datetime_property_value
-                    {
-                        match serde_json::from_slice::<ReadWriteOptionalDatetimeProperty>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_optional_datetime.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_optional_datetime_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_optional_datetime property value update
-                    else if subscription_id == sub_ids.read_write_two_datetimes_property_value {
-                        match serde_json::from_slice::<ReadWriteTwoDatetimesProperty>(&msg.payload)
-                        {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_two_datetimes.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_two_datetimes_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_two_datetimes property value update
-                    else if subscription_id == sub_ids.read_write_duration_property_value {
-                        match serde_json::from_slice::<ReadWriteDurationProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_duration.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_duration_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_duration property value update
-                    else if subscription_id == sub_ids.read_write_optional_duration_property_value
-                    {
-                        match serde_json::from_slice::<ReadWriteOptionalDurationProperty>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_optional_duration.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_optional_duration_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_optional_duration property value update
-                    else if subscription_id == sub_ids.read_write_two_durations_property_value {
-                        match serde_json::from_slice::<ReadWriteTwoDurationsProperty>(&msg.payload)
-                        {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_two_durations.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_two_durations_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_two_durations property value update
-                    else if subscription_id == sub_ids.read_write_binary_property_value {
-                        match serde_json::from_slice::<ReadWriteBinaryProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_binary.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_binary_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_binary property value update
-                    else if subscription_id == sub_ids.read_write_optional_binary_property_value {
-                        match serde_json::from_slice::<ReadWriteOptionalBinaryProperty>(
-                            &msg.payload,
-                        ) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_optional_binary.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_optional_binary_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_optional_binary property value update
-                    else if subscription_id == sub_ids.read_write_two_binaries_property_value {
-                        match serde_json::from_slice::<ReadWriteTwoBinariesProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_two_binaries.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_two_binaries_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_two_binaries property value update
-                    else if subscription_id == sub_ids.read_write_list_of_strings_property_value {
-                        match serde_json::from_slice::<ReadWriteListOfStringsProperty>(&msg.payload)
-                        {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_list_of_strings.write().await;
-
-                                *guard = pl.value.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_list_of_strings_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    }
-                    // end read_write_list_of_strings property value update
-                    else if subscription_id == sub_ids.read_write_lists_property_value {
-                        match serde_json::from_slice::<ReadWriteListsProperty>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.read_write_lists.write().await;
-
-                                *guard = pl.clone();
-
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.read_write_lists_version.store(
-                                            version_num,
-                                            std::sync::atomic::Ordering::Relaxed,
-                                        );
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
-                                    let opt_sender = opt_corr_id.and_then(|uuid| {
-                                        let mut hashmap =
-                                            resp_map.lock().expect("Mutex was poisoned");
-                                        hashmap.remove(&uuid)
-                                    });
-                                    if let Some(sender) = opt_sender {
-                                        let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                        match oss.send(return_code) {
-                                            Ok(_) => (),
-                                            Err(_) => (),
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to deserialize '{}' into SignalPayload: {}",
-                                    String::from_utf8_lossy(&msg.payload),
-                                    e
-                                );
-                                continue;
-                            }
-                        }
-                    } // end read_write_lists property value update
+                } else {
+                    error!("Received message without a subscription id");
                 }
             }
         });

@@ -10,6 +10,7 @@ TODO: Get license text from stinger file
 use std::any::Any;
 
 use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
+use test_able_ipc::property::TestAbleInitialPropertyValues;
 use test_able_ipc::server::{TestAbleMethodHandlers, TestAbleServer};
 use tokio::time::{sleep, Duration};
 
@@ -709,6 +710,7 @@ async fn main() {
         )
         .init();
 
+    // Set up an MQTT client connection.
     let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::TcpLocalhost(1883))
         .client_id("rust-server-demo".to_string())
@@ -717,278 +719,38 @@ async fn main() {
     let mut connection = MqttierClient::new(mqttier_options).unwrap();
     let _ = connection.start().await.unwrap();
 
-    let handlers: Arc<Mutex<Box<dyn TestAbleMethodHandlers<MqttierClient>>>> =
-        Arc::new(Mutex::new(Box::new(TestAbleMethodImpl::new())));
+    let initial_property_values = TestAbleInitialPropertyValues {
+        read_write_integer: 42,
+        read_write_integer_version: 1,
 
-    let mut server = TestAbleServer::new(
-        connection,
-        handlers.clone(),
-        "rust-server-demo:1".to_string(),
-    )
-    .await;
+        read_only_integer: 42,
+        read_only_integer_version: 1,
 
-    let mut looping_server = server.clone();
-    let _loop_join_handle = tokio::spawn(async move {
-        println!("Starting connection loop");
-        let _conn_loop = looping_server.run_loop().await;
-    });
+        read_write_optional_integer: Some(42),
+        read_write_optional_integer_version: 1,
 
-    println!("Setting initial value for property 'read_write_integer'");
-    let prop_init_future = server.set_read_write_integer(42).await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_write_integer': {:?}", e);
-    }
+        read_write_two_integers: ReadWriteTwoIntegersProperty {
+            first: 42,
+            second: Some(42),
+        },
+        read_write_two_integers_version: 1,
 
-    println!("Setting initial value for property 'read_only_integer'");
-    let prop_init_future = server.set_read_only_integer(42).await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_only_integer': {:?}", e);
-    }
+        read_only_string: "apples".to_string(),
+        read_only_string_version: 1,
 
-    println!("Setting initial value for property 'read_write_optional_integer'");
-    let prop_init_future = server.set_read_write_optional_integer(Some(42)).await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_optional_integer': {:?}",
-            e
-        );
-    }
+        read_write_string: "apples".to_string(),
+        read_write_string_version: 1,
 
-    println!("Setting initial value for property 'read_write_two_integers'");
-    let new_value = ReadWriteTwoIntegersProperty {
-        first: 42,
-        second: Some(42),
-    };
-    let prop_init_future = server.set_read_write_two_integers(new_value).await;
+        read_write_optional_string: Some("apples".to_string()),
+        read_write_optional_string_version: 1,
 
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_two_integers': {:?}",
-            e
-        );
-    }
+        read_write_two_strings: ReadWriteTwoStringsProperty {
+            first: "apples".to_string(),
+            second: Some("apples".to_string()),
+        },
+        read_write_two_strings_version: 1,
 
-    println!("Setting initial value for property 'read_only_string'");
-    let prop_init_future = server.set_read_only_string("apples".to_string()).await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_only_string': {:?}", e);
-    }
-
-    println!("Setting initial value for property 'read_write_string'");
-    let prop_init_future = server.set_read_write_string("apples".to_string()).await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_write_string': {:?}", e);
-    }
-
-    println!("Setting initial value for property 'read_write_optional_string'");
-    let prop_init_future = server
-        .set_read_write_optional_string(Some("apples".to_string()))
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_optional_string': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_two_strings'");
-    let new_value = ReadWriteTwoStringsProperty {
-        first: "apples".to_string(),
-        second: Some("apples".to_string()),
-    };
-    let prop_init_future = server.set_read_write_two_strings(new_value).await;
-
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_two_strings': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_struct'");
-    let prop_init_future = server
-        .set_read_write_struct(AllTypes {
-            the_bool: true,
-            the_int: 42,
-            the_number: 3.14,
-            the_str: "apples".to_string(),
-            the_enum: Numbers::One,
-            an_entry_object: Entry {
-                key: 42,
-                value: "apples".to_string(),
-            },
-            date_and_time: chrono::Utc::now(),
-            time_duration: chrono::Duration::seconds(3536),
-            data: vec![101, 120, 97, 109, 112, 108, 101],
-            optional_integer: Some(42),
-            optional_string: Some("apples".to_string()),
-            optional_enum: Some(Numbers::One),
-            optional_entry_object: Some(Entry {
-                key: 42,
-                value: "apples".to_string(),
-            }),
-            optional_date_time: Some(chrono::Utc::now()),
-            optional_duration: Some(chrono::Duration::seconds(3536)),
-            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-            array_of_integers: vec![42, 2022],
-            optional_array_of_integers: Some(vec![42, 2022, 2022]),
-            array_of_strings: vec!["apples".to_string(), "foo".to_string()],
-            optional_array_of_strings: Some(vec![
-                "apples".to_string(),
-                "foo".to_string(),
-                "foo".to_string(),
-            ]),
-            array_of_enums: vec![Numbers::One, Numbers::One],
-            optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
-            array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-            optional_array_of_datetimes: Some(vec![
-                chrono::Utc::now(),
-                chrono::Utc::now(),
-                chrono::Utc::now(),
-            ]),
-            array_of_durations: vec![
-                chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(975),
-            ],
-            optional_array_of_durations: Some(vec![
-                chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(975),
-                chrono::Duration::seconds(967),
-            ]),
-            array_of_binaries: vec![
-                vec![101, 120, 97, 109, 112, 108, 101],
-                vec![101, 120, 97, 109, 112, 108, 101],
-            ],
-            optional_array_of_binaries: Some(vec![
-                vec![101, 120, 97, 109, 112, 108, 101],
-                vec![101, 120, 97, 109, 112, 108, 101],
-                vec![101, 120, 97, 109, 112, 108, 101],
-            ]),
-            array_of_entry_objects: vec![
-                Entry {
-                    key: 42,
-                    value: "apples".to_string(),
-                },
-                Entry {
-                    key: 2022,
-                    value: "foo".to_string(),
-                },
-            ],
-            optional_array_of_entry_objects: Some(vec![
-                Entry {
-                    key: 42,
-                    value: "apples".to_string(),
-                },
-                Entry {
-                    key: 2022,
-                    value: "foo".to_string(),
-                },
-                Entry {
-                    key: 2022,
-                    value: "foo".to_string(),
-                },
-            ]),
-        })
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_write_struct': {:?}", e);
-    }
-
-    println!("Setting initial value for property 'read_write_optional_struct'");
-    let prop_init_future = server
-        .set_read_write_optional_struct(Some(AllTypes {
-            the_bool: true,
-            the_int: 42,
-            the_number: 3.14,
-            the_str: "apples".to_string(),
-            the_enum: Numbers::One,
-            an_entry_object: Entry {
-                key: 42,
-                value: "apples".to_string(),
-            },
-            date_and_time: chrono::Utc::now(),
-            time_duration: chrono::Duration::seconds(3536),
-            data: vec![101, 120, 97, 109, 112, 108, 101],
-            optional_integer: Some(42),
-            optional_string: Some("apples".to_string()),
-            optional_enum: Some(Numbers::One),
-            optional_entry_object: Some(Entry {
-                key: 42,
-                value: "apples".to_string(),
-            }),
-            optional_date_time: Some(chrono::Utc::now()),
-            optional_duration: Some(chrono::Duration::seconds(3536)),
-            optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-            array_of_integers: vec![42, 2022],
-            optional_array_of_integers: Some(vec![42, 2022, 2022]),
-            array_of_strings: vec!["apples".to_string(), "foo".to_string()],
-            optional_array_of_strings: Some(vec![
-                "apples".to_string(),
-                "foo".to_string(),
-                "foo".to_string(),
-            ]),
-            array_of_enums: vec![Numbers::One, Numbers::One],
-            optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
-            array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-            optional_array_of_datetimes: Some(vec![
-                chrono::Utc::now(),
-                chrono::Utc::now(),
-                chrono::Utc::now(),
-            ]),
-            array_of_durations: vec![
-                chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(975),
-            ],
-            optional_array_of_durations: Some(vec![
-                chrono::Duration::seconds(3536),
-                chrono::Duration::seconds(975),
-                chrono::Duration::seconds(967),
-            ]),
-            array_of_binaries: vec![
-                vec![101, 120, 97, 109, 112, 108, 101],
-                vec![101, 120, 97, 109, 112, 108, 101],
-            ],
-            optional_array_of_binaries: Some(vec![
-                vec![101, 120, 97, 109, 112, 108, 101],
-                vec![101, 120, 97, 109, 112, 108, 101],
-                vec![101, 120, 97, 109, 112, 108, 101],
-            ]),
-            array_of_entry_objects: vec![
-                Entry {
-                    key: 42,
-                    value: "apples".to_string(),
-                },
-                Entry {
-                    key: 2022,
-                    value: "foo".to_string(),
-                },
-            ],
-            optional_array_of_entry_objects: Some(vec![
-                Entry {
-                    key: 42,
-                    value: "apples".to_string(),
-                },
-                Entry {
-                    key: 2022,
-                    value: "foo".to_string(),
-                },
-                Entry {
-                    key: 2022,
-                    value: "foo".to_string(),
-                },
-            ]),
-        }))
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_optional_struct': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_two_structs'");
-    let new_value = ReadWriteTwoStructsProperty {
-        first: AllTypes {
+        read_write_struct: AllTypes {
             the_bool: true,
             the_int: 42,
             the_number: 3.14,
@@ -1070,7 +832,9 @@ async fn main() {
                 },
             ]),
         },
-        second: Some(AllTypes {
+        read_write_struct_version: 1,
+
+        read_write_optional_struct: Some(AllTypes {
             the_bool: true,
             the_int: 42,
             the_number: 3.14,
@@ -1152,175 +916,260 @@ async fn main() {
                 },
             ]),
         }),
+        read_write_optional_struct_version: 1,
+
+        read_write_two_structs: ReadWriteTwoStructsProperty {
+            first: AllTypes {
+                the_bool: true,
+                the_int: 42,
+                the_number: 3.14,
+                the_str: "apples".to_string(),
+                the_enum: Numbers::One,
+                an_entry_object: Entry {
+                    key: 42,
+                    value: "apples".to_string(),
+                },
+                date_and_time: chrono::Utc::now(),
+                time_duration: chrono::Duration::seconds(3536),
+                data: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_integer: Some(42),
+                optional_string: Some("apples".to_string()),
+                optional_enum: Some(Numbers::One),
+                optional_entry_object: Some(Entry {
+                    key: 42,
+                    value: "apples".to_string(),
+                }),
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                array_of_integers: vec![42, 2022],
+                optional_array_of_integers: Some(vec![42, 2022, 2022]),
+                array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+                optional_array_of_strings: Some(vec![
+                    "apples".to_string(),
+                    "foo".to_string(),
+                    "foo".to_string(),
+                ]),
+                array_of_enums: vec![Numbers::One, Numbers::One],
+                optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
+                array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                optional_array_of_datetimes: Some(vec![
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                ]),
+                array_of_durations: vec![
+                    chrono::Duration::seconds(3536),
+                    chrono::Duration::seconds(975),
+                ],
+                optional_array_of_durations: Some(vec![
+                    chrono::Duration::seconds(3536),
+                    chrono::Duration::seconds(975),
+                    chrono::Duration::seconds(967),
+                ]),
+                array_of_binaries: vec![
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                ],
+                optional_array_of_binaries: Some(vec![
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                ]),
+                array_of_entry_objects: vec![
+                    Entry {
+                        key: 42,
+                        value: "apples".to_string(),
+                    },
+                    Entry {
+                        key: 2022,
+                        value: "foo".to_string(),
+                    },
+                ],
+                optional_array_of_entry_objects: Some(vec![
+                    Entry {
+                        key: 42,
+                        value: "apples".to_string(),
+                    },
+                    Entry {
+                        key: 2022,
+                        value: "foo".to_string(),
+                    },
+                    Entry {
+                        key: 2022,
+                        value: "foo".to_string(),
+                    },
+                ]),
+            },
+            second: Some(AllTypes {
+                the_bool: true,
+                the_int: 42,
+                the_number: 3.14,
+                the_str: "apples".to_string(),
+                the_enum: Numbers::One,
+                an_entry_object: Entry {
+                    key: 42,
+                    value: "apples".to_string(),
+                },
+                date_and_time: chrono::Utc::now(),
+                time_duration: chrono::Duration::seconds(3536),
+                data: vec![101, 120, 97, 109, 112, 108, 101],
+                optional_integer: Some(42),
+                optional_string: Some("apples".to_string()),
+                optional_enum: Some(Numbers::One),
+                optional_entry_object: Some(Entry {
+                    key: 42,
+                    value: "apples".to_string(),
+                }),
+                optional_date_time: Some(chrono::Utc::now()),
+                optional_duration: Some(chrono::Duration::seconds(3536)),
+                optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                array_of_integers: vec![42, 2022],
+                optional_array_of_integers: Some(vec![42, 2022, 2022]),
+                array_of_strings: vec!["apples".to_string(), "foo".to_string()],
+                optional_array_of_strings: Some(vec![
+                    "apples".to_string(),
+                    "foo".to_string(),
+                    "foo".to_string(),
+                ]),
+                array_of_enums: vec![Numbers::One, Numbers::One],
+                optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]),
+                array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                optional_array_of_datetimes: Some(vec![
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                    chrono::Utc::now(),
+                ]),
+                array_of_durations: vec![
+                    chrono::Duration::seconds(3536),
+                    chrono::Duration::seconds(975),
+                ],
+                optional_array_of_durations: Some(vec![
+                    chrono::Duration::seconds(3536),
+                    chrono::Duration::seconds(975),
+                    chrono::Duration::seconds(967),
+                ]),
+                array_of_binaries: vec![
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                ],
+                optional_array_of_binaries: Some(vec![
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                    vec![101, 120, 97, 109, 112, 108, 101],
+                ]),
+                array_of_entry_objects: vec![
+                    Entry {
+                        key: 42,
+                        value: "apples".to_string(),
+                    },
+                    Entry {
+                        key: 2022,
+                        value: "foo".to_string(),
+                    },
+                ],
+                optional_array_of_entry_objects: Some(vec![
+                    Entry {
+                        key: 42,
+                        value: "apples".to_string(),
+                    },
+                    Entry {
+                        key: 2022,
+                        value: "foo".to_string(),
+                    },
+                    Entry {
+                        key: 2022,
+                        value: "foo".to_string(),
+                    },
+                ]),
+            }),
+        },
+        read_write_two_structs_version: 1,
+
+        read_only_enum: Numbers::One,
+        read_only_enum_version: 1,
+
+        read_write_enum: Numbers::One,
+        read_write_enum_version: 1,
+
+        read_write_optional_enum: Some(Numbers::One),
+        read_write_optional_enum_version: 1,
+
+        read_write_two_enums: ReadWriteTwoEnumsProperty {
+            first: Numbers::One,
+            second: Some(Numbers::One),
+        },
+        read_write_two_enums_version: 1,
+
+        read_write_datetime: chrono::Utc::now(),
+        read_write_datetime_version: 1,
+
+        read_write_optional_datetime: Some(chrono::Utc::now()),
+        read_write_optional_datetime_version: 1,
+
+        read_write_two_datetimes: ReadWriteTwoDatetimesProperty {
+            first: chrono::Utc::now(),
+            second: Some(chrono::Utc::now()),
+        },
+        read_write_two_datetimes_version: 1,
+
+        read_write_duration: chrono::Duration::seconds(3536),
+        read_write_duration_version: 1,
+
+        read_write_optional_duration: Some(chrono::Duration::seconds(3536)),
+        read_write_optional_duration_version: 1,
+
+        read_write_two_durations: ReadWriteTwoDurationsProperty {
+            first: chrono::Duration::seconds(3536),
+            second: Some(chrono::Duration::seconds(3536)),
+        },
+        read_write_two_durations_version: 1,
+
+        read_write_binary: vec![101, 120, 97, 109, 112, 108, 101],
+        read_write_binary_version: 1,
+
+        read_write_optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        read_write_optional_binary_version: 1,
+
+        read_write_two_binaries: ReadWriteTwoBinariesProperty {
+            first: vec![101, 120, 97, 109, 112, 108, 101],
+            second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        },
+        read_write_two_binaries_version: 1,
+
+        read_write_list_of_strings: vec!["apples".to_string(), "foo".to_string()],
+        read_write_list_of_strings_version: 1,
+
+        read_write_lists: ReadWriteListsProperty {
+            the_list: vec![Numbers::One, Numbers::One],
+            optional_list: Some(vec![
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+            ]),
+        },
+        read_write_lists_version: 1,
     };
-    let prop_init_future = server.set_read_write_two_structs(new_value).await;
 
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_two_structs': {:?}",
-            e
-        );
-    }
+    // Create an object that implements the method handlers.
+    let handlers: Arc<Mutex<Box<dyn TestAbleMethodHandlers<MqttierClient>>>> =
+        Arc::new(Mutex::new(Box::new(TestAbleMethodImpl::new())));
 
-    println!("Setting initial value for property 'read_only_enum'");
-    let prop_init_future = server.set_read_only_enum(Numbers::One).await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_only_enum': {:?}", e);
-    }
+    // Create the server object.
+    let mut server = TestAbleServer::new(
+        connection,
+        handlers.clone(),
+        "rust-server-demo:1".to_string(),
+        initial_property_values,
+    )
+    .await;
 
-    println!("Setting initial value for property 'read_write_enum'");
-    let prop_init_future = server.set_read_write_enum(Numbers::One).await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_write_enum': {:?}", e);
-    }
-
-    println!("Setting initial value for property 'read_write_optional_enum'");
-    let prop_init_future = server
-        .set_read_write_optional_enum(Some(Numbers::One))
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_optional_enum': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_two_enums'");
-    let new_value = ReadWriteTwoEnumsProperty {
-        first: Numbers::One,
-        second: Some(Numbers::One),
-    };
-    let prop_init_future = server.set_read_write_two_enums(new_value).await;
-
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_two_enums': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_datetime'");
-    let prop_init_future = server.set_read_write_datetime(chrono::Utc::now()).await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_write_datetime': {:?}", e);
-    }
-
-    println!("Setting initial value for property 'read_write_optional_datetime'");
-    let prop_init_future = server
-        .set_read_write_optional_datetime(Some(chrono::Utc::now()))
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_optional_datetime': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_two_datetimes'");
-    let new_value = ReadWriteTwoDatetimesProperty {
-        first: chrono::Utc::now(),
-        second: Some(chrono::Utc::now()),
-    };
-    let prop_init_future = server.set_read_write_two_datetimes(new_value).await;
-
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_two_datetimes': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_duration'");
-    let prop_init_future = server
-        .set_read_write_duration(chrono::Duration::seconds(3536))
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_write_duration': {:?}", e);
-    }
-
-    println!("Setting initial value for property 'read_write_optional_duration'");
-    let prop_init_future = server
-        .set_read_write_optional_duration(Some(chrono::Duration::seconds(3536)))
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_optional_duration': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_two_durations'");
-    let new_value = ReadWriteTwoDurationsProperty {
-        first: chrono::Duration::seconds(3536),
-        second: Some(chrono::Duration::seconds(3536)),
-    };
-    let prop_init_future = server.set_read_write_two_durations(new_value).await;
-
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_two_durations': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_binary'");
-    let prop_init_future = server
-        .set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101])
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_write_binary': {:?}", e);
-    }
-
-    println!("Setting initial value for property 'read_write_optional_binary'");
-    let prop_init_future = server
-        .set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]))
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_optional_binary': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_two_binaries'");
-    let new_value = ReadWriteTwoBinariesProperty {
-        first: vec![101, 120, 97, 109, 112, 108, 101],
-        second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-    };
-    let prop_init_future = server.set_read_write_two_binaries(new_value).await;
-
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_two_binaries': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_list_of_strings'");
-    let prop_init_future = server
-        .set_read_write_list_of_strings(vec!["apples".to_string(), "foo".to_string()])
-        .await;
-    if let Err(e) = prop_init_future.await {
-        eprintln!(
-            "Error initializing property 'read_write_list_of_strings': {:?}",
-            e
-        );
-    }
-
-    println!("Setting initial value for property 'read_write_lists'");
-    let new_value = ReadWriteListsProperty {
-        the_list: vec![Numbers::One, Numbers::One],
-        optional_list: Some(vec![
-            chrono::Utc::now(),
-            chrono::Utc::now(),
-            chrono::Utc::now(),
-        ]),
-    };
-    let prop_init_future = server.set_read_write_lists(new_value).await;
-
-    if let Err(e) = prop_init_future.await {
-        eprintln!("Error initializing property 'read_write_lists': {:?}", e);
-    }
+    // Start the server connection loop in a separate task.
+    let mut looping_server = server.clone();
+    let _loop_join_handle = tokio::spawn(async move {
+        println!("Starting connection loop");
+        let _conn_loop = looping_server.run_loop().await;
+    });
 
     let mut server_clone1 = server.clone();
     let signal_publish_task = tokio::spawn(async move {
@@ -2003,83 +1852,142 @@ async fn main() {
         }
     });
 
-    let mut server_clone2 = server.clone();
+    let read_write_integer_property = server.get_read_write_integer_handle();
+
+    let read_only_integer_property = server.get_read_only_integer_handle();
+
+    let read_write_optional_integer_property = server.get_read_write_optional_integer_handle();
+
+    let read_write_two_integers_property = server.get_read_write_two_integers_handle();
+
+    let read_only_string_property = server.get_read_only_string_handle();
+
+    let read_write_string_property = server.get_read_write_string_handle();
+
+    let read_write_optional_string_property = server.get_read_write_optional_string_handle();
+
+    let read_write_two_strings_property = server.get_read_write_two_strings_handle();
+
+    let read_write_struct_property = server.get_read_write_struct_handle();
+
+    let read_write_optional_struct_property = server.get_read_write_optional_struct_handle();
+
+    let read_write_two_structs_property = server.get_read_write_two_structs_handle();
+
+    let read_only_enum_property = server.get_read_only_enum_handle();
+
+    let read_write_enum_property = server.get_read_write_enum_handle();
+
+    let read_write_optional_enum_property = server.get_read_write_optional_enum_handle();
+
+    let read_write_two_enums_property = server.get_read_write_two_enums_handle();
+
+    let read_write_datetime_property = server.get_read_write_datetime_handle();
+
+    let read_write_optional_datetime_property = server.get_read_write_optional_datetime_handle();
+
+    let read_write_two_datetimes_property = server.get_read_write_two_datetimes_handle();
+
+    let read_write_duration_property = server.get_read_write_duration_handle();
+
+    let read_write_optional_duration_property = server.get_read_write_optional_duration_handle();
+
+    let read_write_two_durations_property = server.get_read_write_two_durations_handle();
+
+    let read_write_binary_property = server.get_read_write_binary_handle();
+
+    let read_write_optional_binary_property = server.get_read_write_optional_binary_handle();
+
+    let read_write_two_binaries_property = server.get_read_write_two_binaries_handle();
+
+    let read_write_list_of_strings_property = server.get_read_write_list_of_strings_handle();
+
+    let read_write_lists_property = server.get_read_write_lists_handle();
     let property_publish_task = tokio::spawn(async move {
         loop {
             sleep(Duration::from_secs(51)).await;
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_integer'");
-            let prop_change_future = server_clone2.set_read_write_integer(2022).await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_write_integer': {:?}", e);
+            {
+                println!("Changing property 'read_write_integer'");
+                let mut read_write_integer_guard = read_write_integer_property.write().await;
+                *read_write_integer_guard = 2022;
+                // Value is changed and published when read_write_integer_guard goes out of scope and is dropped.
             }
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_only_integer'");
-            let prop_change_future = server_clone2.set_read_only_integer(2022).await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_only_integer': {:?}", e);
+            {
+                println!("Changing property 'read_only_integer'");
+                let mut read_only_integer_guard = read_only_integer_property.write().await;
+                *read_only_integer_guard = 2022;
+                // Value is changed and published when read_only_integer_guard goes out of scope and is dropped.
             }
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_optional_integer'");
-            let prop_change_future = server_clone2
-                .set_read_write_optional_integer(Some(2022))
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!(
-                    "Error changing property 'read_write_optional_integer': {:?}",
-                    e
-                );
+            {
+                println!("Changing property 'read_write_optional_integer'");
+                let mut read_write_optional_integer_guard =
+                    read_write_optional_integer_property.write().await;
+                *read_write_optional_integer_guard = Some(2022);
+                // Value is changed and published when read_write_optional_integer_guard goes out of scope and is dropped.
             }
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_two_integers'");
-            let new_value = ReadWriteTwoIntegersProperty {
-                first: 2022,
-                second: Some(2022),
-            };
-            let _ = server_clone2.set_read_write_two_integers(new_value).await;
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_only_string'");
-            let prop_change_future = server_clone2.set_read_only_string("foo".to_string()).await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_only_string': {:?}", e);
+            {
+                println!("Changing property 'read_write_two_integers'");
+                let mut read_write_two_integers_guard =
+                    read_write_two_integers_property.write().await;
+                let new_read_write_two_integers_value = ReadWriteTwoIntegersProperty {
+                    first: 2022,
+                    second: Some(2022),
+                };
+                *read_write_two_integers_guard = new_read_write_two_integers_value;
+                // Value is changed and published when read_write_two_integers_guard goes out of scope and is dropped.
             }
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_string'");
-            let prop_change_future = server_clone2.set_read_write_string("foo".to_string()).await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_write_string': {:?}", e);
+            {
+                println!("Changing property 'read_only_string'");
+                let mut read_only_string_guard = read_only_string_property.write().await;
+                *read_only_string_guard = "foo".to_string();
+                // Value is changed and published when read_only_string_guard goes out of scope and is dropped.
             }
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_optional_string'");
-            let prop_change_future = server_clone2
-                .set_read_write_optional_string(Some("foo".to_string()))
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!(
-                    "Error changing property 'read_write_optional_string': {:?}",
-                    e
-                );
+            {
+                println!("Changing property 'read_write_string'");
+                let mut read_write_string_guard = read_write_string_property.write().await;
+                *read_write_string_guard = "foo".to_string();
+                // Value is changed and published when read_write_string_guard goes out of scope and is dropped.
             }
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_two_strings'");
-            let new_value = ReadWriteTwoStringsProperty {
-                first: "foo".to_string(),
-                second: Some("foo".to_string()),
-            };
-            let _ = server_clone2.set_read_write_two_strings(new_value).await;
+            {
+                println!("Changing property 'read_write_optional_string'");
+                let mut read_write_optional_string_guard =
+                    read_write_optional_string_property.write().await;
+                *read_write_optional_string_guard = Some("foo".to_string());
+                // Value is changed and published when read_write_optional_string_guard goes out of scope and is dropped.
+            }
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_struct'");
-            let prop_change_future = server_clone2
-                .set_read_write_struct(AllTypes {
+            {
+                println!("Changing property 'read_write_two_strings'");
+                let mut read_write_two_strings_guard =
+                    read_write_two_strings_property.write().await;
+                let new_read_write_two_strings_value = ReadWriteTwoStringsProperty {
+                    first: "foo".to_string(),
+                    second: Some("foo".to_string()),
+                };
+                *read_write_two_strings_guard = new_read_write_two_strings_value;
+                // Value is changed and published when read_write_two_strings_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_struct'");
+                let mut read_write_struct_guard = read_write_struct_property.write().await;
+                *read_write_struct_guard = AllTypes {
                     the_bool: true,
                     the_int: 2022,
                     the_number: 1.0,
@@ -2160,16 +2068,16 @@ async fn main() {
                             value: "bar".to_string(),
                         },
                     ]),
-                })
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_write_struct': {:?}", e);
+                };
+                // Value is changed and published when read_write_struct_guard goes out of scope and is dropped.
             }
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_optional_struct'");
-            let prop_change_future = server_clone2
-                .set_read_write_optional_struct(Some(AllTypes {
+            {
+                println!("Changing property 'read_write_optional_struct'");
+                let mut read_write_optional_struct_guard =
+                    read_write_optional_struct_property.write().await;
+                *read_write_optional_struct_guard = Some(AllTypes {
                     the_bool: true,
                     the_int: 2022,
                     the_number: 1.0,
@@ -2250,337 +2158,344 @@ async fn main() {
                             value: "bar".to_string(),
                         },
                     ]),
-                }))
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!(
-                    "Error changing property 'read_write_optional_struct': {:?}",
-                    e
-                );
+                });
+                // Value is changed and published when read_write_optional_struct_guard goes out of scope and is dropped.
             }
 
             sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_two_structs'");
-            let new_value = ReadWriteTwoStructsProperty {
-                first: AllTypes {
-                    the_bool: true,
-                    the_int: 2022,
-                    the_number: 1.0,
-                    the_str: "foo".to_string(),
-                    the_enum: Numbers::One,
-                    an_entry_object: Entry {
-                        key: 2022,
-                        value: "foo".to_string(),
+            {
+                println!("Changing property 'read_write_two_structs'");
+                let mut read_write_two_structs_guard =
+                    read_write_two_structs_property.write().await;
+                let new_read_write_two_structs_value = ReadWriteTwoStructsProperty {
+                    first: AllTypes {
+                        the_bool: true,
+                        the_int: 2022,
+                        the_number: 1.0,
+                        the_str: "foo".to_string(),
+                        the_enum: Numbers::One,
+                        an_entry_object: Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        },
+                        date_and_time: chrono::Utc::now(),
+                        time_duration: chrono::Duration::seconds(967),
+                        data: vec![101, 120, 97, 109, 112, 108, 101],
+                        optional_integer: Some(2022),
+                        optional_string: Some("foo".to_string()),
+                        optional_enum: Some(Numbers::One),
+                        optional_entry_object: Some(Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        }),
+                        optional_date_time: Some(chrono::Utc::now()),
+                        optional_duration: Some(chrono::Duration::seconds(967)),
+                        optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                        array_of_integers: vec![2022, 1955],
+                        optional_array_of_integers: Some(vec![2022, 1955, 1955]),
+                        array_of_strings: vec!["foo".to_string(), "bar".to_string()],
+                        optional_array_of_strings: Some(vec![
+                            "foo".to_string(),
+                            "bar".to_string(),
+                            "Joe".to_string(),
+                        ]),
+                        array_of_enums: vec![Numbers::One, Numbers::Three],
+                        optional_array_of_enums: Some(vec![
+                            Numbers::One,
+                            Numbers::Three,
+                            Numbers::Three,
+                        ]),
+                        array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                        optional_array_of_datetimes: Some(vec![
+                            chrono::Utc::now(),
+                            chrono::Utc::now(),
+                            chrono::Utc::now(),
+                        ]),
+                        array_of_durations: vec![
+                            chrono::Duration::seconds(967),
+                            chrono::Duration::seconds(2552),
+                        ],
+                        optional_array_of_durations: Some(vec![
+                            chrono::Duration::seconds(967),
+                            chrono::Duration::seconds(2552),
+                            chrono::Duration::seconds(3250),
+                        ]),
+                        array_of_binaries: vec![
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                        ],
+                        optional_array_of_binaries: Some(vec![
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                        ]),
+                        array_of_entry_objects: vec![
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                            Entry {
+                                key: 1955,
+                                value: "bar".to_string(),
+                            },
+                        ],
+                        optional_array_of_entry_objects: Some(vec![
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                            Entry {
+                                key: 1955,
+                                value: "bar".to_string(),
+                            },
+                            Entry {
+                                key: 1955,
+                                value: "Joe".to_string(),
+                            },
+                        ]),
                     },
-                    date_and_time: chrono::Utc::now(),
-                    time_duration: chrono::Duration::seconds(967),
-                    data: vec![101, 120, 97, 109, 112, 108, 101],
-                    optional_integer: Some(2022),
-                    optional_string: Some("foo".to_string()),
-                    optional_enum: Some(Numbers::One),
-                    optional_entry_object: Some(Entry {
-                        key: 2022,
-                        value: "foo".to_string(),
+                    second: Some(AllTypes {
+                        the_bool: true,
+                        the_int: 2022,
+                        the_number: 1.0,
+                        the_str: "foo".to_string(),
+                        the_enum: Numbers::One,
+                        an_entry_object: Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        },
+                        date_and_time: chrono::Utc::now(),
+                        time_duration: chrono::Duration::seconds(967),
+                        data: vec![101, 120, 97, 109, 112, 108, 101],
+                        optional_integer: Some(2022),
+                        optional_string: Some("foo".to_string()),
+                        optional_enum: Some(Numbers::One),
+                        optional_entry_object: Some(Entry {
+                            key: 2022,
+                            value: "foo".to_string(),
+                        }),
+                        optional_date_time: Some(chrono::Utc::now()),
+                        optional_duration: Some(chrono::Duration::seconds(967)),
+                        optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                        array_of_integers: vec![2022, 1955],
+                        optional_array_of_integers: Some(vec![2022, 1955, 1955]),
+                        array_of_strings: vec!["foo".to_string(), "bar".to_string()],
+                        optional_array_of_strings: Some(vec![
+                            "foo".to_string(),
+                            "bar".to_string(),
+                            "Joe".to_string(),
+                        ]),
+                        array_of_enums: vec![Numbers::One, Numbers::Three],
+                        optional_array_of_enums: Some(vec![
+                            Numbers::One,
+                            Numbers::Three,
+                            Numbers::Three,
+                        ]),
+                        array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
+                        optional_array_of_datetimes: Some(vec![
+                            chrono::Utc::now(),
+                            chrono::Utc::now(),
+                            chrono::Utc::now(),
+                        ]),
+                        array_of_durations: vec![
+                            chrono::Duration::seconds(967),
+                            chrono::Duration::seconds(2552),
+                        ],
+                        optional_array_of_durations: Some(vec![
+                            chrono::Duration::seconds(967),
+                            chrono::Duration::seconds(2552),
+                            chrono::Duration::seconds(3250),
+                        ]),
+                        array_of_binaries: vec![
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                        ],
+                        optional_array_of_binaries: Some(vec![
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                            vec![101, 120, 97, 109, 112, 108, 101],
+                        ]),
+                        array_of_entry_objects: vec![
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                            Entry {
+                                key: 1955,
+                                value: "bar".to_string(),
+                            },
+                        ],
+                        optional_array_of_entry_objects: Some(vec![
+                            Entry {
+                                key: 2022,
+                                value: "foo".to_string(),
+                            },
+                            Entry {
+                                key: 1955,
+                                value: "bar".to_string(),
+                            },
+                            Entry {
+                                key: 1955,
+                                value: "Joe".to_string(),
+                            },
+                        ]),
                     }),
-                    optional_date_time: Some(chrono::Utc::now()),
-                    optional_duration: Some(chrono::Duration::seconds(967)),
-                    optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-                    array_of_integers: vec![2022, 1955],
-                    optional_array_of_integers: Some(vec![2022, 1955, 1955]),
-                    array_of_strings: vec!["foo".to_string(), "bar".to_string()],
-                    optional_array_of_strings: Some(vec![
-                        "foo".to_string(),
-                        "bar".to_string(),
-                        "Joe".to_string(),
-                    ]),
-                    array_of_enums: vec![Numbers::One, Numbers::Three],
-                    optional_array_of_enums: Some(vec![
-                        Numbers::One,
-                        Numbers::Three,
-                        Numbers::Three,
-                    ]),
-                    array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-                    optional_array_of_datetimes: Some(vec![
+                };
+                *read_write_two_structs_guard = new_read_write_two_structs_value;
+                // Value is changed and published when read_write_two_structs_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_only_enum'");
+                let mut read_only_enum_guard = read_only_enum_property.write().await;
+                *read_only_enum_guard = Numbers::One;
+                // Value is changed and published when read_only_enum_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_enum'");
+                let mut read_write_enum_guard = read_write_enum_property.write().await;
+                *read_write_enum_guard = Numbers::One;
+                // Value is changed and published when read_write_enum_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_optional_enum'");
+                let mut read_write_optional_enum_guard =
+                    read_write_optional_enum_property.write().await;
+                *read_write_optional_enum_guard = Some(Numbers::One);
+                // Value is changed and published when read_write_optional_enum_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_two_enums'");
+                let mut read_write_two_enums_guard = read_write_two_enums_property.write().await;
+                let new_read_write_two_enums_value = ReadWriteTwoEnumsProperty {
+                    first: Numbers::One,
+                    second: Some(Numbers::One),
+                };
+                *read_write_two_enums_guard = new_read_write_two_enums_value;
+                // Value is changed and published when read_write_two_enums_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_datetime'");
+                let mut read_write_datetime_guard = read_write_datetime_property.write().await;
+                *read_write_datetime_guard = chrono::Utc::now();
+                // Value is changed and published when read_write_datetime_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_optional_datetime'");
+                let mut read_write_optional_datetime_guard =
+                    read_write_optional_datetime_property.write().await;
+                *read_write_optional_datetime_guard = Some(chrono::Utc::now());
+                // Value is changed and published when read_write_optional_datetime_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_two_datetimes'");
+                let mut read_write_two_datetimes_guard =
+                    read_write_two_datetimes_property.write().await;
+                let new_read_write_two_datetimes_value = ReadWriteTwoDatetimesProperty {
+                    first: chrono::Utc::now(),
+                    second: Some(chrono::Utc::now()),
+                };
+                *read_write_two_datetimes_guard = new_read_write_two_datetimes_value;
+                // Value is changed and published when read_write_two_datetimes_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_duration'");
+                let mut read_write_duration_guard = read_write_duration_property.write().await;
+                *read_write_duration_guard = chrono::Duration::seconds(975);
+                // Value is changed and published when read_write_duration_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_optional_duration'");
+                let mut read_write_optional_duration_guard =
+                    read_write_optional_duration_property.write().await;
+                *read_write_optional_duration_guard = Some(chrono::Duration::seconds(975));
+                // Value is changed and published when read_write_optional_duration_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_two_durations'");
+                let mut read_write_two_durations_guard =
+                    read_write_two_durations_property.write().await;
+                let new_read_write_two_durations_value = ReadWriteTwoDurationsProperty {
+                    first: chrono::Duration::seconds(967),
+                    second: Some(chrono::Duration::seconds(967)),
+                };
+                *read_write_two_durations_guard = new_read_write_two_durations_value;
+                // Value is changed and published when read_write_two_durations_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_binary'");
+                let mut read_write_binary_guard = read_write_binary_property.write().await;
+                *read_write_binary_guard = vec![101, 120, 97, 109, 112, 108, 101];
+                // Value is changed and published when read_write_binary_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_optional_binary'");
+                let mut read_write_optional_binary_guard =
+                    read_write_optional_binary_property.write().await;
+                *read_write_optional_binary_guard = Some(vec![101, 120, 97, 109, 112, 108, 101]);
+                // Value is changed and published when read_write_optional_binary_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_two_binaries'");
+                let mut read_write_two_binaries_guard =
+                    read_write_two_binaries_property.write().await;
+                let new_read_write_two_binaries_value = ReadWriteTwoBinariesProperty {
+                    first: vec![101, 120, 97, 109, 112, 108, 101],
+                    second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+                };
+                *read_write_two_binaries_guard = new_read_write_two_binaries_value;
+                // Value is changed and published when read_write_two_binaries_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_list_of_strings'");
+                let mut read_write_list_of_strings_guard =
+                    read_write_list_of_strings_property.write().await;
+                *read_write_list_of_strings_guard = vec!["foo".to_string(), "foo".to_string()];
+                // Value is changed and published when read_write_list_of_strings_guard goes out of scope and is dropped.
+            }
+
+            sleep(Duration::from_secs(1)).await;
+            {
+                println!("Changing property 'read_write_lists'");
+                let mut read_write_lists_guard = read_write_lists_property.write().await;
+                let new_read_write_lists_value = ReadWriteListsProperty {
+                    the_list: vec![Numbers::One, Numbers::Three],
+                    optional_list: Some(vec![
                         chrono::Utc::now(),
                         chrono::Utc::now(),
                         chrono::Utc::now(),
                     ]),
-                    array_of_durations: vec![
-                        chrono::Duration::seconds(967),
-                        chrono::Duration::seconds(2552),
-                    ],
-                    optional_array_of_durations: Some(vec![
-                        chrono::Duration::seconds(967),
-                        chrono::Duration::seconds(2552),
-                        chrono::Duration::seconds(3250),
-                    ]),
-                    array_of_binaries: vec![
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                    ],
-                    optional_array_of_binaries: Some(vec![
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                    ]),
-                    array_of_entry_objects: vec![
-                        Entry {
-                            key: 2022,
-                            value: "foo".to_string(),
-                        },
-                        Entry {
-                            key: 1955,
-                            value: "bar".to_string(),
-                        },
-                    ],
-                    optional_array_of_entry_objects: Some(vec![
-                        Entry {
-                            key: 2022,
-                            value: "foo".to_string(),
-                        },
-                        Entry {
-                            key: 1955,
-                            value: "bar".to_string(),
-                        },
-                        Entry {
-                            key: 1955,
-                            value: "Joe".to_string(),
-                        },
-                    ]),
-                },
-                second: Some(AllTypes {
-                    the_bool: true,
-                    the_int: 2022,
-                    the_number: 1.0,
-                    the_str: "foo".to_string(),
-                    the_enum: Numbers::One,
-                    an_entry_object: Entry {
-                        key: 2022,
-                        value: "foo".to_string(),
-                    },
-                    date_and_time: chrono::Utc::now(),
-                    time_duration: chrono::Duration::seconds(967),
-                    data: vec![101, 120, 97, 109, 112, 108, 101],
-                    optional_integer: Some(2022),
-                    optional_string: Some("foo".to_string()),
-                    optional_enum: Some(Numbers::One),
-                    optional_entry_object: Some(Entry {
-                        key: 2022,
-                        value: "foo".to_string(),
-                    }),
-                    optional_date_time: Some(chrono::Utc::now()),
-                    optional_duration: Some(chrono::Duration::seconds(967)),
-                    optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-                    array_of_integers: vec![2022, 1955],
-                    optional_array_of_integers: Some(vec![2022, 1955, 1955]),
-                    array_of_strings: vec!["foo".to_string(), "bar".to_string()],
-                    optional_array_of_strings: Some(vec![
-                        "foo".to_string(),
-                        "bar".to_string(),
-                        "Joe".to_string(),
-                    ]),
-                    array_of_enums: vec![Numbers::One, Numbers::Three],
-                    optional_array_of_enums: Some(vec![
-                        Numbers::One,
-                        Numbers::Three,
-                        Numbers::Three,
-                    ]),
-                    array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()],
-                    optional_array_of_datetimes: Some(vec![
-                        chrono::Utc::now(),
-                        chrono::Utc::now(),
-                        chrono::Utc::now(),
-                    ]),
-                    array_of_durations: vec![
-                        chrono::Duration::seconds(967),
-                        chrono::Duration::seconds(2552),
-                    ],
-                    optional_array_of_durations: Some(vec![
-                        chrono::Duration::seconds(967),
-                        chrono::Duration::seconds(2552),
-                        chrono::Duration::seconds(3250),
-                    ]),
-                    array_of_binaries: vec![
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                    ],
-                    optional_array_of_binaries: Some(vec![
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                        vec![101, 120, 97, 109, 112, 108, 101],
-                    ]),
-                    array_of_entry_objects: vec![
-                        Entry {
-                            key: 2022,
-                            value: "foo".to_string(),
-                        },
-                        Entry {
-                            key: 1955,
-                            value: "bar".to_string(),
-                        },
-                    ],
-                    optional_array_of_entry_objects: Some(vec![
-                        Entry {
-                            key: 2022,
-                            value: "foo".to_string(),
-                        },
-                        Entry {
-                            key: 1955,
-                            value: "bar".to_string(),
-                        },
-                        Entry {
-                            key: 1955,
-                            value: "Joe".to_string(),
-                        },
-                    ]),
-                }),
-            };
-            let _ = server_clone2.set_read_write_two_structs(new_value).await;
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_only_enum'");
-            let prop_change_future = server_clone2.set_read_only_enum(Numbers::One).await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_only_enum': {:?}", e);
+                };
+                *read_write_lists_guard = new_read_write_lists_value;
+                // Value is changed and published when read_write_lists_guard goes out of scope and is dropped.
             }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_enum'");
-            let prop_change_future = server_clone2.set_read_write_enum(Numbers::One).await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_write_enum': {:?}", e);
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_optional_enum'");
-            let prop_change_future = server_clone2
-                .set_read_write_optional_enum(Some(Numbers::One))
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!(
-                    "Error changing property 'read_write_optional_enum': {:?}",
-                    e
-                );
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_two_enums'");
-            let new_value = ReadWriteTwoEnumsProperty {
-                first: Numbers::One,
-                second: Some(Numbers::One),
-            };
-            let _ = server_clone2.set_read_write_two_enums(new_value).await;
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_datetime'");
-            let prop_change_future = server_clone2
-                .set_read_write_datetime(chrono::Utc::now())
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_write_datetime': {:?}", e);
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_optional_datetime'");
-            let prop_change_future = server_clone2
-                .set_read_write_optional_datetime(Some(chrono::Utc::now()))
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!(
-                    "Error changing property 'read_write_optional_datetime': {:?}",
-                    e
-                );
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_two_datetimes'");
-            let new_value = ReadWriteTwoDatetimesProperty {
-                first: chrono::Utc::now(),
-                second: Some(chrono::Utc::now()),
-            };
-            let _ = server_clone2.set_read_write_two_datetimes(new_value).await;
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_duration'");
-            let prop_change_future = server_clone2
-                .set_read_write_duration(chrono::Duration::seconds(975))
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_write_duration': {:?}", e);
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_optional_duration'");
-            let prop_change_future = server_clone2
-                .set_read_write_optional_duration(Some(chrono::Duration::seconds(975)))
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!(
-                    "Error changing property 'read_write_optional_duration': {:?}",
-                    e
-                );
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_two_durations'");
-            let new_value = ReadWriteTwoDurationsProperty {
-                first: chrono::Duration::seconds(967),
-                second: Some(chrono::Duration::seconds(967)),
-            };
-            let _ = server_clone2.set_read_write_two_durations(new_value).await;
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_binary'");
-            let prop_change_future = server_clone2
-                .set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101])
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!("Error changing property 'read_write_binary': {:?}", e);
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_optional_binary'");
-            let prop_change_future = server_clone2
-                .set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101]))
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!(
-                    "Error changing property 'read_write_optional_binary': {:?}",
-                    e
-                );
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_two_binaries'");
-            let new_value = ReadWriteTwoBinariesProperty {
-                first: vec![101, 120, 97, 109, 112, 108, 101],
-                second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
-            };
-            let _ = server_clone2.set_read_write_two_binaries(new_value).await;
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_list_of_strings'");
-            let prop_change_future = server_clone2
-                .set_read_write_list_of_strings(vec!["foo".to_string(), "foo".to_string()])
-                .await;
-            if let Err(e) = prop_change_future.await {
-                eprintln!(
-                    "Error changing property 'read_write_list_of_strings': {:?}",
-                    e
-                );
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            println!("Changing property 'read_write_lists'");
-            let new_value = ReadWriteListsProperty {
-                the_list: vec![Numbers::One, Numbers::Three],
-                optional_list: Some(vec![
-                    chrono::Utc::now(),
-                    chrono::Utc::now(),
-                    chrono::Utc::now(),
-                ]),
-            };
-            let _ = server_clone2.set_read_write_lists(new_value).await;
         }
     });
 

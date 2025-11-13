@@ -376,7 +376,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                     match result {
                                         Ok(MethodReturnCode::Success(opt_response_text)) => {
                                             if let Some(response_text) = opt_response_text {
-                                                let resp_obj = serde_json::from_str::<SchoolProperty>(response_text.as_ref()).unwrap();
+                                                let resp_obj = serde_json::from_str::<{{prop_name|UpperCamelCase}}Property>(response_text.as_ref()).unwrap();
                                                 {%if prop.arg_list | length == 1 %}
                                                 let _ = responder.send(Some(resp_obj.{{prop.arg_list[0].name|snake_case}}));
                                                 {%else%}
@@ -429,73 +429,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             .and_then(|s| Uuid::parse_str(&s).ok())
                     }
                 });
+                let return_code = {{stinger.rust.client_struct_name}}::<C>::get_return_code_from_message(&msg);
                 {%endif%} {# if there are some methods #}
-                if let Some(subscription_id) = msg.subscription_id {
-                    let return_code = {{stinger.rust.client_struct_name}}::<C>::get_return_code_from_message(&msg);
 
-                    {%if stinger.methods|length > 0%}
-                    if subscription_id == sub_ids.any_method_response || subscription_id == sub_ids.any_property_update_response {
-                        if opt_corr_id.is_some() {
-                            let opt_sender = opt_corr_id
-                                .and_then(|uuid| {
-                                    let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
-                                    hashmap.remove(&uuid)
-                                });
-                            if let Some(sender) = opt_sender {
-                                let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                if oss.send(return_code.clone()).is_err() {
-                                    warn!("Failed to send method response  to waiting receiver");
-                                }
-                            }
-                        } else {
-                            warn!("Received method response without correlation ID");
-                        }
-                    } // end {{method_name}} method response handling
-                    {%-endif%} {# end has methods #}
-                    {%-for signal_name, signal in stinger.signals.items()%}
-                    {%if not loop.first%}else {%endif%}if Some(subscription_id) == sub_ids.{{signal_name | snake_case}}_signal {
-                        let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
-                        {%if signal.arg_list | length == 0 %}
-                        let _send_result = chan.send(());
-                        {%elif signal.arg_list | length == 1 %}
-                        match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl.{{signal.arg_list[0].name|snake_case}});
-                            },
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                        {%else%}
-                        match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
-                            Ok(pl) => {
-                                let _send_result = chan.send(pl);
-                            },
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
-                            }
-                        }
-                        {%endif%}
-                    } // end {{signal_name}} signal handling
-                    {%endfor%}
-                    {%-for prop_name, prop in stinger.properties.items()%}
-                    {%if not loop.first%}else {%endif%}if subscription_id == sub_ids.{{prop_name | snake_case}}_property_value {
-                        match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property>(&msg.payload) {
-                            Ok(pl) => {
-                                let mut guard = props.{{prop_name | snake_case}}.write().await;
-                                {%if prop.arg_list | length == 1 %}
-                                *guard = pl.{{prop.arg_list[0].name}}.clone();
-                                {%else%}
-                                *guard = pl.clone();
-                                {%endif%}
-                                if let Some(version_str) = msg.user_properties.get("Version") {
-                                    if let Ok(version_num) = version_str.parse::<u32>() {
-                                        props.{{prop_name | snake_case}}_version.store(version_num, std::sync::atomic::Ordering::Relaxed);
-                                    }
-                                }
-                                if opt_corr_id.is_some() {
+                if let Some(subscription_id) = msg.subscription_id {
+                    match subscription_id {
+                        {%if stinger.methods|length > 0%}
+                        _i if _i == sub_ids.any_method_response => {
+                            debug!("Received method response message");
+                            if opt_corr_id.is_some() {
                                 let opt_sender = opt_corr_id
                                     .and_then(|uuid| {
                                         let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
@@ -503,20 +445,101 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                     });
                                 if let Some(sender) = opt_sender {
                                     let oss: oneshot::Sender<MethodReturnCode> = sender;
-                                    match oss.send(return_code) {
-                                        Ok(_) => (),
-                                        Err(_) => (),
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!("Failed to send method response  to waiting receiver");
                                     }
                                 }
+                            } else {
+                                warn!("Received method response without correlation ID");
                             }
-                            },
-                            Err(e) => {
-                                warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                continue;
+                        },
+                        {%endif-%}
+                        {%if stinger.properties|length > 0%}
+                        _i if _i == sub_ids.any_property_update_response => {
+                            debug!("Received property update response message");
+                            if opt_corr_id.is_some() {
+                                let opt_sender = opt_corr_id
+                                    .and_then(|uuid| {
+                                        let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
+                                        hashmap.remove(&uuid)
+                                    });
+                                if let Some(sender) = opt_sender {
+                                    let oss: oneshot::Sender<MethodReturnCode> = sender;
+                                    if oss.send(return_code.clone()).is_err() {
+                                        warn!("Failed to send method response  to waiting receiver");
+                                    }
+                                }
+                            } else {
+                                warn!("Received method response without correlation ID");
                             }
+                        },
+                        {%endif%}
+                        {%-for signal_name, signal in stinger.signals.items()%}
+                        _i if sub_ids.{{signal_name | snake_case}}_signal == Some(_i) => {
+                            debug!("Received {{signal_name}} signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
+                            {%if signal.arg_list | length == 0 %}
+                            // No arguments, send () to channel.
+                            let _send_result = chan.send(());
+                            {%elif signal.arg_list | length == 1 %}
+                            // Single argument, extract it from payload and send to channel.
+                            match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl.{{signal.arg_list[0].name|snake_case}});
+                                },
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                            {%else%}
+                            // {{signal.arg_list|length}} arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                },
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                            {%endif%}
+                        },
+                        {%endfor%}
+                        {%-for prop_name, prop in stinger.properties.items()%}
+                        _i if _i == sub_ids.{{prop_name | snake_case}}_property_value => {
+                            debug!("Received message for {{prop_name}} property value");
+                            // JSON deserialize into {{prop_name | UpperCamelCase}}Property struct
+                            match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property>(&msg.payload) {
+                                Ok(pl) => {
+                                    // Get a write-guard and set the local copy of the property value.
+                                    let mut guard = props.{{prop_name | snake_case}}.write().await;
+                                    {%if prop.arg_list | length == 1 %}
+                                    *guard = pl.{{prop.arg_list[0].name}}.clone();
+                                    {%else%}
+                                    *guard = pl.clone();
+                                    {%endif%}
+                                    // Hold onto the write-guard while we set the local copy of the property version.
+                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                        if let Ok(version_num) = version_str.parse::<u32>() {
+                                            props.{{prop_name | snake_case}}_version.store(version_num, std::sync::atomic::Ordering::Relaxed);
+                                        }
+                                    }
+                                },
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                    continue;
+                                }
+                            }
+                        },
+                        {%endfor%}
+                        unhandled_subscription_id => {
+                            error!("Received message with unmatched subscription id: {}", unhandled_subscription_id);
                         }
-                    } // end {{prop_name}} property value update
-                    {%endfor%}
+                    }
+                } else {
+                    error!("Received message without a subscription id");
                 }
             }   
         });

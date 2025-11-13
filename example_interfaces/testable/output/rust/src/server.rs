@@ -25,12 +25,16 @@ use tokio::sync::Mutex as AsyncMutex;
 use serde_json;
 use tokio::sync::{broadcast, watch};
 
+use crate::property::TestAbleInitialPropertyValues;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use std::future::Future;
 use std::pin::Pin;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError, MqttPublishSuccess};
+use stinger_rwlock_watch::RwLockWatch;
+#[allow(unused_imports)]
+use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
@@ -117,84 +121,57 @@ struct TestAbleServerSubscriptionIds {
 
 #[derive(Clone)]
 struct TestAbleProperties {
-    read_write_integer: Arc<AsyncMutex<Option<ReadWriteIntegerProperty>>>,
-    read_write_integer_tx_channel: watch::Sender<Option<i32>>,
+    pub read_write_integer: Arc<RwLockWatch<i32>>,
     read_write_integer_version: Arc<AtomicU32>,
-    read_only_integer: Arc<AsyncMutex<Option<ReadOnlyIntegerProperty>>>,
-    read_only_integer_tx_channel: watch::Sender<Option<i32>>,
+    pub read_only_integer: Arc<RwLockWatch<i32>>,
     read_only_integer_version: Arc<AtomicU32>,
-    read_write_optional_integer: Arc<AsyncMutex<Option<ReadWriteOptionalIntegerProperty>>>,
-    read_write_optional_integer_tx_channel: watch::Sender<Option<Option<i32>>>,
+    pub read_write_optional_integer: Arc<RwLockWatch<Option<i32>>>,
     read_write_optional_integer_version: Arc<AtomicU32>,
-    read_write_two_integers: Arc<AsyncMutex<Option<ReadWriteTwoIntegersProperty>>>,
-    read_write_two_integers_tx_channel: watch::Sender<Option<ReadWriteTwoIntegersProperty>>,
+    pub read_write_two_integers: Arc<RwLockWatch<ReadWriteTwoIntegersProperty>>,
     read_write_two_integers_version: Arc<AtomicU32>,
-    read_only_string: Arc<AsyncMutex<Option<ReadOnlyStringProperty>>>,
-    read_only_string_tx_channel: watch::Sender<Option<String>>,
+    pub read_only_string: Arc<RwLockWatch<String>>,
     read_only_string_version: Arc<AtomicU32>,
-    read_write_string: Arc<AsyncMutex<Option<ReadWriteStringProperty>>>,
-    read_write_string_tx_channel: watch::Sender<Option<String>>,
+    pub read_write_string: Arc<RwLockWatch<String>>,
     read_write_string_version: Arc<AtomicU32>,
-    read_write_optional_string: Arc<AsyncMutex<Option<ReadWriteOptionalStringProperty>>>,
-    read_write_optional_string_tx_channel: watch::Sender<Option<Option<String>>>,
+    pub read_write_optional_string: Arc<RwLockWatch<Option<String>>>,
     read_write_optional_string_version: Arc<AtomicU32>,
-    read_write_two_strings: Arc<AsyncMutex<Option<ReadWriteTwoStringsProperty>>>,
-    read_write_two_strings_tx_channel: watch::Sender<Option<ReadWriteTwoStringsProperty>>,
+    pub read_write_two_strings: Arc<RwLockWatch<ReadWriteTwoStringsProperty>>,
     read_write_two_strings_version: Arc<AtomicU32>,
-    read_write_struct: Arc<AsyncMutex<Option<ReadWriteStructProperty>>>,
-    read_write_struct_tx_channel: watch::Sender<Option<AllTypes>>,
+    pub read_write_struct: Arc<RwLockWatch<AllTypes>>,
     read_write_struct_version: Arc<AtomicU32>,
-    read_write_optional_struct: Arc<AsyncMutex<Option<ReadWriteOptionalStructProperty>>>,
-    read_write_optional_struct_tx_channel: watch::Sender<Option<Option<AllTypes>>>,
+    pub read_write_optional_struct: Arc<RwLockWatch<Option<AllTypes>>>,
     read_write_optional_struct_version: Arc<AtomicU32>,
-    read_write_two_structs: Arc<AsyncMutex<Option<ReadWriteTwoStructsProperty>>>,
-    read_write_two_structs_tx_channel: watch::Sender<Option<ReadWriteTwoStructsProperty>>,
+    pub read_write_two_structs: Arc<RwLockWatch<ReadWriteTwoStructsProperty>>,
     read_write_two_structs_version: Arc<AtomicU32>,
-    read_only_enum: Arc<AsyncMutex<Option<ReadOnlyEnumProperty>>>,
-    read_only_enum_tx_channel: watch::Sender<Option<Numbers>>,
+    pub read_only_enum: Arc<RwLockWatch<Numbers>>,
     read_only_enum_version: Arc<AtomicU32>,
-    read_write_enum: Arc<AsyncMutex<Option<ReadWriteEnumProperty>>>,
-    read_write_enum_tx_channel: watch::Sender<Option<Numbers>>,
+    pub read_write_enum: Arc<RwLockWatch<Numbers>>,
     read_write_enum_version: Arc<AtomicU32>,
-    read_write_optional_enum: Arc<AsyncMutex<Option<ReadWriteOptionalEnumProperty>>>,
-    read_write_optional_enum_tx_channel: watch::Sender<Option<Option<Numbers>>>,
+    pub read_write_optional_enum: Arc<RwLockWatch<Option<Numbers>>>,
     read_write_optional_enum_version: Arc<AtomicU32>,
-    read_write_two_enums: Arc<AsyncMutex<Option<ReadWriteTwoEnumsProperty>>>,
-    read_write_two_enums_tx_channel: watch::Sender<Option<ReadWriteTwoEnumsProperty>>,
+    pub read_write_two_enums: Arc<RwLockWatch<ReadWriteTwoEnumsProperty>>,
     read_write_two_enums_version: Arc<AtomicU32>,
-    read_write_datetime: Arc<AsyncMutex<Option<ReadWriteDatetimeProperty>>>,
-    read_write_datetime_tx_channel: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+    pub read_write_datetime: Arc<RwLockWatch<chrono::DateTime<chrono::Utc>>>,
     read_write_datetime_version: Arc<AtomicU32>,
-    read_write_optional_datetime: Arc<AsyncMutex<Option<ReadWriteOptionalDatetimeProperty>>>,
-    read_write_optional_datetime_tx_channel:
-        watch::Sender<Option<Option<chrono::DateTime<chrono::Utc>>>>,
+    pub read_write_optional_datetime: Arc<RwLockWatch<Option<chrono::DateTime<chrono::Utc>>>>,
     read_write_optional_datetime_version: Arc<AtomicU32>,
-    read_write_two_datetimes: Arc<AsyncMutex<Option<ReadWriteTwoDatetimesProperty>>>,
-    read_write_two_datetimes_tx_channel: watch::Sender<Option<ReadWriteTwoDatetimesProperty>>,
+    pub read_write_two_datetimes: Arc<RwLockWatch<ReadWriteTwoDatetimesProperty>>,
     read_write_two_datetimes_version: Arc<AtomicU32>,
-    read_write_duration: Arc<AsyncMutex<Option<ReadWriteDurationProperty>>>,
-    read_write_duration_tx_channel: watch::Sender<Option<chrono::Duration>>,
+    pub read_write_duration: Arc<RwLockWatch<chrono::Duration>>,
     read_write_duration_version: Arc<AtomicU32>,
-    read_write_optional_duration: Arc<AsyncMutex<Option<ReadWriteOptionalDurationProperty>>>,
-    read_write_optional_duration_tx_channel: watch::Sender<Option<Option<chrono::Duration>>>,
+    pub read_write_optional_duration: Arc<RwLockWatch<Option<chrono::Duration>>>,
     read_write_optional_duration_version: Arc<AtomicU32>,
-    read_write_two_durations: Arc<AsyncMutex<Option<ReadWriteTwoDurationsProperty>>>,
-    read_write_two_durations_tx_channel: watch::Sender<Option<ReadWriteTwoDurationsProperty>>,
+    pub read_write_two_durations: Arc<RwLockWatch<ReadWriteTwoDurationsProperty>>,
     read_write_two_durations_version: Arc<AtomicU32>,
-    read_write_binary: Arc<AsyncMutex<Option<ReadWriteBinaryProperty>>>,
-    read_write_binary_tx_channel: watch::Sender<Option<Vec<u8>>>,
+    pub read_write_binary: Arc<RwLockWatch<Vec<u8>>>,
     read_write_binary_version: Arc<AtomicU32>,
-    read_write_optional_binary: Arc<AsyncMutex<Option<ReadWriteOptionalBinaryProperty>>>,
-    read_write_optional_binary_tx_channel: watch::Sender<Option<Option<Vec<u8>>>>,
+    pub read_write_optional_binary: Arc<RwLockWatch<Option<Vec<u8>>>>,
     read_write_optional_binary_version: Arc<AtomicU32>,
-    read_write_two_binaries: Arc<AsyncMutex<Option<ReadWriteTwoBinariesProperty>>>,
-    read_write_two_binaries_tx_channel: watch::Sender<Option<ReadWriteTwoBinariesProperty>>,
+    pub read_write_two_binaries: Arc<RwLockWatch<ReadWriteTwoBinariesProperty>>,
     read_write_two_binaries_version: Arc<AtomicU32>,
-    read_write_list_of_strings: Arc<AsyncMutex<Option<ReadWriteListOfStringsProperty>>>,
-    read_write_list_of_strings_tx_channel: watch::Sender<Option<Vec<String>>>,
+    pub read_write_list_of_strings: Arc<RwLockWatch<Vec<String>>>,
     read_write_list_of_strings_version: Arc<AtomicU32>,
-    read_write_lists: Arc<AsyncMutex<Option<ReadWriteListsProperty>>>,
-    read_write_lists_tx_channel: watch::Sender<Option<ReadWriteListsProperty>>,
+    pub read_write_lists: Arc<RwLockWatch<ReadWriteListsProperty>>,
     read_write_lists_version: Arc<AtomicU32>,
 }
 
@@ -232,6 +209,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         mut connection: C,
         method_handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
         instance_id: String,
+        initial_property_values: TestAbleInitialPropertyValues,
     ) -> Self {
         // Create a channel for messages to get from the Mqtt5PubSub object to this TestAbleServer object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -845,84 +823,171 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         };
 
         let property_values = TestAbleProperties {
-            read_write_integer: Arc::new(AsyncMutex::new(None)),
-            read_write_integer_tx_channel: watch::channel(None).0,
-            read_write_integer_version: Arc::new(AtomicU32::new(0)),
-            read_only_integer: Arc::new(AsyncMutex::new(None)),
-            read_only_integer_tx_channel: watch::channel(None).0,
-            read_only_integer_version: Arc::new(AtomicU32::new(0)),
-            read_write_optional_integer: Arc::new(AsyncMutex::new(None)),
-            read_write_optional_integer_tx_channel: watch::channel(None).0,
-            read_write_optional_integer_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_integers: Arc::new(AsyncMutex::new(None)),
-            read_write_two_integers_tx_channel: watch::channel(None).0,
-            read_write_two_integers_version: Arc::new(AtomicU32::new(0)),
-            read_only_string: Arc::new(AsyncMutex::new(None)),
-            read_only_string_tx_channel: watch::channel(None).0,
-            read_only_string_version: Arc::new(AtomicU32::new(0)),
-            read_write_string: Arc::new(AsyncMutex::new(None)),
-            read_write_string_tx_channel: watch::channel(None).0,
-            read_write_string_version: Arc::new(AtomicU32::new(0)),
-            read_write_optional_string: Arc::new(AsyncMutex::new(None)),
-            read_write_optional_string_tx_channel: watch::channel(None).0,
-            read_write_optional_string_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_strings: Arc::new(AsyncMutex::new(None)),
-            read_write_two_strings_tx_channel: watch::channel(None).0,
-            read_write_two_strings_version: Arc::new(AtomicU32::new(0)),
-            read_write_struct: Arc::new(AsyncMutex::new(None)),
-            read_write_struct_tx_channel: watch::channel(None).0,
-            read_write_struct_version: Arc::new(AtomicU32::new(0)),
-            read_write_optional_struct: Arc::new(AsyncMutex::new(None)),
-            read_write_optional_struct_tx_channel: watch::channel(None).0,
-            read_write_optional_struct_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_structs: Arc::new(AsyncMutex::new(None)),
-            read_write_two_structs_tx_channel: watch::channel(None).0,
-            read_write_two_structs_version: Arc::new(AtomicU32::new(0)),
-            read_only_enum: Arc::new(AsyncMutex::new(None)),
-            read_only_enum_tx_channel: watch::channel(None).0,
-            read_only_enum_version: Arc::new(AtomicU32::new(0)),
-            read_write_enum: Arc::new(AsyncMutex::new(None)),
-            read_write_enum_tx_channel: watch::channel(None).0,
-            read_write_enum_version: Arc::new(AtomicU32::new(0)),
-            read_write_optional_enum: Arc::new(AsyncMutex::new(None)),
-            read_write_optional_enum_tx_channel: watch::channel(None).0,
-            read_write_optional_enum_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_enums: Arc::new(AsyncMutex::new(None)),
-            read_write_two_enums_tx_channel: watch::channel(None).0,
-            read_write_two_enums_version: Arc::new(AtomicU32::new(0)),
-            read_write_datetime: Arc::new(AsyncMutex::new(None)),
-            read_write_datetime_tx_channel: watch::channel(None).0,
-            read_write_datetime_version: Arc::new(AtomicU32::new(0)),
-            read_write_optional_datetime: Arc::new(AsyncMutex::new(None)),
-            read_write_optional_datetime_tx_channel: watch::channel(None).0,
-            read_write_optional_datetime_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_datetimes: Arc::new(AsyncMutex::new(None)),
-            read_write_two_datetimes_tx_channel: watch::channel(None).0,
-            read_write_two_datetimes_version: Arc::new(AtomicU32::new(0)),
-            read_write_duration: Arc::new(AsyncMutex::new(None)),
-            read_write_duration_tx_channel: watch::channel(None).0,
-            read_write_duration_version: Arc::new(AtomicU32::new(0)),
-            read_write_optional_duration: Arc::new(AsyncMutex::new(None)),
-            read_write_optional_duration_tx_channel: watch::channel(None).0,
-            read_write_optional_duration_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_durations: Arc::new(AsyncMutex::new(None)),
-            read_write_two_durations_tx_channel: watch::channel(None).0,
-            read_write_two_durations_version: Arc::new(AtomicU32::new(0)),
-            read_write_binary: Arc::new(AsyncMutex::new(None)),
-            read_write_binary_tx_channel: watch::channel(None).0,
-            read_write_binary_version: Arc::new(AtomicU32::new(0)),
-            read_write_optional_binary: Arc::new(AsyncMutex::new(None)),
-            read_write_optional_binary_tx_channel: watch::channel(None).0,
-            read_write_optional_binary_version: Arc::new(AtomicU32::new(0)),
-            read_write_two_binaries: Arc::new(AsyncMutex::new(None)),
-            read_write_two_binaries_tx_channel: watch::channel(None).0,
-            read_write_two_binaries_version: Arc::new(AtomicU32::new(0)),
-            read_write_list_of_strings: Arc::new(AsyncMutex::new(None)),
-            read_write_list_of_strings_tx_channel: watch::channel(None).0,
-            read_write_list_of_strings_version: Arc::new(AtomicU32::new(0)),
-            read_write_lists: Arc::new(AsyncMutex::new(None)),
-            read_write_lists_tx_channel: watch::channel(None).0,
-            read_write_lists_version: Arc::new(AtomicU32::new(0)),
+            read_write_integer: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_integer,
+            )),
+            read_write_integer_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_integer_version,
+            )),
+
+            read_only_integer: Arc::new(RwLockWatch::new(
+                initial_property_values.read_only_integer,
+            )),
+            read_only_integer_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_only_integer_version,
+            )),
+
+            read_write_optional_integer: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_optional_integer,
+            )),
+            read_write_optional_integer_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_optional_integer_version,
+            )),
+            read_write_two_integers: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_two_integers,
+            )),
+            read_write_two_integers_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_two_integers_version,
+            )),
+
+            read_only_string: Arc::new(RwLockWatch::new(initial_property_values.read_only_string)),
+            read_only_string_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_only_string_version,
+            )),
+
+            read_write_string: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_string,
+            )),
+            read_write_string_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_string_version,
+            )),
+
+            read_write_optional_string: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_optional_string,
+            )),
+            read_write_optional_string_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_optional_string_version,
+            )),
+            read_write_two_strings: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_two_strings,
+            )),
+            read_write_two_strings_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_two_strings_version,
+            )),
+
+            read_write_struct: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_struct,
+            )),
+            read_write_struct_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_struct_version,
+            )),
+
+            read_write_optional_struct: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_optional_struct,
+            )),
+            read_write_optional_struct_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_optional_struct_version,
+            )),
+            read_write_two_structs: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_two_structs,
+            )),
+            read_write_two_structs_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_two_structs_version,
+            )),
+
+            read_only_enum: Arc::new(RwLockWatch::new(initial_property_values.read_only_enum)),
+            read_only_enum_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_only_enum_version,
+            )),
+
+            read_write_enum: Arc::new(RwLockWatch::new(initial_property_values.read_write_enum)),
+            read_write_enum_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_enum_version,
+            )),
+
+            read_write_optional_enum: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_optional_enum,
+            )),
+            read_write_optional_enum_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_optional_enum_version,
+            )),
+            read_write_two_enums: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_two_enums,
+            )),
+            read_write_two_enums_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_two_enums_version,
+            )),
+
+            read_write_datetime: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_datetime,
+            )),
+            read_write_datetime_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_datetime_version,
+            )),
+
+            read_write_optional_datetime: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_optional_datetime,
+            )),
+            read_write_optional_datetime_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_optional_datetime_version,
+            )),
+            read_write_two_datetimes: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_two_datetimes,
+            )),
+            read_write_two_datetimes_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_two_datetimes_version,
+            )),
+
+            read_write_duration: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_duration,
+            )),
+            read_write_duration_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_duration_version,
+            )),
+
+            read_write_optional_duration: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_optional_duration,
+            )),
+            read_write_optional_duration_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_optional_duration_version,
+            )),
+            read_write_two_durations: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_two_durations,
+            )),
+            read_write_two_durations_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_two_durations_version,
+            )),
+
+            read_write_binary: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_binary,
+            )),
+            read_write_binary_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_binary_version,
+            )),
+
+            read_write_optional_binary: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_optional_binary,
+            )),
+            read_write_optional_binary_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_optional_binary_version,
+            )),
+            read_write_two_binaries: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_two_binaries,
+            )),
+            read_write_two_binaries_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_two_binaries_version,
+            )),
+
+            read_write_list_of_strings: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_list_of_strings,
+            )),
+            read_write_list_of_strings_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_list_of_strings_version,
+            )),
+            read_write_lists: Arc::new(RwLockWatch::new(initial_property_values.read_write_lists)),
+            read_write_lists_version: Arc::new(AtomicU32::new(
+                initial_property_values.read_write_lists_version,
+            )),
         };
 
         TestAbleServer {
@@ -939,7 +1004,8 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
     }
 
-    pub async fn oneshot_to_future(
+    /// Converts a oneshot channel receiver into a future.
+    async fn oneshot_to_future(
         ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
     ) -> SentMessageFuture {
         Box::pin(async move {
@@ -963,7 +1029,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         })
     }
 
-    pub async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
+    async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
                 MethodReturnCode::Success(_) => Ok(()),
@@ -3286,3203 +3352,3596 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
     }
 
-    async fn publish_read_write_integer_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteIntegerProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
-    }
-
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_integer_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteIntegerProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<i32>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<i32>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteIntegerProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_integer' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_integer' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_integer' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteIntegerProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_integer' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_integer' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_integer_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteIntegerProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteIntegerProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_integer': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_integer'.");
+        }
     }
 
-    pub async fn watch_read_write_integer(&self) -> watch::Receiver<Option<i32>> {
-        self.properties.read_write_integer_tx_channel.subscribe()
+    /// Watch for changes to the `read_write_integer` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_integer(&self) -> watch::Receiver<i32> {
+        self.properties.read_write_integer.subscribe()
+    }
+
+    pub fn get_read_write_integer_handle(&self) -> WriteRequestLockWatch<i32> {
+        self.properties.read_write_integer.write_request()
     }
 
     /// Sets the value of the read_write_integer property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_write_integer(&mut self, data: i32) -> SentMessageFuture {
-        let prop = self.properties.read_write_integer.clone();
-
-        let new_prop_obj = ReadWriteIntegerProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_integer_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_integer' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteInteger/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_integer_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_integer_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+    pub async fn set_read_write_integer(&mut self, value: i32) -> SentMessageFuture {
+        let write_request_lock = self.get_read_write_integer_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
-    async fn publish_read_only_integer_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadOnlyIntegerProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    /// Watch for changes to the `read_only_integer` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_only_integer(&self) -> watch::Receiver<i32> {
+        self.properties.read_only_integer.subscribe()
+    }
+
+    pub fn get_read_only_integer_handle(&self) -> WriteRequestLockWatch<i32> {
+        self.properties.read_only_integer.write_request()
     }
 
     /// Sets the value of the read_only_integer property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_only_integer(&mut self, data: i32) -> SentMessageFuture {
-        let prop = self.properties.read_only_integer.clone();
-
-        let new_prop_obj = ReadOnlyIntegerProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_only_integer_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_only_integer' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readOnlyInteger/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_only_integer_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_only_integer_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_optional_integer_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteOptionalIntegerProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_read_only_integer(&mut self, value: i32) -> SentMessageFuture {
+        let write_request_lock = self.get_read_only_integer_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_integer_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalIntegerProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Option<i32>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Option<i32>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteOptionalIntegerProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_optional_integer' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_optional_integer' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteOptionalIntegerProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'read_write_optional_integer' property: {:?}", e);
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_optional_integer' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_optional_integer' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_optional_integer_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteOptionalIntegerProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteOptionalIntegerProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_optional_integer': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_optional_integer'.");
+        }
     }
 
-    pub async fn watch_read_write_optional_integer(&self) -> watch::Receiver<Option<Option<i32>>> {
-        self.properties
-            .read_write_optional_integer_tx_channel
-            .subscribe()
+    /// Watch for changes to the `read_write_optional_integer` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_optional_integer(&self) -> watch::Receiver<Option<i32>> {
+        self.properties.read_write_optional_integer.subscribe()
+    }
+
+    pub fn get_read_write_optional_integer_handle(&self) -> WriteRequestLockWatch<Option<i32>> {
+        self.properties.read_write_optional_integer.write_request()
     }
 
     /// Sets the value of the read_write_optional_integer property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_optional_integer(
         &mut self,
-        data: Option<i32>,
+        value: Option<i32>,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_optional_integer.clone();
-
-        let new_prop_obj = ReadWriteOptionalIntegerProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_optional_integer_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_optional_integer' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteOptionalInteger/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_optional_integer_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_optional_integer_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_two_integers_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteTwoIntegersProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_optional_integer_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_integers_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoIntegersProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<ReadWriteTwoIntegersProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<ReadWriteTwoIntegersProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteTwoIntegersProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_two_integers' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_two_integers' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_two_integers' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteTwoIntegersProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_two_integers' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_two_integers' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_two_integers_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_two_integers': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_two_integers'.");
+        }
     }
 
-    pub async fn watch_read_write_two_integers(
+    /// Watch for changes to the `read_write_two_integers` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_two_integers(&self) -> watch::Receiver<ReadWriteTwoIntegersProperty> {
+        self.properties.read_write_two_integers.subscribe()
+    }
+
+    pub fn get_read_write_two_integers_handle(
         &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoIntegersProperty>> {
-        self.properties
-            .read_write_two_integers_tx_channel
-            .subscribe()
+    ) -> WriteRequestLockWatch<ReadWriteTwoIntegersProperty> {
+        self.properties.read_write_two_integers.write_request()
     }
 
     /// Sets the values of the read_write_two_integers property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_two_integers(
         &mut self,
-        data: ReadWriteTwoIntegersProperty,
+        value: ReadWriteTwoIntegersProperty,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_two_integers.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .read_write_two_integers_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!(
-                "Property 'read_write_two_integers' value not changed, so not notifying watchers."
-            );
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteTwoIntegers/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_two_integers_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_two_integers_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+        let write_request_lock = self.get_read_write_two_integers_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
-    async fn publish_read_only_string_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadOnlyStringProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    /// Watch for changes to the `read_only_string` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_only_string(&self) -> watch::Receiver<String> {
+        self.properties.read_only_string.subscribe()
+    }
+
+    pub fn get_read_only_string_handle(&self) -> WriteRequestLockWatch<String> {
+        self.properties.read_only_string.write_request()
     }
 
     /// Sets the value of the read_only_string property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_only_string(&mut self, data: String) -> SentMessageFuture {
-        let prop = self.properties.read_only_string.clone();
-
-        let new_prop_obj = ReadOnlyStringProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_only_string_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_only_string' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readOnlyString/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_only_string_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_only_string_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_string_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteStringProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_read_only_string(&mut self, value: String) -> SentMessageFuture {
+        let write_request_lock = self.get_read_only_string_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_string_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteStringProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<String>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<String>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteStringProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_string' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_string' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_string' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteStringProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_string' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_string' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_string_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteStringProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteStringProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_string': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_string'.");
+        }
     }
 
-    pub async fn watch_read_write_string(&self) -> watch::Receiver<Option<String>> {
-        self.properties.read_write_string_tx_channel.subscribe()
+    /// Watch for changes to the `read_write_string` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_string(&self) -> watch::Receiver<String> {
+        self.properties.read_write_string.subscribe()
+    }
+
+    pub fn get_read_write_string_handle(&self) -> WriteRequestLockWatch<String> {
+        self.properties.read_write_string.write_request()
     }
 
     /// Sets the value of the read_write_string property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_write_string(&mut self, data: String) -> SentMessageFuture {
-        let prop = self.properties.read_write_string.clone();
-
-        let new_prop_obj = ReadWriteStringProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_string_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_string' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteString/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_string_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_string_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_optional_string_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteOptionalStringProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_read_write_string(&mut self, value: String) -> SentMessageFuture {
+        let write_request_lock = self.get_read_write_string_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_string_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalStringProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Option<String>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Option<String>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteOptionalStringProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_optional_string' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_optional_string' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteOptionalStringProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'read_write_optional_string' property: {:?}", e);
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_optional_string' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_optional_string' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_optional_string_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteOptionalStringProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteOptionalStringProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_optional_string': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_optional_string'.");
+        }
     }
 
-    pub async fn watch_read_write_optional_string(
-        &self,
-    ) -> watch::Receiver<Option<Option<String>>> {
-        self.properties
-            .read_write_optional_string_tx_channel
-            .subscribe()
+    /// Watch for changes to the `read_write_optional_string` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_optional_string(&self) -> watch::Receiver<Option<String>> {
+        self.properties.read_write_optional_string.subscribe()
+    }
+
+    pub fn get_read_write_optional_string_handle(&self) -> WriteRequestLockWatch<Option<String>> {
+        self.properties.read_write_optional_string.write_request()
     }
 
     /// Sets the value of the read_write_optional_string property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_optional_string(
         &mut self,
-        data: Option<String>,
+        value: Option<String>,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_optional_string.clone();
-
-        let new_prop_obj = ReadWriteOptionalStringProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_optional_string_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_optional_string' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteOptionalString/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_optional_string_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_optional_string_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_two_strings_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteTwoStringsProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_optional_string_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_strings_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoStringsProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<ReadWriteTwoStringsProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<ReadWriteTwoStringsProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteTwoStringsProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_two_strings' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_two_strings' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_two_strings' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteTwoStringsProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_two_strings' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_two_strings' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_two_strings_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_two_strings': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_two_strings'.");
+        }
     }
 
-    pub async fn watch_read_write_two_strings(
+    /// Watch for changes to the `read_write_two_strings` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_two_strings(&self) -> watch::Receiver<ReadWriteTwoStringsProperty> {
+        self.properties.read_write_two_strings.subscribe()
+    }
+
+    pub fn get_read_write_two_strings_handle(
         &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoStringsProperty>> {
-        self.properties
-            .read_write_two_strings_tx_channel
-            .subscribe()
+    ) -> WriteRequestLockWatch<ReadWriteTwoStringsProperty> {
+        self.properties.read_write_two_strings.write_request()
     }
 
     /// Sets the values of the read_write_two_strings property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_two_strings(
         &mut self,
-        data: ReadWriteTwoStringsProperty,
+        value: ReadWriteTwoStringsProperty,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_two_strings.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .read_write_two_strings_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!(
-                "Property 'read_write_two_strings' value not changed, so not notifying watchers."
-            );
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteTwoStrings/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_two_strings_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_two_strings_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_struct_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteStructProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_two_strings_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_struct_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteStructProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<AllTypes>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<AllTypes>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteStructProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_struct' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_struct' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_struct' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteStructProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_struct' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_struct' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_struct_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteStructProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteStructProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_struct': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_struct'.");
+        }
     }
 
-    pub async fn watch_read_write_struct(&self) -> watch::Receiver<Option<AllTypes>> {
-        self.properties.read_write_struct_tx_channel.subscribe()
+    /// Watch for changes to the `read_write_struct` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_struct(&self) -> watch::Receiver<AllTypes> {
+        self.properties.read_write_struct.subscribe()
+    }
+
+    pub fn get_read_write_struct_handle(&self) -> WriteRequestLockWatch<AllTypes> {
+        self.properties.read_write_struct.write_request()
     }
 
     /// Sets the value of the read_write_struct property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_write_struct(&mut self, data: AllTypes) -> SentMessageFuture {
-        let prop = self.properties.read_write_struct.clone();
-
-        let new_prop_obj = ReadWriteStructProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_struct_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_struct' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteStruct/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_struct_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_struct_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_optional_struct_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteOptionalStructProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_read_write_struct(&mut self, value: AllTypes) -> SentMessageFuture {
+        let write_request_lock = self.get_read_write_struct_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_struct_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalStructProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Option<AllTypes>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Option<AllTypes>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteOptionalStructProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_optional_struct' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_optional_struct' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteOptionalStructProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'read_write_optional_struct' property: {:?}", e);
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_optional_struct' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_optional_struct' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_optional_struct_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteOptionalStructProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteOptionalStructProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_optional_struct': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_optional_struct'.");
+        }
     }
 
-    pub async fn watch_read_write_optional_struct(
-        &self,
-    ) -> watch::Receiver<Option<Option<AllTypes>>> {
-        self.properties
-            .read_write_optional_struct_tx_channel
-            .subscribe()
+    /// Watch for changes to the `read_write_optional_struct` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_optional_struct(&self) -> watch::Receiver<Option<AllTypes>> {
+        self.properties.read_write_optional_struct.subscribe()
+    }
+
+    pub fn get_read_write_optional_struct_handle(&self) -> WriteRequestLockWatch<Option<AllTypes>> {
+        self.properties.read_write_optional_struct.write_request()
     }
 
     /// Sets the value of the read_write_optional_struct property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_optional_struct(
         &mut self,
-        data: Option<AllTypes>,
+        value: Option<AllTypes>,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_optional_struct.clone();
-
-        let new_prop_obj = ReadWriteOptionalStructProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_optional_struct_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_optional_struct' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteOptionalStruct/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_optional_struct_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_optional_struct_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_two_structs_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteTwoStructsProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_optional_struct_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_structs_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoStructsProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<ReadWriteTwoStructsProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<ReadWriteTwoStructsProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteTwoStructsProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_two_structs' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_two_structs' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_two_structs' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteTwoStructsProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_two_structs' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_two_structs' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_two_structs_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_two_structs': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_two_structs'.");
+        }
     }
 
-    pub async fn watch_read_write_two_structs(
+    /// Watch for changes to the `read_write_two_structs` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_two_structs(&self) -> watch::Receiver<ReadWriteTwoStructsProperty> {
+        self.properties.read_write_two_structs.subscribe()
+    }
+
+    pub fn get_read_write_two_structs_handle(
         &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoStructsProperty>> {
-        self.properties
-            .read_write_two_structs_tx_channel
-            .subscribe()
+    ) -> WriteRequestLockWatch<ReadWriteTwoStructsProperty> {
+        self.properties.read_write_two_structs.write_request()
     }
 
     /// Sets the values of the read_write_two_structs property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_two_structs(
         &mut self,
-        data: ReadWriteTwoStructsProperty,
+        value: ReadWriteTwoStructsProperty,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_two_structs.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .read_write_two_structs_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!(
-                "Property 'read_write_two_structs' value not changed, so not notifying watchers."
-            );
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteTwoStructs/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_two_structs_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_two_structs_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+        let write_request_lock = self.get_read_write_two_structs_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
-    async fn publish_read_only_enum_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadOnlyEnumProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    /// Watch for changes to the `read_only_enum` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_only_enum(&self) -> watch::Receiver<Numbers> {
+        self.properties.read_only_enum.subscribe()
+    }
+
+    pub fn get_read_only_enum_handle(&self) -> WriteRequestLockWatch<Numbers> {
+        self.properties.read_only_enum.write_request()
     }
 
     /// Sets the value of the read_only_enum property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_only_enum(&mut self, data: Numbers) -> SentMessageFuture {
-        let prop = self.properties.read_only_enum.clone();
-
-        let new_prop_obj = ReadOnlyEnumProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result =
-            self.properties
-                .read_only_enum_tx_channel
-                .send_if_modified(|current_data| {
-                    if current_data != &data_to_send_to_watchers {
-                        *current_data = data_to_send_to_watchers;
-                        true
-                    } else {
-                        false
-                    }
-                });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_only_enum' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("testAble/{}/property/readOnlyEnum/value", self.instance_id);
-            let new_version = self
-                .properties
-                .read_only_enum_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_only_enum_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_enum_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteEnumProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_read_only_enum(&mut self, value: Numbers) -> SentMessageFuture {
+        let write_request_lock = self.get_read_only_enum_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_enum_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteEnumProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Numbers>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Numbers>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteEnumProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_enum' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_enum' payload".to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_enum' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteEnumProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_enum' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_enum' payload".to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_enum_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteEnumProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteEnumProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!(
+                        "Error occurred while handling property update for 'read_write_enum': {:?}",
+                        &err
+                    );
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_enum'.");
+        }
     }
 
-    pub async fn watch_read_write_enum(&self) -> watch::Receiver<Option<Numbers>> {
-        self.properties.read_write_enum_tx_channel.subscribe()
+    /// Watch for changes to the `read_write_enum` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_enum(&self) -> watch::Receiver<Numbers> {
+        self.properties.read_write_enum.subscribe()
+    }
+
+    pub fn get_read_write_enum_handle(&self) -> WriteRequestLockWatch<Numbers> {
+        self.properties.read_write_enum.write_request()
     }
 
     /// Sets the value of the read_write_enum property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_write_enum(&mut self, data: Numbers) -> SentMessageFuture {
-        let prop = self.properties.read_write_enum.clone();
-
-        let new_prop_obj = ReadWriteEnumProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result =
-            self.properties
-                .read_write_enum_tx_channel
-                .send_if_modified(|current_data| {
-                    if current_data != &data_to_send_to_watchers {
-                        *current_data = data_to_send_to_watchers;
-                        true
-                    } else {
-                        false
-                    }
-                });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_enum' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!("testAble/{}/property/readWriteEnum/value", self.instance_id);
-            let new_version = self
-                .properties
-                .read_write_enum_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_enum_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_optional_enum_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteOptionalEnumProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_read_write_enum(&mut self, value: Numbers) -> SentMessageFuture {
+        let write_request_lock = self.get_read_write_enum_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_enum_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalEnumProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Option<Numbers>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Option<Numbers>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteOptionalEnumProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_optional_enum' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_optional_enum' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_optional_enum' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteOptionalEnumProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_optional_enum' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_optional_enum' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_optional_enum_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteOptionalEnumProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteOptionalEnumProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_optional_enum': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_optional_enum'.");
+        }
     }
 
-    pub async fn watch_read_write_optional_enum(&self) -> watch::Receiver<Option<Option<Numbers>>> {
-        self.properties
-            .read_write_optional_enum_tx_channel
-            .subscribe()
+    /// Watch for changes to the `read_write_optional_enum` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_optional_enum(&self) -> watch::Receiver<Option<Numbers>> {
+        self.properties.read_write_optional_enum.subscribe()
+    }
+
+    pub fn get_read_write_optional_enum_handle(&self) -> WriteRequestLockWatch<Option<Numbers>> {
+        self.properties.read_write_optional_enum.write_request()
     }
 
     /// Sets the value of the read_write_optional_enum property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_optional_enum(
         &mut self,
-        data: Option<Numbers>,
+        value: Option<Numbers>,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_optional_enum.clone();
-
-        let new_prop_obj = ReadWriteOptionalEnumProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_optional_enum_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!(
-                "Property 'read_write_optional_enum' value not changed, so not notifying watchers."
-            );
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteOptionalEnum/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_optional_enum_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_optional_enum_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_two_enums_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteTwoEnumsProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_optional_enum_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_enums_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoEnumsProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<ReadWriteTwoEnumsProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<ReadWriteTwoEnumsProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteTwoEnumsProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_two_enums' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_two_enums' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_two_enums' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteTwoEnumsProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_two_enums' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_two_enums' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_two_enums_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_two_enums': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_two_enums'.");
+        }
     }
 
-    pub async fn watch_read_write_two_enums(
+    /// Watch for changes to the `read_write_two_enums` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_two_enums(&self) -> watch::Receiver<ReadWriteTwoEnumsProperty> {
+        self.properties.read_write_two_enums.subscribe()
+    }
+
+    pub fn get_read_write_two_enums_handle(
         &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoEnumsProperty>> {
-        self.properties.read_write_two_enums_tx_channel.subscribe()
+    ) -> WriteRequestLockWatch<ReadWriteTwoEnumsProperty> {
+        self.properties.read_write_two_enums.write_request()
     }
 
     /// Sets the values of the read_write_two_enums property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_two_enums(
         &mut self,
-        data: ReadWriteTwoEnumsProperty,
+        value: ReadWriteTwoEnumsProperty,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_two_enums.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .read_write_two_enums_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_two_enums' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteTwoEnums/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_two_enums_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_two_enums_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_datetime_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteDatetimeProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_two_enums_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_datetime_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteDatetimeProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<chrono::DateTime<chrono::Utc>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<chrono::DateTime<chrono::Utc>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteDatetimeProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_datetime' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_datetime' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_datetime' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteDatetimeProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_datetime' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_datetime' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_datetime_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteDatetimeProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteDatetimeProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_datetime': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_datetime'.");
+        }
     }
 
-    pub async fn watch_read_write_datetime(
+    /// Watch for changes to the `read_write_datetime` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_datetime(&self) -> watch::Receiver<chrono::DateTime<chrono::Utc>> {
+        self.properties.read_write_datetime.subscribe()
+    }
+
+    pub fn get_read_write_datetime_handle(
         &self,
-    ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
-        self.properties.read_write_datetime_tx_channel.subscribe()
+    ) -> WriteRequestLockWatch<chrono::DateTime<chrono::Utc>> {
+        self.properties.read_write_datetime.write_request()
     }
 
     /// Sets the value of the read_write_datetime property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_datetime(
         &mut self,
-        data: chrono::DateTime<chrono::Utc>,
+        value: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_datetime.clone();
-
-        let new_prop_obj = ReadWriteDatetimeProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_datetime_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_datetime' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteDatetime/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_datetime_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_datetime_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_optional_datetime_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteOptionalDatetimeProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_datetime_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_datetime_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalDatetimeProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Option<chrono::DateTime<chrono::Utc>>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Option<chrono::DateTime<chrono::Utc>>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteOptionalDatetimeProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_optional_datetime' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_optional_datetime' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteOptionalDatetimeProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'read_write_optional_datetime' property: {:?}", e);
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_optional_datetime' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_optional_datetime' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_optional_datetime_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteOptionalDatetimeProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteOptionalDatetimeProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_optional_datetime': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_optional_datetime'.");
+        }
     }
 
-    pub async fn watch_read_write_optional_datetime(
+    /// Watch for changes to the `read_write_optional_datetime` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_optional_datetime(
         &self,
-    ) -> watch::Receiver<Option<Option<chrono::DateTime<chrono::Utc>>>> {
-        self.properties
-            .read_write_optional_datetime_tx_channel
-            .subscribe()
+    ) -> watch::Receiver<Option<chrono::DateTime<chrono::Utc>>> {
+        self.properties.read_write_optional_datetime.subscribe()
+    }
+
+    pub fn get_read_write_optional_datetime_handle(
+        &self,
+    ) -> WriteRequestLockWatch<Option<chrono::DateTime<chrono::Utc>>> {
+        self.properties.read_write_optional_datetime.write_request()
     }
 
     /// Sets the value of the read_write_optional_datetime property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_optional_datetime(
         &mut self,
-        data: Option<chrono::DateTime<chrono::Utc>>,
+        value: Option<chrono::DateTime<chrono::Utc>>,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_optional_datetime.clone();
-
-        let new_prop_obj = ReadWriteOptionalDatetimeProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_optional_datetime_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_optional_datetime' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteOptionalDatetime/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_optional_datetime_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_optional_datetime_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_two_datetimes_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteTwoDatetimesProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_optional_datetime_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_datetimes_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoDatetimesProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<ReadWriteTwoDatetimesProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<ReadWriteTwoDatetimesProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteTwoDatetimesProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_two_datetimes' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_two_datetimes' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_two_datetimes' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteTwoDatetimesProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_two_datetimes' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_two_datetimes' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_two_datetimes_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_two_datetimes': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_two_datetimes'.");
+        }
     }
 
-    pub async fn watch_read_write_two_datetimes(
+    /// Watch for changes to the `read_write_two_datetimes` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_two_datetimes(&self) -> watch::Receiver<ReadWriteTwoDatetimesProperty> {
+        self.properties.read_write_two_datetimes.subscribe()
+    }
+
+    pub fn get_read_write_two_datetimes_handle(
         &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoDatetimesProperty>> {
-        self.properties
-            .read_write_two_datetimes_tx_channel
-            .subscribe()
+    ) -> WriteRequestLockWatch<ReadWriteTwoDatetimesProperty> {
+        self.properties.read_write_two_datetimes.write_request()
     }
 
     /// Sets the values of the read_write_two_datetimes property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_two_datetimes(
         &mut self,
-        data: ReadWriteTwoDatetimesProperty,
+        value: ReadWriteTwoDatetimesProperty,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_two_datetimes.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .read_write_two_datetimes_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!(
-                "Property 'read_write_two_datetimes' value not changed, so not notifying watchers."
-            );
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteTwoDatetimes/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_two_datetimes_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_two_datetimes_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_duration_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteDurationProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_two_datetimes_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_duration_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteDurationProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<chrono::Duration>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<chrono::Duration>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteDurationProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_duration' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_duration' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_duration' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteDurationProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_duration' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_duration' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_duration_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteDurationProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteDurationProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_duration': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_duration'.");
+        }
     }
 
-    pub async fn watch_read_write_duration(&self) -> watch::Receiver<Option<chrono::Duration>> {
-        self.properties.read_write_duration_tx_channel.subscribe()
+    /// Watch for changes to the `read_write_duration` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_duration(&self) -> watch::Receiver<chrono::Duration> {
+        self.properties.read_write_duration.subscribe()
+    }
+
+    pub fn get_read_write_duration_handle(&self) -> WriteRequestLockWatch<chrono::Duration> {
+        self.properties.read_write_duration.write_request()
     }
 
     /// Sets the value of the read_write_duration property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_write_duration(&mut self, data: chrono::Duration) -> SentMessageFuture {
-        let prop = self.properties.read_write_duration.clone();
-
-        let new_prop_obj = ReadWriteDurationProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_duration_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_duration' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteDuration/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_duration_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_duration_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_optional_duration_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteOptionalDurationProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_read_write_duration(&mut self, value: chrono::Duration) -> SentMessageFuture {
+        let write_request_lock = self.get_read_write_duration_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_duration_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalDurationProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Option<chrono::Duration>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Option<chrono::Duration>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteOptionalDurationProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_optional_duration' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_optional_duration' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteOptionalDurationProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'read_write_optional_duration' property: {:?}", e);
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_optional_duration' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_optional_duration' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_optional_duration_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteOptionalDurationProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteOptionalDurationProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_optional_duration': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_optional_duration'.");
+        }
     }
 
-    pub async fn watch_read_write_optional_duration(
+    /// Watch for changes to the `read_write_optional_duration` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_optional_duration(&self) -> watch::Receiver<Option<chrono::Duration>> {
+        self.properties.read_write_optional_duration.subscribe()
+    }
+
+    pub fn get_read_write_optional_duration_handle(
         &self,
-    ) -> watch::Receiver<Option<Option<chrono::Duration>>> {
-        self.properties
-            .read_write_optional_duration_tx_channel
-            .subscribe()
+    ) -> WriteRequestLockWatch<Option<chrono::Duration>> {
+        self.properties.read_write_optional_duration.write_request()
     }
 
     /// Sets the value of the read_write_optional_duration property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_optional_duration(
         &mut self,
-        data: Option<chrono::Duration>,
+        value: Option<chrono::Duration>,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_optional_duration.clone();
-
-        let new_prop_obj = ReadWriteOptionalDurationProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_optional_duration_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_optional_duration' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteOptionalDuration/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_optional_duration_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_optional_duration_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_two_durations_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteTwoDurationsProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_optional_duration_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_durations_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoDurationsProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<ReadWriteTwoDurationsProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<ReadWriteTwoDurationsProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteTwoDurationsProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_two_durations' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_two_durations' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_two_durations' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteTwoDurationsProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_two_durations' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_two_durations' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_two_durations_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_two_durations': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_two_durations'.");
+        }
     }
 
-    pub async fn watch_read_write_two_durations(
+    /// Watch for changes to the `read_write_two_durations` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_two_durations(&self) -> watch::Receiver<ReadWriteTwoDurationsProperty> {
+        self.properties.read_write_two_durations.subscribe()
+    }
+
+    pub fn get_read_write_two_durations_handle(
         &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoDurationsProperty>> {
-        self.properties
-            .read_write_two_durations_tx_channel
-            .subscribe()
+    ) -> WriteRequestLockWatch<ReadWriteTwoDurationsProperty> {
+        self.properties.read_write_two_durations.write_request()
     }
 
     /// Sets the values of the read_write_two_durations property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_two_durations(
         &mut self,
-        data: ReadWriteTwoDurationsProperty,
+        value: ReadWriteTwoDurationsProperty,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_two_durations.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .read_write_two_durations_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!(
-                "Property 'read_write_two_durations' value not changed, so not notifying watchers."
-            );
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteTwoDurations/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_two_durations_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_two_durations_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_binary_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteBinaryProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_two_durations_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_binary_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteBinaryProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Vec<u8>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Vec<u8>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteBinaryProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_binary' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_binary' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_binary' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteBinaryProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_binary' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_binary' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_binary_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteBinaryProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteBinaryProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_binary': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_binary'.");
+        }
     }
 
-    pub async fn watch_read_write_binary(&self) -> watch::Receiver<Option<Vec<u8>>> {
-        self.properties.read_write_binary_tx_channel.subscribe()
+    /// Watch for changes to the `read_write_binary` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_binary(&self) -> watch::Receiver<Vec<u8>> {
+        self.properties.read_write_binary.subscribe()
+    }
+
+    pub fn get_read_write_binary_handle(&self) -> WriteRequestLockWatch<Vec<u8>> {
+        self.properties.read_write_binary.write_request()
     }
 
     /// Sets the value of the read_write_binary property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_write_binary(&mut self, data: Vec<u8>) -> SentMessageFuture {
-        let prop = self.properties.read_write_binary.clone();
-
-        let new_prop_obj = ReadWriteBinaryProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_binary_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_binary' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteBinary/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_binary_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_binary_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_optional_binary_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteOptionalBinaryProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+    pub async fn set_read_write_binary(&mut self, value: Vec<u8>) -> SentMessageFuture {
+        let write_request_lock = self.get_read_write_binary_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_optional_binary_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteOptionalBinaryProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Option<Vec<u8>>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Option<Vec<u8>>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteOptionalBinaryProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_optional_binary' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_optional_binary' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteOptionalBinaryProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'read_write_optional_binary' property: {:?}", e);
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_optional_binary' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_optional_binary' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_optional_binary_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteOptionalBinaryProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteOptionalBinaryProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_optional_binary': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_optional_binary'.");
+        }
     }
 
-    pub async fn watch_read_write_optional_binary(
-        &self,
-    ) -> watch::Receiver<Option<Option<Vec<u8>>>> {
-        self.properties
-            .read_write_optional_binary_tx_channel
-            .subscribe()
+    /// Watch for changes to the `read_write_optional_binary` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_optional_binary(&self) -> watch::Receiver<Option<Vec<u8>>> {
+        self.properties.read_write_optional_binary.subscribe()
+    }
+
+    pub fn get_read_write_optional_binary_handle(&self) -> WriteRequestLockWatch<Option<Vec<u8>>> {
+        self.properties.read_write_optional_binary.write_request()
     }
 
     /// Sets the value of the read_write_optional_binary property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_optional_binary(
         &mut self,
-        data: Option<Vec<u8>>,
+        value: Option<Vec<u8>>,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_optional_binary.clone();
-
-        let new_prop_obj = ReadWriteOptionalBinaryProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_optional_binary_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_optional_binary' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteOptionalBinary/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_optional_binary_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_optional_binary_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_two_binaries_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteTwoBinariesProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_optional_binary_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_two_binaries_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteTwoBinariesProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<ReadWriteTwoBinariesProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<ReadWriteTwoBinariesProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteTwoBinariesProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_two_binaries' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_two_binaries' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_two_binaries' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteTwoBinariesProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_two_binaries' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_two_binaries' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_two_binaries_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_two_binaries': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_two_binaries'.");
+        }
     }
 
-    pub async fn watch_read_write_two_binaries(
+    /// Watch for changes to the `read_write_two_binaries` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_two_binaries(&self) -> watch::Receiver<ReadWriteTwoBinariesProperty> {
+        self.properties.read_write_two_binaries.subscribe()
+    }
+
+    pub fn get_read_write_two_binaries_handle(
         &self,
-    ) -> watch::Receiver<Option<ReadWriteTwoBinariesProperty>> {
-        self.properties
-            .read_write_two_binaries_tx_channel
-            .subscribe()
+    ) -> WriteRequestLockWatch<ReadWriteTwoBinariesProperty> {
+        self.properties.read_write_two_binaries.write_request()
     }
 
     /// Sets the values of the read_write_two_binaries property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_two_binaries(
         &mut self,
-        data: ReadWriteTwoBinariesProperty,
+        value: ReadWriteTwoBinariesProperty,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_two_binaries.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .read_write_two_binaries_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!(
-                "Property 'read_write_two_binaries' value not changed, so not notifying watchers."
-            );
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteTwoBinaries/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_two_binaries_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_two_binaries_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_list_of_strings_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteListOfStringsProperty,
-        property_version: u32,
-    ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_two_binaries_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_list_of_strings_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteListOfStringsProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<Vec<String>>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<Vec<String>>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 1 field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteListOfStringsProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_list_of_strings' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_list_of_strings' payload"
-                                .to_string(),
-                        ),
-                    )
-                    .await;
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
+            }
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
+                );
+            }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
                 }
             }
-        };
+            _ => { /* Do nothing, error already set. */ }
+        }
 
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteListOfStringsProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
 
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.value.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Failed to notify local watchers for 'read_write_list_of_strings' property: {:?}", e);
+                        // Single value property.  Use the value field of the struct.
+                        *write_request = new_property_structure.value.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_list_of_strings' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_list_of_strings' payload"
+                                .to_string(),
+                        );
+                        None
+                    }
+                }
             }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_list_of_strings_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    ReadWriteListOfStringsProperty { value: new_value }
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    ReadWriteListOfStringsProperty {
+                        value: (*prop_lock).clone(),
+                    }
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_list_of_strings': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_list_of_strings'.");
+        }
     }
 
-    pub async fn watch_read_write_list_of_strings(&self) -> watch::Receiver<Option<Vec<String>>> {
-        self.properties
-            .read_write_list_of_strings_tx_channel
-            .subscribe()
+    /// Watch for changes to the `read_write_list_of_strings` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_list_of_strings(&self) -> watch::Receiver<Vec<String>> {
+        self.properties.read_write_list_of_strings.subscribe()
+    }
+
+    pub fn get_read_write_list_of_strings_handle(&self) -> WriteRequestLockWatch<Vec<String>> {
+        self.properties.read_write_list_of_strings.write_request()
     }
 
     /// Sets the value of the read_write_list_of_strings property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
-    pub async fn set_read_write_list_of_strings(&mut self, data: Vec<String>) -> SentMessageFuture {
-        let prop = self.properties.read_write_list_of_strings.clone();
-
-        let new_prop_obj = ReadWriteListOfStringsProperty {
-            value: data.clone(),
-        };
-
-        // Set the server's copy of the property value.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = Some(data.clone());
-        let send_result = self
-            .properties
-            .read_write_list_of_strings_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_list_of_strings' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteListOfStrings/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_list_of_strings_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_list_of_strings_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
-    }
-
-    async fn publish_read_write_lists_value(
-        mut publisher: C,
-        topic: String,
-        data: ReadWriteListsProperty,
-        property_version: u32,
+    pub async fn set_read_write_list_of_strings(
+        &mut self,
+        value: Vec<String>,
     ) -> SentMessageFuture {
-        let msg = message::property_value_message(&topic, &data, property_version).unwrap();
-        let ch = publisher.publish_noblock(msg).await;
-        TestAbleServer::<C>::oneshot_to_future(ch).await
+        let write_request_lock = self.get_read_write_list_of_strings_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// This is called because of an MQTT request to update the property value.
-    /// It updates the local value, notifies any watchers, and publishes the new value.
+    /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_read_write_lists_value(
-        publisher: C,
-        topic: String,
-        property_pointer: Arc<AsyncMutex<Option<ReadWriteListsProperty>>>,
-        property_version: Arc<AtomicU32>,
-        watch_sender: watch::Sender<Option<ReadWriteListsProperty>>,
+        mut publisher: C,
+        property_pointer: Arc<RwLockWatch<ReadWriteListsProperty>>, // Arc to the property value
+        version_pointer: Arc<AtomicU32>,
         msg: MqttMessage,
-    ) -> SentMessageFuture {
+    ) {
+        // This is JSON encoding of an object with 2 fields.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        let new_version = property_version.fetch_add(1, Ordering::SeqCst);
-        let new_property_structure: ReadWriteListsProperty = {
-            match serde_json::from_str(&payload_str) {
-                Ok(obj) => obj,
-                Err(e) => {
-                    error!("Failed to parse JSON received over MQTT to update 'read_write_lists' property: {:?}", e);
-                    return TestAbleServer::<C>::wrap_return_code_in_future(
-                        MethodReturnCode::ServerDeserializationError(
-                            "Failed to deserialize property 'read_write_lists' payload".to_string(),
-                        ),
-                    )
-                    .await;
-                }
+
+        let mut return_code = MethodReturnCode::Success(None);
+
+        match msg.content_type.as_deref() {
+            Some("application/json") => { /* OK */ }
+            Some(ct) => {
+                error!("Unexpected content-type for property update: {}", ct);
+                return_code = MethodReturnCode::PayloadError(format!(
+                    "Invalid Content-Type '{}', expected 'application/json'",
+                    ct
+                ));
             }
-        };
-
-        let mut property_guard = property_pointer.lock().await;
-        *property_guard = Some(new_property_structure.clone());
-        drop(property_guard);
-
-        let topic2: String = topic.clone();
-        let data_to_send_to_watchers = new_property_structure.clone();
-        match watch_sender.send(Some(data_to_send_to_watchers)) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Failed to notify local watchers for 'read_write_lists' property: {:?}",
-                    e
+            None => {
+                error!("Missing content-type for property update");
+                return_code = MethodReturnCode::PayloadError(
+                    "Missing Content-Type; expected 'application/json'".to_string(),
                 );
             }
+        }
+
+        match return_code {
+            MethodReturnCode::Success(_) => {
+                let mut incoming_version: Option<u32> = None;
+                if let Some(version_str) = msg.user_properties.get("Version") {
+                    match version_str.parse::<u32>() {
+                        Ok(v) => incoming_version = Some(v),
+                        Err(e) => {
+                            error!(
+                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                version_str, e
+                            );
+                            return_code = MethodReturnCode::PayloadError(
+                                "Invalid 'Version' user property".to_string(),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(v) = incoming_version {
+                    let current = version_pointer.load(Ordering::SeqCst);
+                    if v != current {
+                        return_code = MethodReturnCode::OutOfSync(format!(
+                            "Version mismatch: incoming {}, current {}",
+                            v, current
+                        ));
+                    }
+                }
+            }
+            _ => { /* Do nothing, error already set. */ }
+        }
+
+        let opt_new_value = match return_code {
+            MethodReturnCode::Success(_) => {
+                match serde_json::from_str::<ReadWriteListsProperty>(&payload_str) {
+                    Ok(new_property_structure) => {
+                        let request_lock = property_pointer.write_request();
+                        let mut write_request = request_lock.write().await;
+
+                        // Multi-value property set as a struct.
+                        *write_request = new_property_structure.clone();
+
+                        // Committing the write request blocks until the message has been published to MQTT.
+                        write_request
+                            .commit(std::time::Duration::from_secs(2))
+                            .await;
+                        Some((*write_request).clone())
+                    }
+                    Err(e) => {
+                        error!("Failed to parse JSON received over MQTT to update 'read_write_lists' property: {:?}", e);
+                        return_code = MethodReturnCode::ServerDeserializationError(
+                            "Failed to deserialize property 'read_write_lists' payload".to_string(),
+                        );
+                        None
+                    }
+                }
+            }
+            _ => None,
         };
 
-        TestAbleServer::publish_read_write_lists_value(
-            publisher,
-            topic2,
-            new_property_structure,
-            new_version,
-        )
-        .await
+        if let Some(resp_topic) = msg.response_topic {
+            let corr_data = msg.correlation_data.unwrap_or_default();
+            let payload_obj = {
+                if let Some(new_value) = opt_new_value {
+                    new_value
+                } else {
+                    let prop_lock = property_pointer.read().await;
+
+                    (*prop_lock).clone()
+                }
+            };
+            match message::property_update_response(
+                &resp_topic,
+                &payload_obj,
+                corr_data,
+                return_code,
+            ) {
+                Ok(msg) => {
+                    let _fut_publish_result = publisher.publish(msg).await;
+                }
+                Err(err) => {
+                    error!("Error occurred while handling property update for 'read_write_lists': {:?}", &err);
+                }
+            }
+        } else {
+            debug!("No response topic provided, so no publishing response to property update for 'read_write_lists'.");
+        }
     }
 
-    pub async fn watch_read_write_lists(&self) -> watch::Receiver<Option<ReadWriteListsProperty>> {
-        self.properties.read_write_lists_tx_channel.subscribe()
+    /// Watch for changes to the `read_write_lists` property.
+    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    pub fn watch_read_write_lists(&self) -> watch::Receiver<ReadWriteListsProperty> {
+        self.properties.read_write_lists.subscribe()
+    }
+
+    pub fn get_read_write_lists_handle(&self) -> WriteRequestLockWatch<ReadWriteListsProperty> {
+        self.properties.read_write_lists.write_request()
     }
 
     /// Sets the values of the read_write_lists property.
-    /// As a consequence, it notifies any watchers and publishes the new value to MQTT.
     pub async fn set_read_write_lists(
         &mut self,
-        data: ReadWriteListsProperty,
+        value: ReadWriteListsProperty,
     ) -> SentMessageFuture {
-        let prop = self.properties.read_write_lists.clone();
-
-        let new_prop_obj = data.clone();
-
-        // Set the server's copy of the property values.
-        let mut property_data_guard = prop.lock().await;
-        *property_data_guard = Some(new_prop_obj.clone());
-        let property_obj = property_data_guard.clone();
-        drop(property_data_guard);
-
-        // Notify watchers of the new property value.
-        let data_to_send_to_watchers = property_obj.clone();
-        let send_result = self
-            .properties
-            .read_write_lists_tx_channel
-            .send_if_modified(|current_data| {
-                if current_data != &data_to_send_to_watchers {
-                    *current_data = data_to_send_to_watchers;
-                    true
-                } else {
-                    false
-                }
-            });
-
-        // Send value to MQTT if it has changed.
-        if !send_result {
-            debug!("Property 'read_write_lists' value not changed, so not notifying watchers.");
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::Success(None)).await
-        } else if let Some(prop_obj) = property_obj {
-            let publisher2 = self.mqtt_client.clone();
-            let topic2 = format!(
-                "testAble/{}/property/readWriteLists/value",
-                self.instance_id
-            );
-            let new_version = self
-                .properties
-                .read_write_lists_version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TestAbleServer::<C>::publish_read_write_lists_value(
-                publisher2,
-                topic2,
-                prop_obj,
-                new_version,
-            )
-            .await
-        } else {
-            TestAbleServer::<C>::wrap_return_code_in_future(MethodReturnCode::UnknownError(
-                "Could not find property object".to_string(),
-            ))
-            .await
-        }
+        let write_request_lock = self.get_read_write_lists_handle();
+        Box::pin(async move {
+            let mut write_request = write_request_lock.write().await;
+            *write_request = value;
+            match write_request
+                .commit(std::time::Duration::from_secs(2))
+                .await
+            {
+                CommitResult::Applied(_) => Ok(()),
+                CommitResult::TimedOut => Err(MethodReturnCode::Timeout(
+                    "Timeout committing property change".to_string(),
+                )),
+            }
+        })
     }
 
     /// Starts the tasks that process messages received.
@@ -6512,7 +6971,1316 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let sub_ids = self.subscription_ids.clone();
         let publisher = self.mqtt_client.clone();
 
-        let properties = self.properties.clone();
+        let props = self.properties.clone();
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_integer_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_integer_prop = self.mqtt_client.clone();
+            let read_write_integer_prop_version = props.read_write_integer_version.clone();
+            if let Some(mut rx_for_read_write_integer_prop) =
+                props.read_write_integer.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_integer_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteIntegerProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_integer_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteInteger/value",
+                            instance_id_for_read_write_integer_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_integer_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_integer' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_integer' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_only_integer_prop = self.instance_id.clone();
+            let mut publisher_for_read_only_integer_prop = self.mqtt_client.clone();
+            let read_only_integer_prop_version = props.read_only_integer_version.clone();
+            if let Some(mut rx_for_read_only_integer_prop) =
+                props.read_only_integer.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_only_integer_prop.recv().await
+                    {
+                        let payload_obj = ReadOnlyIntegerProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_only_integer_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readOnlyInteger/value",
+                            instance_id_for_read_only_integer_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_only_integer_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_only_integer' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_only_integer' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_optional_integer_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_optional_integer_prop = self.mqtt_client.clone();
+            let read_write_optional_integer_prop_version =
+                props.read_write_optional_integer_version.clone();
+            if let Some(mut rx_for_read_write_optional_integer_prop) =
+                props.read_write_optional_integer.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_optional_integer_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalIntegerProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_optional_integer_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteOptionalInteger/value",
+                            instance_id_for_read_write_optional_integer_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_optional_integer_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_optional_integer' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_optional_integer' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_two_integers_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_two_integers_prop = self.mqtt_client.clone();
+            let read_write_two_integers_prop_version =
+                props.read_write_two_integers_version.clone();
+            if let Some(mut rx_for_read_write_two_integers_prop) =
+                props.read_write_two_integers.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_two_integers_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = read_write_two_integers_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteTwoIntegers/value",
+                            instance_id_for_read_write_two_integers_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_two_integers_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_two_integers' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_two_integers' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_only_string_prop = self.instance_id.clone();
+            let mut publisher_for_read_only_string_prop = self.mqtt_client.clone();
+            let read_only_string_prop_version = props.read_only_string_version.clone();
+            if let Some(mut rx_for_read_only_string_prop) =
+                props.read_only_string.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_only_string_prop.recv().await
+                    {
+                        let payload_obj = ReadOnlyStringProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_only_string_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readOnlyString/value",
+                            instance_id_for_read_only_string_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_only_string_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_only_string' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_only_string' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_string_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_string_prop = self.mqtt_client.clone();
+            let read_write_string_prop_version = props.read_write_string_version.clone();
+            if let Some(mut rx_for_read_write_string_prop) =
+                props.read_write_string.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_string_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteStringProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_string_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteString/value",
+                            instance_id_for_read_write_string_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_string_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_string' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_string' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_optional_string_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_optional_string_prop = self.mqtt_client.clone();
+            let read_write_optional_string_prop_version =
+                props.read_write_optional_string_version.clone();
+            if let Some(mut rx_for_read_write_optional_string_prop) =
+                props.read_write_optional_string.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_optional_string_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalStringProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_optional_string_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteOptionalString/value",
+                            instance_id_for_read_write_optional_string_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_optional_string_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_optional_string' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_optional_string' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_two_strings_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_two_strings_prop = self.mqtt_client.clone();
+            let read_write_two_strings_prop_version = props.read_write_two_strings_version.clone();
+            if let Some(mut rx_for_read_write_two_strings_prop) =
+                props.read_write_two_strings.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_two_strings_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = read_write_two_strings_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteTwoStrings/value",
+                            instance_id_for_read_write_two_strings_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_two_strings_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_two_strings' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_two_strings' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_struct_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_struct_prop = self.mqtt_client.clone();
+            let read_write_struct_prop_version = props.read_write_struct_version.clone();
+            if let Some(mut rx_for_read_write_struct_prop) =
+                props.read_write_struct.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_struct_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteStructProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_struct_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteStruct/value",
+                            instance_id_for_read_write_struct_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_struct_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_struct' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_struct' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_optional_struct_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_optional_struct_prop = self.mqtt_client.clone();
+            let read_write_optional_struct_prop_version =
+                props.read_write_optional_struct_version.clone();
+            if let Some(mut rx_for_read_write_optional_struct_prop) =
+                props.read_write_optional_struct.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_optional_struct_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalStructProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_optional_struct_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteOptionalStruct/value",
+                            instance_id_for_read_write_optional_struct_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_optional_struct_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_optional_struct' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_optional_struct' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_two_structs_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_two_structs_prop = self.mqtt_client.clone();
+            let read_write_two_structs_prop_version = props.read_write_two_structs_version.clone();
+            if let Some(mut rx_for_read_write_two_structs_prop) =
+                props.read_write_two_structs.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_two_structs_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = read_write_two_structs_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteTwoStructs/value",
+                            instance_id_for_read_write_two_structs_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_two_structs_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_two_structs' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_two_structs' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_only_enum_prop = self.instance_id.clone();
+            let mut publisher_for_read_only_enum_prop = self.mqtt_client.clone();
+            let read_only_enum_prop_version = props.read_only_enum_version.clone();
+            if let Some(mut rx_for_read_only_enum_prop) =
+                props.read_only_enum.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_only_enum_prop.recv().await
+                    {
+                        let payload_obj = ReadOnlyEnumProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_only_enum_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readOnlyEnum/value",
+                            instance_id_for_read_only_enum_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_only_enum_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_only_enum' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_only_enum' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_enum_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_enum_prop = self.mqtt_client.clone();
+            let read_write_enum_prop_version = props.read_write_enum_version.clone();
+            if let Some(mut rx_for_read_write_enum_prop) =
+                props.read_write_enum.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_enum_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteEnumProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_enum_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteEnum/value",
+                            instance_id_for_read_write_enum_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_enum_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_enum' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_enum' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_optional_enum_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_optional_enum_prop = self.mqtt_client.clone();
+            let read_write_optional_enum_prop_version =
+                props.read_write_optional_enum_version.clone();
+            if let Some(mut rx_for_read_write_optional_enum_prop) =
+                props.read_write_optional_enum.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_optional_enum_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalEnumProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_optional_enum_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteOptionalEnum/value",
+                            instance_id_for_read_write_optional_enum_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_optional_enum_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_optional_enum' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_optional_enum' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_two_enums_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_two_enums_prop = self.mqtt_client.clone();
+            let read_write_two_enums_prop_version = props.read_write_two_enums_version.clone();
+            if let Some(mut rx_for_read_write_two_enums_prop) =
+                props.read_write_two_enums.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_two_enums_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = read_write_two_enums_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteTwoEnums/value",
+                            instance_id_for_read_write_two_enums_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_two_enums_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_two_enums' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_two_enums' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_datetime_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_datetime_prop = self.mqtt_client.clone();
+            let read_write_datetime_prop_version = props.read_write_datetime_version.clone();
+            if let Some(mut rx_for_read_write_datetime_prop) =
+                props.read_write_datetime.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_datetime_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteDatetimeProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_datetime_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteDatetime/value",
+                            instance_id_for_read_write_datetime_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_datetime_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_datetime' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_datetime' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_optional_datetime_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_optional_datetime_prop = self.mqtt_client.clone();
+            let read_write_optional_datetime_prop_version =
+                props.read_write_optional_datetime_version.clone();
+            if let Some(mut rx_for_read_write_optional_datetime_prop) =
+                props.read_write_optional_datetime.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_optional_datetime_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalDatetimeProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_optional_datetime_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteOptionalDatetime/value",
+                            instance_id_for_read_write_optional_datetime_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_optional_datetime_prop
+                                        .publish(msg)
+                                        .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_optional_datetime' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_optional_datetime' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_two_datetimes_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_two_datetimes_prop = self.mqtt_client.clone();
+            let read_write_two_datetimes_prop_version =
+                props.read_write_two_datetimes_version.clone();
+            if let Some(mut rx_for_read_write_two_datetimes_prop) =
+                props.read_write_two_datetimes.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_two_datetimes_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = read_write_two_datetimes_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteTwoDatetimes/value",
+                            instance_id_for_read_write_two_datetimes_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_two_datetimes_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_two_datetimes' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_two_datetimes' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_duration_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_duration_prop = self.mqtt_client.clone();
+            let read_write_duration_prop_version = props.read_write_duration_version.clone();
+            if let Some(mut rx_for_read_write_duration_prop) =
+                props.read_write_duration.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_duration_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteDurationProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_duration_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteDuration/value",
+                            instance_id_for_read_write_duration_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_duration_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_duration' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_duration' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_optional_duration_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_optional_duration_prop = self.mqtt_client.clone();
+            let read_write_optional_duration_prop_version =
+                props.read_write_optional_duration_version.clone();
+            if let Some(mut rx_for_read_write_optional_duration_prop) =
+                props.read_write_optional_duration.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_optional_duration_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalDurationProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_optional_duration_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteOptionalDuration/value",
+                            instance_id_for_read_write_optional_duration_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_optional_duration_prop
+                                        .publish(msg)
+                                        .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_optional_duration' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_optional_duration' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_two_durations_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_two_durations_prop = self.mqtt_client.clone();
+            let read_write_two_durations_prop_version =
+                props.read_write_two_durations_version.clone();
+            if let Some(mut rx_for_read_write_two_durations_prop) =
+                props.read_write_two_durations.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_two_durations_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = read_write_two_durations_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteTwoDurations/value",
+                            instance_id_for_read_write_two_durations_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_two_durations_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_two_durations' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_two_durations' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_binary_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_binary_prop = self.mqtt_client.clone();
+            let read_write_binary_prop_version = props.read_write_binary_version.clone();
+            if let Some(mut rx_for_read_write_binary_prop) =
+                props.read_write_binary.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_binary_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteBinaryProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_binary_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteBinary/value",
+                            instance_id_for_read_write_binary_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_binary_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_binary' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_binary' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_optional_binary_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_optional_binary_prop = self.mqtt_client.clone();
+            let read_write_optional_binary_prop_version =
+                props.read_write_optional_binary_version.clone();
+            if let Some(mut rx_for_read_write_optional_binary_prop) =
+                props.read_write_optional_binary.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_optional_binary_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteOptionalBinaryProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_optional_binary_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteOptionalBinary/value",
+                            instance_id_for_read_write_optional_binary_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_optional_binary_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_optional_binary' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_optional_binary' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_two_binaries_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_two_binaries_prop = self.mqtt_client.clone();
+            let read_write_two_binaries_prop_version =
+                props.read_write_two_binaries_version.clone();
+            if let Some(mut rx_for_read_write_two_binaries_prop) =
+                props.read_write_two_binaries.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_two_binaries_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = read_write_two_binaries_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteTwoBinaries/value",
+                            instance_id_for_read_write_two_binaries_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_two_binaries_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_two_binaries' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_two_binaries' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_list_of_strings_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_list_of_strings_prop = self.mqtt_client.clone();
+            let read_write_list_of_strings_prop_version =
+                props.read_write_list_of_strings_version.clone();
+            if let Some(mut rx_for_read_write_list_of_strings_prop) =
+                props.read_write_list_of_strings.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_list_of_strings_prop.recv().await
+                    {
+                        let payload_obj = ReadWriteListOfStringsProperty {
+                            value: request.clone(),
+                        };
+
+                        let version_value = read_write_list_of_strings_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteListOfStrings/value",
+                            instance_id_for_read_write_list_of_strings_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result = publisher_for_read_write_list_of_strings_prop
+                                    .publish(msg)
+                                    .await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_list_of_strings' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_list_of_strings' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        {
+            // Set up property change request handling task
+            let instance_id_for_read_write_lists_prop = self.instance_id.clone();
+            let mut publisher_for_read_write_lists_prop = self.mqtt_client.clone();
+            let read_write_lists_prop_version = props.read_write_lists_version.clone();
+            if let Some(mut rx_for_read_write_lists_prop) =
+                props.read_write_lists.take_request_receiver()
+            {
+                tokio::spawn(async move {
+                    while let Some((request, opt_responder)) =
+                        rx_for_read_write_lists_prop.recv().await
+                    {
+                        let payload_obj = request.clone();
+
+                        let version_value = read_write_lists_prop_version
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let topic: String = format!(
+                            "testAble/{}/property/readWriteLists/value",
+                            instance_id_for_read_write_lists_prop
+                        );
+                        match message::property_value(&topic, &payload_obj, version_value) {
+                            Ok(msg) => {
+                                let publish_result =
+                                    publisher_for_read_write_lists_prop.publish(msg).await;
+                                if let Some(responder) = opt_responder {
+                                    match publish_result {
+                                        Ok(_) => {
+                                            let _ = responder.send(Some(request));
+                                        }
+                                        Err(_) => {
+                                            error!("Error publishing updated value for 'read_write_lists' property");
+                                            let _ = responder.send(None);
+                                        }
+                                    };
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error creating property value message for 'read_write_lists' property: {:?}", e);
+                                if let Some(responder) = opt_responder {
+                                    let _ = responder.send(None);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
@@ -6535,576 +8303,515 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             }
         });
 
-        let instance_id = self.instance_id.clone();
+        let properties = self.properties.clone();
         let loop_task = tokio::spawn(async move {
             loop {
                 match message_receiver.recv().await {
                     Ok(msg) => {
-                        let opt_resp_topic = msg.response_topic.clone();
-                        let opt_corr_data = msg.correlation_data.clone();
-
                         if let Some(subscription_id) = msg.subscription_id {
-                            if subscription_id == sub_ids.call_with_nothing_method_req {
-                                TestAbleServer::<C>::handle_call_with_nothing_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_one_integer_method_req {
-                                TestAbleServer::<C>::handle_call_one_integer_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_optional_integer_method_req {
-                                TestAbleServer::<C>::handle_call_optional_integer_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_three_integers_method_req {
-                                TestAbleServer::<C>::handle_call_three_integers_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_one_string_method_req {
-                                TestAbleServer::<C>::handle_call_one_string_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_optional_string_method_req {
-                                TestAbleServer::<C>::handle_call_optional_string_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_three_strings_method_req {
-                                TestAbleServer::<C>::handle_call_three_strings_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_one_enum_method_req {
-                                TestAbleServer::<C>::handle_call_one_enum_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_optional_enum_method_req {
-                                TestAbleServer::<C>::handle_call_optional_enum_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_three_enums_method_req {
-                                TestAbleServer::<C>::handle_call_three_enums_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_one_struct_method_req {
-                                TestAbleServer::<C>::handle_call_one_struct_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_optional_struct_method_req {
-                                TestAbleServer::<C>::handle_call_optional_struct_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_three_structs_method_req {
-                                TestAbleServer::<C>::handle_call_three_structs_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_one_date_time_method_req {
-                                TestAbleServer::<C>::handle_call_one_date_time_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_optional_date_time_method_req
-                            {
-                                TestAbleServer::<C>::handle_call_optional_date_time_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_three_date_times_method_req {
-                                TestAbleServer::<C>::handle_call_three_date_times_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_one_duration_method_req {
-                                TestAbleServer::<C>::handle_call_one_duration_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_optional_duration_method_req {
-                                TestAbleServer::<C>::handle_call_optional_duration_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_three_durations_method_req {
-                                TestAbleServer::<C>::handle_call_three_durations_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_one_binary_method_req {
-                                TestAbleServer::<C>::handle_call_one_binary_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_optional_binary_method_req {
-                                TestAbleServer::<C>::handle_call_optional_binary_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_three_binaries_method_req {
-                                TestAbleServer::<C>::handle_call_three_binaries_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id
-                                == sub_ids.call_one_list_of_integers_method_req
-                            {
-                                TestAbleServer::<C>::handle_call_one_list_of_integers_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id
-                                == sub_ids.call_optional_list_of_floats_method_req
-                            {
-                                TestAbleServer::<C>::handle_call_optional_list_of_floats_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else if subscription_id == sub_ids.call_two_lists_method_req {
-                                TestAbleServer::<C>::handle_call_two_lists_request(
-                                    publisher.clone(),
-                                    method_handlers.clone(),
-                                    msg,
-                                )
-                                .await;
-                            } else {
-                                let update_prop_future = {
-                                    if subscription_id == sub_ids.read_write_integer_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteInteger/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_integer_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_integer.clone(),
-                                            properties.read_write_integer_version.clone(),
-                                            properties.read_write_integer_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_optional_integer_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteOptionalInteger/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_optional_integer_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.read_write_optional_integer.clone(),
-                                                    properties.read_write_optional_integer_version.clone(),
-                                                    properties.read_write_optional_integer_tx_channel.clone(),
-                                                    msg).await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_two_integers_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteTwoIntegers/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_two_integers_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_two_integers.clone(),
-                                            properties.read_write_two_integers_version.clone(),
-                                            properties.read_write_two_integers_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_string_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteString/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_string_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_string.clone(),
-                                            properties.read_write_string_version.clone(),
-                                            properties.read_write_string_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_optional_string_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteOptionalString/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_optional_string_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.read_write_optional_string.clone(),
-                                                    properties.read_write_optional_string_version.clone(),
-                                                    properties.read_write_optional_string_tx_channel.clone(),
-                                                    msg).await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_two_strings_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteTwoStrings/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_two_strings_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_two_strings.clone(),
-                                            properties.read_write_two_strings_version.clone(),
-                                            properties.read_write_two_strings_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_struct_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteStruct/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_struct_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_struct.clone(),
-                                            properties.read_write_struct_version.clone(),
-                                            properties.read_write_struct_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_optional_struct_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteOptionalStruct/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_optional_struct_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.read_write_optional_struct.clone(),
-                                                    properties.read_write_optional_struct_version.clone(),
-                                                    properties.read_write_optional_struct_tx_channel.clone(),
-                                                    msg).await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_two_structs_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteTwoStructs/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_two_structs_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_two_structs.clone(),
-                                            properties.read_write_two_structs_version.clone(),
-                                            properties.read_write_two_structs_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_enum_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteEnum/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_enum_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_enum.clone(),
-                                            properties.read_write_enum_version.clone(),
-                                            properties.read_write_enum_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_optional_enum_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteOptionalEnum/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_optional_enum_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_optional_enum.clone(),
-                                            properties.read_write_optional_enum_version.clone(),
-                                            properties.read_write_optional_enum_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_two_enums_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteTwoEnums/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_two_enums_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_two_enums.clone(),
-                                            properties.read_write_two_enums_version.clone(),
-                                            properties.read_write_two_enums_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_datetime_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteDatetime/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_datetime_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_datetime.clone(),
-                                            properties.read_write_datetime_version.clone(),
-                                            properties.read_write_datetime_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_optional_datetime_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteOptionalDatetime/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_optional_datetime_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.read_write_optional_datetime.clone(),
-                                                    properties.read_write_optional_datetime_version.clone(),
-                                                    properties.read_write_optional_datetime_tx_channel.clone(),
-                                                    msg).await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_two_datetimes_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteTwoDatetimes/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_two_datetimes_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_two_datetimes.clone(),
-                                            properties.read_write_two_datetimes_version.clone(),
-                                            properties.read_write_two_datetimes_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_duration_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteDuration/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_duration_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_duration.clone(),
-                                            properties.read_write_duration_version.clone(),
-                                            properties.read_write_duration_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_optional_duration_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteOptionalDuration/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_optional_duration_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.read_write_optional_duration.clone(),
-                                                    properties.read_write_optional_duration_version.clone(),
-                                                    properties.read_write_optional_duration_tx_channel.clone(),
-                                                    msg).await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_two_durations_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteTwoDurations/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_two_durations_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_two_durations.clone(),
-                                            properties.read_write_two_durations_version.clone(),
-                                            properties.read_write_two_durations_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_binary_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteBinary/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_binary_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_binary.clone(),
-                                            properties.read_write_binary_version.clone(),
-                                            properties.read_write_binary_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_optional_binary_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteOptionalBinary/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_optional_binary_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.read_write_optional_binary.clone(),
-                                                    properties.read_write_optional_binary_version.clone(),
-                                                    properties.read_write_optional_binary_tx_channel.clone(),
-                                                    msg).await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_two_binaries_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteTwoBinaries/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_two_binaries_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_two_binaries.clone(),
-                                            properties.read_write_two_binaries_version.clone(),
-                                            properties.read_write_two_binaries_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_list_of_strings_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteListOfStrings/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_list_of_strings_value(
-                                                    publisher.clone(),
-                                                    prop_topic,
-                                                    properties.read_write_list_of_strings.clone(),
-                                                    properties.read_write_list_of_strings_version.clone(),
-                                                    properties.read_write_list_of_strings_tx_channel.clone(),
-                                                    msg).await
-                                    } else if subscription_id
-                                        == sub_ids.read_write_lists_property_update
-                                    {
-                                        let prop_topic = format!(
-                                            "testAble/{}/property/readWriteLists/value",
-                                            instance_id
-                                        );
-                                        TestAbleServer::<C>::update_read_write_lists_value(
-                                            publisher.clone(),
-                                            prop_topic,
-                                            properties.read_write_lists.clone(),
-                                            properties.read_write_lists_version.clone(),
-                                            properties.read_write_lists_tx_channel.clone(),
-                                            msg,
-                                        )
-                                        .await
-                                    } else {
-                                        TestAbleServer::<C>::wrap_return_code_in_future(
-                                            MethodReturnCode::NotImplemented(
-                                                "Could not find a property matching the request"
-                                                    .to_string(),
-                                            ),
-                                        )
-                                        .await
-                                    }
-                                };
-                                match update_prop_future.await {
-                                    Ok(_) => debug!("Successfully processed update  property"),
-                                    Err(e) => {
-                                        error!("Error processing update to '' property: {:?}", e);
-                                        if let Some(resp_topic) = opt_resp_topic {
-                                            TestAbleServer::<C>::publish_error_response(
-                                                publisher.clone(),
-                                                Some(resp_topic),
-                                                opt_corr_data,
-                                                e,
-                                            )
-                                            .await;
-                                        } else {
-                                            warn!("No response topic found in message properties; cannot send error response.");
-                                        }
-                                    }
+                            match subscription_id {
+                                _i if _i == sub_ids.call_with_nothing_method_req => {
+                                    debug!("Received callWithNothing method invocation message.");
+                                    TestAbleServer::<C>::handle_call_with_nothing_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_one_integer_method_req => {
+                                    debug!("Received callOneInteger method invocation message.");
+                                    TestAbleServer::<C>::handle_call_one_integer_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_optional_integer_method_req => {
+                                    debug!(
+                                        "Received callOptionalInteger method invocation message."
+                                    );
+                                    TestAbleServer::<C>::handle_call_optional_integer_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_three_integers_method_req => {
+                                    debug!("Received callThreeIntegers method invocation message.");
+                                    TestAbleServer::<C>::handle_call_three_integers_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_one_string_method_req => {
+                                    debug!("Received callOneString method invocation message.");
+                                    TestAbleServer::<C>::handle_call_one_string_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_optional_string_method_req => {
+                                    debug!(
+                                        "Received callOptionalString method invocation message."
+                                    );
+                                    TestAbleServer::<C>::handle_call_optional_string_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_three_strings_method_req => {
+                                    debug!("Received callThreeStrings method invocation message.");
+                                    TestAbleServer::<C>::handle_call_three_strings_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_one_enum_method_req => {
+                                    debug!("Received callOneEnum method invocation message.");
+                                    TestAbleServer::<C>::handle_call_one_enum_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_optional_enum_method_req => {
+                                    debug!("Received callOptionalEnum method invocation message.");
+                                    TestAbleServer::<C>::handle_call_optional_enum_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_three_enums_method_req => {
+                                    debug!("Received callThreeEnums method invocation message.");
+                                    TestAbleServer::<C>::handle_call_three_enums_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_one_struct_method_req => {
+                                    debug!("Received callOneStruct method invocation message.");
+                                    TestAbleServer::<C>::handle_call_one_struct_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_optional_struct_method_req => {
+                                    debug!(
+                                        "Received callOptionalStruct method invocation message."
+                                    );
+                                    TestAbleServer::<C>::handle_call_optional_struct_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_three_structs_method_req => {
+                                    debug!("Received callThreeStructs method invocation message.");
+                                    TestAbleServer::<C>::handle_call_three_structs_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_one_date_time_method_req => {
+                                    debug!("Received callOneDateTime method invocation message.");
+                                    TestAbleServer::<C>::handle_call_one_date_time_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_optional_date_time_method_req => {
+                                    debug!(
+                                        "Received callOptionalDateTime method invocation message."
+                                    );
+                                    TestAbleServer::<C>::handle_call_optional_date_time_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_three_date_times_method_req => {
+                                    debug!(
+                                        "Received callThreeDateTimes method invocation message."
+                                    );
+                                    TestAbleServer::<C>::handle_call_three_date_times_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_one_duration_method_req => {
+                                    debug!("Received callOneDuration method invocation message.");
+                                    TestAbleServer::<C>::handle_call_one_duration_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_optional_duration_method_req => {
+                                    debug!(
+                                        "Received callOptionalDuration method invocation message."
+                                    );
+                                    TestAbleServer::<C>::handle_call_optional_duration_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_three_durations_method_req => {
+                                    debug!(
+                                        "Received callThreeDurations method invocation message."
+                                    );
+                                    TestAbleServer::<C>::handle_call_three_durations_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_one_binary_method_req => {
+                                    debug!("Received callOneBinary method invocation message.");
+                                    TestAbleServer::<C>::handle_call_one_binary_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_optional_binary_method_req => {
+                                    debug!(
+                                        "Received callOptionalBinary method invocation message."
+                                    );
+                                    TestAbleServer::<C>::handle_call_optional_binary_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_three_binaries_method_req => {
+                                    debug!("Received callThreeBinaries method invocation message.");
+                                    TestAbleServer::<C>::handle_call_three_binaries_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_one_list_of_integers_method_req => {
+                                    debug!(
+                                        "Received callOneListOfIntegers method invocation message."
+                                    );
+                                    TestAbleServer::<C>::handle_call_one_list_of_integers_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.call_optional_list_of_floats_method_req => {
+                                    debug!("Received callOptionalListOfFloats method invocation message.");
+                                    TestAbleServer::<C>::handle_call_optional_list_of_floats_request(publisher.clone(), method_handlers.clone(), msg).await;
+                                }
+                                _i if _i == sub_ids.call_two_lists_method_req => {
+                                    debug!("Received callTwoLists method invocation message.");
+                                    TestAbleServer::<C>::handle_call_two_lists_request(
+                                        publisher.clone(),
+                                        method_handlers.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+                                _i if _i == sub_ids.read_write_integer_property_update => {
+                                    debug!("Received read_write_integer property update request message.");
+                                    TestAbleServer::<C>::update_read_write_integer_value(
+                                        publisher.clone(),
+                                        properties.read_write_integer.clone(),
+                                        properties.read_write_integer_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_optional_integer_property_update => {
+                                    debug!("Received read_write_optional_integer property update request message.");
+                                    TestAbleServer::<C>::update_read_write_optional_integer_value(
+                                        publisher.clone(),
+                                        properties.read_write_optional_integer.clone(),
+                                        properties.read_write_optional_integer_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_two_integers_property_update => {
+                                    debug!("Received read_write_two_integers property update request message.");
+                                    TestAbleServer::<C>::update_read_write_two_integers_value(
+                                        publisher.clone(),
+                                        properties.read_write_two_integers.clone(),
+                                        properties.read_write_two_integers_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_string_property_update => {
+                                    debug!("Received read_write_string property update request message.");
+                                    TestAbleServer::<C>::update_read_write_string_value(
+                                        publisher.clone(),
+                                        properties.read_write_string.clone(),
+                                        properties.read_write_string_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_optional_string_property_update => {
+                                    debug!("Received read_write_optional_string property update request message.");
+                                    TestAbleServer::<C>::update_read_write_optional_string_value(
+                                        publisher.clone(),
+                                        properties.read_write_optional_string.clone(),
+                                        properties.read_write_optional_string_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_two_strings_property_update => {
+                                    debug!("Received read_write_two_strings property update request message.");
+                                    TestAbleServer::<C>::update_read_write_two_strings_value(
+                                        publisher.clone(),
+                                        properties.read_write_two_strings.clone(),
+                                        properties.read_write_two_strings_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_struct_property_update => {
+                                    debug!("Received read_write_struct property update request message.");
+                                    TestAbleServer::<C>::update_read_write_struct_value(
+                                        publisher.clone(),
+                                        properties.read_write_struct.clone(),
+                                        properties.read_write_struct_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_optional_struct_property_update => {
+                                    debug!("Received read_write_optional_struct property update request message.");
+                                    TestAbleServer::<C>::update_read_write_optional_struct_value(
+                                        publisher.clone(),
+                                        properties.read_write_optional_struct.clone(),
+                                        properties.read_write_optional_struct_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_two_structs_property_update => {
+                                    debug!("Received read_write_two_structs property update request message.");
+                                    TestAbleServer::<C>::update_read_write_two_structs_value(
+                                        publisher.clone(),
+                                        properties.read_write_two_structs.clone(),
+                                        properties.read_write_two_structs_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_enum_property_update => {
+                                    debug!(
+                                        "Received read_write_enum property update request message."
+                                    );
+                                    TestAbleServer::<C>::update_read_write_enum_value(
+                                        publisher.clone(),
+                                        properties.read_write_enum.clone(),
+                                        properties.read_write_enum_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_optional_enum_property_update => {
+                                    debug!("Received read_write_optional_enum property update request message.");
+                                    TestAbleServer::<C>::update_read_write_optional_enum_value(
+                                        publisher.clone(),
+                                        properties.read_write_optional_enum.clone(),
+                                        properties.read_write_optional_enum_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_two_enums_property_update => {
+                                    debug!("Received read_write_two_enums property update request message.");
+                                    TestAbleServer::<C>::update_read_write_two_enums_value(
+                                        publisher.clone(),
+                                        properties.read_write_two_enums.clone(),
+                                        properties.read_write_two_enums_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_datetime_property_update => {
+                                    debug!("Received read_write_datetime property update request message.");
+                                    TestAbleServer::<C>::update_read_write_datetime_value(
+                                        publisher.clone(),
+                                        properties.read_write_datetime.clone(),
+                                        properties.read_write_datetime_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i
+                                    == sub_ids.read_write_optional_datetime_property_update =>
+                                {
+                                    debug!("Received read_write_optional_datetime property update request message.");
+                                    TestAbleServer::<C>::update_read_write_optional_datetime_value(
+                                        publisher.clone(),
+                                        properties.read_write_optional_datetime.clone(),
+                                        properties.read_write_optional_datetime_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_two_datetimes_property_update => {
+                                    debug!("Received read_write_two_datetimes property update request message.");
+                                    TestAbleServer::<C>::update_read_write_two_datetimes_value(
+                                        publisher.clone(),
+                                        properties.read_write_two_datetimes.clone(),
+                                        properties.read_write_two_datetimes_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_duration_property_update => {
+                                    debug!("Received read_write_duration property update request message.");
+                                    TestAbleServer::<C>::update_read_write_duration_value(
+                                        publisher.clone(),
+                                        properties.read_write_duration.clone(),
+                                        properties.read_write_duration_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i
+                                    == sub_ids.read_write_optional_duration_property_update =>
+                                {
+                                    debug!("Received read_write_optional_duration property update request message.");
+                                    TestAbleServer::<C>::update_read_write_optional_duration_value(
+                                        publisher.clone(),
+                                        properties.read_write_optional_duration.clone(),
+                                        properties.read_write_optional_duration_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_two_durations_property_update => {
+                                    debug!("Received read_write_two_durations property update request message.");
+                                    TestAbleServer::<C>::update_read_write_two_durations_value(
+                                        publisher.clone(),
+                                        properties.read_write_two_durations.clone(),
+                                        properties.read_write_two_durations_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_binary_property_update => {
+                                    debug!("Received read_write_binary property update request message.");
+                                    TestAbleServer::<C>::update_read_write_binary_value(
+                                        publisher.clone(),
+                                        properties.read_write_binary.clone(),
+                                        properties.read_write_binary_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_optional_binary_property_update => {
+                                    debug!("Received read_write_optional_binary property update request message.");
+                                    TestAbleServer::<C>::update_read_write_optional_binary_value(
+                                        publisher.clone(),
+                                        properties.read_write_optional_binary.clone(),
+                                        properties.read_write_optional_binary_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_two_binaries_property_update => {
+                                    debug!("Received read_write_two_binaries property update request message.");
+                                    TestAbleServer::<C>::update_read_write_two_binaries_value(
+                                        publisher.clone(),
+                                        properties.read_write_two_binaries.clone(),
+                                        properties.read_write_two_binaries_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_list_of_strings_property_update => {
+                                    debug!("Received read_write_list_of_strings property update request message.");
+                                    TestAbleServer::<C>::update_read_write_list_of_strings_value(
+                                        publisher.clone(),
+                                        properties.read_write_list_of_strings.clone(),
+                                        properties.read_write_list_of_strings_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _i if _i == sub_ids.read_write_lists_property_update => {
+                                    debug!("Received read_write_lists property update request message.");
+                                    TestAbleServer::<C>::update_read_write_lists_value(
+                                        publisher.clone(),
+                                        properties.read_write_lists.clone(),
+                                        properties.read_write_lists_version.clone(),
+                                        msg,
+                                    )
+                                    .await;
+                                }
+
+                                _ => {
+                                    error!(
+                                        "Received MQTT message with unknown subscription id: {}",
+                                        subscription_id
+                                    );
                                 }
                             }
                         } else {
@@ -7117,6 +8824,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
             }
         });
+
         let _ = tokio::join!(loop_task);
 
         warn!("Server receive loop completed. Exiting run_loop.");

@@ -3,7 +3,7 @@ import signal
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from signalonlyipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
-from signalonlyipc.server import SignalOnlyServer
+from signalonlyipc.server import SignalOnlyServer, SignalOnlyInitialPropertyValues
 from signalonlyipc.interface_types import *
 
 if __name__ == "__main__":
@@ -33,7 +33,7 @@ if __name__ == "__main__":
             server.emit_maybe_name(name="apples")
             server.emit_now(timestamp=datetime.now(UTC))
 
-            sleep(16)
+            sleep(42)
         except KeyboardInterrupt:
             break
 
