@@ -10,7 +10,7 @@ TODO: Get license text from stinger file
 
 from typing import Dict, Callable, List, Any, Optional
 from uuid import uuid4
-from functools import partial
+from functools import partial, wraps
 import json
 import logging
 from datetime import datetime, timedelta, UTC
@@ -281,38 +281,55 @@ class {{stinger.python.client_class_name}}Builder:
     def receive_{{sig_name | snake_case }}(self, handler):
         """ Used as a decorator for methods which handle particular signals.
         """
-        self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+        self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(wrapper)
+        return wrapper
     {%endfor%}
 
     {%for prop_name, prop in stinger.properties.items()%}
     def {{prop_name|snake_case}}_updated(self, handler: {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType):
         """ Used as a decorator for methods which handle updates to properties.
         """
-        self._property_updated_callbacks_for_{{prop_name | snake_case}}.append(handler)
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+        self._property_updated_callbacks_for_{{prop_name | snake_case}}.append(wrapper)
+        return wrapper
     {%endfor%}
 
-    def build(self, broker: IBrokerConnection, service_instance_id: str) -> {{stinger.python.client_class_name}}:
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any]=None) -> {{stinger.python.client_class_name}}:
         """ Builds a new {{stinger.python.client_class_name}}.
         """
-        self._logger.debug("Building {{stinger.python.client_class_name}} for service instance %s", service_instance_id)
-        client = {{stinger.python.client_class_name}}(broker, service_instance_id)
+        self._logger.debug("Building {{stinger.python.client_class_name}} for service instance %s", instance_info.instance_id)
+        client = {{stinger.python.client_class_name}}(broker, instance_info)
         {%for sig_name, sig in stinger.signals.items()%}
         for cb in self._signal_recv_callbacks_for_{{sig_name | snake_case }}:
-            client.receive_{{sig_name | snake_case}}(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_{{sig_name | snake_case}}(bound_cb)
+            else:
+                client.receive_{{sig_name | snake_case}}(cb)
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()%}
         for cb in self._property_updated_callbacks_for_{{prop_name | snake_case}}:
-            client.{{prop_name | snake_case}}_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.{{prop_name | snake_case}}_changed(bound_cb)
+            else:
+                client.{{prop_name | snake_case}}_changed(cb)
         {%endfor%}
         return client
 
 class {{stinger.python.client_class_name}}Discoverer:
     
-    def __init__(self, connection: IBrokerConnection, builder: Optional[{{stinger.python.client_class_name}}Builder]=None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[{{stinger.python.client_class_name}}Builder]=None, build_binding: Optional[Any]=None):
         """ Creates a new {{stinger.python.client_class_name}}Discoverer.
         """
         self._conn = connection
         self._builder = builder
+        self._build_binding = build_binding
         self._logger = logging.getLogger('{{stinger.python.client_class_name}}Discoverer')
         self._logger.setLevel(logging.DEBUG)
         service_discovery_topic = "{{stinger.interface_info_topic}}".format('+')
@@ -327,10 +344,10 @@ class {{stinger.python.client_class_name}}Discoverer:
         self._discovered_properties = dict() # type: Dict[str, Dict[str, Any]]
 
         # For fully discovered services
-        self._discovered_services: Dict[str, InterfaceInfo] = {}
-        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
+        self._discovered_services: Dict[str, DiscoveredInstance] = {}
+        self._discovered_service_callbacks: List[Callable[[DiscoveredInstance], None]] = []
 
-    def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
+    def add_discovered_service_callback(self, callback: Callable[[DiscoveredInstance], None]):
         """ Adds a callback to be called when a new service is discovered.
         """
         with self._mutex:
@@ -358,14 +375,14 @@ class {{stinger.python.client_class_name}}Discoverer:
         """ Returns a {{stinger.python.client_class_name}} for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
-        fut = futures.Future()
+        fut = futures.Future() # type: futures.Future[{{stinger.python.client_class_name}}]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                service_instance_id = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services))
                 if self._builder is None:
-                    fut.set_result({{stinger.python.client_class_name}}(self._conn, service_instance_id))
+                    fut.set_result({{stinger.python.client_class_name}}(self._conn, instance_info))
                 else:
-                    new_client = self._builder.build(self._conn, service_instance_id)
+                    new_client = self._builder.build(self._conn, instance_info, self._build_binding)
                     fut.set_result(new_client)
             else:
                 self._pending_futures.append(fut)
@@ -389,7 +406,7 @@ class {{stinger.python.client_class_name}}Discoverer:
                     fut = self._pending_futures.pop(0)
                     if not fut.done():
                         if self._builder is not None:
-                            fut.set_result(self._builder.build(self._conn, entry))
+                            fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
                         else:
                             fut.set_result({{stinger.python.client_class_name}}(self._conn, entry))
                 if not instance_id in self._discovered_services:

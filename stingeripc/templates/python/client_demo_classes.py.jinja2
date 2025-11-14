@@ -1,0 +1,71 @@
+import signal
+from time import sleep
+import concurrent.futures as futures
+from typing import Optional, Union, List
+from datetime import datetime, timedelta, UTC
+from {{stinger.python.package_name}}.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from {{stinger.python.package_name}}.client import {{stinger.python.client_class_name}}, {{stinger.python.client_class_name}}Builder, {{stinger.python.client_class_name}}Discoverer
+from {{stinger.python.package_name}}.interface_types import *
+import threading
+
+client_builder = {{stinger.python.client_class_name}}Builder()
+
+class SuperAwesomeDoerOfThings:
+
+    def __init__(self, label: str, connection: MqttBrokerConnection):
+        self.counter = 0
+        self.label = label
+        discovery = {{stinger.python.client_class_name}}Discoverer(connection, client_builder, build_binding=self) # The build binding will bind all @client_builder decorated methods to this instance.
+        self.client = discovery.get_singleton_client().result()
+        threading.Thread(target=self.request_loop, daemon=True).start()
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    @client_builder.receive_{{sig_name | snake_case }}
+    def print_{{sig_name}}_signal(self, *args, **kwargs):
+        self.counter += 1
+        print(f"{self.label}-{self.counter} printing signal '{{sig_name}}' : args={args}, kwargs={kwargs}")
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    @client_builder.{{prop_name | snake_case}}_updated
+    def print_new_{{prop_name}}_value(self, value: {{prop.python_annotation}}):
+        print(f"{self.label}-{self.counter} printing signal '{{prop_name}}' : value={value}")
+    {%endfor%}
+
+    {% if (stinger.methods|length + stinger.properties_rw|length) > 0%}
+    def request_loop(self):
+        """Example request loop that runs in a separate thread."""
+        sleep(30)
+        while True:
+            {%-for method_name, method in stinger.methods.items()%}
+            print("Making call to '{{method_name|snake_case}}'")
+            future_resp = self.client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+            try:
+                print(f"RESULT:  {future_resp.result(5)}")
+            except futures.TimeoutError:
+                print(f"Timed out waiting for response to '{{method_name|snake_case}}' call")
+            sleep(5)
+            {%endfor%}{# for each method #}
+            {%for prop_name, prop in stinger.properties_rw.items()%}
+            {%if prop.arg_list|length > 1%}
+            self.client.{{prop_name|snake_case}} = {{prop_name|UpperCamelCase}}Property(
+                {%-for arg in prop.arg_list%}
+                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
+                {%-endfor%}
+            )
+            {%else%}
+            self.client.{{prop_name|snake_case}} = {{prop.arg_list[0].get_random_example_value()}}
+            {%endif%} {# end propertly length cases #}
+            {%endfor%} {# for each property #}
+            sleep(10)
+    {%endif%} {# any methods or properties #}
+
+if __name__ == '__main__':
+
+    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    conn = MqttBrokerConnection(transport)
+
+    doer1 = SuperAwesomeDoerOfThings("Doer1", conn)    
+
+    print("Ctrl-C will stop the program.")
+    signal.pause()

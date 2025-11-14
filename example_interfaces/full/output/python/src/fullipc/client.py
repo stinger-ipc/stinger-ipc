@@ -10,7 +10,7 @@ TODO: Get license text from stinger file
 
 from typing import Dict, Callable, List, Any, Optional
 from uuid import uuid4
-from functools import partial
+from functools import partial, wraps
 import json
 import logging
 from datetime import datetime, timedelta, UTC
@@ -751,74 +751,155 @@ class FullClientBuilder:
 
     def receive_today_is(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_today_is.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_today_is.append(wrapper)
+        return wrapper
 
     def favorite_number_updated(self, handler: FavoriteNumberPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_favorite_number.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_favorite_number.append(wrapper)
+        return wrapper
 
     def favorite_foods_updated(self, handler: FavoriteFoodsPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_favorite_foods.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_favorite_foods.append(wrapper)
+        return wrapper
 
     def lunch_menu_updated(self, handler: LunchMenuPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_lunch_menu.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_lunch_menu.append(wrapper)
+        return wrapper
 
     def family_name_updated(self, handler: FamilyNamePropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_family_name.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_family_name.append(wrapper)
+        return wrapper
 
     def last_breakfast_time_updated(self, handler: LastBreakfastTimePropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_last_breakfast_time.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_last_breakfast_time.append(wrapper)
+        return wrapper
 
     def breakfast_length_updated(self, handler: BreakfastLengthPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_breakfast_length.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_breakfast_length.append(wrapper)
+        return wrapper
 
     def last_birthdays_updated(self, handler: LastBirthdaysPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_last_birthdays.append(handler)
 
-    def build(self, broker: IBrokerConnection, service_instance_id: str) -> FullClient:
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_last_birthdays.append(wrapper)
+        return wrapper
+
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> FullClient:
         """Builds a new FullClient."""
-        self._logger.debug("Building FullClient for service instance %s", service_instance_id)
-        client = FullClient(broker, service_instance_id)
+        self._logger.debug("Building FullClient for service instance %s", instance_info.instance_id)
+        client = FullClient(broker, instance_info)
 
         for cb in self._signal_recv_callbacks_for_today_is:
-            client.receive_today_is(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_today_is(bound_cb)
+            else:
+                client.receive_today_is(cb)
 
         for cb in self._property_updated_callbacks_for_favorite_number:
-            client.favorite_number_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.favorite_number_changed(bound_cb)
+            else:
+                client.favorite_number_changed(cb)
 
         for cb in self._property_updated_callbacks_for_favorite_foods:
-            client.favorite_foods_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.favorite_foods_changed(bound_cb)
+            else:
+                client.favorite_foods_changed(cb)
 
         for cb in self._property_updated_callbacks_for_lunch_menu:
-            client.lunch_menu_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.lunch_menu_changed(bound_cb)
+            else:
+                client.lunch_menu_changed(cb)
 
         for cb in self._property_updated_callbacks_for_family_name:
-            client.family_name_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.family_name_changed(bound_cb)
+            else:
+                client.family_name_changed(cb)
 
         for cb in self._property_updated_callbacks_for_last_breakfast_time:
-            client.last_breakfast_time_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.last_breakfast_time_changed(bound_cb)
+            else:
+                client.last_breakfast_time_changed(cb)
 
         for cb in self._property_updated_callbacks_for_breakfast_length:
-            client.breakfast_length_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.breakfast_length_changed(bound_cb)
+            else:
+                client.breakfast_length_changed(cb)
 
         for cb in self._property_updated_callbacks_for_last_birthdays:
-            client.last_birthdays_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.last_birthdays_changed(bound_cb)
+            else:
+                client.last_birthdays_changed(cb)
 
         return client
 
 
 class FullClientDiscoverer:
 
-    def __init__(self, connection: IBrokerConnection, builder: Optional[FullClientBuilder] = None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[FullClientBuilder] = None, build_binding: Optional[Any] = None):
         """Creates a new FullClientDiscoverer."""
         self._conn = connection
         self._builder = builder
+        self._build_binding = build_binding
         self._logger = logging.getLogger("FullClientDiscoverer")
         self._logger.setLevel(logging.DEBUG)
         service_discovery_topic = "full/{}/interface".format("+")
@@ -833,10 +914,10 @@ class FullClientDiscoverer:
         self._discovered_properties = dict()  # type: Dict[str, Dict[str, Any]]
 
         # For fully discovered services
-        self._discovered_services: Dict[str, InterfaceInfo] = {}
-        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
+        self._discovered_services: Dict[str, DiscoveredInstance] = {}
+        self._discovered_service_callbacks: List[Callable[[DiscoveredInstance], None]] = []
 
-    def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
+    def add_discovered_service_callback(self, callback: Callable[[DiscoveredInstance], None]):
         """Adds a callback to be called when a new service is discovered."""
         with self._mutex:
             self._discovered_service_callbacks.append(callback)
@@ -860,14 +941,14 @@ class FullClientDiscoverer:
         """Returns a FullClient for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
-        fut = futures.Future()
+        fut = futures.Future()  # type: futures.Future[FullClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                service_instance_id = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services))
                 if self._builder is None:
-                    fut.set_result(FullClient(self._conn, service_instance_id))
+                    fut.set_result(FullClient(self._conn, instance_info))
                 else:
-                    new_client = self._builder.build(self._conn, service_instance_id)
+                    new_client = self._builder.build(self._conn, instance_info, self._build_binding)
                     fut.set_result(new_client)
             else:
                 self._pending_futures.append(fut)
@@ -885,7 +966,7 @@ class FullClientDiscoverer:
                     fut = self._pending_futures.pop(0)
                     if not fut.done():
                         if self._builder is not None:
-                            fut.set_result(self._builder.build(self._conn, entry))
+                            fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
                         else:
                             fut.set_result(FullClient(self._conn, entry))
                 if not instance_id in self._discovered_services:

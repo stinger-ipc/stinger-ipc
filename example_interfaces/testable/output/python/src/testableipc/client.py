@@ -10,7 +10,7 @@ TODO: Get license text from stinger file
 
 from typing import Dict, Callable, List, Any, Optional
 from uuid import uuid4
-from functools import partial
+from functools import partial, wraps
 import json
 import logging
 from datetime import datetime, timedelta, UTC
@@ -2833,375 +2833,886 @@ class TestAbleClientBuilder:
 
     def receive_empty(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_empty.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_empty.append(wrapper)
+        return wrapper
 
     def receive_single_int(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_int.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_int.append(wrapper)
+        return wrapper
 
     def receive_single_optional_int(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_optional_int.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_optional_int.append(wrapper)
+        return wrapper
 
     def receive_three_integers(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_three_integers.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_three_integers.append(wrapper)
+        return wrapper
 
     def receive_single_string(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_string.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_string.append(wrapper)
+        return wrapper
 
     def receive_single_optional_string(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_optional_string.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_optional_string.append(wrapper)
+        return wrapper
 
     def receive_three_strings(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_three_strings.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_three_strings.append(wrapper)
+        return wrapper
 
     def receive_single_enum(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_enum.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_enum.append(wrapper)
+        return wrapper
 
     def receive_single_optional_enum(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_optional_enum.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_optional_enum.append(wrapper)
+        return wrapper
 
     def receive_three_enums(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_three_enums.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_three_enums.append(wrapper)
+        return wrapper
 
     def receive_single_struct(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_struct.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_struct.append(wrapper)
+        return wrapper
 
     def receive_single_optional_struct(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_optional_struct.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_optional_struct.append(wrapper)
+        return wrapper
 
     def receive_three_structs(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_three_structs.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_three_structs.append(wrapper)
+        return wrapper
 
     def receive_single_date_time(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_date_time.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_date_time.append(wrapper)
+        return wrapper
 
     def receive_single_optional_datetime(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_optional_datetime.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_optional_datetime.append(wrapper)
+        return wrapper
 
     def receive_three_date_times(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_three_date_times.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_three_date_times.append(wrapper)
+        return wrapper
 
     def receive_single_duration(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_duration.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_duration.append(wrapper)
+        return wrapper
 
     def receive_single_optional_duration(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_optional_duration.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_optional_duration.append(wrapper)
+        return wrapper
 
     def receive_three_durations(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_three_durations.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_three_durations.append(wrapper)
+        return wrapper
 
     def receive_single_binary(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_binary.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_binary.append(wrapper)
+        return wrapper
 
     def receive_single_optional_binary(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_optional_binary.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_optional_binary.append(wrapper)
+        return wrapper
 
     def receive_three_binaries(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_three_binaries.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_three_binaries.append(wrapper)
+        return wrapper
 
     def receive_single_array_of_integers(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_array_of_integers.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_array_of_integers.append(wrapper)
+        return wrapper
 
     def receive_single_optional_array_of_strings(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_single_optional_array_of_strings.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_single_optional_array_of_strings.append(wrapper)
+        return wrapper
 
     def receive_array_of_every_type(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_array_of_every_type.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_array_of_every_type.append(wrapper)
+        return wrapper
 
     def read_write_integer_updated(self, handler: ReadWriteIntegerPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_integer.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_integer.append(wrapper)
+        return wrapper
 
     def read_only_integer_updated(self, handler: ReadOnlyIntegerPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_only_integer.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_only_integer.append(wrapper)
+        return wrapper
 
     def read_write_optional_integer_updated(self, handler: ReadWriteOptionalIntegerPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_optional_integer.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_optional_integer.append(wrapper)
+        return wrapper
 
     def read_write_two_integers_updated(self, handler: ReadWriteTwoIntegersPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_two_integers.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_two_integers.append(wrapper)
+        return wrapper
 
     def read_only_string_updated(self, handler: ReadOnlyStringPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_only_string.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_only_string.append(wrapper)
+        return wrapper
 
     def read_write_string_updated(self, handler: ReadWriteStringPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_string.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_string.append(wrapper)
+        return wrapper
 
     def read_write_optional_string_updated(self, handler: ReadWriteOptionalStringPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_optional_string.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_optional_string.append(wrapper)
+        return wrapper
 
     def read_write_two_strings_updated(self, handler: ReadWriteTwoStringsPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_two_strings.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_two_strings.append(wrapper)
+        return wrapper
 
     def read_write_struct_updated(self, handler: ReadWriteStructPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_struct.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_struct.append(wrapper)
+        return wrapper
 
     def read_write_optional_struct_updated(self, handler: ReadWriteOptionalStructPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_optional_struct.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_optional_struct.append(wrapper)
+        return wrapper
 
     def read_write_two_structs_updated(self, handler: ReadWriteTwoStructsPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_two_structs.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_two_structs.append(wrapper)
+        return wrapper
 
     def read_only_enum_updated(self, handler: ReadOnlyEnumPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_only_enum.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_only_enum.append(wrapper)
+        return wrapper
 
     def read_write_enum_updated(self, handler: ReadWriteEnumPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_enum.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_enum.append(wrapper)
+        return wrapper
 
     def read_write_optional_enum_updated(self, handler: ReadWriteOptionalEnumPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_optional_enum.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_optional_enum.append(wrapper)
+        return wrapper
 
     def read_write_two_enums_updated(self, handler: ReadWriteTwoEnumsPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_two_enums.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_two_enums.append(wrapper)
+        return wrapper
 
     def read_write_datetime_updated(self, handler: ReadWriteDatetimePropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_datetime.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_datetime.append(wrapper)
+        return wrapper
 
     def read_write_optional_datetime_updated(self, handler: ReadWriteOptionalDatetimePropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_optional_datetime.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_optional_datetime.append(wrapper)
+        return wrapper
 
     def read_write_two_datetimes_updated(self, handler: ReadWriteTwoDatetimesPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_two_datetimes.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_two_datetimes.append(wrapper)
+        return wrapper
 
     def read_write_duration_updated(self, handler: ReadWriteDurationPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_duration.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_duration.append(wrapper)
+        return wrapper
 
     def read_write_optional_duration_updated(self, handler: ReadWriteOptionalDurationPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_optional_duration.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_optional_duration.append(wrapper)
+        return wrapper
 
     def read_write_two_durations_updated(self, handler: ReadWriteTwoDurationsPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_two_durations.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_two_durations.append(wrapper)
+        return wrapper
 
     def read_write_binary_updated(self, handler: ReadWriteBinaryPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_binary.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_binary.append(wrapper)
+        return wrapper
 
     def read_write_optional_binary_updated(self, handler: ReadWriteOptionalBinaryPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_optional_binary.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_optional_binary.append(wrapper)
+        return wrapper
 
     def read_write_two_binaries_updated(self, handler: ReadWriteTwoBinariesPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_two_binaries.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_two_binaries.append(wrapper)
+        return wrapper
 
     def read_write_list_of_strings_updated(self, handler: ReadWriteListOfStringsPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_list_of_strings.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_list_of_strings.append(wrapper)
+        return wrapper
 
     def read_write_lists_updated(self, handler: ReadWriteListsPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_read_write_lists.append(handler)
 
-    def build(self, broker: IBrokerConnection, service_instance_id: str) -> TestAbleClient:
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_read_write_lists.append(wrapper)
+        return wrapper
+
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> TestAbleClient:
         """Builds a new TestAbleClient."""
-        self._logger.debug("Building TestAbleClient for service instance %s", service_instance_id)
-        client = TestAbleClient(broker, service_instance_id)
+        self._logger.debug("Building TestAbleClient for service instance %s", instance_info.instance_id)
+        client = TestAbleClient(broker, instance_info)
 
         for cb in self._signal_recv_callbacks_for_empty:
-            client.receive_empty(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_empty(bound_cb)
+            else:
+                client.receive_empty(cb)
 
         for cb in self._signal_recv_callbacks_for_single_int:
-            client.receive_single_int(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_int(bound_cb)
+            else:
+                client.receive_single_int(cb)
 
         for cb in self._signal_recv_callbacks_for_single_optional_int:
-            client.receive_single_optional_int(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_optional_int(bound_cb)
+            else:
+                client.receive_single_optional_int(cb)
 
         for cb in self._signal_recv_callbacks_for_three_integers:
-            client.receive_three_integers(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_three_integers(bound_cb)
+            else:
+                client.receive_three_integers(cb)
 
         for cb in self._signal_recv_callbacks_for_single_string:
-            client.receive_single_string(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_string(bound_cb)
+            else:
+                client.receive_single_string(cb)
 
         for cb in self._signal_recv_callbacks_for_single_optional_string:
-            client.receive_single_optional_string(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_optional_string(bound_cb)
+            else:
+                client.receive_single_optional_string(cb)
 
         for cb in self._signal_recv_callbacks_for_three_strings:
-            client.receive_three_strings(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_three_strings(bound_cb)
+            else:
+                client.receive_three_strings(cb)
 
         for cb in self._signal_recv_callbacks_for_single_enum:
-            client.receive_single_enum(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_enum(bound_cb)
+            else:
+                client.receive_single_enum(cb)
 
         for cb in self._signal_recv_callbacks_for_single_optional_enum:
-            client.receive_single_optional_enum(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_optional_enum(bound_cb)
+            else:
+                client.receive_single_optional_enum(cb)
 
         for cb in self._signal_recv_callbacks_for_three_enums:
-            client.receive_three_enums(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_three_enums(bound_cb)
+            else:
+                client.receive_three_enums(cb)
 
         for cb in self._signal_recv_callbacks_for_single_struct:
-            client.receive_single_struct(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_struct(bound_cb)
+            else:
+                client.receive_single_struct(cb)
 
         for cb in self._signal_recv_callbacks_for_single_optional_struct:
-            client.receive_single_optional_struct(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_optional_struct(bound_cb)
+            else:
+                client.receive_single_optional_struct(cb)
 
         for cb in self._signal_recv_callbacks_for_three_structs:
-            client.receive_three_structs(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_three_structs(bound_cb)
+            else:
+                client.receive_three_structs(cb)
 
         for cb in self._signal_recv_callbacks_for_single_date_time:
-            client.receive_single_date_time(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_date_time(bound_cb)
+            else:
+                client.receive_single_date_time(cb)
 
         for cb in self._signal_recv_callbacks_for_single_optional_datetime:
-            client.receive_single_optional_datetime(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_optional_datetime(bound_cb)
+            else:
+                client.receive_single_optional_datetime(cb)
 
         for cb in self._signal_recv_callbacks_for_three_date_times:
-            client.receive_three_date_times(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_three_date_times(bound_cb)
+            else:
+                client.receive_three_date_times(cb)
 
         for cb in self._signal_recv_callbacks_for_single_duration:
-            client.receive_single_duration(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_duration(bound_cb)
+            else:
+                client.receive_single_duration(cb)
 
         for cb in self._signal_recv_callbacks_for_single_optional_duration:
-            client.receive_single_optional_duration(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_optional_duration(bound_cb)
+            else:
+                client.receive_single_optional_duration(cb)
 
         for cb in self._signal_recv_callbacks_for_three_durations:
-            client.receive_three_durations(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_three_durations(bound_cb)
+            else:
+                client.receive_three_durations(cb)
 
         for cb in self._signal_recv_callbacks_for_single_binary:
-            client.receive_single_binary(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_binary(bound_cb)
+            else:
+                client.receive_single_binary(cb)
 
         for cb in self._signal_recv_callbacks_for_single_optional_binary:
-            client.receive_single_optional_binary(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_optional_binary(bound_cb)
+            else:
+                client.receive_single_optional_binary(cb)
 
         for cb in self._signal_recv_callbacks_for_three_binaries:
-            client.receive_three_binaries(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_three_binaries(bound_cb)
+            else:
+                client.receive_three_binaries(cb)
 
         for cb in self._signal_recv_callbacks_for_single_array_of_integers:
-            client.receive_single_array_of_integers(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_array_of_integers(bound_cb)
+            else:
+                client.receive_single_array_of_integers(cb)
 
         for cb in self._signal_recv_callbacks_for_single_optional_array_of_strings:
-            client.receive_single_optional_array_of_strings(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_single_optional_array_of_strings(bound_cb)
+            else:
+                client.receive_single_optional_array_of_strings(cb)
 
         for cb in self._signal_recv_callbacks_for_array_of_every_type:
-            client.receive_array_of_every_type(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_array_of_every_type(bound_cb)
+            else:
+                client.receive_array_of_every_type(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_integer:
-            client.read_write_integer_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_integer_changed(bound_cb)
+            else:
+                client.read_write_integer_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_only_integer:
-            client.read_only_integer_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_only_integer_changed(bound_cb)
+            else:
+                client.read_only_integer_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_optional_integer:
-            client.read_write_optional_integer_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_optional_integer_changed(bound_cb)
+            else:
+                client.read_write_optional_integer_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_two_integers:
-            client.read_write_two_integers_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_two_integers_changed(bound_cb)
+            else:
+                client.read_write_two_integers_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_only_string:
-            client.read_only_string_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_only_string_changed(bound_cb)
+            else:
+                client.read_only_string_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_string:
-            client.read_write_string_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_string_changed(bound_cb)
+            else:
+                client.read_write_string_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_optional_string:
-            client.read_write_optional_string_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_optional_string_changed(bound_cb)
+            else:
+                client.read_write_optional_string_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_two_strings:
-            client.read_write_two_strings_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_two_strings_changed(bound_cb)
+            else:
+                client.read_write_two_strings_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_struct:
-            client.read_write_struct_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_struct_changed(bound_cb)
+            else:
+                client.read_write_struct_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_optional_struct:
-            client.read_write_optional_struct_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_optional_struct_changed(bound_cb)
+            else:
+                client.read_write_optional_struct_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_two_structs:
-            client.read_write_two_structs_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_two_structs_changed(bound_cb)
+            else:
+                client.read_write_two_structs_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_only_enum:
-            client.read_only_enum_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_only_enum_changed(bound_cb)
+            else:
+                client.read_only_enum_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_enum:
-            client.read_write_enum_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_enum_changed(bound_cb)
+            else:
+                client.read_write_enum_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_optional_enum:
-            client.read_write_optional_enum_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_optional_enum_changed(bound_cb)
+            else:
+                client.read_write_optional_enum_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_two_enums:
-            client.read_write_two_enums_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_two_enums_changed(bound_cb)
+            else:
+                client.read_write_two_enums_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_datetime:
-            client.read_write_datetime_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_datetime_changed(bound_cb)
+            else:
+                client.read_write_datetime_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_optional_datetime:
-            client.read_write_optional_datetime_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_optional_datetime_changed(bound_cb)
+            else:
+                client.read_write_optional_datetime_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_two_datetimes:
-            client.read_write_two_datetimes_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_two_datetimes_changed(bound_cb)
+            else:
+                client.read_write_two_datetimes_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_duration:
-            client.read_write_duration_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_duration_changed(bound_cb)
+            else:
+                client.read_write_duration_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_optional_duration:
-            client.read_write_optional_duration_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_optional_duration_changed(bound_cb)
+            else:
+                client.read_write_optional_duration_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_two_durations:
-            client.read_write_two_durations_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_two_durations_changed(bound_cb)
+            else:
+                client.read_write_two_durations_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_binary:
-            client.read_write_binary_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_binary_changed(bound_cb)
+            else:
+                client.read_write_binary_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_optional_binary:
-            client.read_write_optional_binary_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_optional_binary_changed(bound_cb)
+            else:
+                client.read_write_optional_binary_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_two_binaries:
-            client.read_write_two_binaries_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_two_binaries_changed(bound_cb)
+            else:
+                client.read_write_two_binaries_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_list_of_strings:
-            client.read_write_list_of_strings_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_list_of_strings_changed(bound_cb)
+            else:
+                client.read_write_list_of_strings_changed(cb)
 
         for cb in self._property_updated_callbacks_for_read_write_lists:
-            client.read_write_lists_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.read_write_lists_changed(bound_cb)
+            else:
+                client.read_write_lists_changed(cb)
 
         return client
 
 
 class TestAbleClientDiscoverer:
 
-    def __init__(self, connection: IBrokerConnection, builder: Optional[TestAbleClientBuilder] = None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[TestAbleClientBuilder] = None, build_binding: Optional[Any] = None):
         """Creates a new TestAbleClientDiscoverer."""
         self._conn = connection
         self._builder = builder
+        self._build_binding = build_binding
         self._logger = logging.getLogger("TestAbleClientDiscoverer")
         self._logger.setLevel(logging.DEBUG)
         service_discovery_topic = "testAble/{}/interface".format("+")
@@ -3216,10 +3727,10 @@ class TestAbleClientDiscoverer:
         self._discovered_properties = dict()  # type: Dict[str, Dict[str, Any]]
 
         # For fully discovered services
-        self._discovered_services: Dict[str, InterfaceInfo] = {}
-        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
+        self._discovered_services: Dict[str, DiscoveredInstance] = {}
+        self._discovered_service_callbacks: List[Callable[[DiscoveredInstance], None]] = []
 
-    def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
+    def add_discovered_service_callback(self, callback: Callable[[DiscoveredInstance], None]):
         """Adds a callback to be called when a new service is discovered."""
         with self._mutex:
             self._discovered_service_callbacks.append(callback)
@@ -3243,14 +3754,14 @@ class TestAbleClientDiscoverer:
         """Returns a TestAbleClient for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
-        fut = futures.Future()
+        fut = futures.Future()  # type: futures.Future[TestAbleClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                service_instance_id = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services))
                 if self._builder is None:
-                    fut.set_result(TestAbleClient(self._conn, service_instance_id))
+                    fut.set_result(TestAbleClient(self._conn, instance_info))
                 else:
-                    new_client = self._builder.build(self._conn, service_instance_id)
+                    new_client = self._builder.build(self._conn, instance_info, self._build_binding)
                     fut.set_result(new_client)
             else:
                 self._pending_futures.append(fut)
@@ -3268,7 +3779,7 @@ class TestAbleClientDiscoverer:
                     fut = self._pending_futures.pop(0)
                     if not fut.done():
                         if self._builder is not None:
-                            fut.set_result(self._builder.build(self._conn, entry))
+                            fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
                         else:
                             fut.set_result(TestAbleClient(self._conn, entry))
                 if not instance_id in self._discovered_services:

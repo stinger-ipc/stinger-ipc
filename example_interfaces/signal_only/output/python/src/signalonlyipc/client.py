@@ -10,7 +10,7 @@ TODO: Get license text from stinger file
 
 from typing import Dict, Callable, List, Any, Optional
 from uuid import uuid4
-from functools import partial
+from functools import partial, wraps
 import json
 import logging
 from datetime import datetime, timedelta, UTC
@@ -181,53 +181,104 @@ class SignalOnlyClientBuilder:
 
     def receive_another_signal(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_another_signal.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_another_signal.append(wrapper)
+        return wrapper
 
     def receive_bark(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_bark.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_bark.append(wrapper)
+        return wrapper
 
     def receive_maybe_number(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_maybe_number.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_maybe_number.append(wrapper)
+        return wrapper
 
     def receive_maybe_name(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_maybe_name.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_maybe_name.append(wrapper)
+        return wrapper
 
     def receive_now(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_now.append(handler)
 
-    def build(self, broker: IBrokerConnection, service_instance_id: str) -> SignalOnlyClient:
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_now.append(wrapper)
+        return wrapper
+
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> SignalOnlyClient:
         """Builds a new SignalOnlyClient."""
-        self._logger.debug("Building SignalOnlyClient for service instance %s", service_instance_id)
-        client = SignalOnlyClient(broker, service_instance_id)
+        self._logger.debug("Building SignalOnlyClient for service instance %s", instance_info.instance_id)
+        client = SignalOnlyClient(broker, instance_info)
 
         for cb in self._signal_recv_callbacks_for_another_signal:
-            client.receive_another_signal(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_another_signal(bound_cb)
+            else:
+                client.receive_another_signal(cb)
 
         for cb in self._signal_recv_callbacks_for_bark:
-            client.receive_bark(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_bark(bound_cb)
+            else:
+                client.receive_bark(cb)
 
         for cb in self._signal_recv_callbacks_for_maybe_number:
-            client.receive_maybe_number(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_maybe_number(bound_cb)
+            else:
+                client.receive_maybe_number(cb)
 
         for cb in self._signal_recv_callbacks_for_maybe_name:
-            client.receive_maybe_name(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_maybe_name(bound_cb)
+            else:
+                client.receive_maybe_name(cb)
 
         for cb in self._signal_recv_callbacks_for_now:
-            client.receive_now(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_now(bound_cb)
+            else:
+                client.receive_now(cb)
 
         return client
 
 
 class SignalOnlyClientDiscoverer:
 
-    def __init__(self, connection: IBrokerConnection, builder: Optional[SignalOnlyClientBuilder] = None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[SignalOnlyClientBuilder] = None, build_binding: Optional[Any] = None):
         """Creates a new SignalOnlyClientDiscoverer."""
         self._conn = connection
         self._builder = builder
+        self._build_binding = build_binding
         self._logger = logging.getLogger("SignalOnlyClientDiscoverer")
         self._logger.setLevel(logging.DEBUG)
         service_discovery_topic = "signalOnly/{}/interface".format("+")
@@ -242,10 +293,10 @@ class SignalOnlyClientDiscoverer:
         self._discovered_properties = dict()  # type: Dict[str, Dict[str, Any]]
 
         # For fully discovered services
-        self._discovered_services: Dict[str, InterfaceInfo] = {}
-        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
+        self._discovered_services: Dict[str, DiscoveredInstance] = {}
+        self._discovered_service_callbacks: List[Callable[[DiscoveredInstance], None]] = []
 
-    def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
+    def add_discovered_service_callback(self, callback: Callable[[DiscoveredInstance], None]):
         """Adds a callback to be called when a new service is discovered."""
         with self._mutex:
             self._discovered_service_callbacks.append(callback)
@@ -269,14 +320,14 @@ class SignalOnlyClientDiscoverer:
         """Returns a SignalOnlyClient for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
-        fut = futures.Future()
+        fut = futures.Future()  # type: futures.Future[SignalOnlyClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                service_instance_id = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services))
                 if self._builder is None:
-                    fut.set_result(SignalOnlyClient(self._conn, service_instance_id))
+                    fut.set_result(SignalOnlyClient(self._conn, instance_info))
                 else:
-                    new_client = self._builder.build(self._conn, service_instance_id)
+                    new_client = self._builder.build(self._conn, instance_info, self._build_binding)
                     fut.set_result(new_client)
             else:
                 self._pending_futures.append(fut)
@@ -296,7 +347,7 @@ class SignalOnlyClientDiscoverer:
                     fut = self._pending_futures.pop(0)
                     if not fut.done():
                         if self._builder is not None:
-                            fut.set_result(self._builder.build(self._conn, entry))
+                            fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
                         else:
                             fut.set_result(SignalOnlyClient(self._conn, entry))
                 if not instance_id in self._discovered_services:

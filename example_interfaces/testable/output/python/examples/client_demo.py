@@ -223,7 +223,7 @@ def request_loop(client: TestAbleClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -289,7 +289,7 @@ def request_loop(client: TestAbleClient):
         sleep(5)
 
         print("Making call to 'call_optional_date_time'")
-        future_resp = client.call_optional_date_time(input1=datetime.now(UTC))
+        future_resp = client.call_optional_date_time(input1=None)
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
@@ -507,7 +507,7 @@ def request_loop(client: TestAbleClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],

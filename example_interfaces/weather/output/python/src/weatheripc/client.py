@@ -10,7 +10,7 @@ TODO: Get license text from stinger file
 
 from typing import Dict, Callable, List, Any, Optional
 from uuid import uuid4
-from functools import partial
+from functools import partial, wraps
 import json
 import logging
 from datetime import datetime, timedelta, UTC
@@ -629,81 +629,172 @@ class WeatherClientBuilder:
 
     def receive_current_time(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_current_time.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_current_time.append(wrapper)
+        return wrapper
 
     def location_updated(self, handler: LocationPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_location.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_location.append(wrapper)
+        return wrapper
 
     def current_temperature_updated(self, handler: CurrentTemperaturePropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_current_temperature.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_current_temperature.append(wrapper)
+        return wrapper
 
     def current_condition_updated(self, handler: CurrentConditionPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_current_condition.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_current_condition.append(wrapper)
+        return wrapper
 
     def daily_forecast_updated(self, handler: DailyForecastPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_daily_forecast.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_daily_forecast.append(wrapper)
+        return wrapper
 
     def hourly_forecast_updated(self, handler: HourlyForecastPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_hourly_forecast.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_hourly_forecast.append(wrapper)
+        return wrapper
 
     def current_condition_refresh_interval_updated(self, handler: CurrentConditionRefreshIntervalPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_current_condition_refresh_interval.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_current_condition_refresh_interval.append(wrapper)
+        return wrapper
 
     def hourly_forecast_refresh_interval_updated(self, handler: HourlyForecastRefreshIntervalPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_hourly_forecast_refresh_interval.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_hourly_forecast_refresh_interval.append(wrapper)
+        return wrapper
 
     def daily_forecast_refresh_interval_updated(self, handler: DailyForecastRefreshIntervalPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_daily_forecast_refresh_interval.append(handler)
 
-    def build(self, broker: IBrokerConnection, service_instance_id: str) -> WeatherClient:
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_daily_forecast_refresh_interval.append(wrapper)
+        return wrapper
+
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> WeatherClient:
         """Builds a new WeatherClient."""
-        self._logger.debug("Building WeatherClient for service instance %s", service_instance_id)
-        client = WeatherClient(broker, service_instance_id)
+        self._logger.debug("Building WeatherClient for service instance %s", instance_info.instance_id)
+        client = WeatherClient(broker, instance_info)
 
         for cb in self._signal_recv_callbacks_for_current_time:
-            client.receive_current_time(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_current_time(bound_cb)
+            else:
+                client.receive_current_time(cb)
 
         for cb in self._property_updated_callbacks_for_location:
-            client.location_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.location_changed(bound_cb)
+            else:
+                client.location_changed(cb)
 
         for cb in self._property_updated_callbacks_for_current_temperature:
-            client.current_temperature_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.current_temperature_changed(bound_cb)
+            else:
+                client.current_temperature_changed(cb)
 
         for cb in self._property_updated_callbacks_for_current_condition:
-            client.current_condition_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.current_condition_changed(bound_cb)
+            else:
+                client.current_condition_changed(cb)
 
         for cb in self._property_updated_callbacks_for_daily_forecast:
-            client.daily_forecast_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.daily_forecast_changed(bound_cb)
+            else:
+                client.daily_forecast_changed(cb)
 
         for cb in self._property_updated_callbacks_for_hourly_forecast:
-            client.hourly_forecast_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.hourly_forecast_changed(bound_cb)
+            else:
+                client.hourly_forecast_changed(cb)
 
         for cb in self._property_updated_callbacks_for_current_condition_refresh_interval:
-            client.current_condition_refresh_interval_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.current_condition_refresh_interval_changed(bound_cb)
+            else:
+                client.current_condition_refresh_interval_changed(cb)
 
         for cb in self._property_updated_callbacks_for_hourly_forecast_refresh_interval:
-            client.hourly_forecast_refresh_interval_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.hourly_forecast_refresh_interval_changed(bound_cb)
+            else:
+                client.hourly_forecast_refresh_interval_changed(cb)
 
         for cb in self._property_updated_callbacks_for_daily_forecast_refresh_interval:
-            client.daily_forecast_refresh_interval_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.daily_forecast_refresh_interval_changed(bound_cb)
+            else:
+                client.daily_forecast_refresh_interval_changed(cb)
 
         return client
 
 
 class WeatherClientDiscoverer:
 
-    def __init__(self, connection: IBrokerConnection, builder: Optional[WeatherClientBuilder] = None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[WeatherClientBuilder] = None, build_binding: Optional[Any] = None):
         """Creates a new WeatherClientDiscoverer."""
         self._conn = connection
         self._builder = builder
+        self._build_binding = build_binding
         self._logger = logging.getLogger("WeatherClientDiscoverer")
         self._logger.setLevel(logging.DEBUG)
         service_discovery_topic = "weather/{}/interface".format("+")
@@ -718,10 +809,10 @@ class WeatherClientDiscoverer:
         self._discovered_properties = dict()  # type: Dict[str, Dict[str, Any]]
 
         # For fully discovered services
-        self._discovered_services: Dict[str, InterfaceInfo] = {}
-        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
+        self._discovered_services: Dict[str, DiscoveredInstance] = {}
+        self._discovered_service_callbacks: List[Callable[[DiscoveredInstance], None]] = []
 
-    def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
+    def add_discovered_service_callback(self, callback: Callable[[DiscoveredInstance], None]):
         """Adds a callback to be called when a new service is discovered."""
         with self._mutex:
             self._discovered_service_callbacks.append(callback)
@@ -745,14 +836,14 @@ class WeatherClientDiscoverer:
         """Returns a WeatherClient for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
-        fut = futures.Future()
+        fut = futures.Future()  # type: futures.Future[WeatherClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                service_instance_id = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services))
                 if self._builder is None:
-                    fut.set_result(WeatherClient(self._conn, service_instance_id))
+                    fut.set_result(WeatherClient(self._conn, instance_info))
                 else:
-                    new_client = self._builder.build(self._conn, service_instance_id)
+                    new_client = self._builder.build(self._conn, instance_info, self._build_binding)
                     fut.set_result(new_client)
             else:
                 self._pending_futures.append(fut)
@@ -770,7 +861,7 @@ class WeatherClientDiscoverer:
                     fut = self._pending_futures.pop(0)
                     if not fut.done():
                         if self._builder is not None:
-                            fut.set_result(self._builder.build(self._conn, entry))
+                            fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
                         else:
                             fut.set_result(WeatherClient(self._conn, entry))
                 if not instance_id in self._discovered_services:

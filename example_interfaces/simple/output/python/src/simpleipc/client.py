@@ -10,7 +10,7 @@ TODO: Get license text from stinger file
 
 from typing import Dict, Callable, List, Any, Optional
 from uuid import uuid4
-from functools import partial
+from functools import partial, wraps
 import json
 import logging
 from datetime import datetime, timedelta, UTC
@@ -224,32 +224,53 @@ class SimpleClientBuilder:
 
     def receive_person_entered(self, handler):
         """Used as a decorator for methods which handle particular signals."""
-        self._signal_recv_callbacks_for_person_entered.append(handler)
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_person_entered.append(wrapper)
+        return wrapper
 
     def school_updated(self, handler: SchoolPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
-        self._property_updated_callbacks_for_school.append(handler)
 
-    def build(self, broker: IBrokerConnection, service_instance_id: str) -> SimpleClient:
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._property_updated_callbacks_for_school.append(wrapper)
+        return wrapper
+
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> SimpleClient:
         """Builds a new SimpleClient."""
-        self._logger.debug("Building SimpleClient for service instance %s", service_instance_id)
-        client = SimpleClient(broker, service_instance_id)
+        self._logger.debug("Building SimpleClient for service instance %s", instance_info.instance_id)
+        client = SimpleClient(broker, instance_info)
 
         for cb in self._signal_recv_callbacks_for_person_entered:
-            client.receive_person_entered(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_person_entered(bound_cb)
+            else:
+                client.receive_person_entered(cb)
 
         for cb in self._property_updated_callbacks_for_school:
-            client.school_changed(cb)
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.school_changed(bound_cb)
+            else:
+                client.school_changed(cb)
 
         return client
 
 
 class SimpleClientDiscoverer:
 
-    def __init__(self, connection: IBrokerConnection, builder: Optional[SimpleClientBuilder] = None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[SimpleClientBuilder] = None, build_binding: Optional[Any] = None):
         """Creates a new SimpleClientDiscoverer."""
         self._conn = connection
         self._builder = builder
+        self._build_binding = build_binding
         self._logger = logging.getLogger("SimpleClientDiscoverer")
         self._logger.setLevel(logging.DEBUG)
         service_discovery_topic = "simple/{}/interface".format("+")
@@ -264,10 +285,10 @@ class SimpleClientDiscoverer:
         self._discovered_properties = dict()  # type: Dict[str, Dict[str, Any]]
 
         # For fully discovered services
-        self._discovered_services: Dict[str, InterfaceInfo] = {}
-        self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
+        self._discovered_services: Dict[str, DiscoveredInstance] = {}
+        self._discovered_service_callbacks: List[Callable[[DiscoveredInstance], None]] = []
 
-    def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
+    def add_discovered_service_callback(self, callback: Callable[[DiscoveredInstance], None]):
         """Adds a callback to be called when a new service is discovered."""
         with self._mutex:
             self._discovered_service_callbacks.append(callback)
@@ -291,14 +312,14 @@ class SimpleClientDiscoverer:
         """Returns a SimpleClient for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
-        fut = futures.Future()
+        fut = futures.Future()  # type: futures.Future[SimpleClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                service_instance_id = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services))
                 if self._builder is None:
-                    fut.set_result(SimpleClient(self._conn, service_instance_id))
+                    fut.set_result(SimpleClient(self._conn, instance_info))
                 else:
-                    new_client = self._builder.build(self._conn, service_instance_id)
+                    new_client = self._builder.build(self._conn, instance_info, self._build_binding)
                     fut.set_result(new_client)
             else:
                 self._pending_futures.append(fut)
@@ -316,7 +337,7 @@ class SimpleClientDiscoverer:
                     fut = self._pending_futures.pop(0)
                     if not fut.done():
                         if self._builder is not None:
-                            fut.set_result(self._builder.build(self._conn, entry))
+                            fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
                         else:
                             fut.set_result(SimpleClient(self._conn, entry))
                 if not instance_id in self._discovered_services:
