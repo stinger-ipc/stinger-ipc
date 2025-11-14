@@ -15,6 +15,7 @@ from time import sleep
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 import isodate
+import functools
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
@@ -4442,389 +4443,874 @@ class TestAbleServerBuilder:
         self._read_write_lists_property_callbacks: List[Callable[[List[Numbers], List[datetime]], None]] = []
 
     def handle_call_with_nothing(self, handler: Callable[[None], None]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_with_nothing_method_handler is None and handler is not None:
-            self._call_with_nothing_method_handler = handler
+            self._call_with_nothing_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_one_integer(self, handler: Callable[[int], int]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_one_integer_method_handler is None and handler is not None:
-            self._call_one_integer_method_handler = handler
+            self._call_one_integer_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_optional_integer(self, handler: Callable[[Optional[int]], Optional[int]]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_optional_integer_method_handler is None and handler is not None:
-            self._call_optional_integer_method_handler = handler
+            self._call_optional_integer_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_three_integers(self, handler: Callable[[int, int, Optional[int]], CallThreeIntegersMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_three_integers_method_handler is None and handler is not None:
-            self._call_three_integers_method_handler = handler
+            self._call_three_integers_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_one_string(self, handler: Callable[[str], str]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_one_string_method_handler is None and handler is not None:
-            self._call_one_string_method_handler = handler
+            self._call_one_string_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_optional_string(self, handler: Callable[[Optional[str]], Optional[str]]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_optional_string_method_handler is None and handler is not None:
-            self._call_optional_string_method_handler = handler
+            self._call_optional_string_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_three_strings(self, handler: Callable[[str, Optional[str], str], CallThreeStringsMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_three_strings_method_handler is None and handler is not None:
-            self._call_three_strings_method_handler = handler
+            self._call_three_strings_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_one_enum(self, handler: Callable[[Numbers], Numbers]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_one_enum_method_handler is None and handler is not None:
-            self._call_one_enum_method_handler = handler
+            self._call_one_enum_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_optional_enum(self, handler: Callable[[Optional[Numbers]], Optional[Numbers]]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_optional_enum_method_handler is None and handler is not None:
-            self._call_optional_enum_method_handler = handler
+            self._call_optional_enum_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_three_enums(self, handler: Callable[[Numbers, Numbers, Optional[Numbers]], CallThreeEnumsMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_three_enums_method_handler is None and handler is not None:
-            self._call_three_enums_method_handler = handler
+            self._call_three_enums_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_one_struct(self, handler: Callable[[AllTypes], AllTypes]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_one_struct_method_handler is None and handler is not None:
-            self._call_one_struct_method_handler = handler
+            self._call_one_struct_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_optional_struct(self, handler: Callable[[AllTypes], AllTypes]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_optional_struct_method_handler is None and handler is not None:
-            self._call_optional_struct_method_handler = handler
+            self._call_optional_struct_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_three_structs(self, handler: Callable[[AllTypes, AllTypes, AllTypes], CallThreeStructsMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_three_structs_method_handler is None and handler is not None:
-            self._call_three_structs_method_handler = handler
+            self._call_three_structs_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_one_date_time(self, handler: Callable[[datetime], datetime]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_one_date_time_method_handler is None and handler is not None:
-            self._call_one_date_time_method_handler = handler
+            self._call_one_date_time_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_optional_date_time(self, handler: Callable[[Optional[datetime]], Optional[datetime]]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_optional_date_time_method_handler is None and handler is not None:
-            self._call_optional_date_time_method_handler = handler
+            self._call_optional_date_time_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_three_date_times(self, handler: Callable[[datetime, datetime, Optional[datetime]], CallThreeDateTimesMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_three_date_times_method_handler is None and handler is not None:
-            self._call_three_date_times_method_handler = handler
+            self._call_three_date_times_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_one_duration(self, handler: Callable[[timedelta], timedelta]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_one_duration_method_handler is None and handler is not None:
-            self._call_one_duration_method_handler = handler
+            self._call_one_duration_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_optional_duration(self, handler: Callable[[Optional[timedelta]], Optional[timedelta]]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_optional_duration_method_handler is None and handler is not None:
-            self._call_optional_duration_method_handler = handler
+            self._call_optional_duration_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_three_durations(self, handler: Callable[[timedelta, timedelta, Optional[timedelta]], CallThreeDurationsMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_three_durations_method_handler is None and handler is not None:
-            self._call_three_durations_method_handler = handler
+            self._call_three_durations_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_one_binary(self, handler: Callable[[bytes], bytes]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_one_binary_method_handler is None and handler is not None:
-            self._call_one_binary_method_handler = handler
+            self._call_one_binary_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_optional_binary(self, handler: Callable[[bytes], bytes]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_optional_binary_method_handler is None and handler is not None:
-            self._call_optional_binary_method_handler = handler
+            self._call_optional_binary_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_three_binaries(self, handler: Callable[[bytes, bytes, bytes], CallThreeBinariesMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_three_binaries_method_handler is None and handler is not None:
-            self._call_three_binaries_method_handler = handler
+            self._call_three_binaries_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_one_list_of_integers(self, handler: Callable[[List[int]], List[int]]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_one_list_of_integers_method_handler is None and handler is not None:
-            self._call_one_list_of_integers_method_handler = handler
+            self._call_one_list_of_integers_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_optional_list_of_floats(self, handler: Callable[[List[float]], List[float]]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_optional_list_of_floats_method_handler is None and handler is not None:
-            self._call_optional_list_of_floats_method_handler = handler
+            self._call_optional_list_of_floats_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_call_two_lists(self, handler: Callable[[List[Numbers], List[str]], CallTwoListsMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._call_two_lists_method_handler is None and handler is not None:
-            self._call_two_lists_method_handler = handler
+            self._call_two_lists_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def on_read_write_integer_updates(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'read_write_integer' property update is received."""
-        self._read_write_integer_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_integer_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_only_integer_updates(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'read_only_integer' property update is received."""
-        self._read_only_integer_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_only_integer_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_optional_integer_updates(self, handler: Callable[[Optional[int]], None]):
         """This method registers a callback to be called whenever a new 'read_write_optional_integer' property update is received."""
-        self._read_write_optional_integer_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_optional_integer_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_two_integers_updates(self, handler: Callable[[int, Optional[int]], None]):
         """This method registers a callback to be called whenever a new 'read_write_two_integers' property update is received."""
-        self._read_write_two_integers_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_two_integers_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_only_string_updates(self, handler: Callable[[str], None]):
         """This method registers a callback to be called whenever a new 'read_only_string' property update is received."""
-        self._read_only_string_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_only_string_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_string_updates(self, handler: Callable[[str], None]):
         """This method registers a callback to be called whenever a new 'read_write_string' property update is received."""
-        self._read_write_string_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_string_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_optional_string_updates(self, handler: Callable[[Optional[str]], None]):
         """This method registers a callback to be called whenever a new 'read_write_optional_string' property update is received."""
-        self._read_write_optional_string_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_optional_string_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_two_strings_updates(self, handler: Callable[[str, Optional[str]], None]):
         """This method registers a callback to be called whenever a new 'read_write_two_strings' property update is received."""
-        self._read_write_two_strings_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_two_strings_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_struct_updates(self, handler: Callable[[AllTypes], None]):
         """This method registers a callback to be called whenever a new 'read_write_struct' property update is received."""
-        self._read_write_struct_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_struct_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_optional_struct_updates(self, handler: Callable[[AllTypes], None]):
         """This method registers a callback to be called whenever a new 'read_write_optional_struct' property update is received."""
-        self._read_write_optional_struct_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_optional_struct_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_two_structs_updates(self, handler: Callable[[AllTypes, AllTypes], None]):
         """This method registers a callback to be called whenever a new 'read_write_two_structs' property update is received."""
-        self._read_write_two_structs_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_two_structs_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_only_enum_updates(self, handler: Callable[[Numbers], None]):
         """This method registers a callback to be called whenever a new 'read_only_enum' property update is received."""
-        self._read_only_enum_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_only_enum_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_enum_updates(self, handler: Callable[[Numbers], None]):
         """This method registers a callback to be called whenever a new 'read_write_enum' property update is received."""
-        self._read_write_enum_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_enum_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_optional_enum_updates(self, handler: Callable[[Optional[Numbers]], None]):
         """This method registers a callback to be called whenever a new 'read_write_optional_enum' property update is received."""
-        self._read_write_optional_enum_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_optional_enum_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_two_enums_updates(self, handler: Callable[[Numbers, Optional[Numbers]], None]):
         """This method registers a callback to be called whenever a new 'read_write_two_enums' property update is received."""
-        self._read_write_two_enums_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_two_enums_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_datetime_updates(self, handler: Callable[[datetime], None]):
         """This method registers a callback to be called whenever a new 'read_write_datetime' property update is received."""
-        self._read_write_datetime_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_datetime_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_optional_datetime_updates(self, handler: Callable[[Optional[datetime]], None]):
         """This method registers a callback to be called whenever a new 'read_write_optional_datetime' property update is received."""
-        self._read_write_optional_datetime_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_optional_datetime_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_two_datetimes_updates(self, handler: Callable[[datetime, Optional[datetime]], None]):
         """This method registers a callback to be called whenever a new 'read_write_two_datetimes' property update is received."""
-        self._read_write_two_datetimes_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_two_datetimes_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_duration_updates(self, handler: Callable[[timedelta], None]):
         """This method registers a callback to be called whenever a new 'read_write_duration' property update is received."""
-        self._read_write_duration_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_duration_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_optional_duration_updates(self, handler: Callable[[Optional[timedelta]], None]):
         """This method registers a callback to be called whenever a new 'read_write_optional_duration' property update is received."""
-        self._read_write_optional_duration_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_optional_duration_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_two_durations_updates(self, handler: Callable[[timedelta, Optional[timedelta]], None]):
         """This method registers a callback to be called whenever a new 'read_write_two_durations' property update is received."""
-        self._read_write_two_durations_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_two_durations_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_binary_updates(self, handler: Callable[[bytes], None]):
         """This method registers a callback to be called whenever a new 'read_write_binary' property update is received."""
-        self._read_write_binary_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_binary_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_optional_binary_updates(self, handler: Callable[[bytes], None]):
         """This method registers a callback to be called whenever a new 'read_write_optional_binary' property update is received."""
-        self._read_write_optional_binary_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_optional_binary_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_two_binaries_updates(self, handler: Callable[[bytes, bytes], None]):
         """This method registers a callback to be called whenever a new 'read_write_two_binaries' property update is received."""
-        self._read_write_two_binaries_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_two_binaries_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_list_of_strings_updates(self, handler: Callable[[List[str]], None]):
         """This method registers a callback to be called whenever a new 'read_write_list_of_strings' property update is received."""
-        self._read_write_list_of_strings_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_list_of_strings_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_read_write_lists_updates(self, handler: Callable[[List[Numbers], List[datetime]], None]):
         """This method registers a callback to be called whenever a new 'read_write_lists' property update is received."""
-        self._read_write_lists_property_callbacks.append(handler)
 
-    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: TestAbleInitialPropertyValues) -> TestAbleServer:
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._read_write_lists_property_callbacks.append(wrapper)
+        return wrapper
+
+    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: TestAbleInitialPropertyValues, binding: Optional[Any] = None) -> TestAbleServer:
         new_server = TestAbleServer(connection, instance_id, initial_property_values)
 
         if self._call_with_nothing_method_handler is not None:
-            new_server.handle_call_with_nothing(self._call_with_nothing_method_handler)
+            if binding:
+                binding_cb = self._call_with_nothing_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_with_nothing(binding_cb)
+            else:
+                new_server.handle_call_with_nothing(self._call_with_nothing_method_handler)
         if self._call_one_integer_method_handler is not None:
-            new_server.handle_call_one_integer(self._call_one_integer_method_handler)
+            if binding:
+                binding_cb = self._call_one_integer_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_one_integer(binding_cb)
+            else:
+                new_server.handle_call_one_integer(self._call_one_integer_method_handler)
         if self._call_optional_integer_method_handler is not None:
-            new_server.handle_call_optional_integer(self._call_optional_integer_method_handler)
+            if binding:
+                binding_cb = self._call_optional_integer_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_optional_integer(binding_cb)
+            else:
+                new_server.handle_call_optional_integer(self._call_optional_integer_method_handler)
         if self._call_three_integers_method_handler is not None:
-            new_server.handle_call_three_integers(self._call_three_integers_method_handler)
+            if binding:
+                binding_cb = self._call_three_integers_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_three_integers(binding_cb)
+            else:
+                new_server.handle_call_three_integers(self._call_three_integers_method_handler)
         if self._call_one_string_method_handler is not None:
-            new_server.handle_call_one_string(self._call_one_string_method_handler)
+            if binding:
+                binding_cb = self._call_one_string_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_one_string(binding_cb)
+            else:
+                new_server.handle_call_one_string(self._call_one_string_method_handler)
         if self._call_optional_string_method_handler is not None:
-            new_server.handle_call_optional_string(self._call_optional_string_method_handler)
+            if binding:
+                binding_cb = self._call_optional_string_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_optional_string(binding_cb)
+            else:
+                new_server.handle_call_optional_string(self._call_optional_string_method_handler)
         if self._call_three_strings_method_handler is not None:
-            new_server.handle_call_three_strings(self._call_three_strings_method_handler)
+            if binding:
+                binding_cb = self._call_three_strings_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_three_strings(binding_cb)
+            else:
+                new_server.handle_call_three_strings(self._call_three_strings_method_handler)
         if self._call_one_enum_method_handler is not None:
-            new_server.handle_call_one_enum(self._call_one_enum_method_handler)
+            if binding:
+                binding_cb = self._call_one_enum_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_one_enum(binding_cb)
+            else:
+                new_server.handle_call_one_enum(self._call_one_enum_method_handler)
         if self._call_optional_enum_method_handler is not None:
-            new_server.handle_call_optional_enum(self._call_optional_enum_method_handler)
+            if binding:
+                binding_cb = self._call_optional_enum_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_optional_enum(binding_cb)
+            else:
+                new_server.handle_call_optional_enum(self._call_optional_enum_method_handler)
         if self._call_three_enums_method_handler is not None:
-            new_server.handle_call_three_enums(self._call_three_enums_method_handler)
+            if binding:
+                binding_cb = self._call_three_enums_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_three_enums(binding_cb)
+            else:
+                new_server.handle_call_three_enums(self._call_three_enums_method_handler)
         if self._call_one_struct_method_handler is not None:
-            new_server.handle_call_one_struct(self._call_one_struct_method_handler)
+            if binding:
+                binding_cb = self._call_one_struct_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_one_struct(binding_cb)
+            else:
+                new_server.handle_call_one_struct(self._call_one_struct_method_handler)
         if self._call_optional_struct_method_handler is not None:
-            new_server.handle_call_optional_struct(self._call_optional_struct_method_handler)
+            if binding:
+                binding_cb = self._call_optional_struct_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_optional_struct(binding_cb)
+            else:
+                new_server.handle_call_optional_struct(self._call_optional_struct_method_handler)
         if self._call_three_structs_method_handler is not None:
-            new_server.handle_call_three_structs(self._call_three_structs_method_handler)
+            if binding:
+                binding_cb = self._call_three_structs_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_three_structs(binding_cb)
+            else:
+                new_server.handle_call_three_structs(self._call_three_structs_method_handler)
         if self._call_one_date_time_method_handler is not None:
-            new_server.handle_call_one_date_time(self._call_one_date_time_method_handler)
+            if binding:
+                binding_cb = self._call_one_date_time_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_one_date_time(binding_cb)
+            else:
+                new_server.handle_call_one_date_time(self._call_one_date_time_method_handler)
         if self._call_optional_date_time_method_handler is not None:
-            new_server.handle_call_optional_date_time(self._call_optional_date_time_method_handler)
+            if binding:
+                binding_cb = self._call_optional_date_time_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_optional_date_time(binding_cb)
+            else:
+                new_server.handle_call_optional_date_time(self._call_optional_date_time_method_handler)
         if self._call_three_date_times_method_handler is not None:
-            new_server.handle_call_three_date_times(self._call_three_date_times_method_handler)
+            if binding:
+                binding_cb = self._call_three_date_times_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_three_date_times(binding_cb)
+            else:
+                new_server.handle_call_three_date_times(self._call_three_date_times_method_handler)
         if self._call_one_duration_method_handler is not None:
-            new_server.handle_call_one_duration(self._call_one_duration_method_handler)
+            if binding:
+                binding_cb = self._call_one_duration_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_one_duration(binding_cb)
+            else:
+                new_server.handle_call_one_duration(self._call_one_duration_method_handler)
         if self._call_optional_duration_method_handler is not None:
-            new_server.handle_call_optional_duration(self._call_optional_duration_method_handler)
+            if binding:
+                binding_cb = self._call_optional_duration_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_optional_duration(binding_cb)
+            else:
+                new_server.handle_call_optional_duration(self._call_optional_duration_method_handler)
         if self._call_three_durations_method_handler is not None:
-            new_server.handle_call_three_durations(self._call_three_durations_method_handler)
+            if binding:
+                binding_cb = self._call_three_durations_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_three_durations(binding_cb)
+            else:
+                new_server.handle_call_three_durations(self._call_three_durations_method_handler)
         if self._call_one_binary_method_handler is not None:
-            new_server.handle_call_one_binary(self._call_one_binary_method_handler)
+            if binding:
+                binding_cb = self._call_one_binary_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_one_binary(binding_cb)
+            else:
+                new_server.handle_call_one_binary(self._call_one_binary_method_handler)
         if self._call_optional_binary_method_handler is not None:
-            new_server.handle_call_optional_binary(self._call_optional_binary_method_handler)
+            if binding:
+                binding_cb = self._call_optional_binary_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_optional_binary(binding_cb)
+            else:
+                new_server.handle_call_optional_binary(self._call_optional_binary_method_handler)
         if self._call_three_binaries_method_handler is not None:
-            new_server.handle_call_three_binaries(self._call_three_binaries_method_handler)
+            if binding:
+                binding_cb = self._call_three_binaries_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_three_binaries(binding_cb)
+            else:
+                new_server.handle_call_three_binaries(self._call_three_binaries_method_handler)
         if self._call_one_list_of_integers_method_handler is not None:
-            new_server.handle_call_one_list_of_integers(self._call_one_list_of_integers_method_handler)
+            if binding:
+                binding_cb = self._call_one_list_of_integers_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_one_list_of_integers(binding_cb)
+            else:
+                new_server.handle_call_one_list_of_integers(self._call_one_list_of_integers_method_handler)
         if self._call_optional_list_of_floats_method_handler is not None:
-            new_server.handle_call_optional_list_of_floats(self._call_optional_list_of_floats_method_handler)
+            if binding:
+                binding_cb = self._call_optional_list_of_floats_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_optional_list_of_floats(binding_cb)
+            else:
+                new_server.handle_call_optional_list_of_floats(self._call_optional_list_of_floats_method_handler)
         if self._call_two_lists_method_handler is not None:
-            new_server.handle_call_two_lists(self._call_two_lists_method_handler)
+            if binding:
+                binding_cb = self._call_two_lists_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_call_two_lists(binding_cb)
+            else:
+                new_server.handle_call_two_lists(self._call_two_lists_method_handler)
 
         for callback in self._read_write_integer_property_callbacks:
-            new_server.on_read_write_integer_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_integer_updates(binding_cb)
+            else:
+                new_server.on_read_write_integer_updates(callback)
 
         for callback in self._read_only_integer_property_callbacks:
-            new_server.on_read_only_integer_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_only_integer_updates(binding_cb)
+            else:
+                new_server.on_read_only_integer_updates(callback)
 
         for callback in self._read_write_optional_integer_property_callbacks:
-            new_server.on_read_write_optional_integer_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_optional_integer_updates(binding_cb)
+            else:
+                new_server.on_read_write_optional_integer_updates(callback)
 
         for callback in self._read_write_two_integers_property_callbacks:
-            new_server.on_read_write_two_integers_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_two_integers_updates(binding_cb)
+            else:
+                new_server.on_read_write_two_integers_updates(callback)
 
         for callback in self._read_only_string_property_callbacks:
-            new_server.on_read_only_string_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_only_string_updates(binding_cb)
+            else:
+                new_server.on_read_only_string_updates(callback)
 
         for callback in self._read_write_string_property_callbacks:
-            new_server.on_read_write_string_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_string_updates(binding_cb)
+            else:
+                new_server.on_read_write_string_updates(callback)
 
         for callback in self._read_write_optional_string_property_callbacks:
-            new_server.on_read_write_optional_string_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_optional_string_updates(binding_cb)
+            else:
+                new_server.on_read_write_optional_string_updates(callback)
 
         for callback in self._read_write_two_strings_property_callbacks:
-            new_server.on_read_write_two_strings_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_two_strings_updates(binding_cb)
+            else:
+                new_server.on_read_write_two_strings_updates(callback)
 
         for callback in self._read_write_struct_property_callbacks:
-            new_server.on_read_write_struct_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_struct_updates(binding_cb)
+            else:
+                new_server.on_read_write_struct_updates(callback)
 
         for callback in self._read_write_optional_struct_property_callbacks:
-            new_server.on_read_write_optional_struct_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_optional_struct_updates(binding_cb)
+            else:
+                new_server.on_read_write_optional_struct_updates(callback)
 
         for callback in self._read_write_two_structs_property_callbacks:
-            new_server.on_read_write_two_structs_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_two_structs_updates(binding_cb)
+            else:
+                new_server.on_read_write_two_structs_updates(callback)
 
         for callback in self._read_only_enum_property_callbacks:
-            new_server.on_read_only_enum_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_only_enum_updates(binding_cb)
+            else:
+                new_server.on_read_only_enum_updates(callback)
 
         for callback in self._read_write_enum_property_callbacks:
-            new_server.on_read_write_enum_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_enum_updates(binding_cb)
+            else:
+                new_server.on_read_write_enum_updates(callback)
 
         for callback in self._read_write_optional_enum_property_callbacks:
-            new_server.on_read_write_optional_enum_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_optional_enum_updates(binding_cb)
+            else:
+                new_server.on_read_write_optional_enum_updates(callback)
 
         for callback in self._read_write_two_enums_property_callbacks:
-            new_server.on_read_write_two_enums_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_two_enums_updates(binding_cb)
+            else:
+                new_server.on_read_write_two_enums_updates(callback)
 
         for callback in self._read_write_datetime_property_callbacks:
-            new_server.on_read_write_datetime_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_datetime_updates(binding_cb)
+            else:
+                new_server.on_read_write_datetime_updates(callback)
 
         for callback in self._read_write_optional_datetime_property_callbacks:
-            new_server.on_read_write_optional_datetime_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_optional_datetime_updates(binding_cb)
+            else:
+                new_server.on_read_write_optional_datetime_updates(callback)
 
         for callback in self._read_write_two_datetimes_property_callbacks:
-            new_server.on_read_write_two_datetimes_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_two_datetimes_updates(binding_cb)
+            else:
+                new_server.on_read_write_two_datetimes_updates(callback)
 
         for callback in self._read_write_duration_property_callbacks:
-            new_server.on_read_write_duration_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_duration_updates(binding_cb)
+            else:
+                new_server.on_read_write_duration_updates(callback)
 
         for callback in self._read_write_optional_duration_property_callbacks:
-            new_server.on_read_write_optional_duration_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_optional_duration_updates(binding_cb)
+            else:
+                new_server.on_read_write_optional_duration_updates(callback)
 
         for callback in self._read_write_two_durations_property_callbacks:
-            new_server.on_read_write_two_durations_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_two_durations_updates(binding_cb)
+            else:
+                new_server.on_read_write_two_durations_updates(callback)
 
         for callback in self._read_write_binary_property_callbacks:
-            new_server.on_read_write_binary_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_binary_updates(binding_cb)
+            else:
+                new_server.on_read_write_binary_updates(callback)
 
         for callback in self._read_write_optional_binary_property_callbacks:
-            new_server.on_read_write_optional_binary_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_optional_binary_updates(binding_cb)
+            else:
+                new_server.on_read_write_optional_binary_updates(callback)
 
         for callback in self._read_write_two_binaries_property_callbacks:
-            new_server.on_read_write_two_binaries_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_two_binaries_updates(binding_cb)
+            else:
+                new_server.on_read_write_two_binaries_updates(callback)
 
         for callback in self._read_write_list_of_strings_property_callbacks:
-            new_server.on_read_write_list_of_strings_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_list_of_strings_updates(binding_cb)
+            else:
+                new_server.on_read_write_list_of_strings_updates(callback)
 
         for callback in self._read_write_lists_property_callbacks:
-            new_server.on_read_write_lists_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_read_write_lists_updates(binding_cb)
+            else:
+                new_server.on_read_write_lists_updates(callback)
 
         return new_server

@@ -14,6 +14,9 @@ _This tries to capture most variants of features._
 
 A connection object is a wrapper around an MQTT client and provides specific functionality to support both clients and servers.
 Generally, you only need one connection object per daemon/program, as it can support multiple clients and servers.  
+For most languages, Stinger-IPC does not require a specific connection object implementation, as long as it implements the required interface.
+
+The application code is responsible for creating and managing the connection object, including connecting to the MQTT broker.
 
 ### Connection code Examples
 
@@ -34,17 +37,21 @@ The `connection_object` will be passed to client and server constructors.
 <details>
   <summary>Rust</summary>
 
-Rust implementations use the [MQTTier](https://crates.io/crates/mqttier) crate for MQTT connectivity.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.
+Stinger-IPC instances only require an MQTT connection object that implements the [`stinger_mqtt_trait::Mqtt5PubSub` trait](https://docs.rs/stinger-mqtt-trait/latest/stinger_mqtt_trait/trait.Mqtt5PubSub.html). 
+
+The [MQTTier](https://crates.io/crates/mqttier) crate provides an implementation of the `Mqtt5PubSub` trait, and is shown in this documentation as an example.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.'
+
+Here is an example showing how to create an MQTTier client connection object:
 
 ```rust
-use mqttier::{MqttierClient, MqttierOptions};
+use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
 
-  let conn_opts = MqttierOptionsBuilder::new()
-      .connection(Connection::TcpLocalhost(1883)) // Connection::UnixSocket("/path/to/socket") is also supported.
-      .build()
-      .unwrap()
-      .expect("Failed to build MQTT connection options");
-  let mut connection = MqttierClient::new(conn_opts).unwrap().expect("Failed to create MQTT client");
+let mqttier_options = MqttierOptionsBuilder::default()
+    .connection(Connection::TcpLocalhost(1883))
+    .client_id("rust-client-demo".to_string())
+    .build().unwrap();
+let mut connection_object = MqttierClient::new(mqttier_options).unwrap();
+let _ = connection_object.start().await;
 ```
 
 The `connection_object` will be passed to client and server constructors.
@@ -66,9 +73,51 @@ The `connection_object` will be passed to client and server constructors.
 
 </details>
 
+## Discovery
+
+Because there may be multiple instances of the same Stinger Interface, a discovery mechanism is provided to find and connect to them.  A discovery class is provided which connects to
+the MQTT broker and listens for Stinger Interface announcements.  The discovery class can then provide TestAbleClient client instances.  Additionally, the discovery class
+find all the current property values for discovered interfaces in order to initialize the client instance.
+
+### Discovery Code Examples
+
+<details>
+  <summary>Python</summary>
+
+```python
+from testableipc.client import TestAbleClientDiscoverer
+
+discovery = TestAbleClientDiscoverer(connection_object)
+
+# To get a single client instance (waits until one is found):
+client = discovery.get_singleton_client().result()
+
+# To get all currently available client instances (does not wait):
+discovered_service_ids = discovery.get_service_instance_ids()
+clients = [discovery.get_client_for_instance(service_id) for service_id in discovered_service_ids]
+```
+</details>
+
+<details>
+  <summary>Rust</summary>
+
+```rust
+use test_able_ipc::discovery::TestAbleDiscovery;
+
+let discovered_singleton_info = {
+    let service_discovery = TestAbleDiscovery::new(&mut connection_object).await.unwrap();
+    service_discovery.get_singleton_instance_info().await // Blocks until a service is discovered.
+}
+let test__able_client = TestAbleClient::new(&mut connection_object, &discovered_singleton_info).await;
+```
+
+</details>
+
 ## Server
 
-A server is a _provider_ of functionality.  It sends signals, handles method calls, and owns property values.
+A server is a _provider_ of functionality.  It sends signals and handles method calls and owns property values.
+
+When constructing a server instance, a connection object and initial property values must be provided.
 
 ### Server Code Examples
 
@@ -76,23 +125,338 @@ A server is a _provider_ of functionality.  It sends signals, handles method cal
   <summary>Python Server</summary>
 
 ```python
-from testableipc.client import TestAbleServer
+from testableipc.server import TestAbleServer, TestAbleInitialPropertyValues
 
-server = TestAbleServer(connection_object)
+# Ideally, you would load these initial property values from a configuration file or database.
+
+initial_property_values = TestAbleInitialPropertyValues(
+
+    read_write_integer=42,
+        
+    read_write_integer_version=1,
+
+    read_only_integer=42,
+        
+    read_only_integer_version=2,
+
+    read_write_optional_integer=42,
+        
+    read_write_optional_integer_version=3,
+
+    read_write_two_integers=
+        ReadWriteTwoIntegersProperty(
+            
+            first=42,
+            
+            second=42,
+            
+        ),
+    read_write_two_integers_version=4,
+
+    read_only_string="apples",
+        
+    read_only_string_version=5,
+
+    read_write_string="apples",
+        
+    read_write_string_version=6,
+
+    read_write_optional_string="apples",
+        
+    read_write_optional_string_version=7,
+
+    read_write_two_strings=
+        ReadWriteTwoStringsProperty(
+            
+            first="apples",
+            
+            second="apples",
+            
+        ),
+    read_write_two_strings_version=8,
+
+    read_write_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+        
+    read_write_struct_version=9,
+
+    read_write_optional_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+        
+    read_write_optional_struct_version=10,
+
+    read_write_two_structs=
+        ReadWriteTwoStructsProperty(
+            
+            first=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+            
+            second=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+            
+        ),
+    read_write_two_structs_version=11,
+
+    read_only_enum=Numbers.ONE,
+        
+    read_only_enum_version=12,
+
+    read_write_enum=Numbers.ONE,
+        
+    read_write_enum_version=13,
+
+    read_write_optional_enum=Numbers.ONE,
+        
+    read_write_optional_enum_version=14,
+
+    read_write_two_enums=
+        ReadWriteTwoEnumsProperty(
+            
+            first=Numbers.ONE,
+            
+            second=Numbers.ONE,
+            
+        ),
+    read_write_two_enums_version=15,
+
+    read_write_datetime=datetime.now(UTC),
+        
+    read_write_datetime_version=16,
+
+    read_write_optional_datetime=datetime.now(UTC),
+        
+    read_write_optional_datetime_version=17,
+
+    read_write_two_datetimes=
+        ReadWriteTwoDatetimesProperty(
+            
+            first=datetime.now(UTC),
+            
+            second=datetime.now(UTC),
+            
+        ),
+    read_write_two_datetimes_version=18,
+
+    read_write_duration=timedelta(seconds=3536),
+        
+    read_write_duration_version=19,
+
+    read_write_optional_duration=None,
+        
+    read_write_optional_duration_version=20,
+
+    read_write_two_durations=
+        ReadWriteTwoDurationsProperty(
+            
+            first=timedelta(seconds=3536),
+            
+            second=None,
+            
+        ),
+    read_write_two_durations_version=21,
+
+    read_write_binary=b"example binary data",
+        
+    read_write_binary_version=22,
+
+    read_write_optional_binary=b"example binary data",
+        
+    read_write_optional_binary_version=23,
+
+    read_write_two_binaries=
+        ReadWriteTwoBinariesProperty(
+            
+            first=b"example binary data",
+            
+            second=b"example binary data",
+            
+        ),
+    read_write_two_binaries_version=24,
+
+    read_write_list_of_strings=["apples", "foo"],
+        
+    read_write_list_of_strings_version=25,
+
+    read_write_lists=
+        ReadWriteListsProperty(
+            
+            the_list=[Numbers.ONE, Numbers.ONE],
+            
+            optionalList=[datetime.now(UTC), datetime.now(UTC)],
+            
+        ),
+    read_write_lists_version=26,
+
+)
+
+
+service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
+server = TestAbleServer(connection_object, service_id, initial_property_values)
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 
-A full example can be viewed by looking at the `if __name__ == "__main__":` section of the generated `testableipc.server.py` module.
+A full example can be viewed by looking at the `example/server_demo.py` file of the generated code.
+
+When decorating class methods, especially when there might be multiple instances of the class with methods being decorated, the Python implementation provides a `TestAbleClientBuilder`
+class to help capture decorated methods and bind them to a specific instance at runtime. Here is an example of how to use it in a class:
+
+```python
+from testableipc.client import TestAbleClientBuilder
+
+test__able_builder = TestAbleClientBuilder()
+
+class MyClass:
+    def __init__(self, label: str, connection: MqttBrokerConnection):
+        instance_info = ... # Create manually or use discovery to get this
+        self.client = test__able_builder.build(connection_object, instance_info, binding=self) # The binding param binds all decorated methods to the `self` instance.
+
+    @test__able_builder.receive_a_signal
+    def on_a_signal(self, param1: int, param2: str):
+        ...
+```
+
+A more complete example, including use with the discovery mechanism, can be viewed by looking at the generated `examples/server_demo_classes.py` file.
 
 </details>
 
+<details>
+  <summary>Rust Server</summary>
+
+Service code for Rust is only available when using the `server` feature:
+
+```sh
+cargo add test_able_ipc --features=server
+```
+
+Here is an example of how to create a server instance:
+
+```rust
+use test_able_ipc::server::TestAbleServer;
+use test_able_ipc::property::TestAbleInitialPropertyValues;
+
+let service_id = String::from("rust-server-demo:1");
+
+let initial_property_values = TestAbleInitialPropertyValues {
+    
+    read_write_integer:42,
+    read_write_integer_version: 1,
+    
+    read_only_integer:42,
+    read_only_integer_version: 1,
+    
+    read_write_optional_integer:Some(42),
+    read_write_optional_integer_version: 1,
+    
+    read_write_two_integers:ReadWriteTwoIntegersProperty {
+            first: 42,
+            second: Some(42),
+    },
+    read_write_two_integers_version: 1,
+    
+    read_only_string:"apples".to_string(),
+    read_only_string_version: 1,
+    
+    read_write_string:"apples".to_string(),
+    read_write_string_version: 1,
+    
+    read_write_optional_string:Some("apples".to_string()),
+    read_write_optional_string_version: 1,
+    
+    read_write_two_strings:ReadWriteTwoStringsProperty {
+            first: "apples".to_string(),
+            second: Some("apples".to_string()),
+    },
+    read_write_two_strings_version: 1,
+    
+    read_write_struct:AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])},
+    read_write_struct_version: 1,
+    
+    read_write_optional_struct:Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}),
+    read_write_optional_struct_version: 1,
+    
+    read_write_two_structs:ReadWriteTwoStructsProperty {
+            first: AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])},
+            second: Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}),
+    },
+    read_write_two_structs_version: 1,
+    
+    read_only_enum:Numbers::One,
+    read_only_enum_version: 1,
+    
+    read_write_enum:Numbers::One,
+    read_write_enum_version: 1,
+    
+    read_write_optional_enum:Some(Numbers::One),
+    read_write_optional_enum_version: 1,
+    
+    read_write_two_enums:ReadWriteTwoEnumsProperty {
+            first: Numbers::One,
+            second: Some(Numbers::One),
+    },
+    read_write_two_enums_version: 1,
+    
+    read_write_datetime:chrono::Utc::now(),
+    read_write_datetime_version: 1,
+    
+    read_write_optional_datetime:Some(chrono::Utc::now()),
+    read_write_optional_datetime_version: 1,
+    
+    read_write_two_datetimes:ReadWriteTwoDatetimesProperty {
+            first: chrono::Utc::now(),
+            second: Some(chrono::Utc::now()),
+    },
+    read_write_two_datetimes_version: 1,
+    
+    read_write_duration:chrono::Duration::seconds(3536),
+    read_write_duration_version: 1,
+    
+    read_write_optional_duration:Some(chrono::Duration::seconds(3536)),
+    read_write_optional_duration_version: 1,
+    
+    read_write_two_durations:ReadWriteTwoDurationsProperty {
+            first: chrono::Duration::seconds(3536),
+            second: Some(chrono::Duration::seconds(3536)),
+    },
+    read_write_two_durations_version: 1,
+    
+    read_write_binary:vec![101, 120, 97, 109, 112, 108, 101],
+    read_write_binary_version: 1,
+    
+    read_write_optional_binary:Some(vec![101, 120, 97, 109, 112, 108, 101]),
+    read_write_optional_binary_version: 1,
+    
+    read_write_two_binaries:ReadWriteTwoBinariesProperty {
+            first: vec![101, 120, 97, 109, 112, 108, 101],
+            second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+    },
+    read_write_two_binaries_version: 1,
+    
+    read_write_list_of_strings:vec!["apples".to_string(), "foo".to_string()],
+    read_write_list_of_strings_version: 1,
+    
+    read_write_lists:ReadWriteListsProperty {
+            the_list: vec![Numbers::One, Numbers::One],
+            optional_list: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]),
+    },
+    read_write_lists_version: 1,
+    
+};
+
+
+// Create the server object.
+let mut server = TestAbleServer::new(connection_object, method_handlers.clone(), service_id, initial_property_values, ).await;
+
+
+```
+
+Providing method handlers is better described in the [Methods](#methods) section.  
+
+A full example can be viewed by looking at the generated `examples/server_demo.rs` example and can be compiled with `cargo run --example test__able_server_demo --features=server` in the generated Rust project.
+
+</details>
 
 <details>
   <summary>C++ Server</summary>
 
 ```c++
-
+// To be written
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
@@ -106,13 +470,305 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust Client</summary>
+
+The best way to create a client instance is to use the discovery class to find an instance of the service, and then create the client from the discovered instance information.
+An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance IDand initial property values, you can create a client directly:
 
 ```rust
-let mut api_client = TestAbleClient::new(&mut connection).await;
+use test_able_ipc::client::TestAbleClient;
+
+let instance_info = DiscoveredInstance {
+    service_instance_id: String::from("singleton"),
+    
+    initial_property_values: TestAbleInitialPropertyValues {
+        
+        read_write_integer:42,
+        read_write_integer_version: 1,
+        
+        read_only_integer:42,
+        read_only_integer_version: 1,
+        
+        read_write_optional_integer:Some(42),
+        read_write_optional_integer_version: 1,
+        
+        read_write_two_integers:ReadWriteTwoIntegersProperty {
+                first: 42,
+                second: Some(42),
+        },
+        read_write_two_integers_version: 1,
+        
+        read_only_string:"apples".to_string(),
+        read_only_string_version: 1,
+        
+        read_write_string:"apples".to_string(),
+        read_write_string_version: 1,
+        
+        read_write_optional_string:Some("apples".to_string()),
+        read_write_optional_string_version: 1,
+        
+        read_write_two_strings:ReadWriteTwoStringsProperty {
+                first: "apples".to_string(),
+                second: Some("apples".to_string()),
+        },
+        read_write_two_strings_version: 1,
+        
+        read_write_struct:AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])},
+        read_write_struct_version: 1,
+        
+        read_write_optional_struct:Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}),
+        read_write_optional_struct_version: 1,
+        
+        read_write_two_structs:ReadWriteTwoStructsProperty {
+                first: AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])},
+                second: Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}),
+        },
+        read_write_two_structs_version: 1,
+        
+        read_only_enum:Numbers::One,
+        read_only_enum_version: 1,
+        
+        read_write_enum:Numbers::One,
+        read_write_enum_version: 1,
+        
+        read_write_optional_enum:Some(Numbers::One),
+        read_write_optional_enum_version: 1,
+        
+        read_write_two_enums:ReadWriteTwoEnumsProperty {
+                first: Numbers::One,
+                second: Some(Numbers::One),
+        },
+        read_write_two_enums_version: 1,
+        
+        read_write_datetime:chrono::Utc::now(),
+        read_write_datetime_version: 1,
+        
+        read_write_optional_datetime:Some(chrono::Utc::now()),
+        read_write_optional_datetime_version: 1,
+        
+        read_write_two_datetimes:ReadWriteTwoDatetimesProperty {
+                first: chrono::Utc::now(),
+                second: Some(chrono::Utc::now()),
+        },
+        read_write_two_datetimes_version: 1,
+        
+        read_write_duration:chrono::Duration::seconds(3536),
+        read_write_duration_version: 1,
+        
+        read_write_optional_duration:Some(chrono::Duration::seconds(3536)),
+        read_write_optional_duration_version: 1,
+        
+        read_write_two_durations:ReadWriteTwoDurationsProperty {
+                first: chrono::Duration::seconds(3536),
+                second: Some(chrono::Duration::seconds(3536)),
+        },
+        read_write_two_durations_version: 1,
+        
+        read_write_binary:vec![101, 120, 97, 109, 112, 108, 101],
+        read_write_binary_version: 1,
+        
+        read_write_optional_binary:Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        read_write_optional_binary_version: 1,
+        
+        read_write_two_binaries:ReadWriteTwoBinariesProperty {
+                first: vec![101, 120, 97, 109, 112, 108, 101],
+                second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+        },
+        read_write_two_binaries_version: 1,
+        
+        read_write_list_of_strings:vec!["apples".to_string(), "foo".to_string()],
+        read_write_list_of_strings_version: 1,
+        
+        read_write_lists:ReadWriteListsProperty {
+                the_list: vec![Numbers::One, Numbers::One],
+                optional_list: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]),
+        },
+        read_write_lists_version: 1,
+        
+    },
+    
+};
+
+let mut test__able_client = TestAbleClient::new(connection_object.clone(), instance_info).await;
 ```
 
-A full example can be viewed by looking at the generated `client/examples/client.rs` file.
+A full example can be viewed by looking at the generated `client/examples/client_demo.rs` file.
+
+</details>
+
+<details>
+  <summary>Python Client</summary>
+
+```python
+from testableipc.server import TestAbleServer, TestAbleInitialPropertyValues
+
+
+initial_property_values = TestAbleInitialPropertyValues(
+
+    read_write_integer=42,
+        
+    read_write_integer_version=1,
+
+    read_only_integer=42,
+        
+    read_only_integer_version=2,
+
+    read_write_optional_integer=42,
+        
+    read_write_optional_integer_version=3,
+
+    read_write_two_integers=
+        ReadWriteTwoIntegersProperty(
+            
+            first=42,
+            
+            second=42,
+            
+        ),
+    read_write_two_integers_version=4,
+
+    read_only_string="apples",
+        
+    read_only_string_version=5,
+
+    read_write_string="apples",
+        
+    read_write_string_version=6,
+
+    read_write_optional_string="apples",
+        
+    read_write_optional_string_version=7,
+
+    read_write_two_strings=
+        ReadWriteTwoStringsProperty(
+            
+            first="apples",
+            
+            second="apples",
+            
+        ),
+    read_write_two_strings_version=8,
+
+    read_write_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+        
+    read_write_struct_version=9,
+
+    read_write_optional_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+        
+    read_write_optional_struct_version=10,
+
+    read_write_two_structs=
+        ReadWriteTwoStructsProperty(
+            
+            first=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+            
+            second=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+            
+        ),
+    read_write_two_structs_version=11,
+
+    read_only_enum=Numbers.ONE,
+        
+    read_only_enum_version=12,
+
+    read_write_enum=Numbers.ONE,
+        
+    read_write_enum_version=13,
+
+    read_write_optional_enum=Numbers.ONE,
+        
+    read_write_optional_enum_version=14,
+
+    read_write_two_enums=
+        ReadWriteTwoEnumsProperty(
+            
+            first=Numbers.ONE,
+            
+            second=Numbers.ONE,
+            
+        ),
+    read_write_two_enums_version=15,
+
+    read_write_datetime=datetime.now(UTC),
+        
+    read_write_datetime_version=16,
+
+    read_write_optional_datetime=datetime.now(UTC),
+        
+    read_write_optional_datetime_version=17,
+
+    read_write_two_datetimes=
+        ReadWriteTwoDatetimesProperty(
+            
+            first=datetime.now(UTC),
+            
+            second=None,
+            
+        ),
+    read_write_two_datetimes_version=18,
+
+    read_write_duration=timedelta(seconds=3536),
+        
+    read_write_duration_version=19,
+
+    read_write_optional_duration=None,
+        
+    read_write_optional_duration_version=20,
+
+    read_write_two_durations=
+        ReadWriteTwoDurationsProperty(
+            
+            first=timedelta(seconds=3536),
+            
+            second=None,
+            
+        ),
+    read_write_two_durations_version=21,
+
+    read_write_binary=b"example binary data",
+        
+    read_write_binary_version=22,
+
+    read_write_optional_binary=b"example binary data",
+        
+    read_write_optional_binary_version=23,
+
+    read_write_two_binaries=
+        ReadWriteTwoBinariesProperty(
+            
+            first=b"example binary data",
+            
+            second=b"example binary data",
+            
+        ),
+    read_write_two_binaries_version=24,
+
+    read_write_list_of_strings=["apples", "foo"],
+        
+    read_write_list_of_strings_version=25,
+
+    read_write_lists=
+        ReadWriteListsProperty(
+            
+            the_list=[Numbers.ONE, Numbers.ONE],
+            
+            optionalList=[datetime.now(UTC), datetime.now(UTC)],
+            
+        ),
+    read_write_lists_version=26,
+
+)
+
+
+service_instance_id="singleton"
+server = TestAbleServer(connection_object, service_instance_id, initial_property_values)
+```
+
+A full example can be viewed by looking at the generated `examples/client_main.py` file.
+
+Like the Python client, there is a `TestAbleServerBuilder` class to help capture decorated methods and bind them to a specific instance at runtime.
+
+```python
 
 </details>
 
@@ -1096,7 +1752,7 @@ def on_single_struct(value: AllTypes):
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
 ```python
-server.emit_single_struct(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+server.emit_single_struct(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
@@ -1276,7 +1932,7 @@ def on_three_structs(first: AllTypes, second: AllTypes, third: AllTypes):
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
 ```python
-server.emit_three_structs(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+server.emit_three_structs(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
@@ -3068,7 +3724,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_one_struct(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+future = client.call_one_struct(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3132,7 +3788,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_struct(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+future = client.call_optional_struct(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3152,7 +3808,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_optional_struct(input1: AllTypes) -> AllTypes:
     """ This is an example handler for the 'callOptionalStruct' method.  """
     print(f"Running call_optional_struct'({input1})'")
-    return AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")])
+    return AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")])
 ```
 
 </details>
@@ -3195,7 +3851,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_structs(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+future = client.call_three_structs(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3215,7 +3871,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_three_structs(input1: AllTypes, input2: AllTypes, input3: AllTypes) -> CallThreeStructsMethodResponse:
     """ This is an example handler for the 'callThreeStructs' method.  """
     print(f"Running call_three_structs'({input1}, {input2}, {input3})'")
-    return CallThreeStructsMethodResponse(output1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), output2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), output3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+    return CallThreeStructsMethodResponse(output1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), output2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), output3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
@@ -3317,7 +3973,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_date_time(input1=datetime.now(UTC))
+future = client.call_optional_date_time(input1=None)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3380,7 +4036,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
+future = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=None)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3400,7 +4056,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> CallThreeDateTimesMethodResponse:
     """ This is an example handler for the 'callThreeDateTimes' method.  """
     print(f"Running call_three_date_times'({input1}, {input2}, {input3})'")
-    return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=None)
+    return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=datetime.now(UTC))
 ```
 
 </details>
@@ -3996,27 +4652,45 @@ A read-write integer property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_integer`.  The value can be changed by calling the server's `set_read_write_integer` method:
+A server hold the "source of truth" for the value of `read_write_integer`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_integer(42).await;
+let read_write_integer_handle = server.get_read_write_integer_handle();
+{
+    let mut read_write_integer_guard = read_write_integer_handle.write().await;
+    *read_write_integer_guard = 2022;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_integer_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_integer()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<i32>>` by calling the server's `get_read_write_integer_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_integer_changed = server.watch_read_write_integer();
+let read_write_integer_guard = read_write_integer_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_integer_changed.recv().await {
-    println!("Property 'read_write_integer' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_integer_watch_rx = client.watch_read_write_integer();
+
+if read_write_integer_watch_rx.changed().await.is_ok() {
+    let latest = read_write_integer_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4036,16 +4710,44 @@ This property is **read-only**.  It can only be modified by the server.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_only_integer`.  The value can be changed by calling the server's `set_read_only_integer` method:
+A server hold the "source of truth" for the value of `read_only_integer`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_only_integer(42).await;
+let read_only_integer_handle = server.get_read_only_integer_handle();
+{
+    let mut read_only_integer_guard = read_only_integer_handle.write().await;
+    *read_only_integer_guard = 2022;
+    // Optional, block until the property is published to the MQTT broker:
+    read_only_integer_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+If only reading the value, a read guard can be used:
 
-The application code should call the `set_read_only_integer()` method with an initial value when starting up, and then whenever the value changes.
+```rust
+let read_only_integer_guard = read_only_integer_handle.read().await;
+```
+
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_only_integer_watch_rx = client.watch_read_only_integer();
+
+if read_only_integer_watch_rx.changed().await.is_ok() {
+    let latest = read_only_integer_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
+}
+```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
+  
 
 </details>
 
@@ -4063,27 +4765,45 @@ A read-write optional integer property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_optional_integer`.  The value can be changed by calling the server's `set_read_write_optional_integer` method:
+A server hold the "source of truth" for the value of `read_write_optional_integer`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_integer(Some(42)).await;
+let read_write_optional_integer_handle = server.get_read_write_optional_integer_handle();
+{
+    let mut read_write_optional_integer_guard = read_write_optional_integer_handle.write().await;
+    *read_write_optional_integer_guard = Some(2022);
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_optional_integer_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_optional_integer()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Option<i32>>>` by calling the server's `get_read_write_optional_integer_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_optional_integer_changed = server.watch_read_write_optional_integer();
+let read_write_optional_integer_guard = read_write_optional_integer_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_optional_integer_changed.recv().await {
-    println!("Property 'read_write_optional_integer' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_optional_integer_watch_rx = client.watch_read_write_optional_integer();
+
+if read_write_optional_integer_watch_rx.changed().await.is_ok() {
+    let latest = read_write_optional_integer_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4102,27 +4822,49 @@ A read-write property with two integer values. The second is optional.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_two_integers`.  The value can be changed by calling the server's `set_read_write_two_integers` method:
+A server hold the "source of truth" for the value of `read_write_two_integers`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_two_integers(42).await;
+let read_write_two_integers_handle = server.get_read_write_two_integers_handle();
+{
+    let mut read_write_two_integers_guard = read_write_two_integers_handle.write().await;
+    let new_read_write_two_integers_value = ReadWriteTwoIntegersProperty {
+            first: 2022,
+            second: Some(2022),
+    };
+    *read_write_two_integers_guard = new_read_write_two_integers_value;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_two_integers_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_two_integers()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<ReadWriteTwoIntegersProperty>>` by calling the server's `get_read_write_two_integers_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_two_integers_changed = server.watch_read_write_two_integers();
+let read_write_two_integers_guard = read_write_two_integers_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_two_integers_changed.recv().await {
-    println!("Property 'read_write_two_integers' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_two_integers_watch_rx = client.watch_read_write_two_integers();
+
+if read_write_two_integers_watch_rx.changed().await.is_ok() {
+    let latest = read_write_two_integers_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4142,16 +4884,44 @@ This property is **read-only**.  It can only be modified by the server.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_only_string`.  The value can be changed by calling the server's `set_read_only_string` method:
+A server hold the "source of truth" for the value of `read_only_string`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_only_string("apples".to_string()).await;
+let read_only_string_handle = server.get_read_only_string_handle();
+{
+    let mut read_only_string_guard = read_only_string_handle.write().await;
+    *read_only_string_guard = "foo".to_string();
+    // Optional, block until the property is published to the MQTT broker:
+    read_only_string_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+If only reading the value, a read guard can be used:
 
-The application code should call the `set_read_only_string()` method with an initial value when starting up, and then whenever the value changes.
+```rust
+let read_only_string_guard = read_only_string_handle.read().await;
+```
+
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_only_string_watch_rx = client.watch_read_only_string();
+
+if read_only_string_watch_rx.changed().await.is_ok() {
+    let latest = read_only_string_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
+}
+```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
+  
 
 </details>
 
@@ -4169,27 +4939,45 @@ A read-write string property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_string`.  The value can be changed by calling the server's `set_read_write_string` method:
+A server hold the "source of truth" for the value of `read_write_string`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_string("apples".to_string()).await;
+let read_write_string_handle = server.get_read_write_string_handle();
+{
+    let mut read_write_string_guard = read_write_string_handle.write().await;
+    *read_write_string_guard = "foo".to_string();
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_string_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_string()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<String>>` by calling the server's `get_read_write_string_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_string_changed = server.watch_read_write_string();
+let read_write_string_guard = read_write_string_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_string_changed.recv().await {
-    println!("Property 'read_write_string' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_string_watch_rx = client.watch_read_write_string();
+
+if read_write_string_watch_rx.changed().await.is_ok() {
+    let latest = read_write_string_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4207,27 +4995,45 @@ A read-write optional string property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_optional_string`.  The value can be changed by calling the server's `set_read_write_optional_string` method:
+A server hold the "source of truth" for the value of `read_write_optional_string`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_string(Some("apples".to_string())).await;
+let read_write_optional_string_handle = server.get_read_write_optional_string_handle();
+{
+    let mut read_write_optional_string_guard = read_write_optional_string_handle.write().await;
+    *read_write_optional_string_guard = Some("foo".to_string());
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_optional_string_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_optional_string()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Option<String>>>` by calling the server's `get_read_write_optional_string_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_optional_string_changed = server.watch_read_write_optional_string();
+let read_write_optional_string_guard = read_write_optional_string_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_optional_string_changed.recv().await {
-    println!("Property 'read_write_optional_string' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_optional_string_watch_rx = client.watch_read_write_optional_string();
+
+if read_write_optional_string_watch_rx.changed().await.is_ok() {
+    let latest = read_write_optional_string_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4246,27 +5052,49 @@ A read-write property with two string values. The second is optional.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_two_strings`.  The value can be changed by calling the server's `set_read_write_two_strings` method:
+A server hold the "source of truth" for the value of `read_write_two_strings`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_two_strings("apples".to_string()).await;
+let read_write_two_strings_handle = server.get_read_write_two_strings_handle();
+{
+    let mut read_write_two_strings_guard = read_write_two_strings_handle.write().await;
+    let new_read_write_two_strings_value = ReadWriteTwoStringsProperty {
+            first: "foo".to_string(),
+            second: Some("foo".to_string()),
+    };
+    *read_write_two_strings_guard = new_read_write_two_strings_value;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_two_strings_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_two_strings()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<ReadWriteTwoStringsProperty>>` by calling the server's `get_read_write_two_strings_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_two_strings_changed = server.watch_read_write_two_strings();
+let read_write_two_strings_guard = read_write_two_strings_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_two_strings_changed.recv().await {
-    println!("Property 'read_write_two_strings' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_two_strings_watch_rx = client.watch_read_write_two_strings();
+
+if read_write_two_strings_watch_rx.changed().await.is_ok() {
+    let latest = read_write_two_strings_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4284,27 +5112,45 @@ A read-write struct property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_struct`.  The value can be changed by calling the server's `set_read_write_struct` method:
+A server hold the "source of truth" for the value of `read_write_struct`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}).await;
+let read_write_struct_handle = server.get_read_write_struct_handle();
+{
+    let mut read_write_struct_guard = read_write_struct_handle.write().await;
+    *read_write_struct_guard = AllTypes {the_bool: true, the_int: 2022, the_number: 1.0, the_str: "foo".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 2022, value: "foo".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(967), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(2022), optional_string: Some("foo".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 2022, value: "foo".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(967)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![2022, 1955], optional_array_of_integers: Some(vec![2022, 1955, 1955]), array_of_strings: vec!["foo".to_string(), "bar".to_string()], optional_array_of_strings: Some(vec!["foo".to_string(), "bar".to_string(), "Joe".to_string()]), array_of_enums: vec![Numbers::One, Numbers::Three], optional_array_of_enums: Some(vec![Numbers::One, Numbers::Three, Numbers::Three]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552), chrono::Duration::seconds(3250)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}, Entry {key: 1955, value: "Joe".to_string()}])};
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_struct_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_struct()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<AllTypes>>` by calling the server's `get_read_write_struct_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_struct_changed = server.watch_read_write_struct();
+let read_write_struct_guard = read_write_struct_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_struct_changed.recv().await {
-    println!("Property 'read_write_struct' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_struct_watch_rx = client.watch_read_write_struct();
+
+if read_write_struct_watch_rx.changed().await.is_ok() {
+    let latest = read_write_struct_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4322,27 +5168,45 @@ A read-write optional struct property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_optional_struct`.  The value can be changed by calling the server's `set_read_write_optional_struct` method:
+A server hold the "source of truth" for the value of `read_write_optional_struct`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])})).await;
+let read_write_optional_struct_handle = server.get_read_write_optional_struct_handle();
+{
+    let mut read_write_optional_struct_guard = read_write_optional_struct_handle.write().await;
+    *read_write_optional_struct_guard = Some(AllTypes {the_bool: true, the_int: 2022, the_number: 1.0, the_str: "foo".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 2022, value: "foo".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(967), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(2022), optional_string: Some("foo".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 2022, value: "foo".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(967)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![2022, 1955], optional_array_of_integers: Some(vec![2022, 1955, 1955]), array_of_strings: vec!["foo".to_string(), "bar".to_string()], optional_array_of_strings: Some(vec!["foo".to_string(), "bar".to_string(), "Joe".to_string()]), array_of_enums: vec![Numbers::One, Numbers::Three], optional_array_of_enums: Some(vec![Numbers::One, Numbers::Three, Numbers::Three]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552), chrono::Duration::seconds(3250)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}, Entry {key: 1955, value: "Joe".to_string()}])});
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_optional_struct_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_optional_struct()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Option<AllTypes>>>` by calling the server's `get_read_write_optional_struct_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_optional_struct_changed = server.watch_read_write_optional_struct();
+let read_write_optional_struct_guard = read_write_optional_struct_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_optional_struct_changed.recv().await {
-    println!("Property 'read_write_optional_struct' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_optional_struct_watch_rx = client.watch_read_write_optional_struct();
+
+if read_write_optional_struct_watch_rx.changed().await.is_ok() {
+    let latest = read_write_optional_struct_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4361,27 +5225,49 @@ A read-write property with two struct values. The second is optional.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_two_structs`.  The value can be changed by calling the server's `set_read_write_two_structs` method:
+A server hold the "source of truth" for the value of `read_write_two_structs`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_two_structs(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}).await;
+let read_write_two_structs_handle = server.get_read_write_two_structs_handle();
+{
+    let mut read_write_two_structs_guard = read_write_two_structs_handle.write().await;
+    let new_read_write_two_structs_value = ReadWriteTwoStructsProperty {
+            first: AllTypes {the_bool: true, the_int: 2022, the_number: 1.0, the_str: "foo".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 2022, value: "foo".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(967), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(2022), optional_string: Some("foo".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 2022, value: "foo".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(967)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![2022, 1955], optional_array_of_integers: Some(vec![2022, 1955, 1955]), array_of_strings: vec!["foo".to_string(), "bar".to_string()], optional_array_of_strings: Some(vec!["foo".to_string(), "bar".to_string(), "Joe".to_string()]), array_of_enums: vec![Numbers::One, Numbers::Three], optional_array_of_enums: Some(vec![Numbers::One, Numbers::Three, Numbers::Three]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552), chrono::Duration::seconds(3250)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}, Entry {key: 1955, value: "Joe".to_string()}])},
+            second: Some(AllTypes {the_bool: true, the_int: 2022, the_number: 1.0, the_str: "foo".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 2022, value: "foo".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(967), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(2022), optional_string: Some("foo".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 2022, value: "foo".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(967)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![2022, 1955], optional_array_of_integers: Some(vec![2022, 1955, 1955]), array_of_strings: vec!["foo".to_string(), "bar".to_string()], optional_array_of_strings: Some(vec!["foo".to_string(), "bar".to_string(), "Joe".to_string()]), array_of_enums: vec![Numbers::One, Numbers::Three], optional_array_of_enums: Some(vec![Numbers::One, Numbers::Three, Numbers::Three]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552), chrono::Duration::seconds(3250)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}, Entry {key: 1955, value: "Joe".to_string()}])}),
+    };
+    *read_write_two_structs_guard = new_read_write_two_structs_value;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_two_structs_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_two_structs()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<ReadWriteTwoStructsProperty>>` by calling the server's `get_read_write_two_structs_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_two_structs_changed = server.watch_read_write_two_structs();
+let read_write_two_structs_guard = read_write_two_structs_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_two_structs_changed.recv().await {
-    println!("Property 'read_write_two_structs' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_two_structs_watch_rx = client.watch_read_write_two_structs();
+
+if read_write_two_structs_watch_rx.changed().await.is_ok() {
+    let latest = read_write_two_structs_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4401,16 +5287,44 @@ This property is **read-only**.  It can only be modified by the server.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_only_enum`.  The value can be changed by calling the server's `set_read_only_enum` method:
+A server hold the "source of truth" for the value of `read_only_enum`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_only_enum(Numbers::One).await;
+let read_only_enum_handle = server.get_read_only_enum_handle();
+{
+    let mut read_only_enum_guard = read_only_enum_handle.write().await;
+    *read_only_enum_guard = Numbers::One;
+    // Optional, block until the property is published to the MQTT broker:
+    read_only_enum_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+If only reading the value, a read guard can be used:
 
-The application code should call the `set_read_only_enum()` method with an initial value when starting up, and then whenever the value changes.
+```rust
+let read_only_enum_guard = read_only_enum_handle.read().await;
+```
+
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_only_enum_watch_rx = client.watch_read_only_enum();
+
+if read_only_enum_watch_rx.changed().await.is_ok() {
+    let latest = read_only_enum_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
+}
+```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
+  
 
 </details>
 
@@ -4428,27 +5342,45 @@ A read-write enum property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_enum`.  The value can be changed by calling the server's `set_read_write_enum` method:
+A server hold the "source of truth" for the value of `read_write_enum`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_enum(Numbers::One).await;
+let read_write_enum_handle = server.get_read_write_enum_handle();
+{
+    let mut read_write_enum_guard = read_write_enum_handle.write().await;
+    *read_write_enum_guard = Numbers::One;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_enum_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_enum()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Numbers>>` by calling the server's `get_read_write_enum_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_enum_changed = server.watch_read_write_enum();
+let read_write_enum_guard = read_write_enum_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_enum_changed.recv().await {
-    println!("Property 'read_write_enum' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_enum_watch_rx = client.watch_read_write_enum();
+
+if read_write_enum_watch_rx.changed().await.is_ok() {
+    let latest = read_write_enum_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4466,27 +5398,45 @@ A read-write optional enum property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_optional_enum`.  The value can be changed by calling the server's `set_read_write_optional_enum` method:
+A server hold the "source of truth" for the value of `read_write_optional_enum`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_enum(Some(Numbers::One)).await;
+let read_write_optional_enum_handle = server.get_read_write_optional_enum_handle();
+{
+    let mut read_write_optional_enum_guard = read_write_optional_enum_handle.write().await;
+    *read_write_optional_enum_guard = Some(Numbers::One);
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_optional_enum_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_optional_enum()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Option<Numbers>>>` by calling the server's `get_read_write_optional_enum_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_optional_enum_changed = server.watch_read_write_optional_enum();
+let read_write_optional_enum_guard = read_write_optional_enum_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_optional_enum_changed.recv().await {
-    println!("Property 'read_write_optional_enum' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_optional_enum_watch_rx = client.watch_read_write_optional_enum();
+
+if read_write_optional_enum_watch_rx.changed().await.is_ok() {
+    let latest = read_write_optional_enum_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4505,27 +5455,49 @@ A read-write property with two enum values. The second is optional.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_two_enums`.  The value can be changed by calling the server's `set_read_write_two_enums` method:
+A server hold the "source of truth" for the value of `read_write_two_enums`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_two_enums(Numbers::One).await;
+let read_write_two_enums_handle = server.get_read_write_two_enums_handle();
+{
+    let mut read_write_two_enums_guard = read_write_two_enums_handle.write().await;
+    let new_read_write_two_enums_value = ReadWriteTwoEnumsProperty {
+            first: Numbers::One,
+            second: Some(Numbers::One),
+    };
+    *read_write_two_enums_guard = new_read_write_two_enums_value;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_two_enums_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_two_enums()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<ReadWriteTwoEnumsProperty>>` by calling the server's `get_read_write_two_enums_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_two_enums_changed = server.watch_read_write_two_enums();
+let read_write_two_enums_guard = read_write_two_enums_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_two_enums_changed.recv().await {
-    println!("Property 'read_write_two_enums' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_two_enums_watch_rx = client.watch_read_write_two_enums();
+
+if read_write_two_enums_watch_rx.changed().await.is_ok() {
+    let latest = read_write_two_enums_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4543,27 +5515,45 @@ A read-write datetime property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_datetime`.  The value can be changed by calling the server's `set_read_write_datetime` method:
+A server hold the "source of truth" for the value of `read_write_datetime`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_datetime(chrono::Utc::now()).await;
+let read_write_datetime_handle = server.get_read_write_datetime_handle();
+{
+    let mut read_write_datetime_guard = read_write_datetime_handle.write().await;
+    *read_write_datetime_guard = chrono::Utc::now();
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_datetime_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_datetime()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<chrono::DateTime<chrono::Utc>>>` by calling the server's `get_read_write_datetime_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_datetime_changed = server.watch_read_write_datetime();
+let read_write_datetime_guard = read_write_datetime_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_datetime_changed.recv().await {
-    println!("Property 'read_write_datetime' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_datetime_watch_rx = client.watch_read_write_datetime();
+
+if read_write_datetime_watch_rx.changed().await.is_ok() {
+    let latest = read_write_datetime_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4581,27 +5571,45 @@ A read-write optional datetime property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_optional_datetime`.  The value can be changed by calling the server's `set_read_write_optional_datetime` method:
+A server hold the "source of truth" for the value of `read_write_optional_datetime`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_datetime(Some(chrono::Utc::now())).await;
+let read_write_optional_datetime_handle = server.get_read_write_optional_datetime_handle();
+{
+    let mut read_write_optional_datetime_guard = read_write_optional_datetime_handle.write().await;
+    *read_write_optional_datetime_guard = Some(chrono::Utc::now());
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_optional_datetime_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_optional_datetime()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Option<chrono::DateTime<chrono::Utc>>>>` by calling the server's `get_read_write_optional_datetime_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_optional_datetime_changed = server.watch_read_write_optional_datetime();
+let read_write_optional_datetime_guard = read_write_optional_datetime_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_optional_datetime_changed.recv().await {
-    println!("Property 'read_write_optional_datetime' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_optional_datetime_watch_rx = client.watch_read_write_optional_datetime();
+
+if read_write_optional_datetime_watch_rx.changed().await.is_ok() {
+    let latest = read_write_optional_datetime_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4620,27 +5628,49 @@ A read-write property with two datetime values. The second is optional.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_two_datetimes`.  The value can be changed by calling the server's `set_read_write_two_datetimes` method:
+A server hold the "source of truth" for the value of `read_write_two_datetimes`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_two_datetimes(chrono::Utc::now()).await;
+let read_write_two_datetimes_handle = server.get_read_write_two_datetimes_handle();
+{
+    let mut read_write_two_datetimes_guard = read_write_two_datetimes_handle.write().await;
+    let new_read_write_two_datetimes_value = ReadWriteTwoDatetimesProperty {
+            first: chrono::Utc::now(),
+            second: Some(chrono::Utc::now()),
+    };
+    *read_write_two_datetimes_guard = new_read_write_two_datetimes_value;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_two_datetimes_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_two_datetimes()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<ReadWriteTwoDatetimesProperty>>` by calling the server's `get_read_write_two_datetimes_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_two_datetimes_changed = server.watch_read_write_two_datetimes();
+let read_write_two_datetimes_guard = read_write_two_datetimes_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_two_datetimes_changed.recv().await {
-    println!("Property 'read_write_two_datetimes' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_two_datetimes_watch_rx = client.watch_read_write_two_datetimes();
+
+if read_write_two_datetimes_watch_rx.changed().await.is_ok() {
+    let latest = read_write_two_datetimes_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4658,27 +5688,45 @@ A read-write duration property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_duration`.  The value can be changed by calling the server's `set_read_write_duration` method:
+A server hold the "source of truth" for the value of `read_write_duration`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_duration(chrono::Duration::seconds(3536)).await;
+let read_write_duration_handle = server.get_read_write_duration_handle();
+{
+    let mut read_write_duration_guard = read_write_duration_handle.write().await;
+    *read_write_duration_guard = chrono::Duration::seconds(967);
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_duration_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_duration()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<chrono::Duration>>` by calling the server's `get_read_write_duration_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_duration_changed = server.watch_read_write_duration();
+let read_write_duration_guard = read_write_duration_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_duration_changed.recv().await {
-    println!("Property 'read_write_duration' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_duration_watch_rx = client.watch_read_write_duration();
+
+if read_write_duration_watch_rx.changed().await.is_ok() {
+    let latest = read_write_duration_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4696,27 +5744,45 @@ A read-write optional duration property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_optional_duration`.  The value can be changed by calling the server's `set_read_write_optional_duration` method:
+A server hold the "source of truth" for the value of `read_write_optional_duration`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_duration(Some(chrono::Duration::seconds(3536))).await;
+let read_write_optional_duration_handle = server.get_read_write_optional_duration_handle();
+{
+    let mut read_write_optional_duration_guard = read_write_optional_duration_handle.write().await;
+    *read_write_optional_duration_guard = Some(chrono::Duration::seconds(967));
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_optional_duration_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_optional_duration()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Option<chrono::Duration>>>` by calling the server's `get_read_write_optional_duration_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_optional_duration_changed = server.watch_read_write_optional_duration();
+let read_write_optional_duration_guard = read_write_optional_duration_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_optional_duration_changed.recv().await {
-    println!("Property 'read_write_optional_duration' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_optional_duration_watch_rx = client.watch_read_write_optional_duration();
+
+if read_write_optional_duration_watch_rx.changed().await.is_ok() {
+    let latest = read_write_optional_duration_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4735,27 +5801,49 @@ A read-write property with two duration values. The second is optional.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_two_durations`.  The value can be changed by calling the server's `set_read_write_two_durations` method:
+A server hold the "source of truth" for the value of `read_write_two_durations`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_two_durations(chrono::Duration::seconds(3536)).await;
+let read_write_two_durations_handle = server.get_read_write_two_durations_handle();
+{
+    let mut read_write_two_durations_guard = read_write_two_durations_handle.write().await;
+    let new_read_write_two_durations_value = ReadWriteTwoDurationsProperty {
+            first: chrono::Duration::seconds(967),
+            second: Some(chrono::Duration::seconds(967)),
+    };
+    *read_write_two_durations_guard = new_read_write_two_durations_value;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_two_durations_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_two_durations()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<ReadWriteTwoDurationsProperty>>` by calling the server's `get_read_write_two_durations_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_two_durations_changed = server.watch_read_write_two_durations();
+let read_write_two_durations_guard = read_write_two_durations_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_two_durations_changed.recv().await {
-    println!("Property 'read_write_two_durations' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_two_durations_watch_rx = client.watch_read_write_two_durations();
+
+if read_write_two_durations_watch_rx.changed().await.is_ok() {
+    let latest = read_write_two_durations_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4773,27 +5861,45 @@ A read-write binary property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_binary`.  The value can be changed by calling the server's `set_read_write_binary` method:
+A server hold the "source of truth" for the value of `read_write_binary`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_binary(vec![101, 120, 97, 109, 112, 108, 101]).await;
+let read_write_binary_handle = server.get_read_write_binary_handle();
+{
+    let mut read_write_binary_guard = read_write_binary_handle.write().await;
+    *read_write_binary_guard = vec![101, 120, 97, 109, 112, 108, 101];
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_binary_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_binary()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Vec<u8>>>` by calling the server's `get_read_write_binary_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_binary_changed = server.watch_read_write_binary();
+let read_write_binary_guard = read_write_binary_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_binary_changed.recv().await {
-    println!("Property 'read_write_binary' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_binary_watch_rx = client.watch_read_write_binary();
+
+if read_write_binary_watch_rx.changed().await.is_ok() {
+    let latest = read_write_binary_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4811,27 +5917,45 @@ A read-write optional binary property.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_optional_binary`.  The value can be changed by calling the server's `set_read_write_optional_binary` method:
+A server hold the "source of truth" for the value of `read_write_optional_binary`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101])).await;
+let read_write_optional_binary_handle = server.get_read_write_optional_binary_handle();
+{
+    let mut read_write_optional_binary_guard = read_write_optional_binary_handle.write().await;
+    *read_write_optional_binary_guard = Some(vec![101, 120, 97, 109, 112, 108, 101]);
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_optional_binary_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_optional_binary()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Option<Vec<u8>>>>` by calling the server's `get_read_write_optional_binary_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_optional_binary_changed = server.watch_read_write_optional_binary();
+let read_write_optional_binary_guard = read_write_optional_binary_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_optional_binary_changed.recv().await {
-    println!("Property 'read_write_optional_binary' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_optional_binary_watch_rx = client.watch_read_write_optional_binary();
+
+if read_write_optional_binary_watch_rx.changed().await.is_ok() {
+    let latest = read_write_optional_binary_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4850,27 +5974,49 @@ A read-write property with two binary values.  The second is optional.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_two_binaries`.  The value can be changed by calling the server's `set_read_write_two_binaries` method:
+A server hold the "source of truth" for the value of `read_write_two_binaries`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_two_binaries(vec![101, 120, 97, 109, 112, 108, 101]).await;
+let read_write_two_binaries_handle = server.get_read_write_two_binaries_handle();
+{
+    let mut read_write_two_binaries_guard = read_write_two_binaries_handle.write().await;
+    let new_read_write_two_binaries_value = ReadWriteTwoBinariesProperty {
+            first: vec![101, 120, 97, 109, 112, 108, 101],
+            second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
+    };
+    *read_write_two_binaries_guard = new_read_write_two_binaries_value;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_two_binaries_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_two_binaries()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<ReadWriteTwoBinariesProperty>>` by calling the server's `get_read_write_two_binaries_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_two_binaries_changed = server.watch_read_write_two_binaries();
+let read_write_two_binaries_guard = read_write_two_binaries_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_two_binaries_changed.recv().await {
-    println!("Property 'read_write_two_binaries' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_two_binaries_watch_rx = client.watch_read_write_two_binaries();
+
+if read_write_two_binaries_watch_rx.changed().await.is_ok() {
+    let latest = read_write_two_binaries_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4888,27 +6034,45 @@ A read-write property that is a list of strings.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_list_of_strings`.  The value can be changed by calling the server's `set_read_write_list_of_strings` method:
+A server hold the "source of truth" for the value of `read_write_list_of_strings`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_list_of_strings(vec!["apples".to_string(), "foo".to_string()]).await;
+let read_write_list_of_strings_handle = server.get_read_write_list_of_strings_handle();
+{
+    let mut read_write_list_of_strings_guard = read_write_list_of_strings_handle.write().await;
+    *read_write_list_of_strings_guard = vec!["foo".to_string(), "bar".to_string()];
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_list_of_strings_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_list_of_strings()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<Vec<String>>>` by calling the server's `get_read_write_list_of_strings_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_list_of_strings_changed = server.watch_read_write_list_of_strings();
+let read_write_list_of_strings_guard = read_write_list_of_strings_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_list_of_strings_changed.recv().await {
-    println!("Property 'read_write_list_of_strings' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_list_of_strings_watch_rx = client.watch_read_write_list_of_strings();
+
+if read_write_list_of_strings_watch_rx.changed().await.is_ok() {
+    let latest = read_write_list_of_strings_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -4927,27 +6091,49 @@ A read-write property containing two lists.  The second list is optional.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `read_write_lists`.  The value can be changed by calling the server's `set_read_write_lists` method:
+A server hold the "source of truth" for the value of `read_write_lists`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_read_write_lists(vec![Numbers::One, Numbers::One]).await;
+let read_write_lists_handle = server.get_read_write_lists_handle();
+{
+    let mut read_write_lists_guard = read_write_lists_handle.write().await;
+    let new_read_write_lists_value = ReadWriteListsProperty {
+            the_list: vec![Numbers::One, Numbers::Three],
+            optional_list: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]),
+    };
+    *read_write_lists_guard = new_read_write_lists_value;
+    // Optional, block until the property is published to the MQTT broker:
+    read_write_lists_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_read_write_lists()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<ReadWriteListsProperty>>` by calling the server's `get_read_write_lists_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_read_write_lists_changed = server.watch_read_write_lists();
+let read_write_lists_guard = read_write_lists_handle.read().await;
+```
 
-while let Some(new_value) = on_read_write_lists_changed.recv().await {
-    println!("Property 'read_write_lists' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let read_write_lists_watch_rx = client.watch_read_write_lists();
+
+if read_write_lists_watch_rx.changed().await.is_ok() {
+    let latest = read_write_lists_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 

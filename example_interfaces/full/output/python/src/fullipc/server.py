@@ -15,6 +15,7 @@ from time import sleep
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 import isodate
+import functools
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
@@ -1209,112 +1210,245 @@ class FullServerBuilder:
         self._last_birthdays_property_callbacks: List[Callable[[datetime, datetime, Optional[datetime], Optional[int]], None]] = []
 
     def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._add_numbers_method_handler is None and handler is not None:
-            self._add_numbers_method_handler = handler
+            self._add_numbers_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_do_something(self, handler: Callable[[str], DoSomethingMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._do_something_method_handler is None and handler is not None:
-            self._do_something_method_handler = handler
+            self._do_something_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_echo(self, handler: Callable[[str], str]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._echo_method_handler is None and handler is not None:
-            self._echo_method_handler = handler
+            self._echo_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_what_time_is_it(self, handler: Callable[[datetime], datetime]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._what_time_is_it_method_handler is None and handler is not None:
-            self._what_time_is_it_method_handler = handler
+            self._what_time_is_it_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_set_the_time(self, handler: Callable[[datetime, datetime], SetTheTimeMethodResponse]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._set_the_time_method_handler is None and handler is not None:
-            self._set_the_time_method_handler = handler
+            self._set_the_time_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_forward_time(self, handler: Callable[[timedelta], datetime]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._forward_time_method_handler is None and handler is not None:
-            self._forward_time_method_handler = handler
+            self._forward_time_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_how_off_is_the_clock(self, handler: Callable[[datetime], timedelta]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._how_off_is_the_clock_method_handler is None and handler is not None:
-            self._how_off_is_the_clock_method_handler = handler
+            self._how_off_is_the_clock_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def on_favorite_number_updates(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'favorite_number' property update is received."""
-        self._favorite_number_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._favorite_number_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_favorite_foods_updates(self, handler: Callable[[str, int, Optional[str]], None]):
         """This method registers a callback to be called whenever a new 'favorite_foods' property update is received."""
-        self._favorite_foods_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._favorite_foods_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_lunch_menu_updates(self, handler: Callable[[Lunch, Lunch], None]):
         """This method registers a callback to be called whenever a new 'lunch_menu' property update is received."""
-        self._lunch_menu_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._lunch_menu_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_family_name_updates(self, handler: Callable[[str], None]):
         """This method registers a callback to be called whenever a new 'family_name' property update is received."""
-        self._family_name_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._family_name_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_last_breakfast_time_updates(self, handler: Callable[[datetime], None]):
         """This method registers a callback to be called whenever a new 'last_breakfast_time' property update is received."""
-        self._last_breakfast_time_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._last_breakfast_time_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_breakfast_length_updates(self, handler: Callable[[timedelta], None]):
         """This method registers a callback to be called whenever a new 'breakfast_length' property update is received."""
-        self._breakfast_length_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._breakfast_length_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_last_birthdays_updates(self, handler: Callable[[datetime, datetime, Optional[datetime], Optional[int]], None]):
         """This method registers a callback to be called whenever a new 'last_birthdays' property update is received."""
-        self._last_birthdays_property_callbacks.append(handler)
 
-    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: FullInitialPropertyValues) -> FullServer:
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._last_birthdays_property_callbacks.append(wrapper)
+        return wrapper
+
+    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: FullInitialPropertyValues, binding: Optional[Any] = None) -> FullServer:
         new_server = FullServer(connection, instance_id, initial_property_values)
 
         if self._add_numbers_method_handler is not None:
-            new_server.handle_add_numbers(self._add_numbers_method_handler)
+            if binding:
+                binding_cb = self._add_numbers_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_add_numbers(binding_cb)
+            else:
+                new_server.handle_add_numbers(self._add_numbers_method_handler)
         if self._do_something_method_handler is not None:
-            new_server.handle_do_something(self._do_something_method_handler)
+            if binding:
+                binding_cb = self._do_something_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_do_something(binding_cb)
+            else:
+                new_server.handle_do_something(self._do_something_method_handler)
         if self._echo_method_handler is not None:
-            new_server.handle_echo(self._echo_method_handler)
+            if binding:
+                binding_cb = self._echo_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_echo(binding_cb)
+            else:
+                new_server.handle_echo(self._echo_method_handler)
         if self._what_time_is_it_method_handler is not None:
-            new_server.handle_what_time_is_it(self._what_time_is_it_method_handler)
+            if binding:
+                binding_cb = self._what_time_is_it_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_what_time_is_it(binding_cb)
+            else:
+                new_server.handle_what_time_is_it(self._what_time_is_it_method_handler)
         if self._set_the_time_method_handler is not None:
-            new_server.handle_set_the_time(self._set_the_time_method_handler)
+            if binding:
+                binding_cb = self._set_the_time_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_set_the_time(binding_cb)
+            else:
+                new_server.handle_set_the_time(self._set_the_time_method_handler)
         if self._forward_time_method_handler is not None:
-            new_server.handle_forward_time(self._forward_time_method_handler)
+            if binding:
+                binding_cb = self._forward_time_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_forward_time(binding_cb)
+            else:
+                new_server.handle_forward_time(self._forward_time_method_handler)
         if self._how_off_is_the_clock_method_handler is not None:
-            new_server.handle_how_off_is_the_clock(self._how_off_is_the_clock_method_handler)
+            if binding:
+                binding_cb = self._how_off_is_the_clock_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_how_off_is_the_clock(binding_cb)
+            else:
+                new_server.handle_how_off_is_the_clock(self._how_off_is_the_clock_method_handler)
 
         for callback in self._favorite_number_property_callbacks:
-            new_server.on_favorite_number_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_favorite_number_updates(binding_cb)
+            else:
+                new_server.on_favorite_number_updates(callback)
 
         for callback in self._favorite_foods_property_callbacks:
-            new_server.on_favorite_foods_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_favorite_foods_updates(binding_cb)
+            else:
+                new_server.on_favorite_foods_updates(callback)
 
         for callback in self._lunch_menu_property_callbacks:
-            new_server.on_lunch_menu_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_lunch_menu_updates(binding_cb)
+            else:
+                new_server.on_lunch_menu_updates(callback)
 
         for callback in self._family_name_property_callbacks:
-            new_server.on_family_name_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_family_name_updates(binding_cb)
+            else:
+                new_server.on_family_name_updates(callback)
 
         for callback in self._last_breakfast_time_property_callbacks:
-            new_server.on_last_breakfast_time_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_last_breakfast_time_updates(binding_cb)
+            else:
+                new_server.on_last_breakfast_time_updates(callback)
 
         for callback in self._breakfast_length_property_callbacks:
-            new_server.on_breakfast_length_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_breakfast_length_updates(binding_cb)
+            else:
+                new_server.on_breakfast_length_updates(callback)
 
         for callback in self._last_birthdays_property_callbacks:
-            new_server.on_last_birthdays_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_last_birthdays_updates(binding_cb)
+            else:
+                new_server.on_last_birthdays_updates(callback)
 
         return new_server

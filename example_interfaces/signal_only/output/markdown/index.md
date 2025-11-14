@@ -12,6 +12,9 @@ TODO: Get license text from stinger file
 
 A connection object is a wrapper around an MQTT client and provides specific functionality to support both clients and servers.
 Generally, you only need one connection object per daemon/program, as it can support multiple clients and servers.  
+For most languages, Stinger-IPC does not require a specific connection object implementation, as long as it implements the required interface.
+
+The application code is responsible for creating and managing the connection object, including connecting to the MQTT broker.
 
 ### Connection code Examples
 
@@ -32,17 +35,21 @@ The `connection_object` will be passed to client and server constructors.
 <details>
   <summary>Rust</summary>
 
-Rust implementations use the [MQTTier](https://crates.io/crates/mqttier) crate for MQTT connectivity.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.
+Stinger-IPC instances only require an MQTT connection object that implements the [`stinger_mqtt_trait::Mqtt5PubSub` trait](https://docs.rs/stinger-mqtt-trait/latest/stinger_mqtt_trait/trait.Mqtt5PubSub.html). 
+
+The [MQTTier](https://crates.io/crates/mqttier) crate provides an implementation of the `Mqtt5PubSub` trait, and is shown in this documentation as an example.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.'
+
+Here is an example showing how to create an MQTTier client connection object:
 
 ```rust
-use mqttier::{MqttierClient, MqttierOptions};
+use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
 
-  let conn_opts = MqttierOptionsBuilder::new()
-      .connection(Connection::TcpLocalhost(1883)) // Connection::UnixSocket("/path/to/socket") is also supported.
-      .build()
-      .unwrap()
-      .expect("Failed to build MQTT connection options");
-  let mut connection = MqttierClient::new(conn_opts).unwrap().expect("Failed to create MQTT client");
+let mqttier_options = MqttierOptionsBuilder::default()
+    .connection(Connection::TcpLocalhost(1883))
+    .client_id("rust-client-demo".to_string())
+    .build().unwrap();
+let mut connection_object = MqttierClient::new(mqttier_options).unwrap();
+let _ = connection_object.start().await;
 ```
 
 The `connection_object` will be passed to client and server constructors.
@@ -64,9 +71,51 @@ The `connection_object` will be passed to client and server constructors.
 
 </details>
 
+## Discovery
+
+Because there may be multiple instances of the same Stinger Interface, a discovery mechanism is provided to find and connect to them.  A discovery class is provided which connects to
+the MQTT broker and listens for Stinger Interface announcements.  The discovery class can then provide SignalOnlyClient client instances.  Additionally, the discovery class
+find all the current property values for discovered interfaces in order to initialize the client instance.
+
+### Discovery Code Examples
+
+<details>
+  <summary>Python</summary>
+
+```python
+from signalonlyipc.client import SignalOnlyClientDiscoverer
+
+discovery = SignalOnlyClientDiscoverer(connection_object)
+
+# To get a single client instance (waits until one is found):
+client = discovery.get_singleton_client().result()
+
+# To get all currently available client instances (does not wait):
+discovered_service_ids = discovery.get_service_instance_ids()
+clients = [discovery.get_client_for_instance(service_id) for service_id in discovered_service_ids]
+```
+</details>
+
+<details>
+  <summary>Rust</summary>
+
+```rust
+use signal_only_ipc::discovery::SignalOnlyDiscovery;
+
+let discovered_singleton_info = {
+    let service_discovery = SignalOnlyDiscovery::new(&mut connection_object).await.unwrap();
+    service_discovery.get_singleton_instance_info().await // Blocks until a service is discovered.
+}
+let signal_only_client = SignalOnlyClient::new(&mut connection_object, &discovered_singleton_info).await;
+```
+
+</details>
+
 ## Server
 
-A server is a _provider_ of functionality.  It sends signals, handles method calls, and owns property values.
+A server is a _provider_ of functionality.  It sends signals .
+
+When constructing a server instance, a connection object.
 
 ### Server Code Examples
 
@@ -74,23 +123,75 @@ A server is a _provider_ of functionality.  It sends signals, handles method cal
   <summary>Python Server</summary>
 
 ```python
-from signalonlyipc.client import SignalOnlyServer
+from signalonlyipc.server import SignalOnlyServer, SignalOnlyInitialPropertyValues
 
-server = SignalOnlyServer(connection_object)
+# Ideally, you would load these initial property values from a configuration file or database.
+
+
+service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
+server = SignalOnlyServer(connection_object, service_id, )
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 
-A full example can be viewed by looking at the `if __name__ == "__main__":` section of the generated `signalonlyipc.server.py` module.
+A full example can be viewed by looking at the `example/server_demo.py` file of the generated code.
+
+When decorating class methods, especially when there might be multiple instances of the class with methods being decorated, the Python implementation provides a `SignalOnlyClientBuilder`
+class to help capture decorated methods and bind them to a specific instance at runtime. Here is an example of how to use it in a class:
+
+```python
+from signalonlyipc.client import SignalOnlyClientBuilder
+
+signal_only_builder = SignalOnlyClientBuilder()
+
+class MyClass:
+    def __init__(self, label: str, connection: MqttBrokerConnection):
+        instance_info = ... # Create manually or use discovery to get this
+        self.client = signal_only_builder.build(connection_object, instance_info, binding=self) # The binding param binds all decorated methods to the `self` instance.
+
+    @signal_only_builder.receive_a_signal
+    def on_a_signal(self, param1: int, param2: str):
+        ...
+```
+
+A more complete example, including use with the discovery mechanism, can be viewed by looking at the generated `examples/server_demo_classes.py` file.
 
 </details>
 
+<details>
+  <summary>Rust Server</summary>
+
+Service code for Rust is only available when using the `server` feature:
+
+```sh
+cargo add signal_only_ipc --features=server
+```
+
+Here is an example of how to create a server instance:
+
+```rust
+use signal_only_ipc::server::SignalOnlyServer;
+
+let service_id = String::from("rust-server-demo:1");
+
+
+// Create the server object.
+let mut server = SignalOnlyServer::new(connection_object, serivce_id).await;
+
+
+```
+
+Providing method handlers is better described in the [Methods](#methods) section.  
+
+A full example can be viewed by looking at the generated `examples/server_demo.rs` example and can be compiled with `cargo run --example signal_only_server_demo --features=server` in the generated Rust project.
+
+</details>
 
 <details>
   <summary>C++ Server</summary>
 
 ```c++
-
+// To be written
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
@@ -104,13 +205,43 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust Client</summary>
+
+The best way to create a client instance is to use the discovery class to find an instance of the service, and then create the client from the discovered instance information.
+An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance ID, you can create a client directly:
 
 ```rust
-let api_client = SignalOnlyClient::new(&mut connection).await;
+use signal_only_ipc::client::SignalOnlyClient;
+
+let instance_info = DiscoveredInstance {
+    service_instance_id: String::from("singleton"),
+    
+};
+
+let signal_only_client = SignalOnlyClient::new(connection_object.clone(), instance_info).await;
 ```
 
-A full example can be viewed by looking at the generated `client/examples/client.rs` file.
+A full example can be viewed by looking at the generated `client/examples/client_demo.rs` file.
+
+</details>
+
+<details>
+  <summary>Python Client</summary>
+
+```python
+from signalonlyipc.server import SignalOnlyServer
+
+
+
+service_instance_id="singleton"
+server = SignalOnlyServer(connection_object, service_instance_id)
+```
+
+A full example can be viewed by looking at the generated `examples/client_main.py` file.
+
+Like the Python client, there is a `SignalOnlyServerBuilder` class to help capture decorated methods and bind them to a specific instance at runtime.
+
+```python
 
 </details>
 

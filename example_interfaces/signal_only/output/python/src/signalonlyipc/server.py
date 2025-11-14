@@ -15,6 +15,7 @@ from time import sleep
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 import isodate
+import functools
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
@@ -172,7 +173,7 @@ class SignalOnlyServerBuilder:
     def __init__(self):
         pass
 
-    def build(self, connection: IBrokerConnection, instance_id: str) -> SignalOnlyServer:
+    def build(self, connection: IBrokerConnection, instance_id: str, binding: Optional[Any] = None) -> SignalOnlyServer:
         new_server = SignalOnlyServer(connection, instance_id)
 
         return new_server

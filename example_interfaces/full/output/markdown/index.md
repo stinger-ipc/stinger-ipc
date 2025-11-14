@@ -14,6 +14,9 @@ _Example StingerAPI interface which demonstrates most features._
 
 A connection object is a wrapper around an MQTT client and provides specific functionality to support both clients and servers.
 Generally, you only need one connection object per daemon/program, as it can support multiple clients and servers.  
+For most languages, Stinger-IPC does not require a specific connection object implementation, as long as it implements the required interface.
+
+The application code is responsible for creating and managing the connection object, including connecting to the MQTT broker.
 
 ### Connection code Examples
 
@@ -34,17 +37,21 @@ The `connection_object` will be passed to client and server constructors.
 <details>
   <summary>Rust</summary>
 
-Rust implementations use the [MQTTier](https://crates.io/crates/mqttier) crate for MQTT connectivity.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.
+Stinger-IPC instances only require an MQTT connection object that implements the [`stinger_mqtt_trait::Mqtt5PubSub` trait](https://docs.rs/stinger-mqtt-trait/latest/stinger_mqtt_trait/trait.Mqtt5PubSub.html). 
+
+The [MQTTier](https://crates.io/crates/mqttier) crate provides an implementation of the `Mqtt5PubSub` trait, and is shown in this documentation as an example.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.'
+
+Here is an example showing how to create an MQTTier client connection object:
 
 ```rust
-use mqttier::{MqttierClient, MqttierOptions};
+use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
 
-  let conn_opts = MqttierOptionsBuilder::new()
-      .connection(Connection::TcpLocalhost(1883)) // Connection::UnixSocket("/path/to/socket") is also supported.
-      .build()
-      .unwrap()
-      .expect("Failed to build MQTT connection options");
-  let mut connection = MqttierClient::new(conn_opts).unwrap().expect("Failed to create MQTT client");
+let mqttier_options = MqttierOptionsBuilder::default()
+    .connection(Connection::TcpLocalhost(1883))
+    .client_id("rust-client-demo".to_string())
+    .build().unwrap();
+let mut connection_object = MqttierClient::new(mqttier_options).unwrap();
+let _ = connection_object.start().await;
 ```
 
 The `connection_object` will be passed to client and server constructors.
@@ -66,9 +73,51 @@ The `connection_object` will be passed to client and server constructors.
 
 </details>
 
+## Discovery
+
+Because there may be multiple instances of the same Stinger Interface, a discovery mechanism is provided to find and connect to them.  A discovery class is provided which connects to
+the MQTT broker and listens for Stinger Interface announcements.  The discovery class can then provide FullClient client instances.  Additionally, the discovery class
+find all the current property values for discovered interfaces in order to initialize the client instance.
+
+### Discovery Code Examples
+
+<details>
+  <summary>Python</summary>
+
+```python
+from fullipc.client import FullClientDiscoverer
+
+discovery = FullClientDiscoverer(connection_object)
+
+# To get a single client instance (waits until one is found):
+client = discovery.get_singleton_client().result()
+
+# To get all currently available client instances (does not wait):
+discovered_service_ids = discovery.get_service_instance_ids()
+clients = [discovery.get_client_for_instance(service_id) for service_id in discovered_service_ids]
+```
+</details>
+
+<details>
+  <summary>Rust</summary>
+
+```rust
+use full_ipc::discovery::FullDiscovery;
+
+let discovered_singleton_info = {
+    let service_discovery = FullDiscovery::new(&mut connection_object).await.unwrap();
+    service_discovery.get_singleton_instance_info().await // Blocks until a service is discovered.
+}
+let full_client = FullClient::new(&mut connection_object, &discovered_singleton_info).await;
+```
+
+</details>
+
 ## Server
 
-A server is a _provider_ of functionality.  It sends signals, handles method calls, and owns property values.
+A server is a _provider_ of functionality.  It sends signals and handles method calls and owns property values.
+
+When constructing a server instance, a connection object and initial property values must be provided.
 
 ### Server Code Examples
 
@@ -76,23 +125,169 @@ A server is a _provider_ of functionality.  It sends signals, handles method cal
   <summary>Python Server</summary>
 
 ```python
-from fullipc.client import FullServer
+from fullipc.server import FullServer, FullInitialPropertyValues
 
-server = FullServer(connection_object)
+# Ideally, you would load these initial property values from a configuration file or database.
+
+initial_property_values = FullInitialPropertyValues(
+
+    favorite_number=42,
+        
+    favorite_number_version=1,
+
+    favorite_foods=
+        FavoriteFoodsProperty(
+            
+            drink="apples",
+            
+            slices_of_pizza=42,
+            
+            breakfast="apples",
+            
+        ),
+    favorite_foods_version=2,
+
+    lunch_menu=
+        LunchMenuProperty(
+            
+            monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+            
+            tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+            
+        ),
+    lunch_menu_version=3,
+
+    family_name="apples",
+        
+    family_name_version=4,
+
+    last_breakfast_time=datetime.now(UTC),
+        
+    last_breakfast_time_version=5,
+
+    breakfast_length=timedelta(seconds=3536),
+        
+    breakfast_length_version=6,
+
+    last_birthdays=
+        LastBirthdaysProperty(
+            
+            mom=datetime.now(UTC),
+            
+            dad=datetime.now(UTC),
+            
+            sister=None,
+            
+            brothers_age=42,
+            
+        ),
+    last_birthdays_version=7,
+
+)
+
+
+service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
+server = FullServer(connection_object, service_id, initial_property_values)
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 
-A full example can be viewed by looking at the `if __name__ == "__main__":` section of the generated `fullipc.server.py` module.
+A full example can be viewed by looking at the `example/server_demo.py` file of the generated code.
+
+When decorating class methods, especially when there might be multiple instances of the class with methods being decorated, the Python implementation provides a `FullClientBuilder`
+class to help capture decorated methods and bind them to a specific instance at runtime. Here is an example of how to use it in a class:
+
+```python
+from fullipc.client import FullClientBuilder
+
+full_builder = FullClientBuilder()
+
+class MyClass:
+    def __init__(self, label: str, connection: MqttBrokerConnection):
+        instance_info = ... # Create manually or use discovery to get this
+        self.client = full_builder.build(connection_object, instance_info, binding=self) # The binding param binds all decorated methods to the `self` instance.
+
+    @full_builder.receive_a_signal
+    def on_a_signal(self, param1: int, param2: str):
+        ...
+```
+
+A more complete example, including use with the discovery mechanism, can be viewed by looking at the generated `examples/server_demo_classes.py` file.
 
 </details>
 
+<details>
+  <summary>Rust Server</summary>
+
+Service code for Rust is only available when using the `server` feature:
+
+```sh
+cargo add full_ipc --features=server
+```
+
+Here is an example of how to create a server instance:
+
+```rust
+use full_ipc::server::FullServer;
+use full_ipc::property::FullInitialPropertyValues;
+
+let service_id = String::from("rust-server-demo:1");
+
+let initial_property_values = FullInitialPropertyValues {
+    
+    favorite_number:42,
+    favorite_number_version: 1,
+    
+    favorite_foods:FavoriteFoodsProperty {
+            drink: "apples".to_string(),
+            slices_of_pizza: 42,
+            breakfast: Some("apples".to_string()),
+    },
+    favorite_foods_version: 1,
+    
+    lunch_menu:LunchMenuProperty {
+            monday: Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)},
+            tuesday: Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)},
+    },
+    lunch_menu_version: 1,
+    
+    family_name:"apples".to_string(),
+    family_name_version: 1,
+    
+    last_breakfast_time:chrono::Utc::now(),
+    last_breakfast_time_version: 1,
+    
+    breakfast_length:chrono::Duration::seconds(3536),
+    breakfast_length_version: 1,
+    
+    last_birthdays:LastBirthdaysProperty {
+            mom: chrono::Utc::now(),
+            dad: chrono::Utc::now(),
+            sister: Some(chrono::Utc::now()),
+            brothers_age: Some(42),
+    },
+    last_birthdays_version: 1,
+    
+};
+
+
+// Create the server object.
+let mut server = FullServer::new(connection_object, method_handlers.clone(), service_id, initial_property_values, ).await;
+
+
+```
+
+Providing method handlers is better described in the [Methods](#methods) section.  
+
+A full example can be viewed by looking at the generated `examples/server_demo.rs` example and can be compiled with `cargo run --example full_server_demo --features=server` in the generated Rust project.
+
+</details>
 
 <details>
   <summary>C++ Server</summary>
 
 ```c++
-
+// To be written
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
@@ -106,13 +301,136 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust Client</summary>
+
+The best way to create a client instance is to use the discovery class to find an instance of the service, and then create the client from the discovered instance information.
+An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance IDand initial property values, you can create a client directly:
 
 ```rust
-let mut api_client = FullClient::new(&mut connection).await;
+use full_ipc::client::FullClient;
+
+let instance_info = DiscoveredInstance {
+    service_instance_id: String::from("singleton"),
+    
+    initial_property_values: FullInitialPropertyValues {
+        
+        favorite_number:42,
+        favorite_number_version: 1,
+        
+        favorite_foods:FavoriteFoodsProperty {
+                drink: "apples".to_string(),
+                slices_of_pizza: 42,
+                breakfast: Some("apples".to_string()),
+        },
+        favorite_foods_version: 1,
+        
+        lunch_menu:LunchMenuProperty {
+                monday: Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)},
+                tuesday: Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)},
+        },
+        lunch_menu_version: 1,
+        
+        family_name:"apples".to_string(),
+        family_name_version: 1,
+        
+        last_breakfast_time:chrono::Utc::now(),
+        last_breakfast_time_version: 1,
+        
+        breakfast_length:chrono::Duration::seconds(3536),
+        breakfast_length_version: 1,
+        
+        last_birthdays:LastBirthdaysProperty {
+                mom: chrono::Utc::now(),
+                dad: chrono::Utc::now(),
+                sister: Some(chrono::Utc::now()),
+                brothers_age: Some(42),
+        },
+        last_birthdays_version: 1,
+        
+    },
+    
+};
+
+let mut full_client = FullClient::new(connection_object.clone(), instance_info).await;
 ```
 
-A full example can be viewed by looking at the generated `client/examples/client.rs` file.
+A full example can be viewed by looking at the generated `client/examples/client_demo.rs` file.
+
+</details>
+
+<details>
+  <summary>Python Client</summary>
+
+```python
+from fullipc.server import FullServer, FullInitialPropertyValues
+
+
+initial_property_values = FullInitialPropertyValues(
+
+    favorite_number=42,
+        
+    favorite_number_version=1,
+
+    favorite_foods=
+        FavoriteFoodsProperty(
+            
+            drink="apples",
+            
+            slices_of_pizza=42,
+            
+            breakfast="apples",
+            
+        ),
+    favorite_foods_version=2,
+
+    lunch_menu=
+        LunchMenuProperty(
+            
+            monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+            
+            tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+            
+        ),
+    lunch_menu_version=3,
+
+    family_name="apples",
+        
+    family_name_version=4,
+
+    last_breakfast_time=datetime.now(UTC),
+        
+    last_breakfast_time_version=5,
+
+    breakfast_length=timedelta(seconds=3536),
+        
+    breakfast_length_version=6,
+
+    last_birthdays=
+        LastBirthdaysProperty(
+            
+            mom=datetime.now(UTC),
+            
+            dad=datetime.now(UTC),
+            
+            sister=None,
+            
+            brothers_age=42,
+            
+        ),
+    last_birthdays_version=7,
+
+)
+
+
+service_instance_id="singleton"
+server = FullServer(connection_object, service_instance_id, initial_property_values)
+```
+
+A full example can be viewed by looking at the generated `examples/client_main.py` file.
+
+Like the Python client, there is a `FullServerBuilder` class to help capture decorated methods and bind them to a specific instance at runtime.
+
+```python
 
 </details>
 
@@ -730,27 +1048,45 @@ My favorite number
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `favorite_number`.  The value can be changed by calling the server's `set_favorite_number` method:
+A server hold the "source of truth" for the value of `favorite_number`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_favorite_number(42).await;
+let favorite_number_handle = server.get_favorite_number_handle();
+{
+    let mut favorite_number_guard = favorite_number_handle.write().await;
+    *favorite_number_guard = 2022;
+    // Optional, block until the property is published to the MQTT broker:
+    favorite_number_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_favorite_number()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<i32>>` by calling the server's `get_favorite_number_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_favorite_number_changed = server.watch_favorite_number();
+let favorite_number_guard = favorite_number_handle.read().await;
+```
 
-while let Some(new_value) = on_favorite_number_changed.recv().await {
-    println!("Property 'favorite_number' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let favorite_number_watch_rx = client.watch_favorite_number();
+
+if favorite_number_watch_rx.changed().await.is_ok() {
+    let latest = favorite_number_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -770,27 +1106,50 @@ _No documentation is available for this property_
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `favorite_foods`.  The value can be changed by calling the server's `set_favorite_foods` method:
+A server hold the "source of truth" for the value of `favorite_foods`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_favorite_foods("apples".to_string()).await;
+let favorite_foods_handle = server.get_favorite_foods_handle();
+{
+    let mut favorite_foods_guard = favorite_foods_handle.write().await;
+    let new_favorite_foods_value = FavoriteFoodsProperty {
+            drink: "foo".to_string(),
+            slices_of_pizza: 2022,
+            breakfast: Some("foo".to_string()),
+    };
+    *favorite_foods_guard = new_favorite_foods_value;
+    // Optional, block until the property is published to the MQTT broker:
+    favorite_foods_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_favorite_foods()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<FavoriteFoodsProperty>>` by calling the server's `get_favorite_foods_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_favorite_foods_changed = server.watch_favorite_foods();
+let favorite_foods_guard = favorite_foods_handle.read().await;
+```
 
-while let Some(new_value) = on_favorite_foods_changed.recv().await {
-    println!("Property 'favorite_foods' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let favorite_foods_watch_rx = client.watch_favorite_foods();
+
+if favorite_foods_watch_rx.changed().await.is_ok() {
+    let latest = favorite_foods_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -809,27 +1168,49 @@ _No documentation is available for this property_
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `lunch_menu`.  The value can be changed by calling the server's `set_lunch_menu` method:
+A server hold the "source of truth" for the value of `lunch_menu`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_lunch_menu(Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)}).await;
+let lunch_menu_handle = server.get_lunch_menu_handle();
+{
+    let mut lunch_menu_guard = lunch_menu_handle.write().await;
+    let new_lunch_menu_value = LunchMenuProperty {
+            monday: Lunch {drink: true, sandwich: "foo".to_string(), crackers: 1.0, day: DayOfTheWeek::Monday, order_number: Some(2022), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(967)},
+            tuesday: Lunch {drink: true, sandwich: "foo".to_string(), crackers: 1.0, day: DayOfTheWeek::Monday, order_number: Some(2022), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(967)},
+    };
+    *lunch_menu_guard = new_lunch_menu_value;
+    // Optional, block until the property is published to the MQTT broker:
+    lunch_menu_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_lunch_menu()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<LunchMenuProperty>>` by calling the server's `get_lunch_menu_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_lunch_menu_changed = server.watch_lunch_menu();
+let lunch_menu_guard = lunch_menu_handle.read().await;
+```
 
-while let Some(new_value) = on_lunch_menu_changed.recv().await {
-    println!("Property 'lunch_menu' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let lunch_menu_watch_rx = client.watch_lunch_menu();
+
+if lunch_menu_watch_rx.changed().await.is_ok() {
+    let latest = lunch_menu_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -847,27 +1228,45 @@ This is to test a property with a single string value.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `family_name`.  The value can be changed by calling the server's `set_family_name` method:
+A server hold the "source of truth" for the value of `family_name`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_family_name("apples".to_string()).await;
+let family_name_handle = server.get_family_name_handle();
+{
+    let mut family_name_guard = family_name_handle.write().await;
+    *family_name_guard = "foo".to_string();
+    // Optional, block until the property is published to the MQTT broker:
+    family_name_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_family_name()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<String>>` by calling the server's `get_family_name_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_family_name_changed = server.watch_family_name();
+let family_name_guard = family_name_handle.read().await;
+```
 
-while let Some(new_value) = on_family_name_changed.recv().await {
-    println!("Property 'family_name' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let family_name_watch_rx = client.watch_family_name();
+
+if family_name_watch_rx.changed().await.is_ok() {
+    let latest = family_name_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -885,27 +1284,45 @@ This is to test a property with a single datetime value.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `last_breakfast_time`.  The value can be changed by calling the server's `set_last_breakfast_time` method:
+A server hold the "source of truth" for the value of `last_breakfast_time`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_last_breakfast_time(chrono::Utc::now()).await;
+let last_breakfast_time_handle = server.get_last_breakfast_time_handle();
+{
+    let mut last_breakfast_time_guard = last_breakfast_time_handle.write().await;
+    *last_breakfast_time_guard = chrono::Utc::now();
+    // Optional, block until the property is published to the MQTT broker:
+    last_breakfast_time_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_last_breakfast_time()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<chrono::DateTime<chrono::Utc>>>` by calling the server's `get_last_breakfast_time_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_last_breakfast_time_changed = server.watch_last_breakfast_time();
+let last_breakfast_time_guard = last_breakfast_time_handle.read().await;
+```
 
-while let Some(new_value) = on_last_breakfast_time_changed.recv().await {
-    println!("Property 'last_breakfast_time' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let last_breakfast_time_watch_rx = client.watch_last_breakfast_time();
+
+if last_breakfast_time_watch_rx.changed().await.is_ok() {
+    let latest = last_breakfast_time_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -923,27 +1340,45 @@ This is to test a property with a single duration value.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `breakfast_length`.  The value can be changed by calling the server's `set_breakfast_length` method:
+A server hold the "source of truth" for the value of `breakfast_length`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_breakfast_length(chrono::Duration::seconds(3536)).await;
+let breakfast_length_handle = server.get_breakfast_length_handle();
+{
+    let mut breakfast_length_guard = breakfast_length_handle.write().await;
+    *breakfast_length_guard = chrono::Duration::seconds(967);
+    // Optional, block until the property is published to the MQTT broker:
+    breakfast_length_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_breakfast_length()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<chrono::Duration>>` by calling the server's `get_breakfast_length_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_breakfast_length_changed = server.watch_breakfast_length();
+let breakfast_length_guard = breakfast_length_handle.read().await;
+```
 
-while let Some(new_value) = on_breakfast_length_changed.recv().await {
-    println!("Property 'breakfast_length' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let breakfast_length_watch_rx = client.watch_breakfast_length();
+
+if breakfast_length_watch_rx.changed().await.is_ok() {
+    let latest = breakfast_length_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -964,27 +1399,51 @@ This is to test a property with multiple datetime values.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `last_birthdays`.  The value can be changed by calling the server's `set_last_birthdays` method:
+A server hold the "source of truth" for the value of `last_birthdays`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_last_birthdays(chrono::Utc::now()).await;
+let last_birthdays_handle = server.get_last_birthdays_handle();
+{
+    let mut last_birthdays_guard = last_birthdays_handle.write().await;
+    let new_last_birthdays_value = LastBirthdaysProperty {
+            mom: chrono::Utc::now(),
+            dad: chrono::Utc::now(),
+            sister: Some(chrono::Utc::now()),
+            brothers_age: Some(2022),
+    };
+    *last_birthdays_guard = new_last_birthdays_value;
+    // Optional, block until the property is published to the MQTT broker:
+    last_birthdays_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_last_birthdays()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<LastBirthdaysProperty>>` by calling the server's `get_last_birthdays_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_last_birthdays_changed = server.watch_last_birthdays();
+let last_birthdays_guard = last_birthdays_handle.read().await;
+```
 
-while let Some(new_value) = on_last_birthdays_changed.recv().await {
-    println!("Property 'last_birthdays' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let last_birthdays_watch_rx = client.watch_last_birthdays();
+
+if last_birthdays_watch_rx.changed().await.is_ok() {
+    let latest = last_birthdays_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 

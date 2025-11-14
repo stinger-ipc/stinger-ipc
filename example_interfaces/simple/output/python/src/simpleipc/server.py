@@ -15,6 +15,7 @@ from time import sleep
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 import isodate
+import functools
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
@@ -267,22 +268,41 @@ class SimpleServerBuilder:
         self._school_property_callbacks: List[Callable[[str], None]] = []
 
     def handle_trade_numbers(self, handler: Callable[[int], int]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._trade_numbers_method_handler is None and handler is not None:
-            self._trade_numbers_method_handler = handler
+            self._trade_numbers_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def on_school_updates(self, handler: Callable[[str], None]):
         """This method registers a callback to be called whenever a new 'school' property update is received."""
-        self._school_property_callbacks.append(handler)
 
-    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues) -> SimpleServer:
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._school_property_callbacks.append(wrapper)
+        return wrapper
+
+    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, binding: Optional[Any] = None) -> SimpleServer:
         new_server = SimpleServer(connection, instance_id, initial_property_values)
 
         if self._trade_numbers_method_handler is not None:
-            new_server.handle_trade_numbers(self._trade_numbers_method_handler)
+            if binding:
+                binding_cb = self._trade_numbers_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_trade_numbers(binding_cb)
+            else:
+                new_server.handle_trade_numbers(self._trade_numbers_method_handler)
 
         for callback in self._school_property_callbacks:
-            new_server.on_school_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_school_updates(binding_cb)
+            else:
+                new_server.on_school_updates(callback)
 
         return new_server

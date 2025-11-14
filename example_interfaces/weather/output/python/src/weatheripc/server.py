@@ -15,6 +15,7 @@ from time import sleep
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 import isodate
+import functools
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
@@ -1125,87 +1126,194 @@ class WeatherServerBuilder:
         self._daily_forecast_refresh_interval_property_callbacks: List[Callable[[int], None]] = []
 
     def handle_refresh_daily_forecast(self, handler: Callable[[None], None]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._refresh_daily_forecast_method_handler is None and handler is not None:
-            self._refresh_daily_forecast_method_handler = handler
+            self._refresh_daily_forecast_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_refresh_hourly_forecast(self, handler: Callable[[None], None]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._refresh_hourly_forecast_method_handler is None and handler is not None:
-            self._refresh_hourly_forecast_method_handler = handler
+            self._refresh_hourly_forecast_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def handle_refresh_current_conditions(self, handler: Callable[[None], None]):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
         if self._refresh_current_conditions_method_handler is None and handler is not None:
-            self._refresh_current_conditions_method_handler = handler
+            self._refresh_current_conditions_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
 
     def on_location_updates(self, handler: Callable[[float, float], None]):
         """This method registers a callback to be called whenever a new 'location' property update is received."""
-        self._location_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._location_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_current_temperature_updates(self, handler: Callable[[float], None]):
         """This method registers a callback to be called whenever a new 'current_temperature' property update is received."""
-        self._current_temperature_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._current_temperature_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_current_condition_updates(self, handler: Callable[[WeatherCondition, str], None]):
         """This method registers a callback to be called whenever a new 'current_condition' property update is received."""
-        self._current_condition_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._current_condition_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_daily_forecast_updates(self, handler: Callable[[ForecastForDay, ForecastForDay, ForecastForDay], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast' property update is received."""
-        self._daily_forecast_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._daily_forecast_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_hourly_forecast_updates(self, handler: Callable[[ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast' property update is received."""
-        self._hourly_forecast_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._hourly_forecast_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_current_condition_refresh_interval_updates(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'current_condition_refresh_interval' property update is received."""
-        self._current_condition_refresh_interval_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._current_condition_refresh_interval_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_hourly_forecast_refresh_interval_updates(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast_refresh_interval' property update is received."""
-        self._hourly_forecast_refresh_interval_property_callbacks.append(handler)
+
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._hourly_forecast_refresh_interval_property_callbacks.append(wrapper)
+        return wrapper
 
     def on_daily_forecast_refresh_interval_updates(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast_refresh_interval' property update is received."""
-        self._daily_forecast_refresh_interval_property_callbacks.append(handler)
 
-    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: WeatherInitialPropertyValues) -> WeatherServer:
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._daily_forecast_refresh_interval_property_callbacks.append(wrapper)
+        return wrapper
+
+    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: WeatherInitialPropertyValues, binding: Optional[Any] = None) -> WeatherServer:
         new_server = WeatherServer(connection, instance_id, initial_property_values)
 
         if self._refresh_daily_forecast_method_handler is not None:
-            new_server.handle_refresh_daily_forecast(self._refresh_daily_forecast_method_handler)
+            if binding:
+                binding_cb = self._refresh_daily_forecast_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_refresh_daily_forecast(binding_cb)
+            else:
+                new_server.handle_refresh_daily_forecast(self._refresh_daily_forecast_method_handler)
         if self._refresh_hourly_forecast_method_handler is not None:
-            new_server.handle_refresh_hourly_forecast(self._refresh_hourly_forecast_method_handler)
+            if binding:
+                binding_cb = self._refresh_hourly_forecast_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_refresh_hourly_forecast(binding_cb)
+            else:
+                new_server.handle_refresh_hourly_forecast(self._refresh_hourly_forecast_method_handler)
         if self._refresh_current_conditions_method_handler is not None:
-            new_server.handle_refresh_current_conditions(self._refresh_current_conditions_method_handler)
+            if binding:
+                binding_cb = self._refresh_current_conditions_method_handler.__get__(binding, binding.__class__)
+                new_server.handle_refresh_current_conditions(binding_cb)
+            else:
+                new_server.handle_refresh_current_conditions(self._refresh_current_conditions_method_handler)
 
         for callback in self._location_property_callbacks:
-            new_server.on_location_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_location_updates(binding_cb)
+            else:
+                new_server.on_location_updates(callback)
 
         for callback in self._current_temperature_property_callbacks:
-            new_server.on_current_temperature_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_current_temperature_updates(binding_cb)
+            else:
+                new_server.on_current_temperature_updates(callback)
 
         for callback in self._current_condition_property_callbacks:
-            new_server.on_current_condition_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_current_condition_updates(binding_cb)
+            else:
+                new_server.on_current_condition_updates(callback)
 
         for callback in self._daily_forecast_property_callbacks:
-            new_server.on_daily_forecast_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_daily_forecast_updates(binding_cb)
+            else:
+                new_server.on_daily_forecast_updates(callback)
 
         for callback in self._hourly_forecast_property_callbacks:
-            new_server.on_hourly_forecast_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_hourly_forecast_updates(binding_cb)
+            else:
+                new_server.on_hourly_forecast_updates(callback)
 
         for callback in self._current_condition_refresh_interval_property_callbacks:
-            new_server.on_current_condition_refresh_interval_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_current_condition_refresh_interval_updates(binding_cb)
+            else:
+                new_server.on_current_condition_refresh_interval_updates(callback)
 
         for callback in self._hourly_forecast_refresh_interval_property_callbacks:
-            new_server.on_hourly_forecast_refresh_interval_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_hourly_forecast_refresh_interval_updates(binding_cb)
+            else:
+                new_server.on_hourly_forecast_refresh_interval_updates(callback)
 
         for callback in self._daily_forecast_refresh_interval_property_callbacks:
-            new_server.on_daily_forecast_refresh_interval_updates(callback)
+            if binding:
+                binding_cb = callback.__get__(binding, binding.__class__)
+                new_server.on_daily_forecast_refresh_interval_updates(binding_cb)
+            else:
+                new_server.on_daily_forecast_refresh_interval_updates(callback)
 
         return new_server

@@ -14,6 +14,9 @@ _Current conditions, daily and hourly forecasts from the NWS API_
 
 A connection object is a wrapper around an MQTT client and provides specific functionality to support both clients and servers.
 Generally, you only need one connection object per daemon/program, as it can support multiple clients and servers.  
+For most languages, Stinger-IPC does not require a specific connection object implementation, as long as it implements the required interface.
+
+The application code is responsible for creating and managing the connection object, including connecting to the MQTT broker.
 
 ### Connection code Examples
 
@@ -34,17 +37,21 @@ The `connection_object` will be passed to client and server constructors.
 <details>
   <summary>Rust</summary>
 
-Rust implementations use the [MQTTier](https://crates.io/crates/mqttier) crate for MQTT connectivity.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.
+Stinger-IPC instances only require an MQTT connection object that implements the [`stinger_mqtt_trait::Mqtt5PubSub` trait](https://docs.rs/stinger-mqtt-trait/latest/stinger_mqtt_trait/trait.Mqtt5PubSub.html). 
+
+The [MQTTier](https://crates.io/crates/mqttier) crate provides an implementation of the `Mqtt5PubSub` trait, and is shown in this documentation as an example.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.'
+
+Here is an example showing how to create an MQTTier client connection object:
 
 ```rust
-use mqttier::{MqttierClient, MqttierOptions};
+use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
 
-  let conn_opts = MqttierOptionsBuilder::new()
-      .connection(Connection::TcpLocalhost(1883)) // Connection::UnixSocket("/path/to/socket") is also supported.
-      .build()
-      .unwrap()
-      .expect("Failed to build MQTT connection options");
-  let mut connection = MqttierClient::new(conn_opts).unwrap().expect("Failed to create MQTT client");
+let mqttier_options = MqttierOptionsBuilder::default()
+    .connection(Connection::TcpLocalhost(1883))
+    .client_id("rust-client-demo".to_string())
+    .build().unwrap();
+let mut connection_object = MqttierClient::new(mqttier_options).unwrap();
+let _ = connection_object.start().await;
 ```
 
 The `connection_object` will be passed to client and server constructors.
@@ -66,9 +73,51 @@ The `connection_object` will be passed to client and server constructors.
 
 </details>
 
+## Discovery
+
+Because there may be multiple instances of the same Stinger Interface, a discovery mechanism is provided to find and connect to them.  A discovery class is provided which connects to
+the MQTT broker and listens for Stinger Interface announcements.  The discovery class can then provide WeatherClient client instances.  Additionally, the discovery class
+find all the current property values for discovered interfaces in order to initialize the client instance.
+
+### Discovery Code Examples
+
+<details>
+  <summary>Python</summary>
+
+```python
+from weatheripc.client import WeatherClientDiscoverer
+
+discovery = WeatherClientDiscoverer(connection_object)
+
+# To get a single client instance (waits until one is found):
+client = discovery.get_singleton_client().result()
+
+# To get all currently available client instances (does not wait):
+discovered_service_ids = discovery.get_service_instance_ids()
+clients = [discovery.get_client_for_instance(service_id) for service_id in discovered_service_ids]
+```
+</details>
+
+<details>
+  <summary>Rust</summary>
+
+```rust
+use weather_ipc::discovery::WeatherDiscovery;
+
+let discovered_singleton_info = {
+    let service_discovery = WeatherDiscovery::new(&mut connection_object).await.unwrap();
+    service_discovery.get_singleton_instance_info().await // Blocks until a service is discovered.
+}
+let weather_client = WeatherClient::new(&mut connection_object, &discovered_singleton_info).await;
+```
+
+</details>
+
 ## Server
 
-A server is a _provider_ of functionality.  It sends signals, handles method calls, and owns property values.
+A server is a _provider_ of functionality.  It sends signals and handles method calls and owns property values.
+
+When constructing a server instance, a connection object and initial property values must be provided.
 
 ### Server Code Examples
 
@@ -76,23 +125,185 @@ A server is a _provider_ of functionality.  It sends signals, handles method cal
   <summary>Python Server</summary>
 
 ```python
-from weatheripc.client import WeatherServer
+from weatheripc.server import WeatherServer, WeatherInitialPropertyValues
 
-server = WeatherServer(connection_object)
+# Ideally, you would load these initial property values from a configuration file or database.
+
+initial_property_values = WeatherInitialPropertyValues(
+
+    location=
+        LocationProperty(
+            
+            latitude=3.14,
+            
+            longitude=3.14,
+            
+        ),
+    location_version=1,
+
+    current_temperature=3.14,
+        
+    current_temperature_version=2,
+
+    current_condition=
+        CurrentConditionProperty(
+            
+            condition=WeatherCondition.SNOWY,
+            
+            description="apples",
+            
+        ),
+    current_condition_version=3,
+
+    daily_forecast=
+        DailyForecastProperty(
+            
+            monday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+            
+            tuesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+            
+            wednesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+            
+        ),
+    daily_forecast_version=4,
+
+    hourly_forecast=
+        HourlyForecastProperty(
+            
+            hour_0=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            
+            hour_1=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            
+            hour_2=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            
+            hour_3=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            
+        ),
+    hourly_forecast_version=5,
+
+    current_condition_refresh_interval=42,
+        
+    current_condition_refresh_interval_version=6,
+
+    hourly_forecast_refresh_interval=42,
+        
+    hourly_forecast_refresh_interval_version=7,
+
+    daily_forecast_refresh_interval=42,
+        
+    daily_forecast_refresh_interval_version=8,
+
+)
+
+
+service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
+server = WeatherServer(connection_object, service_id, initial_property_values)
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 
-A full example can be viewed by looking at the `if __name__ == "__main__":` section of the generated `weatheripc.server.py` module.
+A full example can be viewed by looking at the `example/server_demo.py` file of the generated code.
+
+When decorating class methods, especially when there might be multiple instances of the class with methods being decorated, the Python implementation provides a `WeatherClientBuilder`
+class to help capture decorated methods and bind them to a specific instance at runtime. Here is an example of how to use it in a class:
+
+```python
+from weatheripc.client import WeatherClientBuilder
+
+weather_builder = WeatherClientBuilder()
+
+class MyClass:
+    def __init__(self, label: str, connection: MqttBrokerConnection):
+        instance_info = ... # Create manually or use discovery to get this
+        self.client = weather_builder.build(connection_object, instance_info, binding=self) # The binding param binds all decorated methods to the `self` instance.
+
+    @weather_builder.receive_a_signal
+    def on_a_signal(self, param1: int, param2: str):
+        ...
+```
+
+A more complete example, including use with the discovery mechanism, can be viewed by looking at the generated `examples/server_demo_classes.py` file.
 
 </details>
 
+<details>
+  <summary>Rust Server</summary>
+
+Service code for Rust is only available when using the `server` feature:
+
+```sh
+cargo add weather_ipc --features=server
+```
+
+Here is an example of how to create a server instance:
+
+```rust
+use weather_ipc::server::WeatherServer;
+use weather_ipc::property::WeatherInitialPropertyValues;
+
+let service_id = String::from("rust-server-demo:1");
+
+let initial_property_values = WeatherInitialPropertyValues {
+    
+    location:LocationProperty {
+            latitude: 3.14,
+            longitude: 3.14,
+    },
+    location_version: 1,
+    
+    current_temperature:3.14,
+    current_temperature_version: 1,
+    
+    current_condition:CurrentConditionProperty {
+            condition: WeatherCondition::Snowy,
+            description: "apples".to_string(),
+    },
+    current_condition_version: 1,
+    
+    daily_forecast:DailyForecastProperty {
+            monday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
+            tuesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
+            wednesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
+    },
+    daily_forecast_version: 1,
+    
+    hourly_forecast:HourlyForecastProperty {
+            hour_0: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
+            hour_1: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
+            hour_2: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
+            hour_3: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
+    },
+    hourly_forecast_version: 1,
+    
+    current_condition_refresh_interval:42,
+    current_condition_refresh_interval_version: 1,
+    
+    hourly_forecast_refresh_interval:42,
+    hourly_forecast_refresh_interval_version: 1,
+    
+    daily_forecast_refresh_interval:42,
+    daily_forecast_refresh_interval_version: 1,
+    
+};
+
+
+// Create the server object.
+let mut server = WeatherServer::new(connection_object, method_handlers.clone(), service_id, initial_property_values, ).await;
+
+
+```
+
+Providing method handlers is better described in the [Methods](#methods) section.  
+
+A full example can be viewed by looking at the generated `examples/server_demo.rs` example and can be compiled with `cargo run --example weather_server_demo --features=server` in the generated Rust project.
+
+</details>
 
 <details>
   <summary>C++ Server</summary>
 
 ```c++
-
+// To be written
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
@@ -106,13 +317,152 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust Client</summary>
+
+The best way to create a client instance is to use the discovery class to find an instance of the service, and then create the client from the discovered instance information.
+An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance IDand initial property values, you can create a client directly:
 
 ```rust
-let mut api_client = WeatherClient::new(&mut connection).await;
+use weather_ipc::client::WeatherClient;
+
+let instance_info = DiscoveredInstance {
+    service_instance_id: String::from("singleton"),
+    
+    initial_property_values: WeatherInitialPropertyValues {
+        
+        location:LocationProperty {
+                latitude: 3.14,
+                longitude: 3.14,
+        },
+        location_version: 1,
+        
+        current_temperature:3.14,
+        current_temperature_version: 1,
+        
+        current_condition:CurrentConditionProperty {
+                condition: WeatherCondition::Snowy,
+                description: "apples".to_string(),
+        },
+        current_condition_version: 1,
+        
+        daily_forecast:DailyForecastProperty {
+                monday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
+                tuesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
+                wednesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
+        },
+        daily_forecast_version: 1,
+        
+        hourly_forecast:HourlyForecastProperty {
+                hour_0: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
+                hour_1: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
+                hour_2: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
+                hour_3: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
+        },
+        hourly_forecast_version: 1,
+        
+        current_condition_refresh_interval:42,
+        current_condition_refresh_interval_version: 1,
+        
+        hourly_forecast_refresh_interval:42,
+        hourly_forecast_refresh_interval_version: 1,
+        
+        daily_forecast_refresh_interval:42,
+        daily_forecast_refresh_interval_version: 1,
+        
+    },
+    
+};
+
+let mut weather_client = WeatherClient::new(connection_object.clone(), instance_info).await;
 ```
 
-A full example can be viewed by looking at the generated `client/examples/client.rs` file.
+A full example can be viewed by looking at the generated `client/examples/client_demo.rs` file.
+
+</details>
+
+<details>
+  <summary>Python Client</summary>
+
+```python
+from weatheripc.server import WeatherServer, WeatherInitialPropertyValues
+
+
+initial_property_values = WeatherInitialPropertyValues(
+
+    location=
+        LocationProperty(
+            
+            latitude=3.14,
+            
+            longitude=3.14,
+            
+        ),
+    location_version=1,
+
+    current_temperature=3.14,
+        
+    current_temperature_version=2,
+
+    current_condition=
+        CurrentConditionProperty(
+            
+            condition=WeatherCondition.SNOWY,
+            
+            description="apples",
+            
+        ),
+    current_condition_version=3,
+
+    daily_forecast=
+        DailyForecastProperty(
+            
+            monday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+            
+            tuesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+            
+            wednesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+            
+        ),
+    daily_forecast_version=4,
+
+    hourly_forecast=
+        HourlyForecastProperty(
+            
+            hour_0=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            
+            hour_1=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            
+            hour_2=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            
+            hour_3=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            
+        ),
+    hourly_forecast_version=5,
+
+    current_condition_refresh_interval=42,
+        
+    current_condition_refresh_interval_version=6,
+
+    hourly_forecast_refresh_interval=42,
+        
+    hourly_forecast_refresh_interval_version=7,
+
+    daily_forecast_refresh_interval=42,
+        
+    daily_forecast_refresh_interval_version=8,
+
+)
+
+
+service_instance_id="singleton"
+server = WeatherServer(connection_object, service_instance_id, initial_property_values)
+```
+
+A full example can be viewed by looking at the generated `examples/client_main.py` file.
+
+Like the Python client, there is a `WeatherServerBuilder` class to help capture decorated methods and bind them to a specific instance at runtime.
+
+```python
 
 </details>
 
@@ -499,27 +849,49 @@ Weather will be retrieved for the provided location.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `location`.  The value can be changed by calling the server's `set_location` method:
+A server hold the "source of truth" for the value of `location`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_location(3.14).await;
+let location_handle = server.get_location_handle();
+{
+    let mut location_guard = location_handle.write().await;
+    let new_location_value = LocationProperty {
+            latitude: 1.0,
+            longitude: 1.0,
+    };
+    *location_guard = new_location_value;
+    // Optional, block until the property is published to the MQTT broker:
+    location_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_location()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<LocationProperty>>` by calling the server's `get_location_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_location_changed = server.watch_location();
+let location_guard = location_handle.read().await;
+```
 
-while let Some(new_value) = on_location_changed.recv().await {
-    println!("Property 'location' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let location_watch_rx = client.watch_location();
+
+if location_watch_rx.changed().await.is_ok() {
+    let latest = location_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -542,16 +914,44 @@ This property is **read-only**.  It can only be modified by the server.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `current_temperature`.  The value can be changed by calling the server's `set_current_temperature` method:
+A server hold the "source of truth" for the value of `current_temperature`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_current_temperature(3.14).await;
+let current_temperature_handle = server.get_current_temperature_handle();
+{
+    let mut current_temperature_guard = current_temperature_handle.write().await;
+    *current_temperature_guard = 1.0;
+    // Optional, block until the property is published to the MQTT broker:
+    current_temperature_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+If only reading the value, a read guard can be used:
 
-The application code should call the `set_current_temperature()` method with an initial value when starting up, and then whenever the value changes.
+```rust
+let current_temperature_guard = current_temperature_handle.read().await;
+```
+
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let current_temperature_watch_rx = client.watch_current_temperature();
+
+if current_temperature_watch_rx.changed().await.is_ok() {
+    let latest = current_temperature_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
+}
+```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
+  
 
 </details>
 
@@ -574,16 +974,48 @@ This property is **read-only**.  It can only be modified by the server.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `current_condition`.  The value can be changed by calling the server's `set_current_condition` method:
+A server hold the "source of truth" for the value of `current_condition`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_current_condition(WeatherCondition::Snowy).await;
+let current_condition_handle = server.get_current_condition_handle();
+{
+    let mut current_condition_guard = current_condition_handle.write().await;
+    let new_current_condition_value = CurrentConditionProperty {
+            condition: WeatherCondition::Sunny,
+            description: "foo".to_string(),
+    };
+    *current_condition_guard = new_current_condition_value;
+    // Optional, block until the property is published to the MQTT broker:
+    current_condition_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+If only reading the value, a read guard can be used:
 
-The application code should call the `set_current_condition()` method with an initial value when starting up, and then whenever the value changes.
+```rust
+let current_condition_guard = current_condition_handle.read().await;
+```
+
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let current_condition_watch_rx = client.watch_current_condition();
+
+if current_condition_watch_rx.changed().await.is_ok() {
+    let latest = current_condition_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
+}
+```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
+  
 
 </details>
 
@@ -609,16 +1041,49 @@ This property is **read-only**.  It can only be modified by the server.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `daily_forecast`.  The value can be changed by calling the server's `set_daily_forecast` method:
+A server hold the "source of truth" for the value of `daily_forecast`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_daily_forecast(ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()}).await;
+let daily_forecast_handle = server.get_daily_forecast_handle();
+{
+    let mut daily_forecast_guard = daily_forecast_handle.write().await;
+    let new_daily_forecast_value = DailyForecastProperty {
+            monday: ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: WeatherCondition::Sunny, start_time: "foo".to_string(), end_time: "foo".to_string()},
+            tuesday: ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: WeatherCondition::Sunny, start_time: "foo".to_string(), end_time: "foo".to_string()},
+            wednesday: ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: WeatherCondition::Sunny, start_time: "foo".to_string(), end_time: "foo".to_string()},
+    };
+    *daily_forecast_guard = new_daily_forecast_value;
+    // Optional, block until the property is published to the MQTT broker:
+    daily_forecast_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+If only reading the value, a read guard can be used:
 
-The application code should call the `set_daily_forecast()` method with an initial value when starting up, and then whenever the value changes.
+```rust
+let daily_forecast_guard = daily_forecast_handle.read().await;
+```
+
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let daily_forecast_watch_rx = client.watch_daily_forecast();
+
+if daily_forecast_watch_rx.changed().await.is_ok() {
+    let latest = daily_forecast_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
+}
+```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
+  
 
 </details>
 
@@ -644,16 +1109,50 @@ This property is **read-only**.  It can only be modified by the server.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `hourly_forecast`.  The value can be changed by calling the server's `set_hourly_forecast` method:
+A server hold the "source of truth" for the value of `hourly_forecast`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_hourly_forecast(ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy}).await;
+let hourly_forecast_handle = server.get_hourly_forecast_handle();
+{
+    let mut hourly_forecast_guard = hourly_forecast_handle.write().await;
+    let new_hourly_forecast_value = HourlyForecastProperty {
+            hour_0: ForecastForHour {temperature: 1.0, starttime: chrono::Utc::now(), condition: WeatherCondition::Sunny},
+            hour_1: ForecastForHour {temperature: 1.0, starttime: chrono::Utc::now(), condition: WeatherCondition::Sunny},
+            hour_2: ForecastForHour {temperature: 1.0, starttime: chrono::Utc::now(), condition: WeatherCondition::Sunny},
+            hour_3: ForecastForHour {temperature: 1.0, starttime: chrono::Utc::now(), condition: WeatherCondition::Sunny},
+    };
+    *hourly_forecast_guard = new_hourly_forecast_value;
+    // Optional, block until the property is published to the MQTT broker:
+    hourly_forecast_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
+If only reading the value, a read guard can be used:
 
-The application code should call the `set_hourly_forecast()` method with an initial value when starting up, and then whenever the value changes.
+```rust
+let hourly_forecast_guard = hourly_forecast_handle.read().await;
+```
+
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let hourly_forecast_watch_rx = client.watch_hourly_forecast();
+
+if hourly_forecast_watch_rx.changed().await.is_ok() {
+    let latest = hourly_forecast_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
+}
+```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
+  
 
 </details>
 
@@ -673,27 +1172,45 @@ station are retrieved.
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `current_condition_refresh_interval`.  The value can be changed by calling the server's `set_current_condition_refresh_interval` method:
+A server hold the "source of truth" for the value of `current_condition_refresh_interval`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_current_condition_refresh_interval(42).await;
+let current_condition_refresh_interval_handle = server.get_current_condition_refresh_interval_handle();
+{
+    let mut current_condition_refresh_interval_guard = current_condition_refresh_interval_handle.write().await;
+    *current_condition_refresh_interval_guard = 2022;
+    // Optional, block until the property is published to the MQTT broker:
+    current_condition_refresh_interval_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_current_condition_refresh_interval()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<i32>>` by calling the server's `get_current_condition_refresh_interval_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_current_condition_refresh_interval_changed = server.watch_current_condition_refresh_interval();
+let current_condition_refresh_interval_guard = current_condition_refresh_interval_handle.read().await;
+```
 
-while let Some(new_value) = on_current_condition_refresh_interval_changed.recv().await {
-    println!("Property 'current_condition_refresh_interval' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let current_condition_refresh_interval_watch_rx = client.watch_current_condition_refresh_interval();
+
+if current_condition_refresh_interval_watch_rx.changed().await.is_ok() {
+    let latest = current_condition_refresh_interval_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -712,27 +1229,45 @@ This is the maximum interval, in seconds, that the hourly forecast data is retri
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `hourly_forecast_refresh_interval`.  The value can be changed by calling the server's `set_hourly_forecast_refresh_interval` method:
+A server hold the "source of truth" for the value of `hourly_forecast_refresh_interval`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_hourly_forecast_refresh_interval(42).await;
+let hourly_forecast_refresh_interval_handle = server.get_hourly_forecast_refresh_interval_handle();
+{
+    let mut hourly_forecast_refresh_interval_guard = hourly_forecast_refresh_interval_handle.write().await;
+    *hourly_forecast_refresh_interval_guard = 2022;
+    // Optional, block until the property is published to the MQTT broker:
+    hourly_forecast_refresh_interval_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_hourly_forecast_refresh_interval()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<i32>>` by calling the server's `get_hourly_forecast_refresh_interval_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_hourly_forecast_refresh_interval_changed = server.watch_hourly_forecast_refresh_interval();
+let hourly_forecast_refresh_interval_guard = hourly_forecast_refresh_interval_handle.read().await;
+```
 
-while let Some(new_value) = on_hourly_forecast_refresh_interval_changed.recv().await {
-    println!("Property 'hourly_forecast_refresh_interval' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let hourly_forecast_refresh_interval_watch_rx = client.watch_hourly_forecast_refresh_interval();
+
+if hourly_forecast_refresh_interval_watch_rx.changed().await.is_ok() {
+    let latest = hourly_forecast_refresh_interval_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
@@ -751,27 +1286,45 @@ This is the maximum interval, in seconds, that the daily forecast data is retrie
 <details>
   <summary>Rust Server</summary>
 
-A server hold the "source of truth" for the value of `daily_forecast_refresh_interval`.  The value can be changed by calling the server's `set_daily_forecast_refresh_interval` method:
+A server hold the "source of truth" for the value of `daily_forecast_refresh_interval`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
 ```rust
-let property_set_future: SentMessageFuture = server.set_daily_forecast_refresh_interval(42).await;
+let daily_forecast_refresh_interval_handle = server.get_daily_forecast_refresh_interval_handle();
+{
+    let mut daily_forecast_refresh_interval_guard = daily_forecast_refresh_interval_handle.write().await;
+    *daily_forecast_refresh_interval_guard = 2022;
+    // Optional, block until the property is published to the MQTT broker:
+    daily_forecast_refresh_interval_guard.commit(std::time::Duration::from_secs(2)).await;
+
+    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
+}
+
 ```
 
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`. 
-The future is resolved with `Ok(())` if the value didn't change or when the MQTT broker responds with a "publish acknowledgment" on the publishing of the updated value.  Otherwise, the future resolves to an error code.
-
-The application code should call the `set_daily_forecast_refresh_interval()` method with an initial value when starting up, and then whenever the value changes.
-
-The property can also be changed by a client request via MQTT.  When this happens, the server will send to a `tokio::watch` channel with the updated property value.
-Application code can get a `watch::Receiver<Option<i32>>` by calling the server's `get_daily_forecast_refresh_interval_receiver()` method.  The receiver can be used to get the current value of the property, and to be notified when the value changes.
+If only reading the value, a read guard can be used:
 
 ```rust
-let mut on_daily_forecast_refresh_interval_changed = server.watch_daily_forecast_refresh_interval();
+let daily_forecast_refresh_interval_guard = daily_forecast_refresh_interval_handle.read().await;
+```
 
-while let Some(new_value) = on_daily_forecast_refresh_interval_changed.recv().await {
-    println!("Property 'daily_forecast_refresh_interval' changed to: {:?}", new_value);
+Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
+
+```rust
+let daily_forecast_refresh_interval_watch_rx = client.watch_daily_forecast_refresh_interval();
+
+if daily_forecast_refresh_interval_watch_rx.changed().await.is_ok() {
+    let latest = daily_forecast_refresh_interval_watch_rx.borrow().clone();
+    println!("Property updated: {:?}", latest);
 }
 ```
+</details>
+
+<details>
+  <summary>Rust Client</summary>
+
+  A Rust client works with properties the same was as the server.  
+  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  
 
 </details>
 
