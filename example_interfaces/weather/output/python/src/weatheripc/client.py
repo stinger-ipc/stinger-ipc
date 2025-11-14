@@ -106,19 +106,26 @@ class WeatherClient:
         self._signal_recv_callbacks_for_current_time: list[CurrentTimeSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/weather/methodResponse", self._receive_any_method_response_message)
 
+        self._property_response_topic = f"client/{self._conn.client_id}/weather/propertyUpdateResponse"
+        self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
+
     @property
-    def location(self) -> Optional[LocationProperty]:
+    def location(self) -> LocationProperty:
         """Property 'location' getter."""
-        return self._property_location
+        with self._property_location_mutex:
+            return self._property_location
 
     @location.setter
     def location(self, value: LocationProperty):
         """Serializes and publishes the 'location' property."""
         if not isinstance(value, LocationProperty):
             raise ValueError("The 'location' property must be a LocationProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'location' property to %s", serialized)
-        self._conn.publish("weather/{}/property/location/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'location' property to %s", property_obj)
+        with self._property_location_mutex:
+            self._conn.publish_property_update_request(
+                "weather/{}/property/location/setValue".format(self._service_id), property_obj, str(self._property_location_version), self._property_response_topic
+            )
 
     def location_changed(self, handler: LocationPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'location' property changes.
@@ -131,9 +138,10 @@ class WeatherClient:
         return handler
 
     @property
-    def current_temperature(self) -> Optional[float]:
+    def current_temperature(self) -> float:
         """Property 'current_temperature' getter."""
-        return self._property_current_temperature
+        with self._property_current_temperature_mutex:
+            return self._property_current_temperature
 
     def current_temperature_changed(self, handler: CurrentTemperaturePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'current_temperature' property changes.
@@ -146,9 +154,10 @@ class WeatherClient:
         return handler
 
     @property
-    def current_condition(self) -> Optional[CurrentConditionProperty]:
+    def current_condition(self) -> CurrentConditionProperty:
         """Property 'current_condition' getter."""
-        return self._property_current_condition
+        with self._property_current_condition_mutex:
+            return self._property_current_condition
 
     def current_condition_changed(self, handler: CurrentConditionPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'current_condition' property changes.
@@ -161,9 +170,10 @@ class WeatherClient:
         return handler
 
     @property
-    def daily_forecast(self) -> Optional[DailyForecastProperty]:
+    def daily_forecast(self) -> DailyForecastProperty:
         """Property 'daily_forecast' getter."""
-        return self._property_daily_forecast
+        with self._property_daily_forecast_mutex:
+            return self._property_daily_forecast
 
     def daily_forecast_changed(self, handler: DailyForecastPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'daily_forecast' property changes.
@@ -176,9 +186,10 @@ class WeatherClient:
         return handler
 
     @property
-    def hourly_forecast(self) -> Optional[HourlyForecastProperty]:
+    def hourly_forecast(self) -> HourlyForecastProperty:
         """Property 'hourly_forecast' getter."""
-        return self._property_hourly_forecast
+        with self._property_hourly_forecast_mutex:
+            return self._property_hourly_forecast
 
     def hourly_forecast_changed(self, handler: HourlyForecastPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'hourly_forecast' property changes.
@@ -191,18 +202,25 @@ class WeatherClient:
         return handler
 
     @property
-    def current_condition_refresh_interval(self) -> Optional[int]:
+    def current_condition_refresh_interval(self) -> int:
         """Property 'current_condition_refresh_interval' getter."""
-        return self._property_current_condition_refresh_interval
+        with self._property_current_condition_refresh_interval_mutex:
+            return self._property_current_condition_refresh_interval
 
     @current_condition_refresh_interval.setter
     def current_condition_refresh_interval(self, value: int):
         """Serializes and publishes the 'current_condition_refresh_interval' property."""
         if not isinstance(value, int):
             raise ValueError("The 'current_condition_refresh_interval' property must be a int")
-        serialized = json.dumps({"seconds": value.seconds})
-        self._logger.debug("Setting 'current_condition_refresh_interval' property to %s", serialized)
-        self._conn.publish("weather/{}/property/currentConditionRefreshInterval/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = CurrentConditionRefreshIntervalProperty(seconds=value)
+        self._logger.debug("Setting 'current_condition_refresh_interval' property to %s", property_obj)
+        with self._property_current_condition_refresh_interval_mutex:
+            self._conn.publish_property_update_request(
+                "weather/{}/property/currentConditionRefreshInterval/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_current_condition_refresh_interval_version),
+                self._property_response_topic,
+            )
 
     def current_condition_refresh_interval_changed(self, handler: CurrentConditionRefreshIntervalPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'current_condition_refresh_interval' property changes.
@@ -215,18 +233,25 @@ class WeatherClient:
         return handler
 
     @property
-    def hourly_forecast_refresh_interval(self) -> Optional[int]:
+    def hourly_forecast_refresh_interval(self) -> int:
         """Property 'hourly_forecast_refresh_interval' getter."""
-        return self._property_hourly_forecast_refresh_interval
+        with self._property_hourly_forecast_refresh_interval_mutex:
+            return self._property_hourly_forecast_refresh_interval
 
     @hourly_forecast_refresh_interval.setter
     def hourly_forecast_refresh_interval(self, value: int):
         """Serializes and publishes the 'hourly_forecast_refresh_interval' property."""
         if not isinstance(value, int):
             raise ValueError("The 'hourly_forecast_refresh_interval' property must be a int")
-        serialized = json.dumps({"seconds": value.seconds})
-        self._logger.debug("Setting 'hourly_forecast_refresh_interval' property to %s", serialized)
-        self._conn.publish("weather/{}/property/hourlyForecastRefreshInterval/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = HourlyForecastRefreshIntervalProperty(seconds=value)
+        self._logger.debug("Setting 'hourly_forecast_refresh_interval' property to %s", property_obj)
+        with self._property_hourly_forecast_refresh_interval_mutex:
+            self._conn.publish_property_update_request(
+                "weather/{}/property/hourlyForecastRefreshInterval/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_hourly_forecast_refresh_interval_version),
+                self._property_response_topic,
+            )
 
     def hourly_forecast_refresh_interval_changed(self, handler: HourlyForecastRefreshIntervalPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'hourly_forecast_refresh_interval' property changes.
@@ -239,18 +264,25 @@ class WeatherClient:
         return handler
 
     @property
-    def daily_forecast_refresh_interval(self) -> Optional[int]:
+    def daily_forecast_refresh_interval(self) -> int:
         """Property 'daily_forecast_refresh_interval' getter."""
-        return self._property_daily_forecast_refresh_interval
+        with self._property_daily_forecast_refresh_interval_mutex:
+            return self._property_daily_forecast_refresh_interval
 
     @daily_forecast_refresh_interval.setter
     def daily_forecast_refresh_interval(self, value: int):
         """Serializes and publishes the 'daily_forecast_refresh_interval' property."""
         if not isinstance(value, int):
             raise ValueError("The 'daily_forecast_refresh_interval' property must be a int")
-        serialized = json.dumps({"seconds": value.seconds})
-        self._logger.debug("Setting 'daily_forecast_refresh_interval' property to %s", serialized)
-        self._conn.publish("weather/{}/property/dailyForecastRefreshInterval/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = DailyForecastRefreshIntervalProperty(seconds=value)
+        self._logger.debug("Setting 'daily_forecast_refresh_interval' property to %s", property_obj)
+        with self._property_daily_forecast_refresh_interval_mutex:
+            self._conn.publish_property_update_request(
+                "weather/{}/property/dailyForecastRefreshInterval/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_daily_forecast_refresh_interval_version),
+                self._property_response_topic,
+            )
 
     def daily_forecast_refresh_interval_changed(self, handler: DailyForecastRefreshIntervalPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'daily_forecast_refresh_interval' property changes.
@@ -308,6 +340,13 @@ class WeatherClient:
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
 
+    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        user_properties = properties.get("UserProperty", {})
+        return_code = user_properties.get("ReturnCode")
+        if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
+            debug_info = user_properties.get("DebugInfo", "")
+            self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
+
     def _receive_location_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'location' property change.
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
@@ -315,11 +354,11 @@ class WeatherClient:
             return
         try:
             prop_obj = LocationProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_location_mutex:
                 self._property_location = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_location_version:
-                        self._property_location_version = int(ver)
+                self._property_location_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_location, value=prop_obj)
 
@@ -333,11 +372,11 @@ class WeatherClient:
             return
         try:
             prop_obj = CurrentTemperatureProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_temperature_mutex:
                 self._property_current_temperature = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_current_temperature_version:
-                        self._property_current_temperature_version = int(ver)
+                self._property_current_temperature_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_current_temperature, value=prop_obj.temperature_f)
 
@@ -351,11 +390,11 @@ class WeatherClient:
             return
         try:
             prop_obj = CurrentConditionProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_condition_mutex:
                 self._property_current_condition = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_current_condition_version:
-                        self._property_current_condition_version = int(ver)
+                self._property_current_condition_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_current_condition, value=prop_obj)
 
@@ -369,11 +408,11 @@ class WeatherClient:
             return
         try:
             prop_obj = DailyForecastProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_daily_forecast_mutex:
                 self._property_daily_forecast = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_daily_forecast_version:
-                        self._property_daily_forecast_version = int(ver)
+                self._property_daily_forecast_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_daily_forecast, value=prop_obj)
 
@@ -387,11 +426,11 @@ class WeatherClient:
             return
         try:
             prop_obj = HourlyForecastProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_hourly_forecast_mutex:
                 self._property_hourly_forecast = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_hourly_forecast_version:
-                        self._property_hourly_forecast_version = int(ver)
+                self._property_hourly_forecast_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_hourly_forecast, value=prop_obj)
 
@@ -405,11 +444,11 @@ class WeatherClient:
             return
         try:
             prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_condition_refresh_interval_mutex:
                 self._property_current_condition_refresh_interval = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_current_condition_refresh_interval_version:
-                        self._property_current_condition_refresh_interval_version = int(ver)
+                self._property_current_condition_refresh_interval_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_current_condition_refresh_interval, value=prop_obj.seconds)
 
@@ -423,11 +462,11 @@ class WeatherClient:
             return
         try:
             prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_hourly_forecast_refresh_interval_mutex:
                 self._property_hourly_forecast_refresh_interval = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_hourly_forecast_refresh_interval_version:
-                        self._property_hourly_forecast_refresh_interval_version = int(ver)
+                self._property_hourly_forecast_refresh_interval_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_hourly_forecast_refresh_interval, value=prop_obj.seconds)
 
@@ -441,11 +480,11 @@ class WeatherClient:
             return
         try:
             prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_daily_forecast_refresh_interval_mutex:
                 self._property_daily_forecast_refresh_interval = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_daily_forecast_refresh_interval_version:
-                        self._property_daily_forecast_refresh_interval_version = int(ver)
+                self._property_daily_forecast_refresh_interval_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_daily_forecast_refresh_interval, value=prop_obj.seconds)
 

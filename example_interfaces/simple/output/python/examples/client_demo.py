@@ -6,6 +6,25 @@ from datetime import datetime, timedelta, UTC
 from simpleipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from simpleipc.client import SimpleClient, SimpleClientBuilder, SimpleClientDiscoverer
 from simpleipc.interface_types import *
+import threading
+
+
+def request_loop(client: SimpleClient):
+    """Example request loop that runs in a separate thread."""
+    sleep(30)
+    while True:
+        print("Making call to 'trade_numbers'")
+        future_resp = client.trade_numbers(your_number=42)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'trade_numbers' call")
+        sleep(5)
+
+        client.school = "apples"
+
+        sleep(10)
+
 
 if __name__ == "__main__":
 
@@ -36,12 +55,7 @@ if __name__ == "__main__":
 
     sleep(2)
 
-    print("Making call to 'trade_numbers'")
-    future_resp = client.trade_numbers(your_number=42)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'trade_numbers' call")
+    threading.Thread(target=request_loop, args=(client,), daemon=True).start()
 
     print("Ctrl-C will stop the program.")
     signal.pause()

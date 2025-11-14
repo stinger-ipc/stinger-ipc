@@ -6,6 +6,50 @@ from datetime import datetime, timedelta, UTC
 from weatheripc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from weatheripc.client import WeatherClient, WeatherClientBuilder, WeatherClientDiscoverer
 from weatheripc.interface_types import *
+import threading
+
+
+def request_loop(client: WeatherClient):
+    """Example request loop that runs in a separate thread."""
+    sleep(30)
+    while True:
+        print("Making call to 'refresh_daily_forecast'")
+        future_resp = client.refresh_daily_forecast()
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'refresh_daily_forecast' call")
+        sleep(5)
+
+        print("Making call to 'refresh_hourly_forecast'")
+        future_resp = client.refresh_hourly_forecast()
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'refresh_hourly_forecast' call")
+        sleep(5)
+
+        print("Making call to 'refresh_current_conditions'")
+        future_resp = client.refresh_current_conditions()
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'refresh_current_conditions' call")
+        sleep(5)
+
+        client.location = LocationProperty(
+            latitude=3.14,
+            longitude=3.14,
+        )
+
+        client.current_condition_refresh_interval = 42
+
+        client.hourly_forecast_refresh_interval = 42
+
+        client.daily_forecast_refresh_interval = 42
+
+        sleep(10)
+
 
 if __name__ == "__main__":
 
@@ -71,26 +115,7 @@ if __name__ == "__main__":
 
     sleep(2)
 
-    print("Making call to 'refresh_daily_forecast'")
-    future_resp = client.refresh_daily_forecast()
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'refresh_daily_forecast' call")
-
-    print("Making call to 'refresh_hourly_forecast'")
-    future_resp = client.refresh_hourly_forecast()
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'refresh_hourly_forecast' call")
-
-    print("Making call to 'refresh_current_conditions'")
-    future_resp = client.refresh_current_conditions()
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'refresh_current_conditions' call")
+    threading.Thread(target=request_loop, args=(client,), daemon=True).start()
 
     print("Ctrl-C will stop the program.")
     signal.pause()

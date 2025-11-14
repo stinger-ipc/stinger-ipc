@@ -6,6 +6,572 @@ from datetime import datetime, timedelta, UTC
 from testableipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from testableipc.client import TestAbleClient, TestAbleClientBuilder, TestAbleClientDiscoverer
 from testableipc.interface_types import *
+import threading
+
+
+def request_loop(client: TestAbleClient):
+    """Example request loop that runs in a separate thread."""
+    sleep(30)
+    while True:
+        print("Making call to 'call_with_nothing'")
+        future_resp = client.call_with_nothing()
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_with_nothing' call")
+        sleep(5)
+
+        print("Making call to 'call_one_integer'")
+        future_resp = client.call_one_integer(input1=42)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_one_integer' call")
+        sleep(5)
+
+        print("Making call to 'call_optional_integer'")
+        future_resp = client.call_optional_integer(input1=42)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_optional_integer' call")
+        sleep(5)
+
+        print("Making call to 'call_three_integers'")
+        future_resp = client.call_three_integers(input1=42, input2=42, input3=42)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_three_integers' call")
+        sleep(5)
+
+        print("Making call to 'call_one_string'")
+        future_resp = client.call_one_string(input1="apples")
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_one_string' call")
+        sleep(5)
+
+        print("Making call to 'call_optional_string'")
+        future_resp = client.call_optional_string(input1="apples")
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_optional_string' call")
+        sleep(5)
+
+        print("Making call to 'call_three_strings'")
+        future_resp = client.call_three_strings(input1="apples", input2="apples", input3="apples")
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_three_strings' call")
+        sleep(5)
+
+        print("Making call to 'call_one_enum'")
+        future_resp = client.call_one_enum(input1=Numbers.ONE)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_one_enum' call")
+        sleep(5)
+
+        print("Making call to 'call_optional_enum'")
+        future_resp = client.call_optional_enum(input1=Numbers.ONE)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_optional_enum' call")
+        sleep(5)
+
+        print("Making call to 'call_three_enums'")
+        future_resp = client.call_three_enums(input1=Numbers.ONE, input2=Numbers.ONE, input3=Numbers.ONE)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_three_enums' call")
+        sleep(5)
+
+        print("Making call to 'call_one_struct'")
+        future_resp = client.call_one_struct(
+            input1=AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            )
+        )
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_one_struct' call")
+        sleep(5)
+
+        print("Making call to 'call_optional_struct'")
+        future_resp = client.call_optional_struct(
+            input1=AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            )
+        )
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_optional_struct' call")
+        sleep(5)
+
+        print("Making call to 'call_three_structs'")
+        future_resp = client.call_three_structs(
+            input1=AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=None,
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+            input2=AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+            input3=AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+        )
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_three_structs' call")
+        sleep(5)
+
+        print("Making call to 'call_one_date_time'")
+        future_resp = client.call_one_date_time(input1=datetime.now(UTC))
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_one_date_time' call")
+        sleep(5)
+
+        print("Making call to 'call_optional_date_time'")
+        future_resp = client.call_optional_date_time(input1=datetime.now(UTC))
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_optional_date_time' call")
+        sleep(5)
+
+        print("Making call to 'call_three_date_times'")
+        future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_three_date_times' call")
+        sleep(5)
+
+        print("Making call to 'call_one_duration'")
+        future_resp = client.call_one_duration(input1=timedelta(seconds=3536))
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_one_duration' call")
+        sleep(5)
+
+        print("Making call to 'call_optional_duration'")
+        future_resp = client.call_optional_duration(input1=None)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_optional_duration' call")
+        sleep(5)
+
+        print("Making call to 'call_three_durations'")
+        future_resp = client.call_three_durations(input1=timedelta(seconds=3536), input2=timedelta(seconds=3536), input3=None)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_three_durations' call")
+        sleep(5)
+
+        print("Making call to 'call_one_binary'")
+        future_resp = client.call_one_binary(input1=b"example binary data")
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_one_binary' call")
+        sleep(5)
+
+        print("Making call to 'call_optional_binary'")
+        future_resp = client.call_optional_binary(input1=b"example binary data")
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_optional_binary' call")
+        sleep(5)
+
+        print("Making call to 'call_three_binaries'")
+        future_resp = client.call_three_binaries(input1=b"example binary data", input2=b"example binary data", input3=b"example binary data")
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_three_binaries' call")
+        sleep(5)
+
+        print("Making call to 'call_one_list_of_integers'")
+        future_resp = client.call_one_list_of_integers(input1=[42, 2022])
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_one_list_of_integers' call")
+        sleep(5)
+
+        print("Making call to 'call_optional_list_of_floats'")
+        future_resp = client.call_optional_list_of_floats(input1=[3.14, 1.0])
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_optional_list_of_floats' call")
+        sleep(5)
+
+        print("Making call to 'call_two_lists'")
+        future_resp = client.call_two_lists(input1=[Numbers.ONE, Numbers.ONE], input2=["apples", "foo"])
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'call_two_lists' call")
+        sleep(5)
+
+        client.read_write_integer = 42
+
+        client.read_write_optional_integer = 42
+
+        client.read_write_two_integers = ReadWriteTwoIntegersProperty(
+            first=42,
+            second=42,
+        )
+
+        client.read_write_string = "apples"
+
+        client.read_write_optional_string = "apples"
+
+        client.read_write_two_strings = ReadWriteTwoStringsProperty(
+            first="apples",
+            second="apples",
+        )
+
+        client.read_write_struct = AllTypes(
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=Numbers.ONE,
+            an_entry_object=Entry(key=42, value="apples"),
+            date_and_time=datetime.now(UTC),
+            time_duration=timedelta(seconds=3536),
+            data=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=Numbers.ONE,
+            optional_entry_object=Entry(key=42, value="apples"),
+            optional_date_time=datetime.now(UTC),
+            optional_duration=None,
+            optional_binary=b"example binary data",
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
+            array_of_enums=[Numbers.ONE, Numbers.ONE],
+            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+        )
+
+        client.read_write_optional_struct = AllTypes(
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=Numbers.ONE,
+            an_entry_object=Entry(key=42, value="apples"),
+            date_and_time=datetime.now(UTC),
+            time_duration=timedelta(seconds=3536),
+            data=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=Numbers.ONE,
+            optional_entry_object=Entry(key=42, value="apples"),
+            optional_date_time=datetime.now(UTC),
+            optional_duration=None,
+            optional_binary=b"example binary data",
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
+            array_of_enums=[Numbers.ONE, Numbers.ONE],
+            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+        )
+
+        client.read_write_two_structs = ReadWriteTwoStructsProperty(
+            first=AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+            second=AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+        )
+
+        client.read_write_enum = Numbers.ONE
+
+        client.read_write_optional_enum = Numbers.ONE
+
+        client.read_write_two_enums = ReadWriteTwoEnumsProperty(
+            first=Numbers.ONE,
+            second=Numbers.ONE,
+        )
+
+        client.read_write_datetime = datetime.now(UTC)
+
+        client.read_write_optional_datetime = datetime.now(UTC)
+
+        client.read_write_two_datetimes = ReadWriteTwoDatetimesProperty(
+            first=datetime.now(UTC),
+            second=datetime.now(UTC),
+        )
+
+        client.read_write_duration = timedelta(seconds=3536)
+
+        client.read_write_optional_duration = None
+
+        client.read_write_two_durations = ReadWriteTwoDurationsProperty(
+            first=timedelta(seconds=3536),
+            second=None,
+        )
+
+        client.read_write_binary = b"example binary data"
+
+        client.read_write_optional_binary = b"example binary data"
+
+        client.read_write_two_binaries = ReadWriteTwoBinariesProperty(
+            first=b"example binary data",
+            second=b"example binary data",
+        )
+
+        client.read_write_list_of_strings = ["apples", "foo"]
+
+        client.read_write_lists = ReadWriteListsProperty(
+            the_list=[Numbers.ONE, Numbers.ONE],
+            optional_list=[datetime.now(UTC), datetime.now(UTC)],
+        )
+
+        sleep(10)
+
 
 if __name__ == "__main__":
 
@@ -359,343 +925,7 @@ if __name__ == "__main__":
 
     sleep(2)
 
-    print("Making call to 'call_with_nothing'")
-    future_resp = client.call_with_nothing()
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_with_nothing' call")
-
-    print("Making call to 'call_one_integer'")
-    future_resp = client.call_one_integer(input1=42)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_one_integer' call")
-
-    print("Making call to 'call_optional_integer'")
-    future_resp = client.call_optional_integer(input1=42)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_optional_integer' call")
-
-    print("Making call to 'call_three_integers'")
-    future_resp = client.call_three_integers(input1=42, input2=42, input3=42)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_three_integers' call")
-
-    print("Making call to 'call_one_string'")
-    future_resp = client.call_one_string(input1="apples")
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_one_string' call")
-
-    print("Making call to 'call_optional_string'")
-    future_resp = client.call_optional_string(input1="apples")
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_optional_string' call")
-
-    print("Making call to 'call_three_strings'")
-    future_resp = client.call_three_strings(input1="apples", input2="apples", input3="apples")
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_three_strings' call")
-
-    print("Making call to 'call_one_enum'")
-    future_resp = client.call_one_enum(input1=Numbers.ONE)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_one_enum' call")
-
-    print("Making call to 'call_optional_enum'")
-    future_resp = client.call_optional_enum(input1=Numbers.ONE)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_optional_enum' call")
-
-    print("Making call to 'call_three_enums'")
-    future_resp = client.call_three_enums(input1=Numbers.ONE, input2=Numbers.ONE, input3=Numbers.ONE)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_three_enums' call")
-
-    print("Making call to 'call_one_struct'")
-    future_resp = client.call_one_struct(
-        input1=AllTypes(
-            the_bool=True,
-            the_int=42,
-            the_number=3.14,
-            the_str="apples",
-            the_enum=Numbers.ONE,
-            an_entry_object=Entry(key=42, value="apples"),
-            date_and_time=datetime.now(UTC),
-            time_duration=timedelta(seconds=3536),
-            data=b"example binary data",
-            optional_integer=42,
-            optional_string="apples",
-            optional_enum=Numbers.ONE,
-            optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
-            optional_duration=None,
-            optional_binary=b"example binary data",
-            array_of_integers=[42, 2022],
-            optional_array_of_integers=[42, 2022],
-            array_of_strings=["apples", "foo"],
-            optional_array_of_strings=["apples", "foo"],
-            array_of_enums=[Numbers.ONE, Numbers.ONE],
-            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            array_of_binaries=[b"example binary data", b"example binary data"],
-            optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-        )
-    )
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_one_struct' call")
-
-    print("Making call to 'call_optional_struct'")
-    future_resp = client.call_optional_struct(
-        input1=AllTypes(
-            the_bool=True,
-            the_int=42,
-            the_number=3.14,
-            the_str="apples",
-            the_enum=Numbers.ONE,
-            an_entry_object=Entry(key=42, value="apples"),
-            date_and_time=datetime.now(UTC),
-            time_duration=timedelta(seconds=3536),
-            data=b"example binary data",
-            optional_integer=42,
-            optional_string="apples",
-            optional_enum=Numbers.ONE,
-            optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
-            optional_duration=None,
-            optional_binary=b"example binary data",
-            array_of_integers=[42, 2022],
-            optional_array_of_integers=[42, 2022],
-            array_of_strings=["apples", "foo"],
-            optional_array_of_strings=["apples", "foo"],
-            array_of_enums=[Numbers.ONE, Numbers.ONE],
-            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            array_of_binaries=[b"example binary data", b"example binary data"],
-            optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-        )
-    )
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_optional_struct' call")
-
-    print("Making call to 'call_three_structs'")
-    future_resp = client.call_three_structs(
-        input1=AllTypes(
-            the_bool=True,
-            the_int=42,
-            the_number=3.14,
-            the_str="apples",
-            the_enum=Numbers.ONE,
-            an_entry_object=Entry(key=42, value="apples"),
-            date_and_time=datetime.now(UTC),
-            time_duration=timedelta(seconds=3536),
-            data=b"example binary data",
-            optional_integer=42,
-            optional_string="apples",
-            optional_enum=Numbers.ONE,
-            optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
-            optional_duration=None,
-            optional_binary=b"example binary data",
-            array_of_integers=[42, 2022],
-            optional_array_of_integers=[42, 2022],
-            array_of_strings=["apples", "foo"],
-            optional_array_of_strings=["apples", "foo"],
-            array_of_enums=[Numbers.ONE, Numbers.ONE],
-            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            array_of_binaries=[b"example binary data", b"example binary data"],
-            optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-        ),
-        input2=AllTypes(
-            the_bool=True,
-            the_int=42,
-            the_number=3.14,
-            the_str="apples",
-            the_enum=Numbers.ONE,
-            an_entry_object=Entry(key=42, value="apples"),
-            date_and_time=datetime.now(UTC),
-            time_duration=timedelta(seconds=3536),
-            data=b"example binary data",
-            optional_integer=42,
-            optional_string="apples",
-            optional_enum=Numbers.ONE,
-            optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
-            optional_duration=None,
-            optional_binary=b"example binary data",
-            array_of_integers=[42, 2022],
-            optional_array_of_integers=[42, 2022],
-            array_of_strings=["apples", "foo"],
-            optional_array_of_strings=["apples", "foo"],
-            array_of_enums=[Numbers.ONE, Numbers.ONE],
-            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            array_of_binaries=[b"example binary data", b"example binary data"],
-            optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-        ),
-        input3=AllTypes(
-            the_bool=True,
-            the_int=42,
-            the_number=3.14,
-            the_str="apples",
-            the_enum=Numbers.ONE,
-            an_entry_object=Entry(key=42, value="apples"),
-            date_and_time=datetime.now(UTC),
-            time_duration=timedelta(seconds=3536),
-            data=b"example binary data",
-            optional_integer=42,
-            optional_string="apples",
-            optional_enum=Numbers.ONE,
-            optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
-            optional_duration=None,
-            optional_binary=b"example binary data",
-            array_of_integers=[42, 2022],
-            optional_array_of_integers=[42, 2022],
-            array_of_strings=["apples", "foo"],
-            optional_array_of_strings=["apples", "foo"],
-            array_of_enums=[Numbers.ONE, Numbers.ONE],
-            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            array_of_binaries=[b"example binary data", b"example binary data"],
-            optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-        ),
-    )
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_three_structs' call")
-
-    print("Making call to 'call_one_date_time'")
-    future_resp = client.call_one_date_time(input1=datetime.now(UTC))
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_one_date_time' call")
-
-    print("Making call to 'call_optional_date_time'")
-    future_resp = client.call_optional_date_time(input1=datetime.now(UTC))
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_optional_date_time' call")
-
-    print("Making call to 'call_three_date_times'")
-    future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_three_date_times' call")
-
-    print("Making call to 'call_one_duration'")
-    future_resp = client.call_one_duration(input1=timedelta(seconds=3536))
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_one_duration' call")
-
-    print("Making call to 'call_optional_duration'")
-    future_resp = client.call_optional_duration(input1=None)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_optional_duration' call")
-
-    print("Making call to 'call_three_durations'")
-    future_resp = client.call_three_durations(input1=timedelta(seconds=3536), input2=timedelta(seconds=3536), input3=None)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_three_durations' call")
-
-    print("Making call to 'call_one_binary'")
-    future_resp = client.call_one_binary(input1=b"example binary data")
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_one_binary' call")
-
-    print("Making call to 'call_optional_binary'")
-    future_resp = client.call_optional_binary(input1=b"example binary data")
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_optional_binary' call")
-
-    print("Making call to 'call_three_binaries'")
-    future_resp = client.call_three_binaries(input1=b"example binary data", input2=b"example binary data", input3=b"example binary data")
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_three_binaries' call")
-
-    print("Making call to 'call_one_list_of_integers'")
-    future_resp = client.call_one_list_of_integers(input1=[42, 2022])
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_one_list_of_integers' call")
-
-    print("Making call to 'call_optional_list_of_floats'")
-    future_resp = client.call_optional_list_of_floats(input1=[3.14, 1.0])
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_optional_list_of_floats' call")
-
-    print("Making call to 'call_two_lists'")
-    future_resp = client.call_two_lists(input1=[Numbers.ONE, Numbers.ONE], input2=["apples", "foo"])
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'call_two_lists' call")
+    threading.Thread(target=request_loop, args=(client,), daemon=True).start()
 
     print("Ctrl-C will stop the program.")
     signal.pause()

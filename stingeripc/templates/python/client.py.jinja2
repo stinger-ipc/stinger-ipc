@@ -73,13 +73,18 @@ class {{stinger.python.client_class_name}}:
         {%-if stinger.methods|length > 0-%}
         self._conn.subscribe(f"{{stinger.all_methods_response_topic('{self._conn.client_id}')}}", self._receive_any_method_response_message)
         {%endif%}
+        {%if stinger.properties|length > 0%}
+        self._property_response_topic = f"{{stinger.all_properties_response_topic('{self._conn.client_id}')}}"
+        self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
+        {%endif%}
 
     {%for prop_name, prop_spec in stinger.properties.items()-%}
     @property
-    def {{prop_name}}(self) -> Optional[{{prop_spec.python_annotation}}]:
+    def {{prop_name}}(self) -> {{prop_spec.python_annotation}}:
         """ Property '{{prop_name}}' getter.
         """
-        return self._property_{{prop_name}}
+        with self._property_{{prop_name|snake_case}}_mutex:
+            return self._property_{{prop_name|snake_case}}
     {%if not prop_spec.read_only %}
     @{{prop_name}}.setter
     def {{prop_name}}(self, value: {{prop_spec.python_annotation}}):
@@ -88,12 +93,18 @@ class {{stinger.python.client_class_name}}:
         if not isinstance(value, {{prop_spec.python_local_type}}):
             raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}")
         {%if prop_spec.arg_list | length > 1 -%}
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
+        property_obj = value
         {%else-%}
-        serialized = json.dumps({ "{{prop_spec.arg_list[0].name}}": value.{{prop_spec.arg_list[0].name}} })
+        property_obj = {{prop_name|UpperCamelCase}}Property({{prop_spec.arg_list[0].name|snake_case}}=value)
         {%endif-%}
-        self._logger.debug("Setting '{{prop_name}}' property to %s", serialized)
-        self._conn.publish("{{prop_spec.update_topic}}".format(self._service_id), serialized, qos=1)
+        self._logger.debug("Setting '{{prop_name}}' property to %s", property_obj)
+        with self._property_{{prop_name|snake_case}}_mutex:
+            self._conn.publish_property_update_request(
+                    "{{prop_spec.update_topic}}".format(self._service_id), 
+                    property_obj, 
+                    str(self._property_{{prop_name|snake_case}}_version), 
+                    self._property_response_topic
+            )
     {%endif%}
     def {{prop_name | snake_case}}_changed(self, handler: {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType, call_immediately: bool=False):
         """ Sets a callback to be called when the '{{prop_name}}' property changes.
@@ -158,6 +169,13 @@ class {{stinger.python.client_class_name}}:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
     {%endif%}{# end method response handler #}
 
+    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        user_properties = properties.get("UserProperty", {})
+        return_code = user_properties.get("ReturnCode")
+        if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
+            debug_info = user_properties.get("DebugInfo", "")
+            self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
+
     {%-for prop_name, prop_spec in stinger.properties.items()%}
     def _receive_{{prop_name | snake_case}}_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle '{{prop_name}}' property change.
@@ -166,11 +184,11 @@ class {{stinger.python.client_class_name}}:
             return
         try:
             prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_{{prop_name|snake_case}}_mutex:
                 self._property_{{prop_name|snake_case}} = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_{{prop_name|snake_case}}_version:
-                        self._property_{{prop_name|snake_case}}_version = int(ver)
+                self._property_{{prop_name|snake_case}}_version = property_version
                 {% if prop_spec.arg_list | length == 1 %}
                 self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value=prop_obj.{{prop_spec.arg_list[0].name|snake_case}})
                 {%else%}

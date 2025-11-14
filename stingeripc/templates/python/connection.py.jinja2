@@ -212,6 +212,15 @@ class MqttBrokerConnection(IBrokerConnection):
             props["PropertyVersion"] = str(state_version)
         self.publish(topic, state_obj.model_dump_json(by_alias=True), qos=1, retain=True, user_properties=props)
 
+    def publish_property_update_request(self, topic: str, property_obj: BaseModel, version: str, response_topic: str, correlation_id: Union[str, bytes, None]=None):
+        if correlation_id is None:
+            correlation_id = str(uuid.uuid4())
+        self.publish(topic, property_obj.model_dump_json(by_alias=True), qos=1, retain=False,
+                     correlation_id=correlation_id,
+                     response_topic=response_topic,
+                     user_properties={"PropertyVersion": str(version)})
+        return correlation_id
+
     def publish_property_response(self, response_topic: str, property_obj: BaseModel, version: str, return_code: MethodReturnCode, correlation_id: Union[str, bytes], debug_info: Optional[str] = None):
         user_props = dict()
         user_props["ReturnCode"] = str(return_code.value)

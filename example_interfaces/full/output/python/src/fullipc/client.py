@@ -104,19 +104,26 @@ class FullClient:
         self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/Full/methodResponse", self._receive_any_method_response_message)
 
+        self._property_response_topic = f"client/{self._conn.client_id}/Full/propertyUpdateResponse"
+        self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
+
     @property
-    def favorite_number(self) -> Optional[int]:
+    def favorite_number(self) -> int:
         """Property 'favorite_number' getter."""
-        return self._property_favorite_number
+        with self._property_favorite_number_mutex:
+            return self._property_favorite_number
 
     @favorite_number.setter
     def favorite_number(self, value: int):
         """Serializes and publishes the 'favorite_number' property."""
         if not isinstance(value, int):
             raise ValueError("The 'favorite_number' property must be a int")
-        serialized = json.dumps({"number": value.number})
-        self._logger.debug("Setting 'favorite_number' property to %s", serialized)
-        self._conn.publish("full/{}/property/favoriteNumber/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = FavoriteNumberProperty(number=value)
+        self._logger.debug("Setting 'favorite_number' property to %s", property_obj)
+        with self._property_favorite_number_mutex:
+            self._conn.publish_property_update_request(
+                "full/{}/property/favoriteNumber/setValue".format(self._service_id), property_obj, str(self._property_favorite_number_version), self._property_response_topic
+            )
 
     def favorite_number_changed(self, handler: FavoriteNumberPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'favorite_number' property changes.
@@ -129,18 +136,22 @@ class FullClient:
         return handler
 
     @property
-    def favorite_foods(self) -> Optional[FavoriteFoodsProperty]:
+    def favorite_foods(self) -> FavoriteFoodsProperty:
         """Property 'favorite_foods' getter."""
-        return self._property_favorite_foods
+        with self._property_favorite_foods_mutex:
+            return self._property_favorite_foods
 
     @favorite_foods.setter
     def favorite_foods(self, value: FavoriteFoodsProperty):
         """Serializes and publishes the 'favorite_foods' property."""
         if not isinstance(value, FavoriteFoodsProperty):
             raise ValueError("The 'favorite_foods' property must be a FavoriteFoodsProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'favorite_foods' property to %s", serialized)
-        self._conn.publish("full/{}/property/favoriteFoods/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'favorite_foods' property to %s", property_obj)
+        with self._property_favorite_foods_mutex:
+            self._conn.publish_property_update_request(
+                "full/{}/property/favoriteFoods/setValue".format(self._service_id), property_obj, str(self._property_favorite_foods_version), self._property_response_topic
+            )
 
     def favorite_foods_changed(self, handler: FavoriteFoodsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'favorite_foods' property changes.
@@ -153,18 +164,22 @@ class FullClient:
         return handler
 
     @property
-    def lunch_menu(self) -> Optional[LunchMenuProperty]:
+    def lunch_menu(self) -> LunchMenuProperty:
         """Property 'lunch_menu' getter."""
-        return self._property_lunch_menu
+        with self._property_lunch_menu_mutex:
+            return self._property_lunch_menu
 
     @lunch_menu.setter
     def lunch_menu(self, value: LunchMenuProperty):
         """Serializes and publishes the 'lunch_menu' property."""
         if not isinstance(value, LunchMenuProperty):
             raise ValueError("The 'lunch_menu' property must be a LunchMenuProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'lunch_menu' property to %s", serialized)
-        self._conn.publish("full/{}/property/lunchMenu/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'lunch_menu' property to %s", property_obj)
+        with self._property_lunch_menu_mutex:
+            self._conn.publish_property_update_request(
+                "full/{}/property/lunchMenu/setValue".format(self._service_id), property_obj, str(self._property_lunch_menu_version), self._property_response_topic
+            )
 
     def lunch_menu_changed(self, handler: LunchMenuPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'lunch_menu' property changes.
@@ -177,18 +192,22 @@ class FullClient:
         return handler
 
     @property
-    def family_name(self) -> Optional[str]:
+    def family_name(self) -> str:
         """Property 'family_name' getter."""
-        return self._property_family_name
+        with self._property_family_name_mutex:
+            return self._property_family_name
 
     @family_name.setter
     def family_name(self, value: str):
         """Serializes and publishes the 'family_name' property."""
         if not isinstance(value, str):
             raise ValueError("The 'family_name' property must be a str")
-        serialized = json.dumps({"family_name": value.family_name})
-        self._logger.debug("Setting 'family_name' property to %s", serialized)
-        self._conn.publish("full/{}/property/familyName/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = FamilyNameProperty(family_name=value)
+        self._logger.debug("Setting 'family_name' property to %s", property_obj)
+        with self._property_family_name_mutex:
+            self._conn.publish_property_update_request(
+                "full/{}/property/familyName/setValue".format(self._service_id), property_obj, str(self._property_family_name_version), self._property_response_topic
+            )
 
     def family_name_changed(self, handler: FamilyNamePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'family_name' property changes.
@@ -201,18 +220,22 @@ class FullClient:
         return handler
 
     @property
-    def last_breakfast_time(self) -> Optional[datetime]:
+    def last_breakfast_time(self) -> datetime:
         """Property 'last_breakfast_time' getter."""
-        return self._property_last_breakfast_time
+        with self._property_last_breakfast_time_mutex:
+            return self._property_last_breakfast_time
 
     @last_breakfast_time.setter
     def last_breakfast_time(self, value: datetime):
         """Serializes and publishes the 'last_breakfast_time' property."""
         if not isinstance(value, datetime):
             raise ValueError("The 'last_breakfast_time' property must be a datetime")
-        serialized = json.dumps({"timestamp": value.timestamp})
-        self._logger.debug("Setting 'last_breakfast_time' property to %s", serialized)
-        self._conn.publish("full/{}/property/lastBreakfastTime/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = LastBreakfastTimeProperty(timestamp=value)
+        self._logger.debug("Setting 'last_breakfast_time' property to %s", property_obj)
+        with self._property_last_breakfast_time_mutex:
+            self._conn.publish_property_update_request(
+                "full/{}/property/lastBreakfastTime/setValue".format(self._service_id), property_obj, str(self._property_last_breakfast_time_version), self._property_response_topic
+            )
 
     def last_breakfast_time_changed(self, handler: LastBreakfastTimePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'last_breakfast_time' property changes.
@@ -225,18 +248,22 @@ class FullClient:
         return handler
 
     @property
-    def breakfast_length(self) -> Optional[timedelta]:
+    def breakfast_length(self) -> timedelta:
         """Property 'breakfast_length' getter."""
-        return self._property_breakfast_length
+        with self._property_breakfast_length_mutex:
+            return self._property_breakfast_length
 
     @breakfast_length.setter
     def breakfast_length(self, value: timedelta):
         """Serializes and publishes the 'breakfast_length' property."""
         if not isinstance(value, timedelta):
             raise ValueError("The 'breakfast_length' property must be a timedelta")
-        serialized = json.dumps({"length": value.length})
-        self._logger.debug("Setting 'breakfast_length' property to %s", serialized)
-        self._conn.publish("full/{}/property/breakfastLength/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = BreakfastLengthProperty(length=value)
+        self._logger.debug("Setting 'breakfast_length' property to %s", property_obj)
+        with self._property_breakfast_length_mutex:
+            self._conn.publish_property_update_request(
+                "full/{}/property/breakfastLength/setValue".format(self._service_id), property_obj, str(self._property_breakfast_length_version), self._property_response_topic
+            )
 
     def breakfast_length_changed(self, handler: BreakfastLengthPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'breakfast_length' property changes.
@@ -249,18 +276,22 @@ class FullClient:
         return handler
 
     @property
-    def last_birthdays(self) -> Optional[LastBirthdaysProperty]:
+    def last_birthdays(self) -> LastBirthdaysProperty:
         """Property 'last_birthdays' getter."""
-        return self._property_last_birthdays
+        with self._property_last_birthdays_mutex:
+            return self._property_last_birthdays
 
     @last_birthdays.setter
     def last_birthdays(self, value: LastBirthdaysProperty):
         """Serializes and publishes the 'last_birthdays' property."""
         if not isinstance(value, LastBirthdaysProperty):
             raise ValueError("The 'last_birthdays' property must be a LastBirthdaysProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'last_birthdays' property to %s", serialized)
-        self._conn.publish("full/{}/property/lastBirthdays/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'last_birthdays' property to %s", property_obj)
+        with self._property_last_birthdays_mutex:
+            self._conn.publish_property_update_request(
+                "full/{}/property/lastBirthdays/setValue".format(self._service_id), property_obj, str(self._property_last_birthdays_version), self._property_response_topic
+            )
 
     def last_birthdays_changed(self, handler: LastBirthdaysPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'last_birthdays' property changes.
@@ -318,6 +349,13 @@ class FullClient:
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
 
+    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        user_properties = properties.get("UserProperty", {})
+        return_code = user_properties.get("ReturnCode")
+        if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
+            debug_info = user_properties.get("DebugInfo", "")
+            self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
+
     def _receive_favorite_number_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'favorite_number' property change.
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
@@ -325,11 +363,11 @@ class FullClient:
             return
         try:
             prop_obj = FavoriteNumberProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_favorite_number_mutex:
                 self._property_favorite_number = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_favorite_number_version:
-                        self._property_favorite_number_version = int(ver)
+                self._property_favorite_number_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_favorite_number, value=prop_obj.number)
 
@@ -343,11 +381,11 @@ class FullClient:
             return
         try:
             prop_obj = FavoriteFoodsProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_favorite_foods_mutex:
                 self._property_favorite_foods = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_favorite_foods_version:
-                        self._property_favorite_foods_version = int(ver)
+                self._property_favorite_foods_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_favorite_foods, value=prop_obj)
 
@@ -361,11 +399,11 @@ class FullClient:
             return
         try:
             prop_obj = LunchMenuProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_lunch_menu_mutex:
                 self._property_lunch_menu = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_lunch_menu_version:
-                        self._property_lunch_menu_version = int(ver)
+                self._property_lunch_menu_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_lunch_menu, value=prop_obj)
 
@@ -379,11 +417,11 @@ class FullClient:
             return
         try:
             prop_obj = FamilyNameProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_family_name_mutex:
                 self._property_family_name = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_family_name_version:
-                        self._property_family_name_version = int(ver)
+                self._property_family_name_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_family_name, value=prop_obj.family_name)
 
@@ -397,11 +435,11 @@ class FullClient:
             return
         try:
             prop_obj = LastBreakfastTimeProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_last_breakfast_time_mutex:
                 self._property_last_breakfast_time = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_last_breakfast_time_version:
-                        self._property_last_breakfast_time_version = int(ver)
+                self._property_last_breakfast_time_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_last_breakfast_time, value=prop_obj.timestamp)
 
@@ -415,11 +453,11 @@ class FullClient:
             return
         try:
             prop_obj = BreakfastLengthProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_breakfast_length_mutex:
                 self._property_breakfast_length = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_breakfast_length_version:
-                        self._property_breakfast_length_version = int(ver)
+                self._property_breakfast_length_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_breakfast_length, value=prop_obj.length)
 
@@ -433,11 +471,11 @@ class FullClient:
             return
         try:
             prop_obj = LastBirthdaysProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_last_birthdays_mutex:
                 self._property_last_birthdays = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_last_birthdays_version:
-                        self._property_last_birthdays_version = int(ver)
+                self._property_last_birthdays_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_last_birthdays, value=prop_obj)
 

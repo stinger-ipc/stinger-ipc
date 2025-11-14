@@ -6,6 +6,97 @@ from datetime import datetime, timedelta, UTC
 from fullipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from fullipc.client import FullClient, FullClientBuilder, FullClientDiscoverer
 from fullipc.interface_types import *
+import threading
+
+
+def request_loop(client: FullClient):
+    """Example request loop that runs in a separate thread."""
+    sleep(30)
+    while True:
+        print("Making call to 'add_numbers'")
+        future_resp = client.add_numbers(first=42, second=42, third=42)
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'add_numbers' call")
+        sleep(5)
+
+        print("Making call to 'do_something'")
+        future_resp = client.do_something(a_string="apples")
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'do_something' call")
+        sleep(5)
+
+        print("Making call to 'echo'")
+        future_resp = client.echo(message="apples")
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'echo' call")
+        sleep(5)
+
+        print("Making call to 'what_time_is_it'")
+        future_resp = client.what_time_is_it(the_first_time=datetime.now(UTC))
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'what_time_is_it' call")
+        sleep(5)
+
+        print("Making call to 'set_the_time'")
+        future_resp = client.set_the_time(the_first_time=datetime.now(UTC), the_second_time=datetime.now(UTC))
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'set_the_time' call")
+        sleep(5)
+
+        print("Making call to 'forward_time'")
+        future_resp = client.forward_time(adjustment=timedelta(seconds=3536))
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'forward_time' call")
+        sleep(5)
+
+        print("Making call to 'how_off_is_the_clock'")
+        future_resp = client.how_off_is_the_clock(actual_time=datetime.now(UTC))
+        try:
+            print(f"RESULT:  {future_resp.result(5)}")
+        except futures.TimeoutError:
+            print(f"Timed out waiting for response to 'how_off_is_the_clock' call")
+        sleep(5)
+
+        client.favorite_number = 42
+
+        client.favorite_foods = FavoriteFoodsProperty(
+            drink="apples",
+            slices_of_pizza=42,
+            breakfast="apples",
+        )
+
+        client.lunch_menu = LunchMenuProperty(
+            monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+            tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+        )
+
+        client.family_name = "apples"
+
+        client.last_breakfast_time = datetime.now(UTC)
+
+        client.breakfast_length = timedelta(seconds=3536)
+
+        client.last_birthdays = LastBirthdaysProperty(
+            mom=datetime.now(UTC),
+            dad=datetime.now(UTC),
+            sister=None,
+            brothers_age=42,
+        )
+
+        sleep(10)
+
 
 if __name__ == "__main__":
 
@@ -70,54 +161,7 @@ if __name__ == "__main__":
 
     sleep(2)
 
-    print("Making call to 'add_numbers'")
-    future_resp = client.add_numbers(first=42, second=42, third=42)
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'add_numbers' call")
-
-    print("Making call to 'do_something'")
-    future_resp = client.do_something(a_string="apples")
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'do_something' call")
-
-    print("Making call to 'echo'")
-    future_resp = client.echo(message="apples")
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'echo' call")
-
-    print("Making call to 'what_time_is_it'")
-    future_resp = client.what_time_is_it(the_first_time=datetime.now(UTC))
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'what_time_is_it' call")
-
-    print("Making call to 'set_the_time'")
-    future_resp = client.set_the_time(the_first_time=datetime.now(UTC), the_second_time=datetime.now(UTC))
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'set_the_time' call")
-
-    print("Making call to 'forward_time'")
-    future_resp = client.forward_time(adjustment=timedelta(seconds=3536))
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'forward_time' call")
-
-    print("Making call to 'how_off_is_the_clock'")
-    future_resp = client.how_off_is_the_clock(actual_time=datetime.now(UTC))
-    try:
-        print(f"RESULT:  {future_resp.result(5)}")
-    except futures.TimeoutError:
-        print(f"Timed out waiting for response to 'how_off_is_the_clock' call")
+    threading.Thread(target=request_loop, args=(client,), daemon=True).start()
 
     print("Ctrl-C will stop the program.")
     signal.pause()

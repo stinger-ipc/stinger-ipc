@@ -6,6 +6,8 @@ from datetime import datetime, timedelta, UTC
 from signalonlyipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
 from signalonlyipc.client import SignalOnlyClient, SignalOnlyClientBuilder, SignalOnlyClientDiscoverer
 from signalonlyipc.interface_types import *
+import threading
+
 
 if __name__ == "__main__":
 
@@ -60,6 +62,8 @@ if __name__ == "__main__":
         exit(1)
 
     sleep(2)
+
+    threading.Thread(target=request_loop, args=(client,), daemon=True).start()
 
     print("Ctrl-C will stop the program.")
     signal.pause()

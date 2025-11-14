@@ -114,6 +114,13 @@ class SignalOnlyClient:
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_now, **kwargs)
 
+    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        user_properties = properties.get("UserProperty", {})
+        return_code = user_properties.get("ReturnCode")
+        if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
+            debug_info = user_properties.get("DebugInfo", "")
+            self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
+
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.

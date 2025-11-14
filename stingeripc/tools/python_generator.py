@@ -48,6 +48,7 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
     for output_file in [
         "client_demo.py",
         "server_demo.py",
+        #"client_demo_classes.py",
     ]:
         of = output_dir / "examples" / output_file
         print(f"[bold green]Generating:[/bold green] {of}")

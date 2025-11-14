@@ -62,19 +62,24 @@ class SimpleClient:
         self._signal_recv_callbacks_for_person_entered: list[PersonEnteredSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/Simple/methodResponse", self._receive_any_method_response_message)
 
+        self._property_response_topic = f"client/{self._conn.client_id}/Simple/propertyUpdateResponse"
+        self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
+
     @property
-    def school(self) -> Optional[str]:
+    def school(self) -> str:
         """Property 'school' getter."""
-        return self._property_school
+        with self._property_school_mutex:
+            return self._property_school
 
     @school.setter
     def school(self, value: str):
         """Serializes and publishes the 'school' property."""
         if not isinstance(value, str):
             raise ValueError("The 'school' property must be a str")
-        serialized = json.dumps({"name": value.name})
-        self._logger.debug("Setting 'school' property to %s", serialized)
-        self._conn.publish("simple/{}/property/school/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = SchoolProperty(name=value)
+        self._logger.debug("Setting 'school' property to %s", property_obj)
+        with self._property_school_mutex:
+            self._conn.publish_property_update_request("simple/{}/property/school/setValue".format(self._service_id), property_obj, str(self._property_school_version), self._property_response_topic)
 
     def school_changed(self, handler: SchoolPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'school' property changes.
@@ -132,6 +137,13 @@ class SimpleClient:
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
 
+    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        user_properties = properties.get("UserProperty", {})
+        return_code = user_properties.get("ReturnCode")
+        if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
+            debug_info = user_properties.get("DebugInfo", "")
+            self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
+
     def _receive_school_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'school' property change.
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
@@ -139,11 +151,11 @@ class SimpleClient:
             return
         try:
             prop_obj = SchoolProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_school_mutex:
                 self._property_school = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_school_version:
-                        self._property_school_version = int(ver)
+                self._property_school_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_school, value=prop_obj.name)
 

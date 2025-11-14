@@ -117,6 +117,7 @@ class WeatherServer:
         )
 
         self._publish_all_properties()
+        self._logger.debug("Starting interface advertisement thread")
         self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
         self._advertise_thread.start()
 
@@ -126,9 +127,15 @@ class WeatherServer:
         self._advertise_thread.join()
 
     def loop_publishing_interface_info(self):
-        while self._conn.is_connected() and self._running:
-            self._publish_interface_info()
-            sleep(self._re_advertise_server_interval_seconds)
+        """We have a discovery topic separate from the MQTT client discovery topic.
+        We publish it periodically, but with a Message Expiry interval."""
+        self._publish_interface_info()
+        while self._running:
+            if self._conn.is_connected():
+                self._publish_interface_info()
+                sleep(self._re_advertise_server_interval_seconds)
+            else:
+                sleep(2)
 
     def _publish_interface_info(self):
         data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())

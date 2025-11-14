@@ -284,19 +284,26 @@ class TestAbleClient:
         self._signal_recv_callbacks_for_array_of_every_type: list[ArrayOfEveryTypeSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/Test Able/methodResponse", self._receive_any_method_response_message)
 
+        self._property_response_topic = f"client/{self._conn.client_id}/Test Able/propertyUpdateResponse"
+        self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
+
     @property
-    def read_write_integer(self) -> Optional[int]:
+    def read_write_integer(self) -> int:
         """Property 'read_write_integer' getter."""
-        return self._property_read_write_integer
+        with self._property_read_write_integer_mutex:
+            return self._property_read_write_integer
 
     @read_write_integer.setter
     def read_write_integer(self, value: int):
         """Serializes and publishes the 'read_write_integer' property."""
         if not isinstance(value, int):
             raise ValueError("The 'read_write_integer' property must be a int")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_integer' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteInteger/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteIntegerProperty(value=value)
+        self._logger.debug("Setting 'read_write_integer' property to %s", property_obj)
+        with self._property_read_write_integer_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_integer_version), self._property_response_topic
+            )
 
     def read_write_integer_changed(self, handler: ReadWriteIntegerPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_integer' property changes.
@@ -309,9 +316,10 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_only_integer(self) -> Optional[int]:
+    def read_only_integer(self) -> int:
         """Property 'read_only_integer' getter."""
-        return self._property_read_only_integer
+        with self._property_read_only_integer_mutex:
+            return self._property_read_only_integer
 
     def read_only_integer_changed(self, handler: ReadOnlyIntegerPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_only_integer' property changes.
@@ -324,18 +332,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_integer(self) -> Optional[Optional[int]]:
+    def read_write_optional_integer(self) -> Optional[int]:
         """Property 'read_write_optional_integer' getter."""
-        return self._property_read_write_optional_integer
+        with self._property_read_write_optional_integer_mutex:
+            return self._property_read_write_optional_integer
 
     @read_write_optional_integer.setter
     def read_write_optional_integer(self, value: Optional[int]):
         """Serializes and publishes the 'read_write_optional_integer' property."""
         if not isinstance(value, int):
             raise ValueError("The 'read_write_optional_integer' property must be a int")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_optional_integer' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteOptionalInteger/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteOptionalIntegerProperty(value=value)
+        self._logger.debug("Setting 'read_write_optional_integer' property to %s", property_obj)
+        with self._property_read_write_optional_integer_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteOptionalInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_integer_version), self._property_response_topic
+            )
 
     def read_write_optional_integer_changed(self, handler: ReadWriteOptionalIntegerPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_integer' property changes.
@@ -348,18 +360,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_integers(self) -> Optional[ReadWriteTwoIntegersProperty]:
+    def read_write_two_integers(self) -> ReadWriteTwoIntegersProperty:
         """Property 'read_write_two_integers' getter."""
-        return self._property_read_write_two_integers
+        with self._property_read_write_two_integers_mutex:
+            return self._property_read_write_two_integers
 
     @read_write_two_integers.setter
     def read_write_two_integers(self, value: ReadWriteTwoIntegersProperty):
         """Serializes and publishes the 'read_write_two_integers' property."""
         if not isinstance(value, ReadWriteTwoIntegersProperty):
             raise ValueError("The 'read_write_two_integers' property must be a ReadWriteTwoIntegersProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'read_write_two_integers' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteTwoIntegers/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'read_write_two_integers' property to %s", property_obj)
+        with self._property_read_write_two_integers_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteTwoIntegers/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_integers_version), self._property_response_topic
+            )
 
     def read_write_two_integers_changed(self, handler: ReadWriteTwoIntegersPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_integers' property changes.
@@ -372,9 +388,10 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_only_string(self) -> Optional[str]:
+    def read_only_string(self) -> str:
         """Property 'read_only_string' getter."""
-        return self._property_read_only_string
+        with self._property_read_only_string_mutex:
+            return self._property_read_only_string
 
     def read_only_string_changed(self, handler: ReadOnlyStringPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_only_string' property changes.
@@ -387,18 +404,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_string(self) -> Optional[str]:
+    def read_write_string(self) -> str:
         """Property 'read_write_string' getter."""
-        return self._property_read_write_string
+        with self._property_read_write_string_mutex:
+            return self._property_read_write_string
 
     @read_write_string.setter
     def read_write_string(self, value: str):
         """Serializes and publishes the 'read_write_string' property."""
         if not isinstance(value, str):
             raise ValueError("The 'read_write_string' property must be a str")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_string' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteString/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteStringProperty(value=value)
+        self._logger.debug("Setting 'read_write_string' property to %s", property_obj)
+        with self._property_read_write_string_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteString/setValue".format(self._service_id), property_obj, str(self._property_read_write_string_version), self._property_response_topic
+            )
 
     def read_write_string_changed(self, handler: ReadWriteStringPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_string' property changes.
@@ -411,18 +432,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_string(self) -> Optional[Optional[str]]:
+    def read_write_optional_string(self) -> Optional[str]:
         """Property 'read_write_optional_string' getter."""
-        return self._property_read_write_optional_string
+        with self._property_read_write_optional_string_mutex:
+            return self._property_read_write_optional_string
 
     @read_write_optional_string.setter
     def read_write_optional_string(self, value: Optional[str]):
         """Serializes and publishes the 'read_write_optional_string' property."""
         if not isinstance(value, str):
             raise ValueError("The 'read_write_optional_string' property must be a str")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_optional_string' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteOptionalString/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteOptionalStringProperty(value=value)
+        self._logger.debug("Setting 'read_write_optional_string' property to %s", property_obj)
+        with self._property_read_write_optional_string_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteOptionalString/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_string_version), self._property_response_topic
+            )
 
     def read_write_optional_string_changed(self, handler: ReadWriteOptionalStringPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_string' property changes.
@@ -435,18 +460,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_strings(self) -> Optional[ReadWriteTwoStringsProperty]:
+    def read_write_two_strings(self) -> ReadWriteTwoStringsProperty:
         """Property 'read_write_two_strings' getter."""
-        return self._property_read_write_two_strings
+        with self._property_read_write_two_strings_mutex:
+            return self._property_read_write_two_strings
 
     @read_write_two_strings.setter
     def read_write_two_strings(self, value: ReadWriteTwoStringsProperty):
         """Serializes and publishes the 'read_write_two_strings' property."""
         if not isinstance(value, ReadWriteTwoStringsProperty):
             raise ValueError("The 'read_write_two_strings' property must be a ReadWriteTwoStringsProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'read_write_two_strings' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteTwoStrings/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'read_write_two_strings' property to %s", property_obj)
+        with self._property_read_write_two_strings_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteTwoStrings/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_strings_version), self._property_response_topic
+            )
 
     def read_write_two_strings_changed(self, handler: ReadWriteTwoStringsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_strings' property changes.
@@ -459,18 +488,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_struct(self) -> Optional[AllTypes]:
+    def read_write_struct(self) -> AllTypes:
         """Property 'read_write_struct' getter."""
-        return self._property_read_write_struct
+        with self._property_read_write_struct_mutex:
+            return self._property_read_write_struct
 
     @read_write_struct.setter
     def read_write_struct(self, value: AllTypes):
         """Serializes and publishes the 'read_write_struct' property."""
         if not isinstance(value, AllTypes):
             raise ValueError("The 'read_write_struct' property must be a AllTypes")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_struct' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteStruct/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteStructProperty(value=value)
+        self._logger.debug("Setting 'read_write_struct' property to %s", property_obj)
+        with self._property_read_write_struct_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_struct_version), self._property_response_topic
+            )
 
     def read_write_struct_changed(self, handler: ReadWriteStructPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_struct' property changes.
@@ -483,18 +516,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_struct(self) -> Optional[AllTypes]:
+    def read_write_optional_struct(self) -> AllTypes:
         """Property 'read_write_optional_struct' getter."""
-        return self._property_read_write_optional_struct
+        with self._property_read_write_optional_struct_mutex:
+            return self._property_read_write_optional_struct
 
     @read_write_optional_struct.setter
     def read_write_optional_struct(self, value: AllTypes):
         """Serializes and publishes the 'read_write_optional_struct' property."""
         if not isinstance(value, AllTypes):
             raise ValueError("The 'read_write_optional_struct' property must be a AllTypes")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_optional_struct' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteOptionalStruct/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteOptionalStructProperty(value=value)
+        self._logger.debug("Setting 'read_write_optional_struct' property to %s", property_obj)
+        with self._property_read_write_optional_struct_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteOptionalStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_struct_version), self._property_response_topic
+            )
 
     def read_write_optional_struct_changed(self, handler: ReadWriteOptionalStructPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_struct' property changes.
@@ -507,18 +544,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_structs(self) -> Optional[ReadWriteTwoStructsProperty]:
+    def read_write_two_structs(self) -> ReadWriteTwoStructsProperty:
         """Property 'read_write_two_structs' getter."""
-        return self._property_read_write_two_structs
+        with self._property_read_write_two_structs_mutex:
+            return self._property_read_write_two_structs
 
     @read_write_two_structs.setter
     def read_write_two_structs(self, value: ReadWriteTwoStructsProperty):
         """Serializes and publishes the 'read_write_two_structs' property."""
         if not isinstance(value, ReadWriteTwoStructsProperty):
             raise ValueError("The 'read_write_two_structs' property must be a ReadWriteTwoStructsProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'read_write_two_structs' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteTwoStructs/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'read_write_two_structs' property to %s", property_obj)
+        with self._property_read_write_two_structs_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteTwoStructs/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_structs_version), self._property_response_topic
+            )
 
     def read_write_two_structs_changed(self, handler: ReadWriteTwoStructsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_structs' property changes.
@@ -531,9 +572,10 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_only_enum(self) -> Optional[Numbers]:
+    def read_only_enum(self) -> Numbers:
         """Property 'read_only_enum' getter."""
-        return self._property_read_only_enum
+        with self._property_read_only_enum_mutex:
+            return self._property_read_only_enum
 
     def read_only_enum_changed(self, handler: ReadOnlyEnumPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_only_enum' property changes.
@@ -546,18 +588,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_enum(self) -> Optional[Numbers]:
+    def read_write_enum(self) -> Numbers:
         """Property 'read_write_enum' getter."""
-        return self._property_read_write_enum
+        with self._property_read_write_enum_mutex:
+            return self._property_read_write_enum
 
     @read_write_enum.setter
     def read_write_enum(self, value: Numbers):
         """Serializes and publishes the 'read_write_enum' property."""
         if not isinstance(value, Numbers):
             raise ValueError("The 'read_write_enum' property must be a Numbers")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_enum' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteEnum/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteEnumProperty(value=value)
+        self._logger.debug("Setting 'read_write_enum' property to %s", property_obj)
+        with self._property_read_write_enum_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_enum_version), self._property_response_topic
+            )
 
     def read_write_enum_changed(self, handler: ReadWriteEnumPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_enum' property changes.
@@ -570,18 +616,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_enum(self) -> Optional[Optional[Numbers]]:
+    def read_write_optional_enum(self) -> Optional[Numbers]:
         """Property 'read_write_optional_enum' getter."""
-        return self._property_read_write_optional_enum
+        with self._property_read_write_optional_enum_mutex:
+            return self._property_read_write_optional_enum
 
     @read_write_optional_enum.setter
     def read_write_optional_enum(self, value: Optional[Numbers]):
         """Serializes and publishes the 'read_write_optional_enum' property."""
         if not isinstance(value, Numbers):
             raise ValueError("The 'read_write_optional_enum' property must be a Numbers")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_optional_enum' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteOptionalEnum/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteOptionalEnumProperty(value=value)
+        self._logger.debug("Setting 'read_write_optional_enum' property to %s", property_obj)
+        with self._property_read_write_optional_enum_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteOptionalEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_enum_version), self._property_response_topic
+            )
 
     def read_write_optional_enum_changed(self, handler: ReadWriteOptionalEnumPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_enum' property changes.
@@ -594,18 +644,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_enums(self) -> Optional[ReadWriteTwoEnumsProperty]:
+    def read_write_two_enums(self) -> ReadWriteTwoEnumsProperty:
         """Property 'read_write_two_enums' getter."""
-        return self._property_read_write_two_enums
+        with self._property_read_write_two_enums_mutex:
+            return self._property_read_write_two_enums
 
     @read_write_two_enums.setter
     def read_write_two_enums(self, value: ReadWriteTwoEnumsProperty):
         """Serializes and publishes the 'read_write_two_enums' property."""
         if not isinstance(value, ReadWriteTwoEnumsProperty):
             raise ValueError("The 'read_write_two_enums' property must be a ReadWriteTwoEnumsProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'read_write_two_enums' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteTwoEnums/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'read_write_two_enums' property to %s", property_obj)
+        with self._property_read_write_two_enums_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteTwoEnums/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_enums_version), self._property_response_topic
+            )
 
     def read_write_two_enums_changed(self, handler: ReadWriteTwoEnumsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_enums' property changes.
@@ -618,18 +672,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_datetime(self) -> Optional[datetime]:
+    def read_write_datetime(self) -> datetime:
         """Property 'read_write_datetime' getter."""
-        return self._property_read_write_datetime
+        with self._property_read_write_datetime_mutex:
+            return self._property_read_write_datetime
 
     @read_write_datetime.setter
     def read_write_datetime(self, value: datetime):
         """Serializes and publishes the 'read_write_datetime' property."""
         if not isinstance(value, datetime):
             raise ValueError("The 'read_write_datetime' property must be a datetime")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_datetime' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteDatetime/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteDatetimeProperty(value=value)
+        self._logger.debug("Setting 'read_write_datetime' property to %s", property_obj)
+        with self._property_read_write_datetime_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteDatetime/setValue".format(self._service_id), property_obj, str(self._property_read_write_datetime_version), self._property_response_topic
+            )
 
     def read_write_datetime_changed(self, handler: ReadWriteDatetimePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_datetime' property changes.
@@ -642,18 +700,25 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_datetime(self) -> Optional[Optional[datetime]]:
+    def read_write_optional_datetime(self) -> Optional[datetime]:
         """Property 'read_write_optional_datetime' getter."""
-        return self._property_read_write_optional_datetime
+        with self._property_read_write_optional_datetime_mutex:
+            return self._property_read_write_optional_datetime
 
     @read_write_optional_datetime.setter
     def read_write_optional_datetime(self, value: Optional[datetime]):
         """Serializes and publishes the 'read_write_optional_datetime' property."""
         if not isinstance(value, datetime):
             raise ValueError("The 'read_write_optional_datetime' property must be a datetime")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_optional_datetime' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteOptionalDatetime/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteOptionalDatetimeProperty(value=value)
+        self._logger.debug("Setting 'read_write_optional_datetime' property to %s", property_obj)
+        with self._property_read_write_optional_datetime_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteOptionalDatetime/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_optional_datetime_version),
+                self._property_response_topic,
+            )
 
     def read_write_optional_datetime_changed(self, handler: ReadWriteOptionalDatetimePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_datetime' property changes.
@@ -666,18 +731,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_datetimes(self) -> Optional[ReadWriteTwoDatetimesProperty]:
+    def read_write_two_datetimes(self) -> ReadWriteTwoDatetimesProperty:
         """Property 'read_write_two_datetimes' getter."""
-        return self._property_read_write_two_datetimes
+        with self._property_read_write_two_datetimes_mutex:
+            return self._property_read_write_two_datetimes
 
     @read_write_two_datetimes.setter
     def read_write_two_datetimes(self, value: ReadWriteTwoDatetimesProperty):
         """Serializes and publishes the 'read_write_two_datetimes' property."""
         if not isinstance(value, ReadWriteTwoDatetimesProperty):
             raise ValueError("The 'read_write_two_datetimes' property must be a ReadWriteTwoDatetimesProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'read_write_two_datetimes' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteTwoDatetimes/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'read_write_two_datetimes' property to %s", property_obj)
+        with self._property_read_write_two_datetimes_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteTwoDatetimes/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_datetimes_version), self._property_response_topic
+            )
 
     def read_write_two_datetimes_changed(self, handler: ReadWriteTwoDatetimesPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_datetimes' property changes.
@@ -690,18 +759,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_duration(self) -> Optional[timedelta]:
+    def read_write_duration(self) -> timedelta:
         """Property 'read_write_duration' getter."""
-        return self._property_read_write_duration
+        with self._property_read_write_duration_mutex:
+            return self._property_read_write_duration
 
     @read_write_duration.setter
     def read_write_duration(self, value: timedelta):
         """Serializes and publishes the 'read_write_duration' property."""
         if not isinstance(value, timedelta):
             raise ValueError("The 'read_write_duration' property must be a timedelta")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_duration' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteDuration/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteDurationProperty(value=value)
+        self._logger.debug("Setting 'read_write_duration' property to %s", property_obj)
+        with self._property_read_write_duration_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteDuration/setValue".format(self._service_id), property_obj, str(self._property_read_write_duration_version), self._property_response_topic
+            )
 
     def read_write_duration_changed(self, handler: ReadWriteDurationPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_duration' property changes.
@@ -714,18 +787,25 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_duration(self) -> Optional[Optional[timedelta]]:
+    def read_write_optional_duration(self) -> Optional[timedelta]:
         """Property 'read_write_optional_duration' getter."""
-        return self._property_read_write_optional_duration
+        with self._property_read_write_optional_duration_mutex:
+            return self._property_read_write_optional_duration
 
     @read_write_optional_duration.setter
     def read_write_optional_duration(self, value: Optional[timedelta]):
         """Serializes and publishes the 'read_write_optional_duration' property."""
         if not isinstance(value, timedelta):
             raise ValueError("The 'read_write_optional_duration' property must be a timedelta")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_optional_duration' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteOptionalDuration/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteOptionalDurationProperty(value=value)
+        self._logger.debug("Setting 'read_write_optional_duration' property to %s", property_obj)
+        with self._property_read_write_optional_duration_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteOptionalDuration/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_optional_duration_version),
+                self._property_response_topic,
+            )
 
     def read_write_optional_duration_changed(self, handler: ReadWriteOptionalDurationPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_duration' property changes.
@@ -738,18 +818,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_durations(self) -> Optional[ReadWriteTwoDurationsProperty]:
+    def read_write_two_durations(self) -> ReadWriteTwoDurationsProperty:
         """Property 'read_write_two_durations' getter."""
-        return self._property_read_write_two_durations
+        with self._property_read_write_two_durations_mutex:
+            return self._property_read_write_two_durations
 
     @read_write_two_durations.setter
     def read_write_two_durations(self, value: ReadWriteTwoDurationsProperty):
         """Serializes and publishes the 'read_write_two_durations' property."""
         if not isinstance(value, ReadWriteTwoDurationsProperty):
             raise ValueError("The 'read_write_two_durations' property must be a ReadWriteTwoDurationsProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'read_write_two_durations' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteTwoDurations/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'read_write_two_durations' property to %s", property_obj)
+        with self._property_read_write_two_durations_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteTwoDurations/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_durations_version), self._property_response_topic
+            )
 
     def read_write_two_durations_changed(self, handler: ReadWriteTwoDurationsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_durations' property changes.
@@ -762,18 +846,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_binary(self) -> Optional[bytes]:
+    def read_write_binary(self) -> bytes:
         """Property 'read_write_binary' getter."""
-        return self._property_read_write_binary
+        with self._property_read_write_binary_mutex:
+            return self._property_read_write_binary
 
     @read_write_binary.setter
     def read_write_binary(self, value: bytes):
         """Serializes and publishes the 'read_write_binary' property."""
         if not isinstance(value, bytes):
             raise ValueError("The 'read_write_binary' property must be a bytes")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_binary' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteBinary/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteBinaryProperty(value=value)
+        self._logger.debug("Setting 'read_write_binary' property to %s", property_obj)
+        with self._property_read_write_binary_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_binary_version), self._property_response_topic
+            )
 
     def read_write_binary_changed(self, handler: ReadWriteBinaryPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_binary' property changes.
@@ -786,18 +874,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_optional_binary(self) -> Optional[bytes]:
+    def read_write_optional_binary(self) -> bytes:
         """Property 'read_write_optional_binary' getter."""
-        return self._property_read_write_optional_binary
+        with self._property_read_write_optional_binary_mutex:
+            return self._property_read_write_optional_binary
 
     @read_write_optional_binary.setter
     def read_write_optional_binary(self, value: bytes):
         """Serializes and publishes the 'read_write_optional_binary' property."""
         if not isinstance(value, bytes):
             raise ValueError("The 'read_write_optional_binary' property must be a bytes")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_optional_binary' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteOptionalBinary/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteOptionalBinaryProperty(value=value)
+        self._logger.debug("Setting 'read_write_optional_binary' property to %s", property_obj)
+        with self._property_read_write_optional_binary_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteOptionalBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_binary_version), self._property_response_topic
+            )
 
     def read_write_optional_binary_changed(self, handler: ReadWriteOptionalBinaryPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_binary' property changes.
@@ -810,18 +902,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_two_binaries(self) -> Optional[ReadWriteTwoBinariesProperty]:
+    def read_write_two_binaries(self) -> ReadWriteTwoBinariesProperty:
         """Property 'read_write_two_binaries' getter."""
-        return self._property_read_write_two_binaries
+        with self._property_read_write_two_binaries_mutex:
+            return self._property_read_write_two_binaries
 
     @read_write_two_binaries.setter
     def read_write_two_binaries(self, value: ReadWriteTwoBinariesProperty):
         """Serializes and publishes the 'read_write_two_binaries' property."""
         if not isinstance(value, ReadWriteTwoBinariesProperty):
             raise ValueError("The 'read_write_two_binaries' property must be a ReadWriteTwoBinariesProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'read_write_two_binaries' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteTwoBinaries/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'read_write_two_binaries' property to %s", property_obj)
+        with self._property_read_write_two_binaries_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteTwoBinaries/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_binaries_version), self._property_response_topic
+            )
 
     def read_write_two_binaries_changed(self, handler: ReadWriteTwoBinariesPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_binaries' property changes.
@@ -834,18 +930,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_list_of_strings(self) -> Optional[List[str]]:
+    def read_write_list_of_strings(self) -> List[str]:
         """Property 'read_write_list_of_strings' getter."""
-        return self._property_read_write_list_of_strings
+        with self._property_read_write_list_of_strings_mutex:
+            return self._property_read_write_list_of_strings
 
     @read_write_list_of_strings.setter
     def read_write_list_of_strings(self, value: List[str]):
         """Serializes and publishes the 'read_write_list_of_strings' property."""
         if not isinstance(value, list):
             raise ValueError("The 'read_write_list_of_strings' property must be a list")
-        serialized = json.dumps({"value": value.value})
-        self._logger.debug("Setting 'read_write_list_of_strings' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteListOfStrings/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = ReadWriteListOfStringsProperty(value=value)
+        self._logger.debug("Setting 'read_write_list_of_strings' property to %s", property_obj)
+        with self._property_read_write_list_of_strings_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteListOfStrings/setValue".format(self._service_id), property_obj, str(self._property_read_write_list_of_strings_version), self._property_response_topic
+            )
 
     def read_write_list_of_strings_changed(self, handler: ReadWriteListOfStringsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_list_of_strings' property changes.
@@ -858,18 +958,22 @@ class TestAbleClient:
         return handler
 
     @property
-    def read_write_lists(self) -> Optional[ReadWriteListsProperty]:
+    def read_write_lists(self) -> ReadWriteListsProperty:
         """Property 'read_write_lists' getter."""
-        return self._property_read_write_lists
+        with self._property_read_write_lists_mutex:
+            return self._property_read_write_lists
 
     @read_write_lists.setter
     def read_write_lists(self, value: ReadWriteListsProperty):
         """Serializes and publishes the 'read_write_lists' property."""
         if not isinstance(value, ReadWriteListsProperty):
             raise ValueError("The 'read_write_lists' property must be a ReadWriteListsProperty")
-        serialized = value.model_dump_json(exclude_none=True, by_alias=True)
-        self._logger.debug("Setting 'read_write_lists' property to %s", serialized)
-        self._conn.publish("testAble/{}/property/readWriteLists/setValue".format(self._service_id), serialized, qos=1)
+        property_obj = value
+        self._logger.debug("Setting 'read_write_lists' property to %s", property_obj)
+        with self._property_read_write_lists_mutex:
+            self._conn.publish_property_update_request(
+                "testAble/{}/property/readWriteLists/setValue".format(self._service_id), property_obj, str(self._property_read_write_lists_version), self._property_response_topic
+            )
 
     def read_write_lists_changed(self, handler: ReadWriteListsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_lists' property changes.
@@ -1167,6 +1271,13 @@ class TestAbleClient:
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
 
+    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        user_properties = properties.get("UserProperty", {})
+        return_code = user_properties.get("ReturnCode")
+        if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
+            debug_info = user_properties.get("DebugInfo", "")
+            self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
+
     def _receive_read_write_integer_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'read_write_integer' property change.
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
@@ -1174,11 +1285,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteIntegerProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_integer_mutex:
                 self._property_read_write_integer = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_integer_version:
-                        self._property_read_write_integer_version = int(ver)
+                self._property_read_write_integer_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_integer, value=prop_obj.value)
 
@@ -1192,11 +1303,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadOnlyIntegerProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_integer_mutex:
                 self._property_read_only_integer = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_only_integer_version:
-                        self._property_read_only_integer_version = int(ver)
+                self._property_read_only_integer_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_only_integer, value=prop_obj.value)
 
@@ -1210,11 +1321,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_integer_mutex:
                 self._property_read_write_optional_integer = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_optional_integer_version:
-                        self._property_read_write_optional_integer_version = int(ver)
+                self._property_read_write_optional_integer_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_integer, value=prop_obj.value)
 
@@ -1228,11 +1339,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_integers_mutex:
                 self._property_read_write_two_integers = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_two_integers_version:
-                        self._property_read_write_two_integers_version = int(ver)
+                self._property_read_write_two_integers_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_integers, value=prop_obj)
 
@@ -1246,11 +1357,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadOnlyStringProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_string_mutex:
                 self._property_read_only_string = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_only_string_version:
-                        self._property_read_only_string_version = int(ver)
+                self._property_read_only_string_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_only_string, value=prop_obj.value)
 
@@ -1264,11 +1375,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteStringProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_string_mutex:
                 self._property_read_write_string = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_string_version:
-                        self._property_read_write_string_version = int(ver)
+                self._property_read_write_string_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_string, value=prop_obj.value)
 
@@ -1282,11 +1393,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteOptionalStringProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_string_mutex:
                 self._property_read_write_optional_string = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_optional_string_version:
-                        self._property_read_write_optional_string_version = int(ver)
+                self._property_read_write_optional_string_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_string, value=prop_obj.value)
 
@@ -1300,11 +1411,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteTwoStringsProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_strings_mutex:
                 self._property_read_write_two_strings = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_two_strings_version:
-                        self._property_read_write_two_strings_version = int(ver)
+                self._property_read_write_two_strings_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_strings, value=prop_obj)
 
@@ -1318,11 +1429,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteStructProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_struct_mutex:
                 self._property_read_write_struct = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_struct_version:
-                        self._property_read_write_struct_version = int(ver)
+                self._property_read_write_struct_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_struct, value=prop_obj.value)
 
@@ -1336,11 +1447,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteOptionalStructProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_struct_mutex:
                 self._property_read_write_optional_struct = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_optional_struct_version:
-                        self._property_read_write_optional_struct_version = int(ver)
+                self._property_read_write_optional_struct_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_struct, value=prop_obj.value)
 
@@ -1354,11 +1465,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteTwoStructsProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_structs_mutex:
                 self._property_read_write_two_structs = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_two_structs_version:
-                        self._property_read_write_two_structs_version = int(ver)
+                self._property_read_write_two_structs_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_structs, value=prop_obj)
 
@@ -1372,11 +1483,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadOnlyEnumProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_enum_mutex:
                 self._property_read_only_enum = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_only_enum_version:
-                        self._property_read_only_enum_version = int(ver)
+                self._property_read_only_enum_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_only_enum, value=prop_obj.value)
 
@@ -1390,11 +1501,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteEnumProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_enum_mutex:
                 self._property_read_write_enum = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_enum_version:
-                        self._property_read_write_enum_version = int(ver)
+                self._property_read_write_enum_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_enum, value=prop_obj.value)
 
@@ -1408,11 +1519,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_enum_mutex:
                 self._property_read_write_optional_enum = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_optional_enum_version:
-                        self._property_read_write_optional_enum_version = int(ver)
+                self._property_read_write_optional_enum_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_enum, value=prop_obj.value)
 
@@ -1426,11 +1537,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_enums_mutex:
                 self._property_read_write_two_enums = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_two_enums_version:
-                        self._property_read_write_two_enums_version = int(ver)
+                self._property_read_write_two_enums_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_enums, value=prop_obj)
 
@@ -1444,11 +1555,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteDatetimeProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_datetime_mutex:
                 self._property_read_write_datetime = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_datetime_version:
-                        self._property_read_write_datetime_version = int(ver)
+                self._property_read_write_datetime_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_datetime, value=prop_obj.value)
 
@@ -1462,11 +1573,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_datetime_mutex:
                 self._property_read_write_optional_datetime = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_optional_datetime_version:
-                        self._property_read_write_optional_datetime_version = int(ver)
+                self._property_read_write_optional_datetime_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_datetime, value=prop_obj.value)
 
@@ -1480,11 +1591,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_datetimes_mutex:
                 self._property_read_write_two_datetimes = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_two_datetimes_version:
-                        self._property_read_write_two_datetimes_version = int(ver)
+                self._property_read_write_two_datetimes_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_datetimes, value=prop_obj)
 
@@ -1498,11 +1609,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteDurationProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_duration_mutex:
                 self._property_read_write_duration = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_duration_version:
-                        self._property_read_write_duration_version = int(ver)
+                self._property_read_write_duration_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_duration, value=prop_obj.value)
 
@@ -1516,11 +1627,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_duration_mutex:
                 self._property_read_write_optional_duration = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_optional_duration_version:
-                        self._property_read_write_optional_duration_version = int(ver)
+                self._property_read_write_optional_duration_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_duration, value=prop_obj.value)
 
@@ -1534,11 +1645,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_durations_mutex:
                 self._property_read_write_two_durations = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_two_durations_version:
-                        self._property_read_write_two_durations_version = int(ver)
+                self._property_read_write_two_durations_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_durations, value=prop_obj)
 
@@ -1552,11 +1663,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteBinaryProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_binary_mutex:
                 self._property_read_write_binary = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_binary_version:
-                        self._property_read_write_binary_version = int(ver)
+                self._property_read_write_binary_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_binary, value=prop_obj.value)
 
@@ -1570,11 +1681,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_binary_mutex:
                 self._property_read_write_optional_binary = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_optional_binary_version:
-                        self._property_read_write_optional_binary_version = int(ver)
+                self._property_read_write_optional_binary_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_binary, value=prop_obj.value)
 
@@ -1588,11 +1699,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_binaries_mutex:
                 self._property_read_write_two_binaries = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_two_binaries_version:
-                        self._property_read_write_two_binaries_version = int(ver)
+                self._property_read_write_two_binaries_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_two_binaries, value=prop_obj)
 
@@ -1606,11 +1717,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteListOfStringsProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_list_of_strings_mutex:
                 self._property_read_write_list_of_strings = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_list_of_strings_version:
-                        self._property_read_write_list_of_strings_version = int(ver)
+                self._property_read_write_list_of_strings_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_list_of_strings, value=prop_obj.value)
 
@@ -1624,11 +1735,11 @@ class TestAbleClient:
             return
         try:
             prop_obj = ReadWriteListsProperty.model_validate_json(payload)
+            user_properties = properties.get("UserProperty", {})
+            property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_lists_mutex:
                 self._property_read_write_lists = prop_obj
-                if ver := properties.get("PropertyVersion", False):
-                    if int(ver) > self._property_read_write_lists_version:
-                        self._property_read_write_lists_version = int(ver)
+                self._property_read_write_lists_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_lists, value=prop_obj)
 
