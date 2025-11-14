@@ -38,6 +38,8 @@ use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
+#[cfg(feature = "metrics")]
+use serde::Serialize;
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -87,6 +89,51 @@ struct FullProperties {
     last_birthdays_version: Arc<AtomicU32>,
 }
 
+#[cfg(feature = "metrics")]
+#[derive(Debug, Serialize)]
+pub struct FullServerMetrics {
+    pub add_numbers_calls: u64,
+    pub add_numbers_errors: u64,
+    pub do_something_calls: u64,
+    pub do_something_errors: u64,
+    pub echo_calls: u64,
+    pub echo_errors: u64,
+    pub what_time_is_it_calls: u64,
+    pub what_time_is_it_errors: u64,
+    pub set_the_time_calls: u64,
+    pub set_the_time_errors: u64,
+    pub forward_time_calls: u64,
+    pub forward_time_errors: u64,
+    pub how_off_is_the_clock_calls: u64,
+    pub how_off_is_the_clock_errors: u64,
+
+    pub initial_property_publish_time: std::time::Duration,
+}
+
+#[cfg(feature = "metrics")]
+impl Default for FullServerMetrics {
+    fn default() -> Self {
+        FullServerMetrics {
+            add_numbers_calls: 0,
+            add_numbers_errors: 0,
+            do_something_calls: 0,
+            do_something_errors: 0,
+            echo_calls: 0,
+            echo_errors: 0,
+            what_time_is_it_calls: 0,
+            what_time_is_it_errors: 0,
+            set_the_time_calls: 0,
+            set_the_time_errors: 0,
+            forward_time_calls: 0,
+            forward_time_errors: 0,
+            how_off_is_the_clock_calls: 0,
+            how_off_is_the_clock_errors: 0,
+
+            initial_property_publish_time: std::time::Duration::from_secs(0),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct FullServer<C: Mqtt5PubSub> {
     mqtt_client: C,
@@ -114,6 +161,9 @@ pub struct FullServer<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
+
+    #[cfg(feature = "metrics")]
+    metrics: Arc<AsyncMutex<FullServerMetrics>>,
 }
 
 impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
@@ -123,6 +173,9 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         instance_id: String,
         initial_property_values: FullInitialPropertyValues,
     ) -> Self {
+        #[cfg(feature = "metrics")]
+        let mut metrics = FullServerMetrics::default();
+
         // Create a channel for messages to get from the Mqtt5PubSub object to this FullServer object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
@@ -288,40 +341,159 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         };
 
         let property_values = FullProperties {
-            favorite_number: Arc::new(RwLockWatch::new(initial_property_values.favorite_number)),
+            favorite_number: Arc::new(RwLockWatch::new(
+                initial_property_values.favorite_number.clone(),
+            )),
             favorite_number_version: Arc::new(AtomicU32::new(
                 initial_property_values.favorite_number_version,
             )),
-            favorite_foods: Arc::new(RwLockWatch::new(initial_property_values.favorite_foods)),
+            favorite_foods: Arc::new(RwLockWatch::new(
+                initial_property_values.favorite_foods.clone(),
+            )),
             favorite_foods_version: Arc::new(AtomicU32::new(
                 initial_property_values.favorite_foods_version,
             )),
-            lunch_menu: Arc::new(RwLockWatch::new(initial_property_values.lunch_menu)),
+            lunch_menu: Arc::new(RwLockWatch::new(initial_property_values.lunch_menu.clone())),
             lunch_menu_version: Arc::new(AtomicU32::new(
                 initial_property_values.lunch_menu_version,
             )),
 
-            family_name: Arc::new(RwLockWatch::new(initial_property_values.family_name)),
+            family_name: Arc::new(RwLockWatch::new(
+                initial_property_values.family_name.clone(),
+            )),
             family_name_version: Arc::new(AtomicU32::new(
                 initial_property_values.family_name_version,
             )),
 
             last_breakfast_time: Arc::new(RwLockWatch::new(
-                initial_property_values.last_breakfast_time,
+                initial_property_values.last_breakfast_time.clone(),
             )),
             last_breakfast_time_version: Arc::new(AtomicU32::new(
                 initial_property_values.last_breakfast_time_version,
             )),
 
-            breakfast_length: Arc::new(RwLockWatch::new(initial_property_values.breakfast_length)),
+            breakfast_length: Arc::new(RwLockWatch::new(
+                initial_property_values.breakfast_length.clone(),
+            )),
             breakfast_length_version: Arc::new(AtomicU32::new(
                 initial_property_values.breakfast_length_version,
             )),
-            last_birthdays: Arc::new(RwLockWatch::new(initial_property_values.last_birthdays)),
+            last_birthdays: Arc::new(RwLockWatch::new(
+                initial_property_values.last_birthdays.clone(),
+            )),
             last_birthdays_version: Arc::new(AtomicU32::new(
                 initial_property_values.last_birthdays_version,
             )),
         };
+
+        // Publish the initial property values for all the properties.
+        #[cfg(feature = "metrics")]
+        let start_prop_publish_time = std::time::Instant::now();
+        {
+            let topic = format!("full/{}/property/favoriteNumber/value", instance_id);
+
+            let payload_obj = FavoriteNumberProperty {
+                number: initial_property_values.favorite_number,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.favorite_number_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("full/{}/property/favoriteFoods/value", instance_id);
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.favorite_foods,
+                initial_property_values.favorite_foods_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("full/{}/property/lunchMenu/value", instance_id);
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.lunch_menu,
+                initial_property_values.lunch_menu_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("full/{}/property/familyName/value", instance_id);
+
+            let payload_obj = FamilyNameProperty {
+                family_name: initial_property_values.family_name,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.family_name_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("full/{}/property/lastBreakfastTime/value", instance_id);
+
+            let payload_obj = LastBreakfastTimeProperty {
+                timestamp: initial_property_values.last_breakfast_time,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.last_breakfast_time_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("full/{}/property/breakfastLength/value", instance_id);
+
+            let payload_obj = BreakfastLengthProperty {
+                length: initial_property_values.breakfast_length,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.breakfast_length_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("full/{}/property/lastBirthdays/value", instance_id);
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.last_birthdays,
+                initial_property_values.last_birthdays_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        #[cfg(feature = "metrics")]
+        {
+            metrics.initial_property_publish_time = start_prop_publish_time.elapsed();
+            debug!(
+                "Published 7 initial property values in {:?}",
+                metrics.initial_property_publish_time
+            );
+        }
 
         FullServer {
             mqtt_client: connection.clone(),
@@ -334,7 +506,14 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
             client_id: connection.get_client_id(),
             instance_id,
+            #[cfg(feature = "metrics")]
+            metrics: Arc::new(AsyncMutex::new(metrics)),
         }
+    }
+
+    #[cfg(feature = "metrics")]
+    pub fn get_metrics(&self) -> Arc<AsyncMutex<FullServerMetrics>> {
+        self.metrics.clone()
     }
 
     /// Converts a oneshot channel receiver into a future.
@@ -903,16 +1082,16 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -922,7 +1101,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -1055,16 +1234,16 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -1074,7 +1253,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -1205,16 +1384,16 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -1224,7 +1403,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -1355,16 +1534,16 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -1374,7 +1553,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -1509,16 +1688,16 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -1528,7 +1707,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -1666,16 +1845,16 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -1685,7 +1864,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -1815,16 +1994,16 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -1834,7 +2013,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }

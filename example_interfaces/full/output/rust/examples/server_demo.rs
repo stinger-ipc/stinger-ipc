@@ -224,6 +224,8 @@ async fn main() {
         }
     });
 
+    // Provide property handles to the property_publish_task which will use them to continuously update property values.
+
     let favorite_number_property = server.get_favorite_number_handle();
 
     let favorite_foods_property = server.get_favorite_foods_handle();

@@ -18,6 +18,7 @@ from isodate import parse_duration
 
 from .connection import IBrokerConnection
 
+from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -28,16 +29,20 @@ MaybeNameSignalCallbackType = Callable[[Optional[str]], None]
 NowSignalCallbackType = Callable[[datetime], None]
 
 
+class DiscoveredInstance(BaseModel):
+    instance_id: str
+
+
 class SignalOnlyClient:
 
-    def __init__(self, connection: IBrokerConnection, service_instance_id: str):
+    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
         """Constructor for a `SignalOnlyClient` object."""
         self._logger = logging.getLogger("SignalOnlyClient")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SignalOnlyClient")
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
-        self._service_id = service_instance_id
+        self._service_id = instance_info.instance_id
 
         self._signal_recv_callbacks_for_another_signal: list[AnotherSignalSignalCallbackType] = []
         self._signal_recv_callbacks_for_bark: list[BarkSignalCallbackType] = []
@@ -210,11 +215,6 @@ class SignalOnlyClientBuilder:
         return client
 
 
-@dataclass
-class DiscoveredInstance:
-    instance_id: str
-
-
 class SignalOnlyClientDiscoverer:
 
     def __init__(self, connection: IBrokerConnection, builder: Optional[SignalOnlyClientBuilder] = None):
@@ -306,10 +306,10 @@ class SignalOnlyClientDiscoverer:
             try:
                 service_info = InterfaceInfo.model_validate_json(payload)
                 with self._mutex:
-                    self._discovered_interface_infos[service_info.instance_id] = service_info
+                    self._discovered_interface_infos[service_info.instance] = service_info
             except Exception as e:
                 self._logger.warning("Failed to process service discovery message: %s", e)
-            self._check_for_fully_discovered(service_info.instance_id)
+            self._check_for_fully_discovered(service_info.instance)
 
         else:  # Empty payload means the service is going away
             instance_id = topic.split("/")[-2]
@@ -331,7 +331,7 @@ class SignalOnlyClientDiscoverer:
         instance_id = topic.split("/")[1]
         property_name = topic.split("/")[3]
         user_properties = properties.get("UserProperty", {})
-        prop_version = user_properties.get("Version", -1)
+        prop_version = user_properties.get("PropertyVersion", -1)
         try:
             prop_obj = json.loads(payload)
             with self._mutex:

@@ -14,52 +14,28 @@ if __name__ == "__main__":
 
     initial_property_values = TestAbleInitialPropertyValues(
         read_write_integer=42,
+        read_write_integer_version=1,
         read_only_integer=42,
+        read_only_integer_version=2,
         read_write_optional_integer=42,
+        read_write_optional_integer_version=3,
         read_write_two_integers=ReadWriteTwoIntegersProperty(
             first=42,
             second=42,
         ),
+        read_write_two_integers_version=4,
         read_only_string="apples",
+        read_only_string_version=5,
         read_write_string="apples",
+        read_write_string_version=6,
         read_write_optional_string="apples",
+        read_write_optional_string_version=7,
         read_write_two_strings=ReadWriteTwoStringsProperty(
             first="apples",
             second="apples",
         ),
+        read_write_two_strings_version=8,
         read_write_struct=AllTypes(
-            the_bool=True,
-            the_int=42,
-            the_number=3.14,
-            the_str="apples",
-            the_enum=Numbers.ONE,
-            an_entry_object=Entry(key=42, value="apples"),
-            date_and_time=datetime.now(UTC),
-            time_duration=timedelta(seconds=3536),
-            data=b"example binary data",
-            optional_integer=42,
-            optional_string="apples",
-            optional_enum=Numbers.ONE,
-            optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
-            optional_duration=None,
-            optional_binary=b"example binary data",
-            array_of_integers=[42, 2022],
-            optional_array_of_integers=[42, 2022],
-            array_of_strings=["apples", "foo"],
-            optional_array_of_strings=["apples", "foo"],
-            array_of_enums=[Numbers.ONE, Numbers.ONE],
-            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-            array_of_binaries=[b"example binary data", b"example binary data"],
-            optional_array_of_binaries=[b"example binary data", b"example binary data"],
-            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-        ),
-        read_write_optional_struct=AllTypes(
             the_bool=True,
             the_int=42,
             the_number=3.14,
@@ -91,6 +67,40 @@ if __name__ == "__main__":
             array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
         ),
+        read_write_struct_version=9,
+        read_write_optional_struct=AllTypes(
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=Numbers.ONE,
+            an_entry_object=Entry(key=42, value="apples"),
+            date_and_time=datetime.now(UTC),
+            time_duration=timedelta(seconds=3536),
+            data=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=Numbers.ONE,
+            optional_entry_object=Entry(key=42, value="apples"),
+            optional_date_time=datetime.now(UTC),
+            optional_duration=None,
+            optional_binary=b"example binary data",
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
+            array_of_enums=[Numbers.ONE, Numbers.ONE],
+            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+        ),
+        read_write_optional_struct_version=10,
         read_write_two_structs=ReadWriteTwoStructsProperty(
             first=AllTypes(
                 the_bool=True,
@@ -106,7 +116,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -157,36 +167,52 @@ if __name__ == "__main__":
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
         ),
+        read_write_two_structs_version=11,
         read_only_enum=Numbers.ONE,
+        read_only_enum_version=12,
         read_write_enum=Numbers.ONE,
+        read_write_enum_version=13,
         read_write_optional_enum=Numbers.ONE,
+        read_write_optional_enum_version=14,
         read_write_two_enums=ReadWriteTwoEnumsProperty(
             first=Numbers.ONE,
             second=Numbers.ONE,
         ),
+        read_write_two_enums_version=15,
         read_write_datetime=datetime.now(UTC),
+        read_write_datetime_version=16,
         read_write_optional_datetime=datetime.now(UTC),
+        read_write_optional_datetime_version=17,
         read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
             first=datetime.now(UTC),
             second=datetime.now(UTC),
         ),
+        read_write_two_datetimes_version=18,
         read_write_duration=timedelta(seconds=3536),
+        read_write_duration_version=19,
         read_write_optional_duration=None,
+        read_write_optional_duration_version=20,
         read_write_two_durations=ReadWriteTwoDurationsProperty(
             first=timedelta(seconds=3536),
             second=None,
         ),
+        read_write_two_durations_version=21,
         read_write_binary=b"example binary data",
+        read_write_binary_version=22,
         read_write_optional_binary=b"example binary data",
+        read_write_optional_binary_version=23,
         read_write_two_binaries=ReadWriteTwoBinariesProperty(
             first=b"example binary data",
             second=b"example binary data",
         ),
+        read_write_two_binaries_version=24,
         read_write_list_of_strings=["apples", "foo"],
+        read_write_list_of_strings_version=25,
         read_write_lists=ReadWriteListsProperty(
             the_list=[Numbers.ONE, Numbers.ONE],
             optionalList=[datetime.now(UTC), datetime.now(UTC)],
         ),
+        read_write_lists_version=26,
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
@@ -440,13 +466,13 @@ if __name__ == "__main__":
     def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
         """This is an example handler for the 'callOptionalDateTime' method."""
         print(f"--> Running call_optional_date_time({input1})'")
-        return None
+        return datetime.now(UTC)
 
     @server.handle_call_three_date_times
     def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> CallThreeDateTimesMethodResponse:
         """This is an example handler for the 'callThreeDateTimes' method."""
         print(f"--> Running call_three_date_times({input1}, {input2}, {input3})'")
-        return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=datetime.now(UTC))
+        return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=None)
 
     @server.handle_call_one_duration
     def call_one_duration(input1: timedelta) -> timedelta:
@@ -793,7 +819,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -860,7 +886,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -894,7 +920,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -1013,7 +1039,7 @@ if __name__ == "__main__":
             )
             server.emit_single_date_time(value=datetime.now(UTC))
             server.emit_single_optional_datetime(value=datetime.now(UTC))
-            server.emit_three_date_times(first=datetime.now(UTC), second=datetime.now(UTC), third=datetime.now(UTC))
+            server.emit_three_date_times(first=datetime.now(UTC), second=datetime.now(UTC), third=None)
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)
             server.emit_three_durations(first=timedelta(seconds=3536), second=timedelta(seconds=3536), third=None)

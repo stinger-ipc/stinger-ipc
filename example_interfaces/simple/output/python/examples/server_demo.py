@@ -14,6 +14,7 @@ if __name__ == "__main__":
 
     initial_property_values = SimpleInitialPropertyValues(
         school="apples",
+        school_version=1,
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)

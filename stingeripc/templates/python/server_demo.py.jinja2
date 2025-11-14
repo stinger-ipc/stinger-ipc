@@ -14,16 +14,17 @@ if __name__ == '__main__':
     {%if stinger.properties | length > 0 %}
     initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
     {%for prop_name, prop in stinger.properties.items()%}
-    {{prop_name | snake_case}}=
-        {%if prop.arg_list | length > 1%}
-        {{prop.python_class}}(
-            {%for arg in prop.arg_list%}
-            {{arg.name}}={{arg.get_random_example_value()}},
-            {%endfor%}
-        ),
-        {%else%}
-        {{prop.arg_list[0].get_random_example_value()}},
-        {%endif%}
+        {{prop_name | snake_case}}=
+            {%-if prop.arg_list | length > 1%}
+            {{prop.python_class}}(
+                {%for arg in prop.arg_list%}
+                {{arg.name}}={{arg.get_random_example_value()}},
+                {%endfor%}
+            ),
+            {%-else-%}
+            {{prop.arg_list[0].get_random_example_value()}},
+            {%endif%}
+        {{prop_name | snake_case}}_version={{loop.index}},
     {%endfor%}
     )
     {%endif%}

@@ -115,6 +115,8 @@ async fn main() {
         }
     });
 
+    // Provide property handles to the property_publish_task which will use them to continuously update property values.
+
     let school_property = server.get_school_handle();
     let property_publish_task = tokio::spawn(async move {
         loop {

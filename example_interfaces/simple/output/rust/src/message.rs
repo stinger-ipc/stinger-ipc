@@ -37,7 +37,7 @@ pub fn property_value<T: Serialize>(
     builder.topic(topic).qos(QoS::AtLeastOnce).retain(true);
     match builder.object_payload(payload) {
         Ok(_) => {
-            builder.user_property("Version", property_version.to_string());
+            builder.user_property("PropertyVersion", property_version.to_string());
         }
         Err(e) => return Err(MethodReturnCode::ServerSerializationError(e.to_string())),
     }
@@ -59,7 +59,7 @@ pub fn property_update<T: Serialize>(
         .map_err(|e| MethodReturnCode::ClientSerializationError(e.to_string()))?
         .qos(QoS::AtLeastOnce)
         .retain(false)
-        .user_property("Version", property_version.to_string())
+        .user_property("PropertyVersion", property_version.to_string())
         .build()
         .map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
     Ok(msg)
@@ -80,7 +80,7 @@ pub fn property_update_request<T: Serialize>(
         .qos(QoS::AtLeastOnce)
         .retain(false)
         .response_topic(response_topic)
-        .user_property("Version", property_version.to_string())
+        .user_property("PropertyVersion", property_version.to_string())
         .correlation_data(Bytes::from(correlation_id.to_string()))
         .build()
         .map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;

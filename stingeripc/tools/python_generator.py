@@ -38,6 +38,7 @@ def main(inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir
         "__init__.py",
         "method_codes.py",
         "interface_types.py",
+        "property.py",
     ]:
         of = generated_pkg_dir / output_file
         print(f"[bold green]Generating:[/bold green] {of}")

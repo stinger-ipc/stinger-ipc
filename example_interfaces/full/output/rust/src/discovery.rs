@@ -333,9 +333,10 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
                         "favoriteNumber" => {
                             let deserialized_property =
                                 serde_json::from_slice::<FavoriteNumberProperty>(&message.payload);
+                            error!("Message user properties: {:?}", message.user_properties);
                             let version = message
                                 .user_properties
-                                .get("Version")
+                                .get("PropertyVersion")
                                 .and_then(|v| v.parse::<u32>().ok())
                                 .unwrap_or(0);
                             match deserialized_property {
@@ -358,9 +359,10 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
                         "favoriteFoods" => {
                             let deserialized_property =
                                 serde_json::from_slice::<FavoriteFoodsProperty>(&message.payload);
+                            error!("Message user properties: {:?}", message.user_properties);
                             let version = message
                                 .user_properties
-                                .get("Version")
+                                .get("PropertyVersion")
                                 .and_then(|v| v.parse::<u32>().ok())
                                 .unwrap_or(0);
                             match deserialized_property {
@@ -383,9 +385,10 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
                         "lunchMenu" => {
                             let deserialized_property =
                                 serde_json::from_slice::<LunchMenuProperty>(&message.payload);
+                            error!("Message user properties: {:?}", message.user_properties);
                             let version = message
                                 .user_properties
-                                .get("Version")
+                                .get("PropertyVersion")
                                 .and_then(|v| v.parse::<u32>().ok())
                                 .unwrap_or(0);
                             match deserialized_property {
@@ -406,9 +409,10 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
                         "familyName" => {
                             let deserialized_property =
                                 serde_json::from_slice::<FamilyNameProperty>(&message.payload);
+                            error!("Message user properties: {:?}", message.user_properties);
                             let version = message
                                 .user_properties
-                                .get("Version")
+                                .get("PropertyVersion")
                                 .and_then(|v| v.parse::<u32>().ok())
                                 .unwrap_or(0);
                             match deserialized_property {
@@ -433,9 +437,10 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
                                 serde_json::from_slice::<LastBreakfastTimeProperty>(
                                     &message.payload,
                                 );
+                            error!("Message user properties: {:?}", message.user_properties);
                             let version = message
                                 .user_properties
-                                .get("Version")
+                                .get("PropertyVersion")
                                 .and_then(|v| v.parse::<u32>().ok())
                                 .unwrap_or(0);
                             match deserialized_property {
@@ -458,9 +463,10 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
                         "breakfastLength" => {
                             let deserialized_property =
                                 serde_json::from_slice::<BreakfastLengthProperty>(&message.payload);
+                            error!("Message user properties: {:?}", message.user_properties);
                             let version = message
                                 .user_properties
-                                .get("Version")
+                                .get("PropertyVersion")
                                 .and_then(|v| v.parse::<u32>().ok())
                                 .unwrap_or(0);
                             match deserialized_property {
@@ -483,9 +489,10 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
                         "lastBirthdays" => {
                             let deserialized_property =
                                 serde_json::from_slice::<LastBirthdaysProperty>(&message.payload);
+                            error!("Message user properties: {:?}", message.user_properties);
                             let version = message
                                 .user_properties
-                                .get("Version")
+                                .get("PropertyVersion")
                                 .and_then(|v| v.parse::<u32>().ok())
                                 .unwrap_or(0);
                             match deserialized_property {

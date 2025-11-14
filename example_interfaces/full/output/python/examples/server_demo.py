@@ -14,24 +14,31 @@ if __name__ == "__main__":
 
     initial_property_values = FullInitialPropertyValues(
         favorite_number=42,
+        favorite_number_version=1,
         favorite_foods=FavoriteFoodsProperty(
             drink="apples",
             slices_of_pizza=42,
             breakfast="apples",
         ),
+        favorite_foods_version=2,
         lunch_menu=LunchMenuProperty(
             monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
             tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
         ),
+        lunch_menu_version=3,
         family_name="apples",
+        family_name_version=4,
         last_breakfast_time=datetime.now(UTC),
+        last_breakfast_time_version=5,
         breakfast_length=timedelta(seconds=3536),
+        breakfast_length_version=6,
         last_birthdays=LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
             sister=datetime.now(UTC),
             brothers_age=42,
         ),
+        last_birthdays_version=7,
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)

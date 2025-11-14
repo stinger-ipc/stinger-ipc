@@ -44,6 +44,8 @@ type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode
 #[allow(unused_imports)]
 use tracing::{debug, info, warn, error};
 use crate::message;
+#[cfg(feature = "metrics")]
+use serde::Serialize;
 
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
 /// This struct is used to store all the MQTTv5 subscription ids
@@ -71,6 +73,34 @@ struct {{stinger.name | UpperCamelCase}}Properties {
     {%-endfor%}
 }
 {%endif%}{# if any properties #}
+
+
+#[cfg(feature = "metrics")]
+#[derive(Debug, Serialize)]
+pub struct {{stinger.name | UpperCamelCase }}ServerMetrics {
+    {%for method_name, method in stinger.methods.items()-%}
+    pub {{method_name | snake_case}}_calls: u64,
+    pub {{method_name | snake_case}}_errors: u64,
+    {%endfor%}
+    {%if stinger.properties | length > 0 %}
+    pub initial_property_publish_time: std::time::Duration,
+    {%endif%}
+}
+
+#[cfg(feature = "metrics")]
+impl Default for {{stinger.name | UpperCamelCase }}ServerMetrics {
+    fn default() -> Self {
+        {{stinger.name | UpperCamelCase }}ServerMetrics {
+            {%for method_name, method in stinger.methods.items()-%}
+            {{method_name | snake_case}}_calls: 0,
+            {{method_name | snake_case}}_errors: 0,
+            {%endfor%}
+            {%if stinger.properties | length > 0 %}
+            initial_property_publish_time: std::time::Duration::from_secs(0),
+            {%endif%}
+        }
+    }
+}
 
 {%endif%}{# any methods or properties #}
 #[derive(Clone)]
@@ -104,6 +134,9 @@ pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
+
+    #[cfg(feature = "metrics")]
+    metrics: Arc<AsyncMutex<{{stinger.name | UpperCamelCase }}ServerMetrics>>,
 }
 
 impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
@@ -113,6 +146,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             instance_id: String, {%if stinger.properties|length > 0 %}
             initial_property_values: {{stinger.name | UpperCamelCase}}InitialPropertyValues,{%endif%}
         ) -> Self {
+        #[cfg(feature = "metrics")]
+        let mut metrics = {{stinger.name | UpperCamelCase }}ServerMetrics::default();
+
         {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
         // Create a channel for messages to get from the Mqtt5PubSub object to this {{stinger.rust.server_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -144,15 +180,38 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
 
         {%if stinger.properties|length > 0%}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
-        {%-for prop_name, prop in stinger.properties.items()%}
+            {%-for prop_name, prop in stinger.properties.items()%}
             {%if prop.arg_list | length > 1 -%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}})),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}}.clone())),
             {%-else%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}})),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}}.clone())),
             {%-endif-%}
             {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(initial_property_values.{{prop_name | snake_case}}_version)),
-        {%-endfor%}
+            {%-endfor%}
         };
+
+        // Publish the initial property values for all the properties.
+        #[cfg(feature = "metrics")]
+        let start_prop_publish_time = std::time::Instant::now();
+        {%-for prop_name, prop in stinger.properties.items()%}
+        {
+            let topic = format!("{{prop.value_topic}}", instance_id);
+            {%if prop.arg_list | length > 1 -%}
+            let msg = message::property_value(&topic, &initial_property_values.{{prop_name | snake_case}}, initial_property_values.{{prop_name | snake_case}}_version).unwrap();
+            {%-else%}
+            let payload_obj = {{prop_name | UpperCamelCase}}Property {
+                {{prop.arg_list[0].name | snake_case}}: initial_property_values.{{prop_name | snake_case}},
+            };
+            let msg = message::property_value(&topic, &payload_obj, initial_property_values.{{prop_name | snake_case}}_version).unwrap();
+            {%endif%}
+            let _ = connection.publish_nowait(msg);
+        }
+        {%endfor%}
+        #[cfg(feature = "metrics")]
+        {
+            metrics.initial_property_publish_time = start_prop_publish_time.elapsed();
+            debug!("Published {{stinger.properties|length}} initial property value{%if stinger.properties|length > 1 %}s{%endif%} in {:?}", metrics.initial_property_publish_time);
+        }
         {%endif%}
 
         {{stinger.rust.server_struct_name}} {
@@ -166,7 +225,14 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%endif%}
             client_id: connection.get_client_id(),
             instance_id,
+            #[cfg(feature = "metrics")]
+            metrics: Arc::new(AsyncMutex::new(metrics)),
         }
+    }
+
+    #[cfg(feature = "metrics")]
+    pub fn get_metrics(&self) -> Arc<AsyncMutex<{{stinger.name | UpperCamelCase }}ServerMetrics>> {
+        self.metrics.clone()
     }
 
     /// Converts a oneshot channel receiver into a future.
@@ -331,12 +397,12 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
-                            error!("Failed to parse 'Version' user property ('{}'): {:?}", version_str, e);
-                            return_code = MethodReturnCode::PayloadError("Invalid 'Version' user property".to_string());
+                            error!("Failed to parse 'PropertyVersion' user property ('{}'): {:?}", version_str, e);
+                            return_code = MethodReturnCode::PayloadError("Invalid 'PropertyVersion' user property".to_string());
                         }
                     }
                 }
@@ -345,7 +411,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }

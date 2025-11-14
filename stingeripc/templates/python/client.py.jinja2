@@ -26,6 +26,7 @@ from .connection import IBrokerConnection
 {%if stinger.properties | length > 0 %}
 from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
 {%endif%}
+from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -39,9 +40,15 @@ logging.basicConfig(level=logging.DEBUG)
 {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Callable[[{{prop.python_annotation}}], None]
 {%endfor%}
 
+
+class DiscoveredInstance(BaseModel):
+    instance_id: str
+    {%if stinger.properties | length > 0 %}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}
+
+
 class {{stinger.python.client_class_name}}:
 
-    def __init__(self, connection: IBrokerConnection, service_instance_id: str):
+    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
         """ Constructor for a `{{stinger.python.client_class_name}}` object.
         """
         self._logger = logging.getLogger('{{stinger.python.client_class_name}}')
@@ -49,14 +56,14 @@ class {{stinger.python.client_class_name}}:
         self._logger.debug("Initializing {{stinger.python.client_class_name}}")
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
-        self._service_id = service_instance_id
+        self._service_id = instance_info.instance_id
         {%if stinger.methods | length > 0 %}
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
-        self._property_{{prop_name|snake_case}} = None # type: {%if 'Optional' in prop_spec.python_annotation%}{{prop_spec.python_annotation}}{%else%}Optional[{{prop_spec.python_annotation}}]{%endif%}
+        self._property_{{prop_name|snake_case}} = instance_info.initial_property_values.{{prop_name|snake_case}}  # type: {{prop_spec.python_annotation}}
         self._property_{{prop_name|snake_case}}_mutex = threading.Lock()
-        self._property_{{prop_name|snake_case}}_version = -1
+        self._property_{{prop_name|snake_case}}_version = instance_info.initial_property_values.{{prop_name|snake_case}}_version
         self._conn.subscribe("{{prop_spec.value_topic}}".format(self._service_id), self._receive_{{prop_name | snake_case}}_property_update_message)
         self._changed_value_callbacks_for_{{prop_name}}: list[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
@@ -281,11 +288,6 @@ class {{stinger.python.client_class_name}}Builder:
         {%endfor%}
         return client
 
-@dataclass
-class DiscoveredInstance:
-    instance_id: str
-    {%if stinger.properties | length > 0 %}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}
-
 class {{stinger.python.client_class_name}}Discoverer:
     
     def __init__(self, connection: IBrokerConnection, builder: Optional[{{stinger.python.client_class_name}}Builder]=None):
@@ -361,7 +363,7 @@ class {{stinger.python.client_class_name}}Discoverer:
 
                 entry = DiscoveredInstance(
                     instance_id=instance_id,
-                    {%if stinger.properties | length > 0 %}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id]){%endif%}
+                    {%if stinger.properties | length > 0 %}initial_property_values={{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id]){%endif%}
                 )
 
                 self._discovered_services[instance_id] = entry
@@ -387,10 +389,10 @@ class {{stinger.python.client_class_name}}Discoverer:
             try:
                 service_info = InterfaceInfo.model_validate_json(payload)
                 with self._mutex:
-                    self._discovered_interface_infos[service_info.instance_id] = service_info
+                    self._discovered_interface_infos[service_info.instance] = service_info
             except Exception as e:
                 self._logger.warning("Failed to process service discovery message: %s", e)
-            self._check_for_fully_discovered(service_info.instance_id)
+            self._check_for_fully_discovered(service_info.instance)
 
         else: # Empty payload means the service is going away
             instance_id = topic.split('/')[-2]
@@ -413,7 +415,7 @@ class {{stinger.python.client_class_name}}Discoverer:
         instance_id = topic.split('/')[1]
         property_name = topic.split('/')[3]
         user_properties  = properties.get("UserProperty", {})
-        prop_version = user_properties.get("Version", -1)
+        prop_version = user_properties.get("PropertyVersion", -1)
         try:
             prop_obj = json.loads(payload)
             with self._mutex:

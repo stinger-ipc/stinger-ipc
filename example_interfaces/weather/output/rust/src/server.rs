@@ -38,6 +38,8 @@ use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
+#[cfg(feature = "metrics")]
+use serde::Serialize;
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -79,6 +81,35 @@ struct WeatherProperties {
     daily_forecast_refresh_interval_version: Arc<AtomicU32>,
 }
 
+#[cfg(feature = "metrics")]
+#[derive(Debug, Serialize)]
+pub struct WeatherServerMetrics {
+    pub refresh_daily_forecast_calls: u64,
+    pub refresh_daily_forecast_errors: u64,
+    pub refresh_hourly_forecast_calls: u64,
+    pub refresh_hourly_forecast_errors: u64,
+    pub refresh_current_conditions_calls: u64,
+    pub refresh_current_conditions_errors: u64,
+
+    pub initial_property_publish_time: std::time::Duration,
+}
+
+#[cfg(feature = "metrics")]
+impl Default for WeatherServerMetrics {
+    fn default() -> Self {
+        WeatherServerMetrics {
+            refresh_daily_forecast_calls: 0,
+            refresh_daily_forecast_errors: 0,
+            refresh_hourly_forecast_calls: 0,
+            refresh_hourly_forecast_errors: 0,
+            refresh_current_conditions_calls: 0,
+            refresh_current_conditions_errors: 0,
+
+            initial_property_publish_time: std::time::Duration::from_secs(0),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct WeatherServer<C: Mqtt5PubSub> {
     mqtt_client: C,
@@ -106,6 +137,9 @@ pub struct WeatherServer<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
+
+    #[cfg(feature = "metrics")]
+    metrics: Arc<AsyncMutex<WeatherServerMetrics>>,
 }
 
 impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
@@ -115,6 +149,9 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         instance_id: String,
         initial_property_values: WeatherInitialPropertyValues,
     ) -> Self {
+        #[cfg(feature = "metrics")]
+        let mut metrics = WeatherServerMetrics::default();
+
         // Create a channel for messages to get from the Mqtt5PubSub object to this WeatherServer object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
@@ -216,51 +253,190 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         };
 
         let property_values = WeatherProperties {
-            location: Arc::new(RwLockWatch::new(initial_property_values.location)),
+            location: Arc::new(RwLockWatch::new(initial_property_values.location.clone())),
             location_version: Arc::new(AtomicU32::new(initial_property_values.location_version)),
 
             current_temperature: Arc::new(RwLockWatch::new(
-                initial_property_values.current_temperature,
+                initial_property_values.current_temperature.clone(),
             )),
             current_temperature_version: Arc::new(AtomicU32::new(
                 initial_property_values.current_temperature_version,
             )),
             current_condition: Arc::new(RwLockWatch::new(
-                initial_property_values.current_condition,
+                initial_property_values.current_condition.clone(),
             )),
             current_condition_version: Arc::new(AtomicU32::new(
                 initial_property_values.current_condition_version,
             )),
-            daily_forecast: Arc::new(RwLockWatch::new(initial_property_values.daily_forecast)),
+            daily_forecast: Arc::new(RwLockWatch::new(
+                initial_property_values.daily_forecast.clone(),
+            )),
             daily_forecast_version: Arc::new(AtomicU32::new(
                 initial_property_values.daily_forecast_version,
             )),
-            hourly_forecast: Arc::new(RwLockWatch::new(initial_property_values.hourly_forecast)),
+            hourly_forecast: Arc::new(RwLockWatch::new(
+                initial_property_values.hourly_forecast.clone(),
+            )),
             hourly_forecast_version: Arc::new(AtomicU32::new(
                 initial_property_values.hourly_forecast_version,
             )),
 
             current_condition_refresh_interval: Arc::new(RwLockWatch::new(
-                initial_property_values.current_condition_refresh_interval,
+                initial_property_values
+                    .current_condition_refresh_interval
+                    .clone(),
             )),
             current_condition_refresh_interval_version: Arc::new(AtomicU32::new(
                 initial_property_values.current_condition_refresh_interval_version,
             )),
 
             hourly_forecast_refresh_interval: Arc::new(RwLockWatch::new(
-                initial_property_values.hourly_forecast_refresh_interval,
+                initial_property_values
+                    .hourly_forecast_refresh_interval
+                    .clone(),
             )),
             hourly_forecast_refresh_interval_version: Arc::new(AtomicU32::new(
                 initial_property_values.hourly_forecast_refresh_interval_version,
             )),
 
             daily_forecast_refresh_interval: Arc::new(RwLockWatch::new(
-                initial_property_values.daily_forecast_refresh_interval,
+                initial_property_values
+                    .daily_forecast_refresh_interval
+                    .clone(),
             )),
             daily_forecast_refresh_interval_version: Arc::new(AtomicU32::new(
                 initial_property_values.daily_forecast_refresh_interval_version,
             )),
         };
+
+        // Publish the initial property values for all the properties.
+        #[cfg(feature = "metrics")]
+        let start_prop_publish_time = std::time::Instant::now();
+        {
+            let topic = format!("weather/{}/property/location/value", instance_id);
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.location,
+                initial_property_values.location_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("weather/{}/property/currentTemperature/value", instance_id);
+
+            let payload_obj = CurrentTemperatureProperty {
+                temperature_f: initial_property_values.current_temperature,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.current_temperature_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("weather/{}/property/currentCondition/value", instance_id);
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.current_condition,
+                initial_property_values.current_condition_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("weather/{}/property/dailyForecast/value", instance_id);
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.daily_forecast,
+                initial_property_values.daily_forecast_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("weather/{}/property/hourlyForecast/value", instance_id);
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.hourly_forecast,
+                initial_property_values.hourly_forecast_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "weather/{}/property/currentConditionRefreshInterval/value",
+                instance_id
+            );
+
+            let payload_obj = CurrentConditionRefreshIntervalProperty {
+                seconds: initial_property_values.current_condition_refresh_interval,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.current_condition_refresh_interval_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "weather/{}/property/hourlyForecastRefreshInterval/value",
+                instance_id
+            );
+
+            let payload_obj = HourlyForecastRefreshIntervalProperty {
+                seconds: initial_property_values.hourly_forecast_refresh_interval,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.hourly_forecast_refresh_interval_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "weather/{}/property/dailyForecastRefreshInterval/value",
+                instance_id
+            );
+
+            let payload_obj = DailyForecastRefreshIntervalProperty {
+                seconds: initial_property_values.daily_forecast_refresh_interval,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.daily_forecast_refresh_interval_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        #[cfg(feature = "metrics")]
+        {
+            metrics.initial_property_publish_time = start_prop_publish_time.elapsed();
+            debug!(
+                "Published 8 initial property values in {:?}",
+                metrics.initial_property_publish_time
+            );
+        }
 
         WeatherServer {
             mqtt_client: connection.clone(),
@@ -273,7 +449,14 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
             client_id: connection.get_client_id(),
             instance_id,
+            #[cfg(feature = "metrics")]
+            metrics: Arc::new(AsyncMutex::new(metrics)),
         }
+    }
+
+    #[cfg(feature = "metrics")]
+    pub fn get_metrics(&self) -> Arc<AsyncMutex<WeatherServerMetrics>> {
+        self.metrics.clone()
     }
 
     /// Converts a oneshot channel receiver into a future.
@@ -509,16 +692,16 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -528,7 +711,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -777,16 +960,16 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -796,7 +979,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -932,16 +1115,16 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -951,7 +1134,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -1081,16 +1264,16 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -1100,7 +1283,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }

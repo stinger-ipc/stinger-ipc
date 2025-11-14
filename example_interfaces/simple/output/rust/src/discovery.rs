@@ -333,9 +333,10 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SimpleDiscovery<C> {
                         "school" => {
                             let deserialized_property =
                                 serde_json::from_slice::<SchoolProperty>(&message.payload);
+                            error!("Message user properties: {:?}", message.user_properties);
                             let version = message
                                 .user_properties
-                                .get("Version")
+                                .get("PropertyVersion")
                                 .and_then(|v| v.parse::<u32>().ok())
                                 .unwrap_or(0);
                             match deserialized_property {

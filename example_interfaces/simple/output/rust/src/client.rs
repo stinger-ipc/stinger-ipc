@@ -488,17 +488,20 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
                         }
 
                         _i if _i == sub_ids.school_property_value => {
-                            debug!("Received message for school property value");
+                            debug!("Received SCHOOL property value");
                             // JSON deserialize into SchoolProperty struct
                             match serde_json::from_slice::<SchoolProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.school.write().await;
 
+                                    debug!("SCHOOL property value updated: {:?}", pl.name);
                                     *guard = pl.name.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.school_version.store(
                                                 version_num,

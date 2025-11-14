@@ -26,6 +26,7 @@ from .connection import IBrokerConnection
 
 from .property import FullInitialPropertyValues
 
+from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -47,77 +48,78 @@ BreakfastLengthPropertyUpdatedCallbackType = Callable[[timedelta], None]
 LastBirthdaysPropertyUpdatedCallbackType = Callable[[LastBirthdaysProperty], None]
 
 
+class DiscoveredInstance(BaseModel):
+    instance_id: str
+    initial_property_values: FullInitialPropertyValues
+
+
 class FullClient:
 
-    def __init__(self, connection: IBrokerConnection, service_instance_id: str):
-        """ Constructor for a `FullClient` object.
-        """
-        self._logger = logging.getLogger('FullClient')
+    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
+        """Constructor for a `FullClient` object."""
+        self._logger = logging.getLogger("FullClient")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing FullClient")
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
-        self._service_id = service_instance_id
-        
+        self._service_id = instance_info.instance_id
+
         self._pending_method_responses: dict[str, Callable[..., None]] = {}
-        
-        self._property_favorite_number = None # type: Optional[int]
+
+        self._property_favorite_number = instance_info.initial_property_values.favorite_number  # type: int
         self._property_favorite_number_mutex = threading.Lock()
-        self._property_favorite_number_version = -1
+        self._property_favorite_number_version = instance_info.initial_property_values.favorite_number_version
         self._conn.subscribe("full/{}/property/favoriteNumber/value".format(self._service_id), self._receive_favorite_number_property_update_message)
         self._changed_value_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
-        self._property_favorite_foods = None # type: Optional[FavoriteFoodsProperty]
+        self._property_favorite_foods = instance_info.initial_property_values.favorite_foods  # type: FavoriteFoodsProperty
         self._property_favorite_foods_mutex = threading.Lock()
-        self._property_favorite_foods_version = -1
+        self._property_favorite_foods_version = instance_info.initial_property_values.favorite_foods_version
         self._conn.subscribe("full/{}/property/favoriteFoods/value".format(self._service_id), self._receive_favorite_foods_property_update_message)
         self._changed_value_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
-        self._property_lunch_menu = None # type: Optional[LunchMenuProperty]
+        self._property_lunch_menu = instance_info.initial_property_values.lunch_menu  # type: LunchMenuProperty
         self._property_lunch_menu_mutex = threading.Lock()
-        self._property_lunch_menu_version = -1
+        self._property_lunch_menu_version = instance_info.initial_property_values.lunch_menu_version
         self._conn.subscribe("full/{}/property/lunchMenu/value".format(self._service_id), self._receive_lunch_menu_property_update_message)
         self._changed_value_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
-        self._property_family_name = None # type: Optional[str]
+        self._property_family_name = instance_info.initial_property_values.family_name  # type: str
         self._property_family_name_mutex = threading.Lock()
-        self._property_family_name_version = -1
+        self._property_family_name_version = instance_info.initial_property_values.family_name_version
         self._conn.subscribe("full/{}/property/familyName/value".format(self._service_id), self._receive_family_name_property_update_message)
         self._changed_value_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
-        self._property_last_breakfast_time = None # type: Optional[datetime]
+        self._property_last_breakfast_time = instance_info.initial_property_values.last_breakfast_time  # type: datetime
         self._property_last_breakfast_time_mutex = threading.Lock()
-        self._property_last_breakfast_time_version = -1
+        self._property_last_breakfast_time_version = instance_info.initial_property_values.last_breakfast_time_version
         self._conn.subscribe("full/{}/property/lastBreakfastTime/value".format(self._service_id), self._receive_last_breakfast_time_property_update_message)
         self._changed_value_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
-        self._property_breakfast_length = None # type: Optional[timedelta]
+        self._property_breakfast_length = instance_info.initial_property_values.breakfast_length  # type: timedelta
         self._property_breakfast_length_mutex = threading.Lock()
-        self._property_breakfast_length_version = -1
+        self._property_breakfast_length_version = instance_info.initial_property_values.breakfast_length_version
         self._conn.subscribe("full/{}/property/breakfastLength/value".format(self._service_id), self._receive_breakfast_length_property_update_message)
         self._changed_value_callbacks_for_breakfast_length: list[BreakfastLengthPropertyUpdatedCallbackType] = []
-        self._property_last_birthdays = None # type: Optional[LastBirthdaysProperty]
+        self._property_last_birthdays = instance_info.initial_property_values.last_birthdays  # type: LastBirthdaysProperty
         self._property_last_birthdays_mutex = threading.Lock()
-        self._property_last_birthdays_version = -1
+        self._property_last_birthdays_version = instance_info.initial_property_values.last_birthdays_version
         self._conn.subscribe("full/{}/property/lastBirthdays/value".format(self._service_id), self._receive_last_birthdays_property_update_message)
         self._changed_value_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/Full/methodResponse", self._receive_any_method_response_message)
-        
 
     @property
     def favorite_number(self) -> Optional[int]:
-        """ Property 'favorite_number' getter.
-        """
+        """Property 'favorite_number' getter."""
         return self._property_favorite_number
-    
+
     @favorite_number.setter
     def favorite_number(self, value: int):
-        """ Serializes and publishes the 'favorite_number' property.
-        """
+        """Serializes and publishes the 'favorite_number' property."""
         if not isinstance(value, int):
             raise ValueError("The 'favorite_number' property must be a int")
-        serialized = json.dumps({ "number": value.number })
+        serialized = json.dumps({"number": value.number})
         self._logger.debug("Setting 'favorite_number' property to %s", serialized)
         self._conn.publish("full/{}/property/favoriteNumber/setValue".format(self._service_id), serialized, qos=1)
-    
-    def favorite_number_changed(self, handler: FavoriteNumberPropertyUpdatedCallbackType, call_immediately: bool=False):
-        """ Sets a callback to be called when the 'favorite_number' property changes.
+
+    def favorite_number_changed(self, handler: FavoriteNumberPropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'favorite_number' property changes.
         Can be used as a decorator.
         """
         with self._property_favorite_number_mutex:
@@ -125,24 +127,23 @@ class FullClient:
             if call_immediately and self._property_favorite_number is not None:
                 handler(self._property_favorite_number)
         return handler
+
     @property
     def favorite_foods(self) -> Optional[FavoriteFoodsProperty]:
-        """ Property 'favorite_foods' getter.
-        """
+        """Property 'favorite_foods' getter."""
         return self._property_favorite_foods
-    
+
     @favorite_foods.setter
     def favorite_foods(self, value: FavoriteFoodsProperty):
-        """ Serializes and publishes the 'favorite_foods' property.
-        """
+        """Serializes and publishes the 'favorite_foods' property."""
         if not isinstance(value, FavoriteFoodsProperty):
             raise ValueError("The 'favorite_foods' property must be a FavoriteFoodsProperty")
         serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'favorite_foods' property to %s", serialized)
         self._conn.publish("full/{}/property/favoriteFoods/setValue".format(self._service_id), serialized, qos=1)
-    
-    def favorite_foods_changed(self, handler: FavoriteFoodsPropertyUpdatedCallbackType, call_immediately: bool=False):
-        """ Sets a callback to be called when the 'favorite_foods' property changes.
+
+    def favorite_foods_changed(self, handler: FavoriteFoodsPropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'favorite_foods' property changes.
         Can be used as a decorator.
         """
         with self._property_favorite_foods_mutex:
@@ -150,24 +151,23 @@ class FullClient:
             if call_immediately and self._property_favorite_foods is not None:
                 handler(self._property_favorite_foods)
         return handler
+
     @property
     def lunch_menu(self) -> Optional[LunchMenuProperty]:
-        """ Property 'lunch_menu' getter.
-        """
+        """Property 'lunch_menu' getter."""
         return self._property_lunch_menu
-    
+
     @lunch_menu.setter
     def lunch_menu(self, value: LunchMenuProperty):
-        """ Serializes and publishes the 'lunch_menu' property.
-        """
+        """Serializes and publishes the 'lunch_menu' property."""
         if not isinstance(value, LunchMenuProperty):
             raise ValueError("The 'lunch_menu' property must be a LunchMenuProperty")
         serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'lunch_menu' property to %s", serialized)
         self._conn.publish("full/{}/property/lunchMenu/setValue".format(self._service_id), serialized, qos=1)
-    
-    def lunch_menu_changed(self, handler: LunchMenuPropertyUpdatedCallbackType, call_immediately: bool=False):
-        """ Sets a callback to be called when the 'lunch_menu' property changes.
+
+    def lunch_menu_changed(self, handler: LunchMenuPropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'lunch_menu' property changes.
         Can be used as a decorator.
         """
         with self._property_lunch_menu_mutex:
@@ -175,24 +175,23 @@ class FullClient:
             if call_immediately and self._property_lunch_menu is not None:
                 handler(self._property_lunch_menu)
         return handler
+
     @property
     def family_name(self) -> Optional[str]:
-        """ Property 'family_name' getter.
-        """
+        """Property 'family_name' getter."""
         return self._property_family_name
-    
+
     @family_name.setter
     def family_name(self, value: str):
-        """ Serializes and publishes the 'family_name' property.
-        """
+        """Serializes and publishes the 'family_name' property."""
         if not isinstance(value, str):
             raise ValueError("The 'family_name' property must be a str")
-        serialized = json.dumps({ "family_name": value.family_name })
+        serialized = json.dumps({"family_name": value.family_name})
         self._logger.debug("Setting 'family_name' property to %s", serialized)
         self._conn.publish("full/{}/property/familyName/setValue".format(self._service_id), serialized, qos=1)
-    
-    def family_name_changed(self, handler: FamilyNamePropertyUpdatedCallbackType, call_immediately: bool=False):
-        """ Sets a callback to be called when the 'family_name' property changes.
+
+    def family_name_changed(self, handler: FamilyNamePropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'family_name' property changes.
         Can be used as a decorator.
         """
         with self._property_family_name_mutex:
@@ -200,24 +199,23 @@ class FullClient:
             if call_immediately and self._property_family_name is not None:
                 handler(self._property_family_name)
         return handler
+
     @property
     def last_breakfast_time(self) -> Optional[datetime]:
-        """ Property 'last_breakfast_time' getter.
-        """
+        """Property 'last_breakfast_time' getter."""
         return self._property_last_breakfast_time
-    
+
     @last_breakfast_time.setter
     def last_breakfast_time(self, value: datetime):
-        """ Serializes and publishes the 'last_breakfast_time' property.
-        """
+        """Serializes and publishes the 'last_breakfast_time' property."""
         if not isinstance(value, datetime):
             raise ValueError("The 'last_breakfast_time' property must be a datetime")
-        serialized = json.dumps({ "timestamp": value.timestamp })
+        serialized = json.dumps({"timestamp": value.timestamp})
         self._logger.debug("Setting 'last_breakfast_time' property to %s", serialized)
         self._conn.publish("full/{}/property/lastBreakfastTime/setValue".format(self._service_id), serialized, qos=1)
-    
-    def last_breakfast_time_changed(self, handler: LastBreakfastTimePropertyUpdatedCallbackType, call_immediately: bool=False):
-        """ Sets a callback to be called when the 'last_breakfast_time' property changes.
+
+    def last_breakfast_time_changed(self, handler: LastBreakfastTimePropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'last_breakfast_time' property changes.
         Can be used as a decorator.
         """
         with self._property_last_breakfast_time_mutex:
@@ -225,24 +223,23 @@ class FullClient:
             if call_immediately and self._property_last_breakfast_time is not None:
                 handler(self._property_last_breakfast_time)
         return handler
+
     @property
     def breakfast_length(self) -> Optional[timedelta]:
-        """ Property 'breakfast_length' getter.
-        """
+        """Property 'breakfast_length' getter."""
         return self._property_breakfast_length
-    
+
     @breakfast_length.setter
     def breakfast_length(self, value: timedelta):
-        """ Serializes and publishes the 'breakfast_length' property.
-        """
+        """Serializes and publishes the 'breakfast_length' property."""
         if not isinstance(value, timedelta):
             raise ValueError("The 'breakfast_length' property must be a timedelta")
-        serialized = json.dumps({ "length": value.length })
+        serialized = json.dumps({"length": value.length})
         self._logger.debug("Setting 'breakfast_length' property to %s", serialized)
         self._conn.publish("full/{}/property/breakfastLength/setValue".format(self._service_id), serialized, qos=1)
-    
-    def breakfast_length_changed(self, handler: BreakfastLengthPropertyUpdatedCallbackType, call_immediately: bool=False):
-        """ Sets a callback to be called when the 'breakfast_length' property changes.
+
+    def breakfast_length_changed(self, handler: BreakfastLengthPropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'breakfast_length' property changes.
         Can be used as a decorator.
         """
         with self._property_breakfast_length_mutex:
@@ -250,24 +247,23 @@ class FullClient:
             if call_immediately and self._property_breakfast_length is not None:
                 handler(self._property_breakfast_length)
         return handler
+
     @property
     def last_birthdays(self) -> Optional[LastBirthdaysProperty]:
-        """ Property 'last_birthdays' getter.
-        """
+        """Property 'last_birthdays' getter."""
         return self._property_last_birthdays
-    
+
     @last_birthdays.setter
     def last_birthdays(self, value: LastBirthdaysProperty):
-        """ Serializes and publishes the 'last_birthdays' property.
-        """
+        """Serializes and publishes the 'last_birthdays' property."""
         if not isinstance(value, LastBirthdaysProperty):
             raise ValueError("The 'last_birthdays' property must be a LastBirthdaysProperty")
         serialized = value.model_dump_json(exclude_none=True, by_alias=True)
         self._logger.debug("Setting 'last_birthdays' property to %s", serialized)
         self._conn.publish("full/{}/property/lastBirthdays/setValue".format(self._service_id), serialized, qos=1)
-    
-    def last_birthdays_changed(self, handler: LastBirthdaysPropertyUpdatedCallbackType, call_immediately: bool=False):
-        """ Sets a callback to be called when the 'last_birthdays' property changes.
+
+    def last_birthdays_changed(self, handler: LastBirthdaysPropertyUpdatedCallbackType, call_immediately: bool = False):
+        """Sets a callback to be called when the 'last_birthdays' property changes.
         Can be used as a decorator.
         """
         with self._property_last_birthdays_mutex:
@@ -275,18 +271,15 @@ class FullClient:
             if call_immediately and self._property_last_birthdays is not None:
                 handler(self._property_last_birthdays)
         return handler
-    
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
-        """ Call each callback in the callback dictionary with the provided args.
-        """
+        """Call each callback in the callback dictionary with the provided args."""
         for cb in callbacks:
             cb(**kwargs)
 
     @staticmethod
     def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
-        """ Given a dictionary, reduce the dictionary so that it only has keys in the allowed list.
-        """
+        """Given a dictionary, reduce the dictionary so that it only has keys in the allowed list."""
         filtered_args = {}
         for k, v in args.items():
             if k in allowed_args:
@@ -294,7 +287,7 @@ class FullClient:
         return filtered_args
 
     def _receive_today_is_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'todayIs' signal with non-JSON content type")
             return
 
@@ -302,6 +295,7 @@ class FullClient:
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_today_is, **kwargs)
+
     def _receive_any_method_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle '' method response.
         return_code = MethodReturnCode.SUCCESS
@@ -323,10 +317,10 @@ class FullClient:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
-    
+
     def _receive_favorite_number_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'favorite_number' property change.
-        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'favorite_number' property change with non-JSON content type")
             return
         try:
@@ -336,15 +330,15 @@ class FullClient:
                 if ver := properties.get("PropertyVersion", False):
                     if int(ver) > self._property_favorite_number_version:
                         self._property_favorite_number_version = int(ver)
-                
+
                 self._do_callbacks_for(self._changed_value_callbacks_for_favorite_number, value=prop_obj.number)
-                
+
         except Exception as e:
             self._logger.exception("Error processing 'favorite_number' property change: %s", exc_info=e)
-    
+
     def _receive_favorite_foods_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'favorite_foods' property change.
-        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'favorite_foods' property change with non-JSON content type")
             return
         try:
@@ -354,15 +348,15 @@ class FullClient:
                 if ver := properties.get("PropertyVersion", False):
                     if int(ver) > self._property_favorite_foods_version:
                         self._property_favorite_foods_version = int(ver)
-                
+
                 self._do_callbacks_for(self._changed_value_callbacks_for_favorite_foods, value=prop_obj)
-                
+
         except Exception as e:
             self._logger.exception("Error processing 'favorite_foods' property change: %s", exc_info=e)
-    
+
     def _receive_lunch_menu_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'lunch_menu' property change.
-        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'lunch_menu' property change with non-JSON content type")
             return
         try:
@@ -372,15 +366,15 @@ class FullClient:
                 if ver := properties.get("PropertyVersion", False):
                     if int(ver) > self._property_lunch_menu_version:
                         self._property_lunch_menu_version = int(ver)
-                
+
                 self._do_callbacks_for(self._changed_value_callbacks_for_lunch_menu, value=prop_obj)
-                
+
         except Exception as e:
             self._logger.exception("Error processing 'lunch_menu' property change: %s", exc_info=e)
-    
+
     def _receive_family_name_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'family_name' property change.
-        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'family_name' property change with non-JSON content type")
             return
         try:
@@ -390,15 +384,15 @@ class FullClient:
                 if ver := properties.get("PropertyVersion", False):
                     if int(ver) > self._property_family_name_version:
                         self._property_family_name_version = int(ver)
-                
+
                 self._do_callbacks_for(self._changed_value_callbacks_for_family_name, value=prop_obj.family_name)
-                
+
         except Exception as e:
             self._logger.exception("Error processing 'family_name' property change: %s", exc_info=e)
-    
+
     def _receive_last_breakfast_time_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'last_breakfast_time' property change.
-        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'last_breakfast_time' property change with non-JSON content type")
             return
         try:
@@ -408,15 +402,15 @@ class FullClient:
                 if ver := properties.get("PropertyVersion", False):
                     if int(ver) > self._property_last_breakfast_time_version:
                         self._property_last_breakfast_time_version = int(ver)
-                
+
                 self._do_callbacks_for(self._changed_value_callbacks_for_last_breakfast_time, value=prop_obj.timestamp)
-                
+
         except Exception as e:
             self._logger.exception("Error processing 'last_breakfast_time' property change: %s", exc_info=e)
-    
+
     def _receive_breakfast_length_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'breakfast_length' property change.
-        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'breakfast_length' property change with non-JSON content type")
             return
         try:
@@ -426,15 +420,15 @@ class FullClient:
                 if ver := properties.get("PropertyVersion", False):
                     if int(ver) > self._property_breakfast_length_version:
                         self._property_breakfast_length_version = int(ver)
-                
+
                 self._do_callbacks_for(self._changed_value_callbacks_for_breakfast_length, value=prop_obj.length)
-                
+
         except Exception as e:
             self._logger.exception("Error processing 'breakfast_length' property change: %s", exc_info=e)
-    
+
     def _receive_last_birthdays_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'last_birthdays' property change.
-        if 'ContentType' not in properties or properties['ContentType'] != 'application/json':
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
             self._logger.warning("Received 'last_birthdays' property change with non-JSON content type")
             return
         try:
@@ -444,34 +438,28 @@ class FullClient:
                 if ver := properties.get("PropertyVersion", False):
                     if int(ver) > self._property_last_birthdays_version:
                         self._property_last_birthdays_version = int(ver)
-                
+
                 self._do_callbacks_for(self._changed_value_callbacks_for_last_birthdays, value=prop_obj)
-                
+
         except Exception as e:
             self._logger.exception("Error processing 'last_birthdays' property change: %s", exc_info=e)
-    
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        """ New MQTT messages are passed to this method, which, based on the topic,
+        """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
         self._logger.warning("Receiving message sent to %s, but without a handler", topic)
 
-    
     def receive_today_is(self, handler: TodayIsSignalCallbackType):
-        """ Used as a decorator for methods which handle particular signals.
-        """
+        """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_today_is.append(handler)
         if len(self._signal_recv_callbacks_for_today_is) == 1:
             self._conn.subscribe("full/{}/signal/todayIs".format(self._service_id), self._receive_today_is_signal_message)
         return handler
-    
 
-    
     def add_numbers(self, first: int, second: int, third: Optional[int]) -> futures.Future:
-        """ Calling this initiates a `addNumbers` IPC method call.
-        """
-        fut = futures.Future() # type: futures.Future
+        """Calling this initiates a `addNumbers` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_add_numbers_response, fut)
         payload = AddNumbersMethodRequest(
@@ -482,13 +470,11 @@ class FullClient:
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'addNumbers' method with payload %s", json_payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/addNumbers".format(self._service_id), json_payload, qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=response_topic)
+        self._conn.publish("full/{}/method/addNumbers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
-    def _handle_add_numbers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
-        """ This called with the response to a `addNumbers` IPC method call.
-        """
+    def _handle_add_numbers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `addNumbers` IPC method call."""
         self._logger.debug("Handling add_numbers response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
@@ -505,11 +491,10 @@ class FullClient:
             fut.set_result(resp_model.sum)
         else:
             self._logger.warning("Future for 'addNumbers' method was already done!")
-    
+
     def do_something(self, a_string: str) -> futures.Future:
-        """ Calling this initiates a `doSomething` IPC method call.
-        """
-        fut = futures.Future() # type: futures.Future
+        """Calling this initiates a `doSomething` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_do_something_response, fut)
         payload = DoSomethingMethodRequest(
@@ -518,13 +503,11 @@ class FullClient:
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'doSomething' method with payload %s", json_payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/doSomething".format(self._service_id), json_payload, qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=response_topic)
+        self._conn.publish("full/{}/method/doSomething".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
-    def _handle_do_something_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
-        """ This called with the response to a `doSomething` IPC method call.
-        """
+    def _handle_do_something_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `doSomething` IPC method call."""
         self._logger.debug("Handling do_something response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
@@ -541,11 +524,10 @@ class FullClient:
             fut.set_result(resp_model)
         else:
             self._logger.warning("Future for 'doSomething' method was already done!")
-    
+
     def echo(self, message: str) -> futures.Future:
-        """ Calling this initiates a `echo` IPC method call.
-        """
-        fut = futures.Future() # type: futures.Future
+        """Calling this initiates a `echo` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_echo_response, fut)
         payload = EchoMethodRequest(
@@ -554,13 +536,11 @@ class FullClient:
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'echo' method with payload %s", json_payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/echo".format(self._service_id), json_payload, qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=response_topic)
+        self._conn.publish("full/{}/method/echo".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
-    def _handle_echo_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
-        """ This called with the response to a `echo` IPC method call.
-        """
+    def _handle_echo_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `echo` IPC method call."""
         self._logger.debug("Handling echo response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
@@ -577,11 +557,10 @@ class FullClient:
             fut.set_result(resp_model.message)
         else:
             self._logger.warning("Future for 'echo' method was already done!")
-    
+
     def what_time_is_it(self, the_first_time: datetime) -> futures.Future:
-        """ Calling this initiates a `what_time_is_it` IPC method call.
-        """
-        fut = futures.Future() # type: futures.Future
+        """Calling this initiates a `what_time_is_it` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_what_time_is_it_response, fut)
         payload = WhatTimeIsItMethodRequest(
@@ -590,13 +569,11 @@ class FullClient:
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'what_time_is_it' method with payload %s", json_payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/whatTimeIsIt".format(self._service_id), json_payload, qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=response_topic)
+        self._conn.publish("full/{}/method/whatTimeIsIt".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
-    def _handle_what_time_is_it_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
-        """ This called with the response to a `what_time_is_it` IPC method call.
-        """
+    def _handle_what_time_is_it_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `what_time_is_it` IPC method call."""
         self._logger.debug("Handling what_time_is_it response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
@@ -613,11 +590,10 @@ class FullClient:
             fut.set_result(resp_model.timestamp)
         else:
             self._logger.warning("Future for 'what_time_is_it' method was already done!")
-    
+
     def set_the_time(self, the_first_time: datetime, the_second_time: datetime) -> futures.Future:
-        """ Calling this initiates a `set_the_time` IPC method call.
-        """
-        fut = futures.Future() # type: futures.Future
+        """Calling this initiates a `set_the_time` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_set_the_time_response, fut)
         payload = SetTheTimeMethodRequest(
@@ -627,13 +603,11 @@ class FullClient:
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'set_the_time' method with payload %s", json_payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/setTheTime".format(self._service_id), json_payload, qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=response_topic)
+        self._conn.publish("full/{}/method/setTheTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
-    def _handle_set_the_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
-        """ This called with the response to a `set_the_time` IPC method call.
-        """
+    def _handle_set_the_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `set_the_time` IPC method call."""
         self._logger.debug("Handling set_the_time response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
@@ -650,11 +624,10 @@ class FullClient:
             fut.set_result(resp_model)
         else:
             self._logger.warning("Future for 'set_the_time' method was already done!")
-    
+
     def forward_time(self, adjustment: timedelta) -> futures.Future:
-        """ Calling this initiates a `forward_time` IPC method call.
-        """
-        fut = futures.Future() # type: futures.Future
+        """Calling this initiates a `forward_time` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_forward_time_response, fut)
         payload = ForwardTimeMethodRequest(
@@ -663,13 +636,11 @@ class FullClient:
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'forward_time' method with payload %s", json_payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/forwardTime".format(self._service_id), json_payload, qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=response_topic)
+        self._conn.publish("full/{}/method/forwardTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
-    def _handle_forward_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
-        """ This called with the response to a `forward_time` IPC method call.
-        """
+    def _handle_forward_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `forward_time` IPC method call."""
         self._logger.debug("Handling forward_time response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
@@ -686,11 +657,10 @@ class FullClient:
             fut.set_result(resp_model.new_time)
         else:
             self._logger.warning("Future for 'forward_time' method was already done!")
-    
+
     def how_off_is_the_clock(self, actual_time: datetime) -> futures.Future:
-        """ Calling this initiates a `how_off_is_the_clock` IPC method call.
-        """
-        fut = futures.Future() # type: futures.Future
+        """Calling this initiates a `how_off_is_the_clock` IPC method call."""
+        fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_how_off_is_the_clock_response, fut)
         payload = HowOffIsTheClockMethodRequest(
@@ -699,13 +669,11 @@ class FullClient:
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'how_off_is_the_clock' method with payload %s", json_payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/howOffIsTheClock".format(self._service_id), json_payload, qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=response_topic)
+        self._conn.publish("full/{}/method/howOffIsTheClock".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
-    def _handle_how_off_is_the_clock_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
-        """ This called with the response to a `how_off_is_the_clock` IPC method call.
-        """
+    def _handle_how_off_is_the_clock_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `how_off_is_the_clock` IPC method call."""
         self._logger.debug("Handling how_off_is_the_clock response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
@@ -722,20 +690,19 @@ class FullClient:
             fut.set_result(resp_model.difference)
         else:
             self._logger.warning("Future for 'how_off_is_the_clock' method was already done!")
-    
+
 
 class FullClientBuilder:
-    """ Using decorators from FullClient doesn't work if you are trying to create multiple instances of FullClient.
+    """Using decorators from FullClient doesn't work if you are trying to create multiple instances of FullClient.
     Instead, use this builder to create a registry of callbacks, and then build clients using the registry.
 
     When ready to create a FullClient instance, call the `build(broker, service_instance_id)` method.
     """
 
     def __init__(self):
-        """ Creates a new FullClientBuilder.
-        """
-        self._logger = logging.getLogger('FullClientBuilder')
-        self._signal_recv_callbacks_for_today_is = [] # type: List[TodayIsSignalCallbackType]
+        """Creates a new FullClientBuilder."""
+        self._logger = logging.getLogger("FullClientBuilder")
+        self._signal_recv_callbacks_for_today_is = []  # type: List[TodayIsSignalCallbackType]
         self._property_updated_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
@@ -743,138 +710,116 @@ class FullClientBuilder:
         self._property_updated_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_breakfast_length: list[BreakfastLengthPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
-        
-    def receive_today_is(self, handler):
-        """ Used as a decorator for methods which handle particular signals.
-        """
-        self._signal_recv_callbacks_for_today_is.append(handler)
-    
 
-    
+    def receive_today_is(self, handler):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_today_is.append(handler)
+
     def favorite_number_updated(self, handler: FavoriteNumberPropertyUpdatedCallbackType):
-        """ Used as a decorator for methods which handle updates to properties.
-        """
+        """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_favorite_number.append(handler)
-    
+
     def favorite_foods_updated(self, handler: FavoriteFoodsPropertyUpdatedCallbackType):
-        """ Used as a decorator for methods which handle updates to properties.
-        """
+        """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_favorite_foods.append(handler)
-    
+
     def lunch_menu_updated(self, handler: LunchMenuPropertyUpdatedCallbackType):
-        """ Used as a decorator for methods which handle updates to properties.
-        """
+        """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_lunch_menu.append(handler)
-    
+
     def family_name_updated(self, handler: FamilyNamePropertyUpdatedCallbackType):
-        """ Used as a decorator for methods which handle updates to properties.
-        """
+        """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_family_name.append(handler)
-    
+
     def last_breakfast_time_updated(self, handler: LastBreakfastTimePropertyUpdatedCallbackType):
-        """ Used as a decorator for methods which handle updates to properties.
-        """
+        """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_last_breakfast_time.append(handler)
-    
+
     def breakfast_length_updated(self, handler: BreakfastLengthPropertyUpdatedCallbackType):
-        """ Used as a decorator for methods which handle updates to properties.
-        """
+        """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_breakfast_length.append(handler)
-    
+
     def last_birthdays_updated(self, handler: LastBirthdaysPropertyUpdatedCallbackType):
-        """ Used as a decorator for methods which handle updates to properties.
-        """
+        """Used as a decorator for methods which handle updates to properties."""
         self._property_updated_callbacks_for_last_birthdays.append(handler)
-    
 
     def build(self, broker: IBrokerConnection, service_instance_id: str) -> FullClient:
-        """ Builds a new FullClient.
-        """
+        """Builds a new FullClient."""
         self._logger.debug("Building FullClient for service instance %s", service_instance_id)
         client = FullClient(broker, service_instance_id)
-        
+
         for cb in self._signal_recv_callbacks_for_today_is:
             client.receive_today_is(cb)
-        
-        
+
         for cb in self._property_updated_callbacks_for_favorite_number:
             client.favorite_number_changed(cb)
-        
+
         for cb in self._property_updated_callbacks_for_favorite_foods:
             client.favorite_foods_changed(cb)
-        
+
         for cb in self._property_updated_callbacks_for_lunch_menu:
             client.lunch_menu_changed(cb)
-        
+
         for cb in self._property_updated_callbacks_for_family_name:
             client.family_name_changed(cb)
-        
+
         for cb in self._property_updated_callbacks_for_last_breakfast_time:
             client.last_breakfast_time_changed(cb)
-        
+
         for cb in self._property_updated_callbacks_for_breakfast_length:
             client.breakfast_length_changed(cb)
-        
+
         for cb in self._property_updated_callbacks_for_last_birthdays:
             client.last_birthdays_changed(cb)
-        
+
         return client
 
-@dataclass
-class DiscoveredInstance:
-    instance_id: str
-    initial_property_values: FullInitialPropertyValues
 
 class FullClientDiscoverer:
-    
-    def __init__(self, connection: IBrokerConnection, builder: Optional[FullClientBuilder]=None):
-        """ Creates a new FullClientDiscoverer.
-        """
+
+    def __init__(self, connection: IBrokerConnection, builder: Optional[FullClientBuilder] = None):
+        """Creates a new FullClientDiscoverer."""
         self._conn = connection
         self._builder = builder
-        self._logger = logging.getLogger('FullClientDiscoverer')
+        self._logger = logging.getLogger("FullClientDiscoverer")
         self._logger.setLevel(logging.DEBUG)
-        service_discovery_topic = "full/{}/interface".format('+')
+        service_discovery_topic = "full/{}/interface".format("+")
         self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
         self._conn.subscribe("full/+/property/+/value", self._process_property_value_message)
         self._mutex = threading.Lock()
-        self._pending_futures : List[futures.Future] = []
+        self._pending_futures: List[futures.Future] = []
         self._removed_service_callbacks: List[Callable[[str], None]] = []
-        
+
         # For partially discovered services
-        self._discovered_interface_infos = dict() # type: Dict[str, InterfaceInfo]
-        self._discovered_properties = dict() # type: Dict[str, Dict[str, Any]]
+        self._discovered_interface_infos = dict()  # type: Dict[str, InterfaceInfo]
+        self._discovered_properties = dict()  # type: Dict[str, Dict[str, Any]]
 
         # For fully discovered services
         self._discovered_services: Dict[str, InterfaceInfo] = {}
         self._discovered_service_callbacks: List[Callable[[InterfaceInfo], None]] = []
 
     def add_discovered_service_callback(self, callback: Callable[[InterfaceInfo], None]):
-        """ Adds a callback to be called when a new service is discovered.
-        """
+        """Adds a callback to be called when a new service is discovered."""
         with self._mutex:
             self._discovered_service_callbacks.append(callback)
 
     def add_removed_service_callback(self, callback: Callable[[str], None]):
-        """ Adds a callback to be called when a service is removed.
-        """
+        """Adds a callback to be called when a service is removed."""
         with self._mutex:
             self._removed_service_callbacks.append(callback)
 
     def get_service_instance_ids(self) -> List[str]:
-        """ Returns a list of currently discovered service instance IDs.
-        """
+        """Returns a list of currently discovered service instance IDs."""
         with self._mutex:
             return list(self._discovered_services.keys())
 
     def get_discovery_info(self, instance_id: str) -> Optional[InterfaceInfo]:
-        """ Returns the InterfaceInfo for a discovered service instance ID, or None if not found.
-        """
+        """Returns the InterfaceInfo for a discovered service instance ID, or None if not found."""
         with self._mutex:
             return self._discovered_services.get(instance_id, None)
 
     def get_singleton_client(self) -> futures.Future[FullClient]:
-        """ Returns a FullClient for the single discovered service.
+        """Returns a FullClient for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
         fut = futures.Future()
@@ -891,17 +836,11 @@ class FullClientDiscoverer:
         return fut
 
     def _check_for_fully_discovered(self, instance_id: str):
-        """ Checks if all properties have been discovered for the given instance ID.
-        """
+        """Checks if all properties have been discovered for the given instance ID."""
         with self._mutex:
-            if (instance_id in self._discovered_properties
-                    and len(self._discovered_properties[instance_id]) == 14
-                    and instance_id in self._discovered_interface_infos):
+            if instance_id in self._discovered_properties and len(self._discovered_properties[instance_id]) == 14 and instance_id in self._discovered_interface_infos:
 
-                entry = DiscoveredInstance(
-                    instance_id=instance_id,
-                    initial_property_values: FullInitialPropertyValues(**self._discovered_properties[instance_id])
-                )
+                entry = DiscoveredInstance(instance_id=instance_id, initial_property_values=FullInitialPropertyValues(**self._discovered_properties[instance_id]))
 
                 self._discovered_services[instance_id] = entry
                 while self._pending_futures:
@@ -919,20 +858,19 @@ class FullClientDiscoverer:
                     self._logger.debug("Updated info for service: %s", instance_id)
 
     def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        """ Processes a service discovery message.
-        """
+        """Processes a service discovery message."""
         self._logger.debug("Processing service discovery message on topic %s", topic)
         if len(payload) > 0:
             try:
                 service_info = InterfaceInfo.model_validate_json(payload)
                 with self._mutex:
-                    self._discovered_interface_infos[service_info.instance_id] = service_info
+                    self._discovered_interface_infos[service_info.instance] = service_info
             except Exception as e:
                 self._logger.warning("Failed to process service discovery message: %s", e)
-            self._check_for_fully_discovered(service_info.instance_id)
+            self._check_for_fully_discovered(service_info.instance)
 
-        else: # Empty payload means the service is going away
-            instance_id = topic.split('/')[-2]
+        else:  # Empty payload means the service is going away
+            instance_id = topic.split("/")[-2]
             with self._mutex:
                 if instance_id in self._discovered_services:
                     self._logger.info("Service %s is going away", instance_id)
@@ -946,62 +884,60 @@ class FullClientDiscoverer:
                         cb(instance_id)
 
     def _process_property_value_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        """ Processes a property value message for discovery purposes.
-        """
+        """Processes a property value message for discovery purposes."""
         self._logger.debug("Processing property value message on topic %s", topic)
-        instance_id = topic.split('/')[1]
-        property_name = topic.split('/')[3]
-        user_properties  = properties.get("UserProperty", {})
-        prop_version = user_properties.get("Version", -1)
+        instance_id = topic.split("/")[1]
+        property_name = topic.split("/")[3]
+        user_properties = properties.get("UserProperty", {})
+        prop_version = user_properties.get("PropertyVersion", -1)
         try:
             prop_obj = json.loads(payload)
             with self._mutex:
                 if instance_id not in self._discovered_properties:
                     self._discovered_properties[instance_id] = dict()
-                
+
                 if property_name == "favoriteNumber":
-                    
+
                     self._discovered_properties[instance_id]["favorite_number"] = prop_obj.get("number")
-                    
+
                     self._discovered_properties[instance_id]["favorite_number_version"] = prop_version
-                
+
                 elif property_name == "favoriteFoods":
-                    
+
                     self._discovered_properties[instance_id]["favorite_foods"] = prop_obj
-                    
+
                     self._discovered_properties[instance_id]["favorite_foods_version"] = prop_version
-                
+
                 elif property_name == "lunchMenu":
-                    
+
                     self._discovered_properties[instance_id]["lunch_menu"] = prop_obj
-                    
+
                     self._discovered_properties[instance_id]["lunch_menu_version"] = prop_version
-                
+
                 elif property_name == "familyName":
-                    
+
                     self._discovered_properties[instance_id]["family_name"] = prop_obj.get("family_name")
-                    
+
                     self._discovered_properties[instance_id]["family_name_version"] = prop_version
-                
+
                 elif property_name == "lastBreakfastTime":
-                    
+
                     self._discovered_properties[instance_id]["last_breakfast_time"] = prop_obj.get("timestamp")
-                    
+
                     self._discovered_properties[instance_id]["last_breakfast_time_version"] = prop_version
-                
+
                 elif property_name == "breakfastLength":
-                    
+
                     self._discovered_properties[instance_id]["breakfast_length"] = prop_obj.get("length")
-                    
+
                     self._discovered_properties[instance_id]["breakfast_length_version"] = prop_version
-                
+
                 elif property_name == "lastBirthdays":
-                    
+
                     self._discovered_properties[instance_id]["last_birthdays"] = prop_obj
-                    
+
                     self._discovered_properties[instance_id]["last_birthdays_version"] = prop_version
-                
-            
+
             self._check_for_fully_discovered(instance_id)
 
         except Exception as e:

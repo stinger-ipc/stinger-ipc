@@ -69,7 +69,7 @@ async fn main() {
     sleep(Duration::from_secs(5)).await;
 
     let sig_rx_task{{loop.index}} = tokio::spawn(async move {
-        println!("Looping for signals");
+        println!("Looping for signal reception...");
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
@@ -101,15 +101,24 @@ async fn main() {
     });
     {%endif%}
 
-    {%for method_name, method in stinger.methods.items()%}
-    println!(">>> Calling {{method_name}} with example values...");
-    let result = {{stinger.name|snake_case}}_client.{{method_name | snake_case}}(
-        {%for arg in method.arg_list%}
-        {{arg.get_random_example_value(lang='rust')}},
-        {%endfor%}).await;
-    println!("<<< {{method_name}} response: {:?}", result);
-    {%endfor%}
-
+    {%if stinger.methods|length > 0 %}
+    let mut client_for_method_calling = {{stinger.name|snake_case}}_client.clone();
+    let method_calling_task = tokio::spawn(async move {
+        sleep(Duration::from_secs(19)).await;
+        loop {
+            {%for method_name, method in stinger.methods.items()%}
+            println!(">>> Calling {{method_name}} with example values...");
+            let result = client_for_method_calling.{{method_name | snake_case}}(
+                {%for arg in method.arg_list%}
+                {{arg.get_random_example_value(lang='rust')}},
+                {%endfor%}).await;
+            println!("<<< {{method_name}} response: {:?}", result);
+            sleep(Duration::from_secs(19)).await;
+            {%endfor%}
+            sleep(Duration::from_secs(29)).await;
+        }
+    });
+    {%endif%}
 
     // Property handles are Send so we can move them into tasks.
     {%for prop_name, prop in stinger.properties.items()%}
@@ -123,7 +132,7 @@ async fn main() {
             {%for prop_name, prop in stinger.properties.items()%}
             { // Scoping for '{{prop_name}}' property.  Demonstrates reading the value.
                 let current_value_ref = {{prop_name|snake_case}}_handle.read().await;
-                println!("Current value of property '{{prop_name}}': {:?}", *current_value_ref);
+                println!("=== Current value of property '{{prop_name}}': {:?}", *current_value_ref);
             }
             {%if prop.read_only%}
             // We can't do `{{prop_name|snake_case}}_handle.write()` here because it is a read-only lock.
@@ -141,7 +150,7 @@ async fn main() {
                 {%endif-%}
                 let mut write_lock = {{prop_name|snake_case}}_handle.write().await;
                 *write_lock = {{prop_name|snake_case}}_new_value;
-                println!("Sending request to update property '{{prop_name}}' to new value: {:?}", *write_lock);
+                println!("<~~ Sending request to update property '{{prop_name}}' to new value: {:?}", *write_lock);
             }
             sleep(Duration::from_secs(10)).await;
             {%endif%}
@@ -150,23 +159,6 @@ async fn main() {
         }
     });
     {%endif%} {# has any properties #}
-
-    {%for prop_name, prop in stinger.properties.items()%}
-    {%if not prop.read_only %}
-    println!("Setting '{{prop_name}}' property to new value using blocking method...");
-    {%if prop.arg_list|length == 1 %}
-    // Set '{{prop_name}}' property using the blocking setter.
-    let _ = {{stinger.name|snake_case}}_client.set_{{prop_name | snake_case}}({{prop.arg_list[0].get_random_example_value(lang="rust")}}).await;
-    {%else%}
-    // Set '{{prop_name}}' property values using the blocking setter.
-    let {{prop_name|snake_case}}_new_value = {{prop.rust_type}} {
-        {%-for arg in prop.arg_list %}
-            {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-        {%-endfor%}
-    };
-    let _ = {{stinger.name|snake_case}}_client.set_{{prop_name | snake_case}}({{prop_name|snake_case}}_new_value).await;
-    {%endif%}
-    {%endif%}{%endfor%}
 
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c().await.expect("Failed to listen for Ctrl-C");
@@ -178,9 +170,12 @@ async fn main() {
     {%if stinger.properties|length > 0 %}
     property_update_task.abort();
     {%endif%}
+    {%if stinger.methods|length > 0 %}
+    method_calling_task.abort();
+    {%endif%}
 
     // Join on all the signal emitting tasks.
-    let _ = join!({%if stinger.properties|length > 0 %}property_update_task, {%endif%}{%for _ in stinger.signals%}sig_rx_task{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%});
+    let _ = join!({%if stinger.properties|length > 0 %}property_update_task, {%endif%}{%for _ in stinger.signals%}sig_rx_task{{loop.index}}, {%endfor%}{%if stinger.methods|length > 0 %}method_calling_task, {%endif%});
 
     // Ctrl-C to stop
 }

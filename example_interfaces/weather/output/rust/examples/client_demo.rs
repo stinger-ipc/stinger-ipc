@@ -75,7 +75,7 @@ async fn main() {
     sleep(Duration::from_secs(5)).await;
 
     let sig_rx_task1 = tokio::spawn(async move {
-        println!("Looping for signals");
+        println!("Looping for signal reception...");
         loop {
             match sig_rx.recv().await {
                 Ok(payload) => {
@@ -137,17 +137,28 @@ async fn main() {
         }
     });
 
-    println!(">>> Calling refresh_daily_forecast with example values...");
-    let result = weather_client.refresh_daily_forecast().await;
-    println!("<<< refresh_daily_forecast response: {:?}", result);
+    let mut client_for_method_calling = weather_client.clone();
+    let method_calling_task = tokio::spawn(async move {
+        sleep(Duration::from_secs(19)).await;
+        loop {
+            println!(">>> Calling refresh_daily_forecast with example values...");
+            let result = client_for_method_calling.refresh_daily_forecast().await;
+            println!("<<< refresh_daily_forecast response: {:?}", result);
+            sleep(Duration::from_secs(19)).await;
 
-    println!(">>> Calling refresh_hourly_forecast with example values...");
-    let result = weather_client.refresh_hourly_forecast().await;
-    println!("<<< refresh_hourly_forecast response: {:?}", result);
+            println!(">>> Calling refresh_hourly_forecast with example values...");
+            let result = client_for_method_calling.refresh_hourly_forecast().await;
+            println!("<<< refresh_hourly_forecast response: {:?}", result);
+            sleep(Duration::from_secs(19)).await;
 
-    println!(">>> Calling refresh_current_conditions with example values...");
-    let result = weather_client.refresh_current_conditions().await;
-    println!("<<< refresh_current_conditions response: {:?}", result);
+            println!(">>> Calling refresh_current_conditions with example values...");
+            let result = client_for_method_calling.refresh_current_conditions().await;
+            println!("<<< refresh_current_conditions response: {:?}", result);
+            sleep(Duration::from_secs(19)).await;
+
+            sleep(Duration::from_secs(29)).await;
+        }
+    });
 
     // Property handles are Send so we can move them into tasks.
 
@@ -179,7 +190,7 @@ async fn main() {
                 // Scoping for 'location' property.  Demonstrates reading the value.
                 let current_value_ref = location_handle.read().await;
                 println!(
-                    "Current value of property 'location': {:?}",
+                    "=== Current value of property 'location': {:?}",
                     *current_value_ref
                 );
             }
@@ -194,7 +205,7 @@ async fn main() {
                 let mut write_lock = location_handle.write().await;
                 *write_lock = location_new_value;
                 println!(
-                    "Sending request to update property 'location' to new value: {:?}",
+                    "<~~ Sending request to update property 'location' to new value: {:?}",
                     *write_lock
                 );
             }
@@ -204,7 +215,7 @@ async fn main() {
                 // Scoping for 'current_temperature' property.  Demonstrates reading the value.
                 let current_value_ref = current_temperature_handle.read().await;
                 println!(
-                    "Current value of property 'current_temperature': {:?}",
+                    "=== Current value of property 'current_temperature': {:?}",
                     *current_value_ref
                 );
             }
@@ -215,7 +226,7 @@ async fn main() {
                 // Scoping for 'current_condition' property.  Demonstrates reading the value.
                 let current_value_ref = current_condition_handle.read().await;
                 println!(
-                    "Current value of property 'current_condition': {:?}",
+                    "=== Current value of property 'current_condition': {:?}",
                     *current_value_ref
                 );
             }
@@ -226,7 +237,7 @@ async fn main() {
                 // Scoping for 'daily_forecast' property.  Demonstrates reading the value.
                 let current_value_ref = daily_forecast_handle.read().await;
                 println!(
-                    "Current value of property 'daily_forecast': {:?}",
+                    "=== Current value of property 'daily_forecast': {:?}",
                     *current_value_ref
                 );
             }
@@ -237,7 +248,7 @@ async fn main() {
                 // Scoping for 'hourly_forecast' property.  Demonstrates reading the value.
                 let current_value_ref = hourly_forecast_handle.read().await;
                 println!(
-                    "Current value of property 'hourly_forecast': {:?}",
+                    "=== Current value of property 'hourly_forecast': {:?}",
                     *current_value_ref
                 );
             }
@@ -248,7 +259,7 @@ async fn main() {
                 // Scoping for 'current_condition_refresh_interval' property.  Demonstrates reading the value.
                 let current_value_ref = current_condition_refresh_interval_handle.read().await;
                 println!(
-                    "Current value of property 'current_condition_refresh_interval': {:?}",
+                    "=== Current value of property 'current_condition_refresh_interval': {:?}",
                     *current_value_ref
                 );
             }
@@ -259,7 +270,7 @@ async fn main() {
                 let current_condition_refresh_interval_new_value = 42;
                 let mut write_lock = current_condition_refresh_interval_handle.write().await;
                 *write_lock = current_condition_refresh_interval_new_value;
-                println!("Sending request to update property 'current_condition_refresh_interval' to new value: {:?}", *write_lock);
+                println!("<~~ Sending request to update property 'current_condition_refresh_interval' to new value: {:?}", *write_lock);
             }
             sleep(Duration::from_secs(10)).await;
 
@@ -267,7 +278,7 @@ async fn main() {
                 // Scoping for 'hourly_forecast_refresh_interval' property.  Demonstrates reading the value.
                 let current_value_ref = hourly_forecast_refresh_interval_handle.read().await;
                 println!(
-                    "Current value of property 'hourly_forecast_refresh_interval': {:?}",
+                    "=== Current value of property 'hourly_forecast_refresh_interval': {:?}",
                     *current_value_ref
                 );
             }
@@ -278,7 +289,7 @@ async fn main() {
                 let hourly_forecast_refresh_interval_new_value = 42;
                 let mut write_lock = hourly_forecast_refresh_interval_handle.write().await;
                 *write_lock = hourly_forecast_refresh_interval_new_value;
-                println!("Sending request to update property 'hourly_forecast_refresh_interval' to new value: {:?}", *write_lock);
+                println!("<~~ Sending request to update property 'hourly_forecast_refresh_interval' to new value: {:?}", *write_lock);
             }
             sleep(Duration::from_secs(10)).await;
 
@@ -286,7 +297,7 @@ async fn main() {
                 // Scoping for 'daily_forecast_refresh_interval' property.  Demonstrates reading the value.
                 let current_value_ref = daily_forecast_refresh_interval_handle.read().await;
                 println!(
-                    "Current value of property 'daily_forecast_refresh_interval': {:?}",
+                    "=== Current value of property 'daily_forecast_refresh_interval': {:?}",
                     *current_value_ref
                 );
             }
@@ -297,45 +308,13 @@ async fn main() {
                 let daily_forecast_refresh_interval_new_value = 42;
                 let mut write_lock = daily_forecast_refresh_interval_handle.write().await;
                 *write_lock = daily_forecast_refresh_interval_new_value;
-                println!("Sending request to update property 'daily_forecast_refresh_interval' to new value: {:?}", *write_lock);
+                println!("<~~ Sending request to update property 'daily_forecast_refresh_interval' to new value: {:?}", *write_lock);
             }
             sleep(Duration::from_secs(10)).await;
 
             i += 1;
         }
     });
-
-    println!("Setting 'location' property to new value using blocking method...");
-
-    // Set 'location' property values using the blocking setter.
-    let location_new_value = LocationProperty {
-        latitude: 3.14,
-        longitude: 3.14,
-    };
-    let _ = weather_client.set_location(location_new_value).await;
-
-    println!("Setting 'current_condition_refresh_interval' property to new value using blocking method...");
-
-    // Set 'current_condition_refresh_interval' property using the blocking setter.
-    let _ = weather_client
-        .set_current_condition_refresh_interval(42)
-        .await;
-
-    println!(
-        "Setting 'hourly_forecast_refresh_interval' property to new value using blocking method..."
-    );
-
-    // Set 'hourly_forecast_refresh_interval' property using the blocking setter.
-    let _ = weather_client
-        .set_hourly_forecast_refresh_interval(42)
-        .await;
-
-    println!(
-        "Setting 'daily_forecast_refresh_interval' property to new value using blocking method..."
-    );
-
-    // Set 'daily_forecast_refresh_interval' property using the blocking setter.
-    let _ = weather_client.set_daily_forecast_refresh_interval(42).await;
 
     println!("Waiting for Ctrl-C to exit...");
     tokio::signal::ctrl_c()
@@ -347,8 +326,10 @@ async fn main() {
 
     property_update_task.abort();
 
+    method_calling_task.abort();
+
     // Join on all the signal emitting tasks.
-    let _ = join!(property_update_task, sig_rx_task1);
+    let _ = join!(property_update_task, sig_rx_task1, method_calling_task,);
 
     // Ctrl-C to stop
 }

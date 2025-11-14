@@ -1852,6 +1852,8 @@ async fn main() {
         }
     });
 
+    // Provide property handles to the property_publish_task which will use them to continuously update property values.
+
     let read_write_integer_property = server.get_read_write_integer_handle();
 
     let read_only_integer_property = server.get_read_only_integer_handle();

@@ -1717,17 +1717,23 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         }
 
                         _i if _i == sub_ids.favorite_number_property_value => {
-                            debug!("Received message for favorite_number property value");
+                            debug!("Received FAVORITE_NUMBER property value");
                             // JSON deserialize into FavoriteNumberProperty struct
                             match serde_json::from_slice::<FavoriteNumberProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.favorite_number.write().await;
 
+                                    debug!(
+                                        "FAVORITE_NUMBER property value updated: {:?}",
+                                        pl.number
+                                    );
                                     *guard = pl.number.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.favorite_number_version.store(
                                                 version_num,
@@ -1748,17 +1754,20 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         }
 
                         _i if _i == sub_ids.favorite_foods_property_value => {
-                            debug!("Received message for favorite_foods property value");
+                            debug!("Received FAVORITE_FOODS property value");
                             // JSON deserialize into FavoriteFoodsProperty struct
                             match serde_json::from_slice::<FavoriteFoodsProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.favorite_foods.write().await;
 
+                                    debug!("FAVORITE_FOODS property value updated: {:?}", pl);
                                     *guard = pl.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.favorite_foods_version.store(
                                                 version_num,
@@ -1779,17 +1788,20 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         }
 
                         _i if _i == sub_ids.lunch_menu_property_value => {
-                            debug!("Received message for lunch_menu property value");
+                            debug!("Received LUNCH_MENU property value");
                             // JSON deserialize into LunchMenuProperty struct
                             match serde_json::from_slice::<LunchMenuProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.lunch_menu.write().await;
 
+                                    debug!("LUNCH_MENU property value updated: {:?}", pl);
                                     *guard = pl.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.lunch_menu_version.store(
                                                 version_num,
@@ -1810,17 +1822,23 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         }
 
                         _i if _i == sub_ids.family_name_property_value => {
-                            debug!("Received message for family_name property value");
+                            debug!("Received FAMILY_NAME property value");
                             // JSON deserialize into FamilyNameProperty struct
                             match serde_json::from_slice::<FamilyNameProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.family_name.write().await;
 
+                                    debug!(
+                                        "FAMILY_NAME property value updated: {:?}",
+                                        pl.family_name
+                                    );
                                     *guard = pl.family_name.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.family_name_version.store(
                                                 version_num,
@@ -1841,7 +1859,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         }
 
                         _i if _i == sub_ids.last_breakfast_time_property_value => {
-                            debug!("Received message for last_breakfast_time property value");
+                            debug!("Received LAST_BREAKFAST_TIME property value");
                             // JSON deserialize into LastBreakfastTimeProperty struct
                             match serde_json::from_slice::<LastBreakfastTimeProperty>(&msg.payload)
                             {
@@ -1849,10 +1867,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.last_breakfast_time.write().await;
 
+                                    debug!(
+                                        "LAST_BREAKFAST_TIME property value updated: {:?}",
+                                        pl.timestamp
+                                    );
                                     *guard = pl.timestamp.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.last_breakfast_time_version.store(
                                                 version_num,
@@ -1873,17 +1897,23 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         }
 
                         _i if _i == sub_ids.breakfast_length_property_value => {
-                            debug!("Received message for breakfast_length property value");
+                            debug!("Received BREAKFAST_LENGTH property value");
                             // JSON deserialize into BreakfastLengthProperty struct
                             match serde_json::from_slice::<BreakfastLengthProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.breakfast_length.write().await;
 
+                                    debug!(
+                                        "BREAKFAST_LENGTH property value updated: {:?}",
+                                        pl.length
+                                    );
                                     *guard = pl.length.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.breakfast_length_version.store(
                                                 version_num,
@@ -1904,17 +1934,20 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         }
 
                         _i if _i == sub_ids.last_birthdays_property_value => {
-                            debug!("Received message for last_birthdays property value");
+                            debug!("Received LAST_BIRTHDAYS property value");
                             // JSON deserialize into LastBirthdaysProperty struct
                             match serde_json::from_slice::<LastBirthdaysProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.last_birthdays.write().await;
 
+                                    debug!("LAST_BIRTHDAYS property value updated: {:?}", pl);
                                     *guard = pl.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.last_birthdays_version.store(
                                                 version_num,

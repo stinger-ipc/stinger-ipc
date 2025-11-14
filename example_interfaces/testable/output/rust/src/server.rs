@@ -38,6 +38,8 @@ use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
+#[cfg(feature = "metrics")]
+use serde::Serialize;
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -175,6 +177,123 @@ struct TestAbleProperties {
     read_write_lists_version: Arc<AtomicU32>,
 }
 
+#[cfg(feature = "metrics")]
+#[derive(Debug, Serialize)]
+pub struct TestAbleServerMetrics {
+    pub call_with_nothing_calls: u64,
+    pub call_with_nothing_errors: u64,
+    pub call_one_integer_calls: u64,
+    pub call_one_integer_errors: u64,
+    pub call_optional_integer_calls: u64,
+    pub call_optional_integer_errors: u64,
+    pub call_three_integers_calls: u64,
+    pub call_three_integers_errors: u64,
+    pub call_one_string_calls: u64,
+    pub call_one_string_errors: u64,
+    pub call_optional_string_calls: u64,
+    pub call_optional_string_errors: u64,
+    pub call_three_strings_calls: u64,
+    pub call_three_strings_errors: u64,
+    pub call_one_enum_calls: u64,
+    pub call_one_enum_errors: u64,
+    pub call_optional_enum_calls: u64,
+    pub call_optional_enum_errors: u64,
+    pub call_three_enums_calls: u64,
+    pub call_three_enums_errors: u64,
+    pub call_one_struct_calls: u64,
+    pub call_one_struct_errors: u64,
+    pub call_optional_struct_calls: u64,
+    pub call_optional_struct_errors: u64,
+    pub call_three_structs_calls: u64,
+    pub call_three_structs_errors: u64,
+    pub call_one_date_time_calls: u64,
+    pub call_one_date_time_errors: u64,
+    pub call_optional_date_time_calls: u64,
+    pub call_optional_date_time_errors: u64,
+    pub call_three_date_times_calls: u64,
+    pub call_three_date_times_errors: u64,
+    pub call_one_duration_calls: u64,
+    pub call_one_duration_errors: u64,
+    pub call_optional_duration_calls: u64,
+    pub call_optional_duration_errors: u64,
+    pub call_three_durations_calls: u64,
+    pub call_three_durations_errors: u64,
+    pub call_one_binary_calls: u64,
+    pub call_one_binary_errors: u64,
+    pub call_optional_binary_calls: u64,
+    pub call_optional_binary_errors: u64,
+    pub call_three_binaries_calls: u64,
+    pub call_three_binaries_errors: u64,
+    pub call_one_list_of_integers_calls: u64,
+    pub call_one_list_of_integers_errors: u64,
+    pub call_optional_list_of_floats_calls: u64,
+    pub call_optional_list_of_floats_errors: u64,
+    pub call_two_lists_calls: u64,
+    pub call_two_lists_errors: u64,
+
+    pub initial_property_publish_time: std::time::Duration,
+}
+
+#[cfg(feature = "metrics")]
+impl Default for TestAbleServerMetrics {
+    fn default() -> Self {
+        TestAbleServerMetrics {
+            call_with_nothing_calls: 0,
+            call_with_nothing_errors: 0,
+            call_one_integer_calls: 0,
+            call_one_integer_errors: 0,
+            call_optional_integer_calls: 0,
+            call_optional_integer_errors: 0,
+            call_three_integers_calls: 0,
+            call_three_integers_errors: 0,
+            call_one_string_calls: 0,
+            call_one_string_errors: 0,
+            call_optional_string_calls: 0,
+            call_optional_string_errors: 0,
+            call_three_strings_calls: 0,
+            call_three_strings_errors: 0,
+            call_one_enum_calls: 0,
+            call_one_enum_errors: 0,
+            call_optional_enum_calls: 0,
+            call_optional_enum_errors: 0,
+            call_three_enums_calls: 0,
+            call_three_enums_errors: 0,
+            call_one_struct_calls: 0,
+            call_one_struct_errors: 0,
+            call_optional_struct_calls: 0,
+            call_optional_struct_errors: 0,
+            call_three_structs_calls: 0,
+            call_three_structs_errors: 0,
+            call_one_date_time_calls: 0,
+            call_one_date_time_errors: 0,
+            call_optional_date_time_calls: 0,
+            call_optional_date_time_errors: 0,
+            call_three_date_times_calls: 0,
+            call_three_date_times_errors: 0,
+            call_one_duration_calls: 0,
+            call_one_duration_errors: 0,
+            call_optional_duration_calls: 0,
+            call_optional_duration_errors: 0,
+            call_three_durations_calls: 0,
+            call_three_durations_errors: 0,
+            call_one_binary_calls: 0,
+            call_one_binary_errors: 0,
+            call_optional_binary_calls: 0,
+            call_optional_binary_errors: 0,
+            call_three_binaries_calls: 0,
+            call_three_binaries_errors: 0,
+            call_one_list_of_integers_calls: 0,
+            call_one_list_of_integers_errors: 0,
+            call_optional_list_of_floats_calls: 0,
+            call_optional_list_of_floats_errors: 0,
+            call_two_lists_calls: 0,
+            call_two_lists_errors: 0,
+
+            initial_property_publish_time: std::time::Duration::from_secs(0),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct TestAbleServer<C: Mqtt5PubSub> {
     mqtt_client: C,
@@ -202,6 +321,9 @@ pub struct TestAbleServer<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
+
+    #[cfg(feature = "metrics")]
+    metrics: Arc<AsyncMutex<TestAbleServerMetrics>>,
 }
 
 impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
@@ -211,6 +333,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         instance_id: String,
         initial_property_values: TestAbleInitialPropertyValues,
     ) -> Self {
+        #[cfg(feature = "metrics")]
+        let mut metrics = TestAbleServerMetrics::default();
+
         // Create a channel for messages to get from the Mqtt5PubSub object to this TestAbleServer object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
@@ -824,171 +949,609 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let property_values = TestAbleProperties {
             read_write_integer: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_integer,
+                initial_property_values.read_write_integer.clone(),
             )),
             read_write_integer_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_integer_version,
             )),
 
             read_only_integer: Arc::new(RwLockWatch::new(
-                initial_property_values.read_only_integer,
+                initial_property_values.read_only_integer.clone(),
             )),
             read_only_integer_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_only_integer_version,
             )),
 
             read_write_optional_integer: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_optional_integer,
+                initial_property_values.read_write_optional_integer.clone(),
             )),
             read_write_optional_integer_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_optional_integer_version,
             )),
             read_write_two_integers: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_two_integers,
+                initial_property_values.read_write_two_integers.clone(),
             )),
             read_write_two_integers_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_two_integers_version,
             )),
 
-            read_only_string: Arc::new(RwLockWatch::new(initial_property_values.read_only_string)),
+            read_only_string: Arc::new(RwLockWatch::new(
+                initial_property_values.read_only_string.clone(),
+            )),
             read_only_string_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_only_string_version,
             )),
 
             read_write_string: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_string,
+                initial_property_values.read_write_string.clone(),
             )),
             read_write_string_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_string_version,
             )),
 
             read_write_optional_string: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_optional_string,
+                initial_property_values.read_write_optional_string.clone(),
             )),
             read_write_optional_string_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_optional_string_version,
             )),
             read_write_two_strings: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_two_strings,
+                initial_property_values.read_write_two_strings.clone(),
             )),
             read_write_two_strings_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_two_strings_version,
             )),
 
             read_write_struct: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_struct,
+                initial_property_values.read_write_struct.clone(),
             )),
             read_write_struct_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_struct_version,
             )),
 
             read_write_optional_struct: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_optional_struct,
+                initial_property_values.read_write_optional_struct.clone(),
             )),
             read_write_optional_struct_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_optional_struct_version,
             )),
             read_write_two_structs: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_two_structs,
+                initial_property_values.read_write_two_structs.clone(),
             )),
             read_write_two_structs_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_two_structs_version,
             )),
 
-            read_only_enum: Arc::new(RwLockWatch::new(initial_property_values.read_only_enum)),
+            read_only_enum: Arc::new(RwLockWatch::new(
+                initial_property_values.read_only_enum.clone(),
+            )),
             read_only_enum_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_only_enum_version,
             )),
 
-            read_write_enum: Arc::new(RwLockWatch::new(initial_property_values.read_write_enum)),
+            read_write_enum: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_enum.clone(),
+            )),
             read_write_enum_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_enum_version,
             )),
 
             read_write_optional_enum: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_optional_enum,
+                initial_property_values.read_write_optional_enum.clone(),
             )),
             read_write_optional_enum_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_optional_enum_version,
             )),
             read_write_two_enums: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_two_enums,
+                initial_property_values.read_write_two_enums.clone(),
             )),
             read_write_two_enums_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_two_enums_version,
             )),
 
             read_write_datetime: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_datetime,
+                initial_property_values.read_write_datetime.clone(),
             )),
             read_write_datetime_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_datetime_version,
             )),
 
             read_write_optional_datetime: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_optional_datetime,
+                initial_property_values.read_write_optional_datetime.clone(),
             )),
             read_write_optional_datetime_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_optional_datetime_version,
             )),
             read_write_two_datetimes: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_two_datetimes,
+                initial_property_values.read_write_two_datetimes.clone(),
             )),
             read_write_two_datetimes_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_two_datetimes_version,
             )),
 
             read_write_duration: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_duration,
+                initial_property_values.read_write_duration.clone(),
             )),
             read_write_duration_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_duration_version,
             )),
 
             read_write_optional_duration: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_optional_duration,
+                initial_property_values.read_write_optional_duration.clone(),
             )),
             read_write_optional_duration_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_optional_duration_version,
             )),
             read_write_two_durations: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_two_durations,
+                initial_property_values.read_write_two_durations.clone(),
             )),
             read_write_two_durations_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_two_durations_version,
             )),
 
             read_write_binary: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_binary,
+                initial_property_values.read_write_binary.clone(),
             )),
             read_write_binary_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_binary_version,
             )),
 
             read_write_optional_binary: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_optional_binary,
+                initial_property_values.read_write_optional_binary.clone(),
             )),
             read_write_optional_binary_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_optional_binary_version,
             )),
             read_write_two_binaries: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_two_binaries,
+                initial_property_values.read_write_two_binaries.clone(),
             )),
             read_write_two_binaries_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_two_binaries_version,
             )),
 
             read_write_list_of_strings: Arc::new(RwLockWatch::new(
-                initial_property_values.read_write_list_of_strings,
+                initial_property_values.read_write_list_of_strings.clone(),
             )),
             read_write_list_of_strings_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_list_of_strings_version,
             )),
-            read_write_lists: Arc::new(RwLockWatch::new(initial_property_values.read_write_lists)),
+            read_write_lists: Arc::new(RwLockWatch::new(
+                initial_property_values.read_write_lists.clone(),
+            )),
             read_write_lists_version: Arc::new(AtomicU32::new(
                 initial_property_values.read_write_lists_version,
             )),
         };
+
+        // Publish the initial property values for all the properties.
+        #[cfg(feature = "metrics")]
+        let start_prop_publish_time = std::time::Instant::now();
+        {
+            let topic = format!("testAble/{}/property/readWriteInteger/value", instance_id);
+
+            let payload_obj = ReadWriteIntegerProperty {
+                value: initial_property_values.read_write_integer,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_integer_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readOnlyInteger/value", instance_id);
+
+            let payload_obj = ReadOnlyIntegerProperty {
+                value: initial_property_values.read_only_integer,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_only_integer_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteOptionalInteger/value",
+                instance_id
+            );
+
+            let payload_obj = ReadWriteOptionalIntegerProperty {
+                value: initial_property_values.read_write_optional_integer,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_optional_integer_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteTwoIntegers/value",
+                instance_id
+            );
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.read_write_two_integers,
+                initial_property_values.read_write_two_integers_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readOnlyString/value", instance_id);
+
+            let payload_obj = ReadOnlyStringProperty {
+                value: initial_property_values.read_only_string,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_only_string_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readWriteString/value", instance_id);
+
+            let payload_obj = ReadWriteStringProperty {
+                value: initial_property_values.read_write_string,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_string_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteOptionalString/value",
+                instance_id
+            );
+
+            let payload_obj = ReadWriteOptionalStringProperty {
+                value: initial_property_values.read_write_optional_string,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_optional_string_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteTwoStrings/value",
+                instance_id
+            );
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.read_write_two_strings,
+                initial_property_values.read_write_two_strings_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readWriteStruct/value", instance_id);
+
+            let payload_obj = ReadWriteStructProperty {
+                value: initial_property_values.read_write_struct,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_struct_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteOptionalStruct/value",
+                instance_id
+            );
+
+            let payload_obj = ReadWriteOptionalStructProperty {
+                value: initial_property_values.read_write_optional_struct,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_optional_struct_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteTwoStructs/value",
+                instance_id
+            );
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.read_write_two_structs,
+                initial_property_values.read_write_two_structs_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readOnlyEnum/value", instance_id);
+
+            let payload_obj = ReadOnlyEnumProperty {
+                value: initial_property_values.read_only_enum,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_only_enum_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readWriteEnum/value", instance_id);
+
+            let payload_obj = ReadWriteEnumProperty {
+                value: initial_property_values.read_write_enum,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_enum_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteOptionalEnum/value",
+                instance_id
+            );
+
+            let payload_obj = ReadWriteOptionalEnumProperty {
+                value: initial_property_values.read_write_optional_enum,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_optional_enum_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readWriteTwoEnums/value", instance_id);
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.read_write_two_enums,
+                initial_property_values.read_write_two_enums_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readWriteDatetime/value", instance_id);
+
+            let payload_obj = ReadWriteDatetimeProperty {
+                value: initial_property_values.read_write_datetime,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_datetime_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteOptionalDatetime/value",
+                instance_id
+            );
+
+            let payload_obj = ReadWriteOptionalDatetimeProperty {
+                value: initial_property_values.read_write_optional_datetime,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_optional_datetime_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteTwoDatetimes/value",
+                instance_id
+            );
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.read_write_two_datetimes,
+                initial_property_values.read_write_two_datetimes_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readWriteDuration/value", instance_id);
+
+            let payload_obj = ReadWriteDurationProperty {
+                value: initial_property_values.read_write_duration,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_duration_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteOptionalDuration/value",
+                instance_id
+            );
+
+            let payload_obj = ReadWriteOptionalDurationProperty {
+                value: initial_property_values.read_write_optional_duration,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_optional_duration_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteTwoDurations/value",
+                instance_id
+            );
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.read_write_two_durations,
+                initial_property_values.read_write_two_durations_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readWriteBinary/value", instance_id);
+
+            let payload_obj = ReadWriteBinaryProperty {
+                value: initial_property_values.read_write_binary,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_binary_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteOptionalBinary/value",
+                instance_id
+            );
+
+            let payload_obj = ReadWriteOptionalBinaryProperty {
+                value: initial_property_values.read_write_optional_binary,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_optional_binary_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteTwoBinaries/value",
+                instance_id
+            );
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.read_write_two_binaries,
+                initial_property_values.read_write_two_binaries_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!(
+                "testAble/{}/property/readWriteListOfStrings/value",
+                instance_id
+            );
+
+            let payload_obj = ReadWriteListOfStringsProperty {
+                value: initial_property_values.read_write_list_of_strings,
+            };
+            let msg = message::property_value(
+                &topic,
+                &payload_obj,
+                initial_property_values.read_write_list_of_strings_version,
+            )
+            .unwrap();
+
+            let _ = connection.publish_nowait(msg);
+        }
+
+        {
+            let topic = format!("testAble/{}/property/readWriteLists/value", instance_id);
+            let msg = message::property_value(
+                &topic,
+                &initial_property_values.read_write_lists,
+                initial_property_values.read_write_lists_version,
+            )
+            .unwrap();
+            let _ = connection.publish_nowait(msg);
+        }
+
+        #[cfg(feature = "metrics")]
+        {
+            metrics.initial_property_publish_time = start_prop_publish_time.elapsed();
+            debug!(
+                "Published 26 initial property values in {:?}",
+                metrics.initial_property_publish_time
+            );
+        }
 
         TestAbleServer {
             mqtt_client: connection.clone(),
@@ -1001,7 +1564,14 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             client_id: connection.get_client_id(),
             instance_id,
+            #[cfg(feature = "metrics")]
+            metrics: Arc::new(AsyncMutex::new(metrics)),
         }
+    }
+
+    #[cfg(feature = "metrics")]
+    pub fn get_metrics(&self) -> Arc<AsyncMutex<TestAbleServerMetrics>> {
+        self.metrics.clone()
     }
 
     /// Converts a oneshot channel receiver into a future.
@@ -3386,16 +3956,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -3405,7 +3975,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -3564,16 +4134,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -3583,7 +4153,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -3717,16 +4287,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -3736,7 +4306,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -3898,16 +4468,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -3917,7 +4487,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -4048,16 +4618,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -4067,7 +4637,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -4201,16 +4771,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -4220,7 +4790,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -4354,16 +4924,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -4373,7 +4943,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -4504,16 +5074,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -4523,7 +5093,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -4657,16 +5227,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -4676,7 +5246,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -4838,16 +5408,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -4857,7 +5427,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -4990,16 +5560,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -5009,7 +5579,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -5143,16 +5713,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -5162,7 +5732,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -5296,16 +5866,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -5315,7 +5885,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -5451,16 +6021,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -5470,7 +6040,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -5608,16 +6178,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -5627,7 +6197,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -5761,16 +6331,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -5780,7 +6350,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -5911,16 +6481,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -5930,7 +6500,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -6066,16 +6636,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -6085,7 +6655,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -6219,16 +6789,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -6238,7 +6808,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -6369,16 +6939,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -6388,7 +6958,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -6522,16 +7092,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -6541,7 +7111,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -6675,16 +7245,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -6694,7 +7264,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }
@@ -6828,16 +7398,16 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         match return_code {
             MethodReturnCode::Success(_) => {
                 let mut incoming_version: Option<u32> = None;
-                if let Some(version_str) = msg.user_properties.get("Version") {
+                if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                     match version_str.parse::<u32>() {
                         Ok(v) => incoming_version = Some(v),
                         Err(e) => {
                             error!(
-                                "Failed to parse 'Version' user property ('{}'): {:?}",
+                                "Failed to parse 'PropertyVersion' user property ('{}'): {:?}",
                                 version_str, e
                             );
                             return_code = MethodReturnCode::PayloadError(
-                                "Invalid 'Version' user property".to_string(),
+                                "Invalid 'PropertyVersion' user property".to_string(),
                             );
                         }
                     }
@@ -6847,7 +7417,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                     let current = version_pointer.load(Ordering::SeqCst);
                     if v != current {
                         return_code = MethodReturnCode::OutOfSync(format!(
-                            "Version mismatch: incoming {}, current {}",
+                            "PropertyVersion mismatch: incoming {}, current {}",
                             v, current
                         ));
                     }

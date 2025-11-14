@@ -190,6 +190,8 @@ async fn main() {
         }
     });
 
+    // Provide property handles to the property_publish_task which will use them to continuously update property values.
+
     let location_property = server.get_location_handle();
 
     let current_temperature_property = server.get_current_temperature_handle();

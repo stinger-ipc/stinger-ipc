@@ -1601,17 +1601,20 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                         }
 
                         _i if _i == sub_ids.location_property_value => {
-                            debug!("Received message for location property value");
+                            debug!("Received LOCATION property value");
                             // JSON deserialize into LocationProperty struct
                             match serde_json::from_slice::<LocationProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.location.write().await;
 
+                                    debug!("LOCATION property value updated: {:?}", pl);
                                     *guard = pl.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.location_version.store(
                                                 version_num,
@@ -1632,7 +1635,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                         }
 
                         _i if _i == sub_ids.current_temperature_property_value => {
-                            debug!("Received message for current_temperature property value");
+                            debug!("Received CURRENT_TEMPERATURE property value");
                             // JSON deserialize into CurrentTemperatureProperty struct
                             match serde_json::from_slice::<CurrentTemperatureProperty>(&msg.payload)
                             {
@@ -1640,10 +1643,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.current_temperature.write().await;
 
+                                    debug!(
+                                        "CURRENT_TEMPERATURE property value updated: {:?}",
+                                        pl.temperature_f
+                                    );
                                     *guard = pl.temperature_f.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.current_temperature_version.store(
                                                 version_num,
@@ -1664,17 +1673,20 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                         }
 
                         _i if _i == sub_ids.current_condition_property_value => {
-                            debug!("Received message for current_condition property value");
+                            debug!("Received CURRENT_CONDITION property value");
                             // JSON deserialize into CurrentConditionProperty struct
                             match serde_json::from_slice::<CurrentConditionProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.current_condition.write().await;
 
+                                    debug!("CURRENT_CONDITION property value updated: {:?}", pl);
                                     *guard = pl.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.current_condition_version.store(
                                                 version_num,
@@ -1695,17 +1707,20 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                         }
 
                         _i if _i == sub_ids.daily_forecast_property_value => {
-                            debug!("Received message for daily_forecast property value");
+                            debug!("Received DAILY_FORECAST property value");
                             // JSON deserialize into DailyForecastProperty struct
                             match serde_json::from_slice::<DailyForecastProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.daily_forecast.write().await;
 
+                                    debug!("DAILY_FORECAST property value updated: {:?}", pl);
                                     *guard = pl.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.daily_forecast_version.store(
                                                 version_num,
@@ -1726,17 +1741,20 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                         }
 
                         _i if _i == sub_ids.hourly_forecast_property_value => {
-                            debug!("Received message for hourly_forecast property value");
+                            debug!("Received HOURLY_FORECAST property value");
                             // JSON deserialize into HourlyForecastProperty struct
                             match serde_json::from_slice::<HourlyForecastProperty>(&msg.payload) {
                                 Ok(pl) => {
                                     // Get a write-guard and set the local copy of the property value.
                                     let mut guard = props.hourly_forecast.write().await;
 
+                                    debug!("HOURLY_FORECAST property value updated: {:?}", pl);
                                     *guard = pl.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.hourly_forecast_version.store(
                                                 version_num,
@@ -1757,7 +1775,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                         }
 
                         _i if _i == sub_ids.current_condition_refresh_interval_property_value => {
-                            debug!("Received message for current_condition_refresh_interval property value");
+                            debug!("Received CURRENT_CONDITION_REFRESH_INTERVAL property value");
                             // JSON deserialize into CurrentConditionRefreshIntervalProperty struct
                             match serde_json::from_slice::<CurrentConditionRefreshIntervalProperty>(
                                 &msg.payload,
@@ -1767,10 +1785,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                                     let mut guard =
                                         props.current_condition_refresh_interval.write().await;
 
+                                    debug!("CURRENT_CONDITION_REFRESH_INTERVAL property value updated: {:?}", pl.seconds);
                                     *guard = pl.seconds.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.current_condition_refresh_interval_version.store(
                                                 version_num,
@@ -1791,7 +1812,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                         }
 
                         _i if _i == sub_ids.hourly_forecast_refresh_interval_property_value => {
-                            debug!("Received message for hourly_forecast_refresh_interval property value");
+                            debug!("Received HOURLY_FORECAST_REFRESH_INTERVAL property value");
                             // JSON deserialize into HourlyForecastRefreshIntervalProperty struct
                             match serde_json::from_slice::<HourlyForecastRefreshIntervalProperty>(
                                 &msg.payload,
@@ -1801,10 +1822,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                                     let mut guard =
                                         props.hourly_forecast_refresh_interval.write().await;
 
+                                    debug!("HOURLY_FORECAST_REFRESH_INTERVAL property value updated: {:?}", pl.seconds);
                                     *guard = pl.seconds.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.hourly_forecast_refresh_interval_version.store(
                                                 version_num,
@@ -1825,7 +1849,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                         }
 
                         _i if _i == sub_ids.daily_forecast_refresh_interval_property_value => {
-                            debug!("Received message for daily_forecast_refresh_interval property value");
+                            debug!("Received DAILY_FORECAST_REFRESH_INTERVAL property value");
                             // JSON deserialize into DailyForecastRefreshIntervalProperty struct
                             match serde_json::from_slice::<DailyForecastRefreshIntervalProperty>(
                                 &msg.payload,
@@ -1835,10 +1859,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                                     let mut guard =
                                         props.daily_forecast_refresh_interval.write().await;
 
+                                    debug!("DAILY_FORECAST_REFRESH_INTERVAL property value updated: {:?}", pl.seconds);
                                     *guard = pl.seconds.clone();
 
                                     // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("Version") {
+                                    if let Some(version_str) =
+                                        msg.user_properties.get("PropertyVersion")
+                                    {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.daily_forecast_refresh_interval_version.store(
                                                 version_num,

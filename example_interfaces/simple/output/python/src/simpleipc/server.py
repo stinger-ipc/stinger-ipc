@@ -32,7 +32,7 @@ T = TypeVar("T")
 
 @dataclass
 class PropertyControls(Generic[T]):
-    value: T | None = None
+    value: T
     mutex = threading.Lock()
     version: int = -1
     subscription_id: Optional[int] = None
@@ -57,12 +57,13 @@ class SimpleServer:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
 
-        self._property_school: PropertyControls[str] = PropertyControls()
+        self._property_school: PropertyControls[str] = PropertyControls(value=initial_property_values.school, version=initial_property_values.school_version)
         self._property_school.subscription_id = self._conn.subscribe("simple/{}/property/school/setValue".format(self._instance_id), self._receive_school_update_request_message)
 
         self._method_trade_numbers = MethodControls()
         self._method_trade_numbers.subscription_id = self._conn.subscribe("simple/{}/method/tradeNumbers".format(self._instance_id), self._process_trade_numbers_call)
 
+        self._publish_all_properties()
         self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
         self._advertise_thread.start()
 
@@ -83,6 +84,12 @@ class SimpleServer:
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         self._conn.publish_status(topic, data, expiry)
 
+    def _publish_all_properties(self):
+
+        with self._property_school.mutex:
+            prop_obj = SchoolProperty(name=self._property_school.value)
+            self._conn.publish_property_state("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
+
     def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
         correlation_id = request_properties.get("CorrelationData")  # type: Optional[bytes]
         response_topic = request_properties.get("ResponseTopic")  # type: Optional[str]
@@ -90,21 +97,21 @@ class SimpleServer:
             self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
 
     def _receive_school_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get("UserProperties", dict())  # type: Optional[Dict[str, str]]
-        prop_version = user_properties.get("Version", -1)  # type: int
+        user_properties = properties.get("UserProperty", dict())  # type: Optional[Dict[str, str]]
+        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
         correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
 
         existing_prop_obj = SchoolProperty(name=self._property_school.value)
 
         try:
-            if prop_version != self._property_school.version:
+            if int(prop_version) != int(self._property_school.version):
                 self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", topic, prop_version, self._property_school.version)
                 if response_topic is not None:
                     self._conn.publish_property_response(
                         response_topic,
                         existing_prop_obj,
-                        self._property_school.version,
+                        str(self._property_school.version),
                         MethodReturnCode.OUT_OF_SYNC,
                         correlation_id,
                         f"Request version {prop_version} does not match current version {self._property_school.version}",
@@ -117,11 +124,16 @@ class SimpleServer:
                 self._property_school.value = prop_value
                 self._property_school.version += 1
 
+                prop_obj = SchoolProperty(name=self._property_school.value)
+
+                self._conn.publish_property_state("simple/{}/property/school/value".format(self._instance_id), prop_obj, int(self._property_school.version))
+
             if response_topic is not None:
 
                 prop_obj = SchoolProperty(name=self._property_school.value)
 
-                self._conn.publish_property_response(response_topic, prop_obj, self._property_school.version, MethodReturnCode.SUCCESS, correlation_id)
+                self._logger.debug("Sending property update response for to %s", response_topic)
+                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS, correlation_id)
             else:
                 self._logger.warning("No response topic provided for property update of %s", topic)
 
@@ -133,7 +145,7 @@ class SimpleServer:
 
                 prop_obj = SchoolProperty(name=self._property_school.value)
 
-                self._conn.publish_property_response(response_topic, prop_obj, self._property_school.version, MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
+                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""

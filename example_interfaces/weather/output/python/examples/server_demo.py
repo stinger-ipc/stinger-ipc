@@ -17,25 +17,33 @@ if __name__ == "__main__":
             latitude=3.14,
             longitude=3.14,
         ),
+        location_version=1,
         current_temperature=3.14,
+        current_temperature_version=2,
         current_condition=CurrentConditionProperty(
             condition=WeatherCondition.SNOWY,
             description="apples",
         ),
+        current_condition_version=3,
         daily_forecast=DailyForecastProperty(
             monday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
             tuesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
             wednesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
         ),
+        daily_forecast_version=4,
         hourly_forecast=HourlyForecastProperty(
             hour_0=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
             hour_1=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
             hour_2=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
             hour_3=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
         ),
+        hourly_forecast_version=5,
         current_condition_refresh_interval=42,
+        current_condition_refresh_interval_version=6,
         hourly_forecast_refresh_interval=42,
+        hourly_forecast_refresh_interval_version=7,
         daily_forecast_refresh_interval=42,
+        daily_forecast_refresh_interval_version=8,
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)

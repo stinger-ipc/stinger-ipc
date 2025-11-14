@@ -29,7 +29,7 @@ T = TypeVar("T")
 
 @dataclass
 class PropertyControls(Generic[T]):
-    value: T | None = None
+    value: T
     mutex = threading.Lock()
     version: int = -1
     subscription_id: Optional[int] = None
@@ -54,6 +54,7 @@ class SignalOnlyServer:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
 
+        self._publish_all_properties()
         self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
         self._advertise_thread.start()
 

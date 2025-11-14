@@ -231,9 +231,9 @@ class MqttBrokerConnection(IBrokerConnection):
     def publish_property_response(self, response_topic: str, property_obj: BaseModel, version: str, return_code: MethodReturnCode, correlation_id: Union[str, bytes], debug_info: Optional[str] = None):
         user_props = dict()
         user_props["ReturnCode"] = str(return_code.value)
-        user_props["Version"] = version
+        user_props["PropertyVersion"] = str(version)
         if debug_info is not None:
-            user_props["DebugInfo"] = debug_info
+            user_props["DebugInfo"] = str(debug_info)
         self.publish(response_topic, property_obj.model_dump_json(by_alias=True), qos=1, retain=False, correlation_id=correlation_id, user_properties=user_props)
 
     def publish_request(self, topic: str, request_obj: BaseModel, response_topic: str, correlation_id: Union[str, bytes, None] = None) -> Union[str, bytes]:

@@ -27,6 +27,8 @@ use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 use tokio::task::JoinError;
 type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode>> + Send>>;
 use crate::message;
+#[cfg(feature = "metrics")]
+use serde::Serialize;
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -40,16 +42,29 @@ pub struct SignalOnlyServer<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
+
+    #[cfg(feature = "metrics")]
+    metrics: Arc<AsyncMutex<SignalOnlyServerMetrics>>,
 }
 
 impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
     pub async fn new(mut connection: C, instance_id: String) -> Self {
+        #[cfg(feature = "metrics")]
+        let mut metrics = SignalOnlyServerMetrics::default();
+
         SignalOnlyServer {
             mqtt_client: connection.clone(),
 
             client_id: connection.get_client_id(),
             instance_id,
+            #[cfg(feature = "metrics")]
+            metrics: Arc::new(AsyncMutex::new(metrics)),
         }
+    }
+
+    #[cfg(feature = "metrics")]
+    pub fn get_metrics(&self) -> Arc<AsyncMutex<SignalOnlyServerMetrics>> {
+        self.metrics.clone()
     }
 
     /// Converts a oneshot channel receiver into a future.

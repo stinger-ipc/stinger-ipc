@@ -150,6 +150,7 @@ async fn main() {
         }
     });
     {%if stinger.properties|length > 0 %}
+    // Provide property handles to the property_publish_task which will use them to continuously update property values.
     {%for prop_name, prop in stinger.properties.items()%}
     let {{prop_name | snake_case}}_property = server.get_{{prop_name | snake_case}}_handle();
     {%endfor-%}
