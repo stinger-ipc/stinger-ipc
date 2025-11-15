@@ -14,6 +14,7 @@ properties:
         enum:
           - "0.0.7"
           - "0.0.8"
+          - "0.0.9"
     required:
       - version
 
@@ -22,7 +23,7 @@ properties:
     parameters:
       name:
         type: string
-        pattern: "[a-zA-Z0-9_]+"
+        pattern: "^[a-zA-Z0-9_-]+$"
         maxLength: 32
         description: "A short token that will be used to create class names, folder names, filenames, etc."
       title:
@@ -44,6 +45,8 @@ properties:
 
   enums:
     type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
     additionalProperties:
       type: object
       properties:
@@ -55,17 +58,25 @@ properties:
             properties:
               name:
                 type: string
+                pattern: "^[a-zA-Z0-9_-]+$"
               description:
                 type: string
             required:
               - name
+          version:
+            type: string
+            pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+            description: >
+              A semantic version that can be used to determine data consistency in this specification.
         documentation:
           $ref: "#/$defs/documentation"
-        required:
-          - values
+      required:
+        - values
 
   structures:
     type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
     additionalProperties:
       type: object
       properties:
@@ -73,23 +84,61 @@ properties:
           $ref: "#/$defs/payload"
         documentation:
           $ref: "#/$defs/documentation"
+        version:
+            type: string
+            pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+            description: >
+              A semantic version that can be used to determine data consistency in this specification.
       required:
         - members
+      dependentSchemas:
+        version:
+          properties:
+            members:
+              $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   signals:
     type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
     additionalProperties:
       $ref: "#/$defs/signal"
 
   properties:
     type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
     additionalProperties:
       $ref: "#/$defs/property"
 
   methods:
     type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
     additionalProperties:
       $ref: "#/$defs/method"
+
+  constants:
+    type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
+    additionalProperties:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - float
+            - string
+            - integer
+            - boolean
+        value:
+          type: ["string", "number", "boolean"]
+        description:
+          type: string
+      required:
+        - type
+        - value
 
 required:
   - stingeripc
@@ -114,6 +163,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^[a-zA-Z0-9_-]+$"
       optional:
         type: boolean
         default: false
@@ -123,6 +173,11 @@ $defs:
       schema:
         type: object
         description: A JSON schema which further constrains the value.
+      index:
+        type: integer
+        minimum: 1
+        description: >
+          Payload ordering index required for some serialization formats.
 
   primitiveArg:
     properties:
@@ -136,7 +191,6 @@ $defs:
           - datetime
           - duration
           - binary
-          - array
 
   enumArg:
     properties:
@@ -145,6 +199,11 @@ $defs:
         const: "enum"
       enumName:
         type: string
+      enumVersion:
+        type: string
+        pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+        description: >
+          This must be semantically compatible with the version defined in the enums section.
     required:
       - enumName
 
@@ -155,6 +214,11 @@ $defs:
         const: "struct"
       structName:
         type: string
+      structVersion:
+        type: string
+        pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+        description: >
+          This must be semantically compatible with the version defined in the structures section.
     required:
       - structName
 
@@ -186,6 +250,27 @@ $defs:
         - $ref: "#/$defs/genericArg"
         - $ref: "#/$defs/arrayArg"
 
+  enumsAndStructArgsMustHaveVersion:
+    type: array
+    items:
+      allOf:
+        - type: object
+          if:
+            properties:
+              type:
+                const: enum
+          then:
+            properties:
+              enumVersion: true
+        - type: object
+          if:
+            properties:
+              type:
+                const: struct
+          then:
+            properties:
+              structVersion: true
+
   signal:
     type: object
     properties:
@@ -193,6 +278,27 @@ $defs:
         $ref: "#/$defs/documentation"
       payload:
         $ref: "#/$defs/payload"
+      consumers:
+        type: array
+        items:
+          type: string
+          pattern: "^[a-zA-Z0-9_-]+$"
+        uniqueItems: true
+        description: >
+          A list of names representing interface consumers that are allowed receive this signal.
+      version:
+        type: string
+        pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+        description: >
+          A semantic version that can be used by consumers to check compatibility.
+    dependentRequired:
+      consumers:
+        - version
+    dependentSchemas:
+      payload:
+        properties:
+          arguments:
+            $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   property:
     type: object
@@ -200,12 +306,39 @@ $defs:
       documentation:
         $ref: "#/$defs/documentation"
       values:
-        $ref: "#/$defs/payload"
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/arg"
+        minItems: 1
       readOnly:
         type: boolean
         default: false
+        description: >
+          If true, this property can only be read by clients, not written to.
+      consumers:
+        type: array
+        items:
+          type: string
+          pattern: "^[a-zA-Z0-9_-]+$"
+        uniqueItems: true
+        description: >
+          A list of names representing interface consumers that are allowed access to this property.
+      version:
+        type: string
+        pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+        description: >
+          A semantic version that can be used by consumers to check compatibility.
     required:
       - values
+    dependentRequired:
+      consumers:
+        - version
+    dependentSchemas:
+      version:
+        properties:
+          values:
+            $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   method:
     type: object
@@ -216,5 +349,28 @@ $defs:
         $ref: "#/$defs/payload"
       returnValues:
         $ref: "#/$defs/payload"
+      consumers:
+        type: array
+        items:
+          type: string
+          pattern: "^[a-zA-Z0-9_-]+$"
+        uniqueItems: true
+        description: >
+          A list of names representing interface consumers that are allowed to call this method.
+      version:
+        type: string
+        pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+        description: >
+          A semantic version that can be used by consumers to check compatibility.
     required:
       - arguments
+    dependentRequired:
+      consumers:
+        - version
+    dependentSchemas:
+      version:
+        properties:
+          arguments:
+            $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
+          returnValues:
+            $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"

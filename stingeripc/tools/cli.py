@@ -8,10 +8,7 @@ import typer
 from typing_extensions import Annotated
 from typing import Optional
 from jacobsjinjatoo import templator as jj2
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    # jacobsjsonschema doesn't ship stubs; only import for type checking
-    from jacobsjsonschema.draft7 import Validator  # type: ignore
+import jsonschema_rs
 import yaml
 import yamlloader
 from stingeripc.interface import StingerInterface
@@ -90,15 +87,13 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
     """
     schema_file = Path(__file__).parent.parent / "schema" / "schema.yaml"
     schema_obj = yaml.load(schema_file.open("r"), Loader=yamlloader.ordereddict.Loader)
-    validator = Validator(schema_obj, lazy_error_reporting=False)
-
+    validator = jsonschema_rs.validator_for(schema_obj)
+    
     input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
-    if result := validator.validate(input_obj):
-        print("Validated: ", result)
-    else:
-        for error in validator.get_errors():
-            print(error)
-        sys.exit(1)
+
+    for error in validator.iter_errors(input_obj):
+        print(f"Error: {error}")
+        print(f"Location: {error.instance_path}")
     sys.exit(0)
 
 @app.command()

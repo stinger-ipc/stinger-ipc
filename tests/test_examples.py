@@ -1,8 +1,9 @@
 
 import unittest
 import yaml
+import yamlloader
 import os.path
-from jacobsjsonschema.draft7 import Validator
+import jsonschema_rs
 
 
 example_stinger_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../example_interfaces"))
@@ -13,18 +14,19 @@ class SchemaValidation:
 
     def test_validates(self):
         with open(schema_path) as fp:
-            validator = Validator(yaml.load(fp, Loader=yaml.CSafeLoader), lazy_error_reporting=True)
+            schema_obj = yaml.load(fp, Loader=yamlloader.ordereddict.Loader)
+        validator = jsonschema_rs.validator_for(schema_obj)
         
         param_only_path = os.path.join(example_stinger_path, self.directory, self.stinger_name)
         with open(param_only_path) as fp:
-            interface = yaml.load(fp, Loader=yaml.CSafeLoader)
-        is_valid = validator.validate(interface)
-        if not is_valid:
-            for err in validator.get_errors():
-                print(err)
-            self.assertEqual(len(validator.get_errors()), 0)
-        self.assertTrue(is_valid)
-
+            interface = yaml.load(fp, Loader=yamlloader.ordereddict.Loader)
+        
+        errors = list(validator.iter_errors(interface))
+        if errors:
+            for error in errors:
+                print(f"Error: {error}")
+                print(f"Location: {error.instance_path}")
+            assert (len(errors), 0)
 
 class TestParamOnlyValidatesAgainstSchema(unittest.TestCase, SchemaValidation):
 

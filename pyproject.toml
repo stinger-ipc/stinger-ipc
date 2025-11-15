@@ -10,7 +10,7 @@ classifiers = [
 ]
 dependencies = [
     "jacobs-jinja-too>=0.2.5",
-    "jacobs-json-schema>=0.4.2",
+    "jsonschema-rs>=0.34.0",
     "packaging>=25.0",
     "pydantic>=2.11.7",
     "pydantic-asyncapi>=0.3.0",
