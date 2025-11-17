@@ -16,6 +16,7 @@ dependencies = [
     "pydantic-asyncapi>=0.3.0",
     "pyyaml>=6.0.2",
     "ruamel-yaml>=0.18.14",
+    "semantic-version>=2.10.0",
     "stringcase>=1.2.0",
     "typer>=0.16.1",
     "yamlloader>=1.5.1",

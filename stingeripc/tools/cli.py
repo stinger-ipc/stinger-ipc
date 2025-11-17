@@ -24,60 +24,74 @@ app = typer.Typer(help="stinger-ipc generator CLI")
 
 @app.command()
 def generate(
-    language: Annotated[str, typer.Argument(...)],
     input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)],
     output_dir: Annotated[Path, typer.Argument(..., file_okay=False, dir_okay=True, writable=True, readable=True)],
-    templates: Annotated[Optional[list[Path]], typer.Option("--templates", help="Additional template directories")] = None,
+    language: Annotated[Optional[str], typer.Argument()] = None,
+    template_pkg: Annotated[Optional[list[str]], typer.Option("--template-pkg", help="Python package(s) containing templates")] = None,
+    template_path: Annotated[Optional[list[Path]], typer.Option("--template-path", help="Filesystem path(s) to template directories")] = None,
 ):
     """Generate code for a Stinger interface.
 
-    LANGUAGE must be one of: rust, python, markdown, cpp, web, protobuf
     INPUT_FILE is the .stinger.yaml file
     OUTPUT_DIR is the directory that will receive generated files
+    LANGUAGE (optional) must be one of: rust, python, markdown, cpp, web, protobuf
+    
+    At least one of LANGUAGE, --template-pkg, or --template-path must be provided.
     """
-    lang = language.lower()
-    if lang not in ("rust", "python", "markdown", "cpp", "web", "protobuf"):
-        raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf")
+    # Check if at least one template source is provided
+    if not language and not template_pkg and not template_path:
+        raise typer.BadParameter(
+            "At least one of: LANGUAGE argument, --template-pkg, or --template-path must be provided"
+        )
+    
+    # If language is provided, validate and use specialized generators
+    if language:
+        lang = language.lower()
+        if lang not in ("rust", "python", "markdown", "cpp", "web", "protobuf"):
+            raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf")
 
-    if lang == "python":
-        # python_generator.main expects Path arguments via typer
-        python_generator.main(input_file, output_dir)
-    elif lang == "markdown":
-        # markdown_generator.main expects Path arguments via typer
-        markdown_generator.main(input_file, output_dir)
-    elif lang == "web":
-        wt = jj2.WebTemplator(output_dir=output_dir)
-        ct = jj2.CodeTemplator(output_dir=output_dir)
-        wt.add_template_dir(
-            os.path.join(os.path.dirname(__file__), "../templates", "html")
-        )
-        ct.add_template_dir(
-            os.path.join(os.path.dirname(__file__), "../templates", "html")
-        )
-        with open(input_file, "r") as f:
-            stinger = StingerInterface.from_yaml(f)
-        for output_file in [
-            "app.js",
-            "styles.css",
-        ]:
-            ct.render_template(f"{output_file}.jinja2", output_file, stinger=stinger)
-        wt.render_template("index.html.jinja2", "index.html", stinger=stinger)
-    elif lang == "cpp":
-        cpp_generator.main(input_file, output_dir)
-    elif lang == "rust":
-        rust_generator.main(input_file, output_dir)
-    elif lang == "protobuf":
-        ct = jj2.CodeTemplator(output_dir=output_dir)
-        ct.add_template_dir(
-            os.path.join(os.path.dirname(__file__), "../templates", "protobuf")
-        )
-        with open(input_file, "r") as f:
-            stinger = StingerInterface.from_yaml(f)
-        ct.render_template("proto.jinja2", f"{stinger.name}.proto", stinger=stinger)
-    else:
-        generic_generator.main(lang, input_file, output_dir)
-
-    print(f"Generation for '{lang}' completed.")
+        if lang == "python":
+            # python_generator.main expects Path arguments via typer
+            python_generator.main(input_file, output_dir)
+        elif lang == "markdown":
+            # markdown_generator.main expects Path arguments via typer
+            markdown_generator.main(input_file, output_dir)
+        elif lang == "web":
+            wt = jj2.WebTemplator(output_dir=output_dir)
+            ct = jj2.CodeTemplator(output_dir=output_dir)
+            wt.add_template_dir(
+                os.path.join(os.path.dirname(__file__), "../templates", "html")
+            )
+            ct.add_template_dir(
+                os.path.join(os.path.dirname(__file__), "../templates", "html")
+            )
+            with open(input_file, "r") as f:
+                stinger = StingerInterface.from_yaml(f)
+            for output_file in [
+                "app.js",
+                "styles.css",
+            ]:
+                ct.render_template(f"{output_file}.jinja2", output_file, stinger=stinger)
+            wt.render_template("index.html.jinja2", "index.html", stinger=stinger)
+        elif lang == "cpp":
+            cpp_generator.main(input_file, output_dir)
+        elif lang == "rust":
+            rust_generator.main(input_file, output_dir)
+        elif lang == "protobuf":
+            ct = jj2.CodeTemplator(output_dir=output_dir)
+            ct.add_template_dir(
+                os.path.join(os.path.dirname(__file__), "../templates", "protobuf")
+            )
+            with open(input_file, "r") as f:
+                stinger = StingerInterface.from_yaml(f)
+            ct.render_template("proto.jinja2", f"{stinger.name}.proto", stinger=stinger)
+        
+        print(f"Generation for '{lang}' completed.")
+    
+    # Use generic generator if template-pkg or template-path is provided
+    if template_pkg or template_path:
+        generic_generator.main(input_file, output_dir, language, template_pkg, template_path)
+        print(f"Generation from custom templates completed.")
 
 @app.command()
 def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)]):
