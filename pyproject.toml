@@ -1,6 +1,6 @@
 [project]
 name = "stinger-ipc"
-version = "0.4.0"
+version = "0.4.2"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -17,6 +17,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "ruamel-yaml>=0.18.14",
     "semantic-version>=2.10.0",
+    "stevedore>=5.5.0",
     "stringcase>=1.2.0",
     "typer>=0.16.1",
     "yamlloader>=1.5.1",
@@ -54,3 +55,8 @@ pythongen = "stingeripc.tools.python_generator:run"
 rustgen = "stingeripc.tools.rust_generator:main"
 markdowngen = "stingeripc.tools.markdown_generator:run"
 stinger = "stingeripc.tools.cli:run"
+
+[project.entry-points."stinger_symbols"]
+python = 'stingeripc.lang_symb:PythonSymbolsProvider'
+rust = 'stingeripc.lang_symb:RustSymbolsProvider'
+cpp = 'stingeripc.lang_symb:CppSymbolsProvider'

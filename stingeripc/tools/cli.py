@@ -26,22 +26,22 @@ app = typer.Typer(help="stinger-ipc generator CLI")
 def generate(
     input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)],
     output_dir: Annotated[Path, typer.Argument(..., file_okay=False, dir_okay=True, writable=True, readable=True)],
-    language: Annotated[Optional[str], typer.Argument()] = None,
+    language: Annotated[Optional[str], typer.Option("--language", "-l", help="Language to generate: rust, python, markdown, cpp, web, protobuf")] = None,
     template_pkg: Annotated[Optional[list[str]], typer.Option("--template-pkg", help="Python package(s) containing templates")] = None,
     template_path: Annotated[Optional[list[Path]], typer.Option("--template-path", help="Filesystem path(s) to template directories")] = None,
+    config: Annotated[Optional[Path], typer.Option("--config", help="TOML configuration file", exists=True, file_okay=True, dir_okay=False, readable=True)] = None,
 ):
     """Generate code for a Stinger interface.
 
     INPUT_FILE is the .stinger.yaml file
     OUTPUT_DIR is the directory that will receive generated files
-    LANGUAGE (optional) must be one of: rust, python, markdown, cpp, web, protobuf
     
-    At least one of LANGUAGE, --template-pkg, or --template-path must be provided.
+    At least one of --language, --template-pkg, or --template-path must be provided.
     """
     # Check if at least one template source is provided
     if not language and not template_pkg and not template_path:
         raise typer.BadParameter(
-            "At least one of: LANGUAGE argument, --template-pkg, or --template-path must be provided"
+            "At least one of: --language, --template-pkg, or --template-path must be provided"
         )
     
     # If language is provided, validate and use specialized generators

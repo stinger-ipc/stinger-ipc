@@ -15,6 +15,7 @@ from .args import ArgType, ArgPrimitiveType
 from .exceptions import InvalidStingerStructure
 from jacobsjinjatoo import stringmanip
 from copy import copy
+from stevedore import ExtensionManager
 
 YamlArg = Mapping[str, str | bool]
 YamlArgList = list[YamlArg]
@@ -25,8 +26,23 @@ YamlIfaceProperty = dict[str, str | bool | YamlArgList]
 RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
 
 
-class Arg:
+class LanguageSymbolMixin:
+
+    def __init__(self):
+        mgr = ExtensionManager(
+            namespace="stinger_symbols",
+            invoke_on_load=True,
+        )
+        for ext in mgr:
+            domain = ext.obj.get_domain()
+            symbols = ext.obj.for_model(self.__class__.__name__, self)
+            if symbols is not None:
+                setattr(self, domain, symbols)
+
+class Arg(LanguageSymbolMixin):
+
     def __init__(self, name: str, description: Optional[str] = None):
+        LanguageSymbolMixin.__init__(self)
         self._name = name
         self._description = description.strip() if description else None
         self._default_value = None
@@ -231,9 +247,11 @@ class Arg:
     def get_random_example_value(self, lang="python", seed: int = 0): ...
 
 
-class ArgEnum(Arg):
+class ArgEnum(Arg, LanguageSymbolMixin):
+    
     def __init__(self, name: str, enum: InterfaceEnum, description: Optional[str] = None):
-        super().__init__(name, description)
+        Arg.__init__(self, name, description)
+        LanguageSymbolMixin.__init__(self)
         self._enum = enum
         self._type = ArgType.ENUM
 
@@ -315,11 +333,13 @@ class ArgEnum(Arg):
         return f"<ArgEnum name={self._name}>"
 
 
-class ArgPrimitive(Arg):
+class ArgPrimitive(Arg, LanguageSymbolMixin):
+    
     def __init__(
         self, name: str, arg_type: ArgPrimitiveType, description: Optional[str] = None
     ):
-        super().__init__(name, description)
+        Arg.__init__(self, name, description)
+        LanguageSymbolMixin.__init__(self)
         self._arg_type = arg_type
         self._type = ArgType.PRIMITIVE
 
@@ -414,9 +434,11 @@ class ArgPrimitive(Arg):
         return arg
 
 
-class ArgStruct(Arg):
+class ArgStruct(Arg, LanguageSymbolMixin):
+
     def __init__(self, name: str, iface_struct: InterfaceStruct):
-        super().__init__(name)
+        Arg.__init__(self, name)
+        LanguageSymbolMixin.__init__(self)
         assert isinstance(
             iface_struct, InterfaceStruct
         ), f"Passed {iface_struct=} is type {type(iface_struct)} which is not InterfaceStruct"
@@ -498,9 +520,11 @@ class ArgStruct(Arg):
     def __repr__(self):
         return f"ArgStruct(name={self.name}, iface_struct={self._interface_struct})"
 
-class ArgDateTime(Arg):
+class ArgDateTime(Arg, LanguageSymbolMixin):
+    
     def __init__(self, name: str):
-        super().__init__(name)
+        Arg.__init__(self, name)
+        LanguageSymbolMixin.__init__(self)
         self._type = ArgType.DATETIME
 
     @property
@@ -562,9 +586,11 @@ class ArgDateTime(Arg):
     def __repr__(self):
         return f"ArgDateTime(name={self.name})"
 
-class ArgDuration(Arg):
+class ArgDuration(Arg, LanguageSymbolMixin):
+    
     def __init__(self, name: str):
-        super().__init__(name)
+        Arg.__init__(self, name)
+        LanguageSymbolMixin.__init__(self)
         self._type = ArgType.DURATION
 
     @property
@@ -627,9 +653,11 @@ class ArgDuration(Arg):
         return f"ArgDuration(name={self.name})"
     
 
-class ArgBinary(Arg):
+class ArgBinary(Arg, LanguageSymbolMixin):
+    
     def __init__(self, name: str):
-        super().__init__(name)
+        Arg.__init__(self, name)
+        LanguageSymbolMixin.__init__(self)
         self._type = ArgType.BINARY
 
     @property
@@ -678,9 +706,11 @@ class ArgBinary(Arg):
         return f"ArgBinary(name={self.name})"
     
 
-class ArgArray(Arg):
+class ArgArray(Arg, LanguageSymbolMixin):
+    
     def __init__(self, name: str, element_type: Arg):
-        super().__init__(name)
+        Arg.__init__(self, name)
+        LanguageSymbolMixin.__init__(self)
         self._element = element_type
         self._type = ArgType.ARRAY
 
@@ -763,9 +793,10 @@ class InterfaceComponent:
         return self
 
 
-class Signal(InterfaceComponent):
+class Signal(InterfaceComponent, LanguageSymbolMixin):
     def __init__(self, topic_creator: SignalTopicCreator, name: str):
-        super().__init__(name)
+        InterfaceComponent.__init__(self, name)
+        LanguageSymbolMixin.__init__(self)
         self._topic_creator = topic_creator
         self._arg_list: list[Arg] = []
 
@@ -811,19 +842,15 @@ class Signal(InterfaceComponent):
         return signal
 
 
-class Method(InterfaceComponent):
+class Method(InterfaceComponent, LanguageSymbolMixin):
 
     def __init__(self, topic_creator: MethodTopicCreator, name: str):
-        super().__init__(name)
-        self._python = PythonMethodSymbols(self)
+        InterfaceComponent.__init__(self, name)
+        LanguageSymbolMixin.__init__(self)
         self._topic_creator = topic_creator
         self._arg_list: list[Arg] = []
         self._return_value: Arg | list[Arg] | None = None
         self._return_arg_list: list[Arg] = []
-
-    @property
-    def python(self) -> PythonMethodSymbols:
-        return self._python
 
     def add_arg(self, arg: Arg) -> Method:
         if arg.name in [a.name for a in self._arg_list]:
@@ -1016,11 +1043,11 @@ class Method(InterfaceComponent):
 
         return method
 
-
-class Property(InterfaceComponent):
+class Property(InterfaceComponent, LanguageSymbolMixin):
 
     def __init__(self, topic_creator: PropertyTopicCreator, name: str):
-        super().__init__(name)
+        InterfaceComponent.__init__(self, name)
+        LanguageSymbolMixin.__init__(self)
         self._topic_creator = topic_creator
         self._arg_list: list[Arg] = []
         self._read_only = False
@@ -1118,9 +1145,10 @@ class Property(InterfaceComponent):
         return f"Property<name={self.name} values=[{', '.join([a.name for a in self.arg_list])}]>"
 
 
-class InterfaceEnum:
+class InterfaceEnum(LanguageSymbolMixin):
 
     def __init__(self, name: str):
+        LanguageSymbolMixin.__init__(self)
         self._name = name
         self._values: list[str] = []
         self._value_descriptions: list[str | None] = []
@@ -1193,9 +1221,10 @@ class InterfaceEnum:
         return ie
 
 
-class InterfaceStruct:
+class InterfaceStruct(LanguageSymbolMixin):
 
     def __init__(self, name: str):
+        LanguageSymbolMixin.__init__(self)
         self._name = name
         self._members: list[Arg] = []
         self._documentation: Optional[str] = None
@@ -1274,15 +1303,14 @@ class MqttTransportProtocol(Enum):
     WEBSOCKETS = 1
 
 
-class StingerSpec:
+class StingerSpec(LanguageSymbolMixin):
+
     def __init__(self, topic_creator: InterfaceTopicCreator, interface: dict[str, Any]):
+        LanguageSymbolMixin.__init__(self)
         self._topic_creator = topic_creator
         try:
             self._name: str = interface["name"]
             self._version: str = interface["version"]
-            self._python = PythonInterfaceSymbols(self)
-            self._rust = RustInterfaceSymbols(self)
-            self._cpp = CppInterfaceSymbols(self)
         except KeyError as e:
             raise InvalidStingerStructure(
                 f"Missing interface property in {interface}: {e}"
@@ -1385,18 +1413,6 @@ class StingerSpec:
     @property
     def version(self):
         return self._version
-
-    @property
-    def python(self) -> PythonInterfaceSymbols:
-        return self._python
-
-    @property
-    def rust(self) -> RustInterfaceSymbols:
-        return self._rust
-
-    @property
-    def cpp(self) -> CppInterfaceSymbols:
-        return self._cpp
 
     def all_methods_response_topic(self, client_id: str) -> str:
         for method in self.methods.values():

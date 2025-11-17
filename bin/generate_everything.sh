@@ -12,7 +12,7 @@ function generate_python() {
     echo "----------- Generating Python for ${IFACE_NAME} ----------------"
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
-    uv run stinger generate python ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
+    uv run stinger generate -l python ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
     RC=$?
     if [ $RC -ne 0 ]; then return $RC; fi
     uv run black ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/python/
@@ -25,7 +25,7 @@ function generate_cpp() {
     echo "----------- Generating C++ for ${IFACE_NAME}----------------"
     IFACE_NAME=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/build
-    uv run stinger generate cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/
+    uv run stinger generate -l cpp ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/cpp/
     RC=$?
     if [ $RC -ne 0 ]; then return $RC; fi
     which clang-format &> /dev/null
@@ -45,7 +45,7 @@ function generate_rust() {
     IFACE_NAME=$1
     EXAMPLE_PREFIX=$1
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
-    uv run stinger generate rust ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
+    uv run stinger generate -l rust ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/
     RC=$?
     if [ $RC -eq 0 ]; then
         echo "${IFACE_NAME} | cargo update"
@@ -121,7 +121,7 @@ function generate_markdown() {
     IFACE_NAME=$1
 
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
-    uv run stinger generate markdown ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
+    uv run stinger generate -l markdown ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/markdown/
 }
 
 generate_markdown full
@@ -137,7 +137,7 @@ function generate_web() {
     IFACE_NAME=$1
 
     mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/web/
-    uv run stinger generate web ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/web/
+    uv run stinger generate -l web ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/web/
 }
 
 generate_web full
