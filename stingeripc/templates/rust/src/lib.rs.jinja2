@@ -8,7 +8,9 @@
 //! - `payloads`: Includes only payloads module
 
 pub mod interface;
+{%if stinger.properties|length > 0%}
 pub mod property;
+{%endif%}
 
 #[cfg(any(feature = "client", feature = "server"))]
 mod message;

@@ -15,7 +15,6 @@ from stingeripc.interface import StingerInterface
 
 from . import markdown_generator
 from . import python_generator
-from . import rust_generator
 from . import cpp_generator
 from . import generic_generator
 
@@ -76,7 +75,7 @@ def generate(
         elif lang == "cpp":
             cpp_generator.main(input_file, output_dir)
         elif lang == "rust":
-            rust_generator.main(input_file, output_dir)
+            generic_generator.main(input_file, output_dir, lang, template_pkg, template_path)
         elif lang == "protobuf":
             ct = jj2.CodeTemplator(output_dir=output_dir)
             ct.add_template_dir(
