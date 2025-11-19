@@ -11,13 +11,13 @@ Discovery service for finding available service instances.
 #include <mutex>
 #include "ibrokerconnection.hpp"
 
-class TestAbleDiscovery
+class TestableDiscovery
 {
 public:
     // Constructor taking a broker connection and service_id
-    TestAbleDiscovery(std::shared_ptr<IBrokerConnection> broker);
+    TestableDiscovery(std::shared_ptr<IBrokerConnection> broker);
 
-    virtual ~TestAbleDiscovery();
+    virtual ~TestableDiscovery();
 
     // Set a callback to be invoked when a new service instance is discovered
     void SetDiscoveryCallback(const std::function<void(const std::string&)>& cb);

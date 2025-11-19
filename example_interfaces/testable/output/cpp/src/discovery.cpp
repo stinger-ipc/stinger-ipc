@@ -6,12 +6,12 @@
 #include <sstream>
 #include <boost/format.hpp>
 
-TestAbleDiscovery::TestAbleDiscovery(std::shared_ptr<IBrokerConnection> broker):
+TestableDiscovery::TestableDiscovery(std::shared_ptr<IBrokerConnection> broker):
     _broker(broker)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;
-    topicStream << boost::format("testAble/%1%/interface") % "+";
+    topicStream << boost::format("testable/%1%/interface") % "+";
     _broker->Subscribe(topicStream.str(), 2);
 
     // Register message callback
@@ -25,7 +25,7 @@ TestAbleDiscovery::TestAbleDiscovery(std::shared_ptr<IBrokerConnection> broker):
                                                                });
 }
 
-TestAbleDiscovery::~TestAbleDiscovery()
+TestableDiscovery::~TestableDiscovery()
 {
     if (_broker && _brokerMessageCallbackHandle != 0)
     {
@@ -34,13 +34,13 @@ TestAbleDiscovery::~TestAbleDiscovery()
     }
 }
 
-void TestAbleDiscovery::SetDiscoveryCallback(const std::function<void(const std::string&)>& cb)
+void TestableDiscovery::SetDiscoveryCallback(const std::function<void(const std::string&)>& cb)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     _discovery_callback = cb;
 }
 
-boost::future<std::string> TestAbleDiscovery::GetSingleton()
+boost::future<std::string> TestableDiscovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
@@ -57,17 +57,17 @@ boost::future<std::string> TestAbleDiscovery::GetSingleton()
     return _pending_promises.back().get_future();
 }
 
-std::vector<std::string> TestAbleDiscovery::GetInstanceIds() const
+std::vector<std::string> TestableDiscovery::GetInstanceIds() const
 {
     std::lock_guard<std::mutex> lock(_mutex);
     return _instance_ids;
 }
 
-void TestAbleDiscovery::_onMessage(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps)
+void TestableDiscovery::_onMessage(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps)
 {
     // Check if this message is for our discovery topic
     std::stringstream topicPattern;
-    topicPattern << boost::format("testAble/%1%/interface") % "+";
+    topicPattern << boost::format("testable/%1%/interface") % "+";
 
     if (!_broker->TopicMatchesSubscription(topic, topicPattern.str()))
     {

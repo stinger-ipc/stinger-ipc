@@ -1,6 +1,6 @@
-# Test Able IPC Library
+# testable IPC Library
 
-A Rust library providing client, server, and payload functionality for the Test Able IPC system: This tries to capture most variants of features.
+A Rust library providing client, server, and payload functionality for the testable IPC system: This tries to capture most variants of features.
 
 ## Features
 
@@ -33,10 +33,10 @@ Each example requires the corresponding feature to be enabled:
 
 ```bash
 # Client example
-cargo run --example test_able_client_demo --features client
+cargo run --example testable_client_demo --features client
 
 # Server example
-cargo run --example test_able_server_demo --features server
+cargo run --example testable_server_demo --features server
 ```
 
 ### Building with Specific Features

@@ -1,6 +1,6 @@
-//! Test Able IPC Library
+//! testable IPC Library
 //!
-//! This library provides client, server, and payload functionality for the Test Able IPC system.
+//! This library provides client, server, and payload functionality for the testable IPC system.
 //! Use features to control which modules are included:
 //!
 //! - `client`: Includes client and payloads modules

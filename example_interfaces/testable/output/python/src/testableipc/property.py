@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from .interface_types import *
 
 
-class TestAbleInitialPropertyValues(BaseModel):
+class TestableInitialPropertyValues(BaseModel):
 
     read_write_integer: int
     read_write_integer_version: int = 0

@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-It contains enumerations used by the Test Able interface.
+It contains enumerations used by the testable interface.
 
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
@@ -23,7 +23,7 @@ def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
 
 
 class InterfaceInfo(BaseModel):
-    interface_name: str = Field(default="Test Able")
+    interface_name: str = Field(default="testable")
     title: str = Field(default="Interface for testing")
     version: str = Field(default="0.0.1")
     instance: str

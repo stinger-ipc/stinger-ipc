@@ -1,5 +1,5 @@
 [project]
-name = "test-able-ipc"
+name = "testable-ipc"
 version = "0.0.1"
 description = "Interface for testing"
 requires-python = ">=3.9"

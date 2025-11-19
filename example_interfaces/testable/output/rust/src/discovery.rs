@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-This is the Client for the Test Able interface.
+This is the Client for the testable interface.
 
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
@@ -19,7 +19,7 @@ use tokio::task::JoinHandle;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
-use crate::property::{TestAbleInitialPropertyValues, TestAbleInitialPropertyValuesBuilder};
+use crate::property::{TestableInitialPropertyValues, TestableInitialPropertyValuesBuilder};
 
 #[allow(unused_imports)]
 use crate::payloads::*;
@@ -27,32 +27,32 @@ use crate::payloads::*;
 use std::sync::Mutex;
 
 #[derive(Debug)]
-pub enum TestAbleDiscoveryError {
+pub enum TestableDiscoveryError {
     Subscribe(Mqtt5PubSubError),
 }
 
-impl fmt::Display for TestAbleDiscoveryError {
+impl fmt::Display for TestableDiscoveryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TestAbleDiscoveryError::Subscribe(err) => {
+            TestableDiscoveryError::Subscribe(err) => {
                 write!(f, "failed to subscribe for discovery: {err}")
             }
         }
     }
 }
 
-impl std::error::Error for TestAbleDiscoveryError {}
+impl std::error::Error for TestableDiscoveryError {}
 
-impl From<Mqtt5PubSubError> for TestAbleDiscoveryError {
+impl From<Mqtt5PubSubError> for TestableDiscoveryError {
     fn from(value: Mqtt5PubSubError) -> Self {
-        TestAbleDiscoveryError::Subscribe(value)
+        TestableDiscoveryError::Subscribe(value)
     }
 }
 
 struct ServiceInDiscovery {
     pub interface_info: Option<InterfaceInfo>,
 
-    pub property_builder: TestAbleInitialPropertyValuesBuilder,
+    pub property_builder: TestableInitialPropertyValuesBuilder,
     pub property_count: u32,
 
     pub fully_discovered: std::sync::atomic::AtomicBool,
@@ -63,7 +63,7 @@ impl Default for ServiceInDiscovery {
         Self {
             interface_info: None,
 
-            property_builder: TestAbleInitialPropertyValuesBuilder::default(),
+            property_builder: TestableInitialPropertyValuesBuilder::default(),
             property_count: 0,
 
             fully_discovered: std::sync::atomic::AtomicBool::new(false),
@@ -75,7 +75,7 @@ impl Default for ServiceInDiscovery {
 pub struct DiscoveredService {
     pub interface_info: InterfaceInfo,
 
-    pub properties: TestAbleInitialPropertyValues,
+    pub properties: TestableInitialPropertyValues,
 }
 
 impl ServiceInDiscovery {
@@ -94,14 +94,14 @@ impl ServiceInDiscovery {
 
 #[cfg(feature = "metrics")]
 #[derive(Debug)]
-pub struct TestAbleDiscoveryMetrics {
+pub struct TestableDiscoveryMetrics {
     pub discovery_start_time: std::time::Instant,
     pub time_of_first_discovery: Option<std::time::Instant>,
     pub received_property_values: std::sync::atomic::AtomicU32,
 }
 
 #[cfg(feature = "metrics")]
-impl Default for TestAbleDiscoveryMetrics {
+impl Default for TestableDiscoveryMetrics {
     fn default() -> Self {
         Self {
             discovery_start_time: std::time::Instant::now(),
@@ -112,7 +112,7 @@ impl Default for TestAbleDiscoveryMetrics {
 }
 
 #[cfg(feature = "metrics")]
-impl TestAbleDiscoveryMetrics {
+impl TestableDiscoveryMetrics {
     /// Sets the time_of_first_discovery if it hasn't been set yet
     pub fn set_time_of_first_discovery(&mut self) {
         if self.time_of_first_discovery.is_none() {
@@ -135,7 +135,7 @@ impl TestAbleDiscoveryMetrics {
     }
 }
 
-pub struct TestAbleDiscovery<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {
+pub struct TestableDiscovery<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {
     connection: C,
     service_name: String,
     instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
@@ -145,33 +145,33 @@ pub struct TestAbleDiscovery<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {
 
     notification_tx: broadcast::Sender<DiscoveredService>,
     #[cfg(feature = "metrics")]
-    pub metrics: Arc<Mutex<TestAbleDiscoveryMetrics>>,
+    pub metrics: Arc<Mutex<TestableDiscoveryMetrics>>,
 }
 
 /// Event receiver for new interface discovery notifications
-pub type TestAbleDiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
+pub type TestableDiscoveryReceiver = broadcast::Receiver<DiscoveredService>;
 
-impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestAbleDiscovery<C> {
-    pub async fn new(connection: &mut C) -> Result<Self, TestAbleDiscoveryError> {
-        let service_name = "Test Able".to_string();
-        let discovery_topic = format!("testAble/{}/interface", "+");
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
+    pub async fn new(connection: &mut C) -> Result<Self, TestableDiscoveryError> {
+        let service_name = "testable".to_string();
+        let discovery_topic = format!("testable/{}/interface", "+");
 
         let (info_tx, info_rx) = broadcast::channel::<MqttMessage>(32);
         debug!("Subscribing to discovery topic: {discovery_topic}");
         let _subscription_id = connection
             .subscribe(discovery_topic, QoS::AtLeastOnce, info_tx.clone())
             .await
-            .map_err(TestAbleDiscoveryError::from)?;
+            .map_err(TestableDiscoveryError::from)?;
 
         let (prop_tx, prop_rx) = broadcast::channel::<MqttMessage>(32);
         let _property_subscription_id = connection
             .subscribe(
-                "testAble/+/property/+/value".to_string(),
+                "testable/+/property/+/value".to_string(),
                 QoS::AtLeastOnce,
                 prop_tx.clone(),
             )
             .await
-            .map_err(TestAbleDiscoveryError::from)?;
+            .map_err(TestableDiscoveryError::from)?;
 
         let instances_in_discovery = Arc::new(RwLock::new(HashMap::new()));
 
@@ -179,7 +179,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestAbleDiscovery<C> {
         let (notification_tx, _notification_rx) = broadcast::channel::<DiscoveredService>(32);
 
         #[cfg(feature = "metrics")]
-        let metrics = Arc::new(Mutex::new(TestAbleDiscoveryMetrics::default()));
+        let metrics = Arc::new(Mutex::new(TestableDiscoveryMetrics::default()));
 
         let info_listener_handle = Self::spawn_listener(
             info_rx,
@@ -256,7 +256,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestAbleDiscovery<C> {
         receiver.recv().await.expect("notification channel closed")
     }
 
-    pub fn subscribe(&self) -> TestAbleDiscoveryReceiver {
+    pub fn subscribe(&self) -> TestableDiscoveryReceiver {
         self.notification_tx.subscribe()
     }
 
@@ -306,7 +306,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestAbleDiscovery<C> {
         mut message_rx: broadcast::Receiver<MqttMessage>,
         instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
         notification_tx: broadcast::Sender<DiscoveredService>,
-        #[cfg(feature = "metrics")] metrics: Arc<Mutex<TestAbleDiscoveryMetrics>>,
+        #[cfg(feature = "metrics")] metrics: Arc<Mutex<TestableDiscoveryMetrics>>,
     ) -> JoinHandle<()> {
         tokio::spawn(async move {
             debug!("Listening for property value messages");
@@ -1106,17 +1106,17 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestAbleDiscovery<C> {
     }
 }
 
-impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for TestAbleDiscovery<C> {
+impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for TestableDiscovery<C> {
     fn drop(&mut self) {
         self.info_listener_handle.abort();
         let _ = self
             .connection
-            .unsubscribe(format!("testAble/{}/interface", "+"));
+            .unsubscribe(format!("testable/{}/interface", "+"));
 
         self.prop_listener_handle.abort();
         let _ = self
             .connection
-            .unsubscribe("testAble/+/property/+/value".to_string());
+            .unsubscribe("testable/+/property/+/value".to_string());
     }
 }
 
@@ -1152,17 +1152,17 @@ mod tests {
         let interfaces = Arc::new(RwLock::new(HashMap::new()));
         let (notification_tx, mut notification_rx) = broadcast::channel::<InterfaceInfo>(32);
 
-        TestAbleDiscovery::handle_message(
+        TestableDiscovery::handle_message(
             sample_message("service/alpha/interface", "alpha"),
             &interfaces,
             &notification_tx,
         );
-        TestAbleDiscovery::handle_message(
+        TestableDiscovery::handle_message(
             sample_message("service/beta/interface", "beta"),
             &interfaces,
             &notification_tx,
         );
-        TestAbleDiscovery::handle_message(
+        TestableDiscovery::handle_message(
             sample_message("service/alpha/interface", "alpha"),
             &interfaces,
             &notification_tx,

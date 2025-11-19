@@ -4,12 +4,12 @@ import concurrent.futures as futures
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from testableipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
-from testableipc.client import TestAbleClient, TestAbleClientBuilder, TestAbleClientDiscoverer
+from testableipc.client import TestableClient, TestableClientBuilder, TestableClientDiscoverer
 from testableipc.interface_types import *
 import threading
 
 
-def request_loop(client: TestAbleClient):
+def request_loop(client: TestableClient):
     """Example request loop that runs in a separate thread."""
     sleep(30)
     while True:
@@ -109,7 +109,7 @@ def request_loop(client: TestAbleClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -289,7 +289,7 @@ def request_loop(client: TestAbleClient):
         sleep(5)
 
         print("Making call to 'call_optional_date_time'")
-        future_resp = client.call_optional_date_time(input1=None)
+        future_resp = client.call_optional_date_time(input1=datetime.now(UTC))
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
@@ -297,7 +297,7 @@ def request_loop(client: TestAbleClient):
         sleep(5)
 
         print("Making call to 'call_three_date_times'")
-        future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=None)
+        future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
@@ -475,7 +475,7 @@ def request_loop(client: TestAbleClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -578,7 +578,7 @@ if __name__ == "__main__":
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = MqttBrokerConnection(transport)
 
-    client_builder = TestAbleClientBuilder()
+    client_builder = TestableClientBuilder()
 
     @client_builder.receive_empty
     def print_empty_receipt():
@@ -915,7 +915,7 @@ if __name__ == "__main__":
         """ """
         print(f"Property 'read_write_lists' has been updated to: {value}")
 
-    discovery = TestAbleClientDiscoverer(conn, client_builder)
+    discovery = TestableClientDiscoverer(conn, client_builder)
     fut_client = discovery.get_singleton_client()
     try:
         client = fut_client.result(10)

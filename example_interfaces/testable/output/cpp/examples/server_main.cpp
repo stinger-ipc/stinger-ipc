@@ -17,7 +17,7 @@ int main(int argc, char** argv)
                              std::cout << "[" << level << "] " << msg << std::endl;
                          });
 
-    auto server = std::make_shared<TestAbleServer>(conn, "cpp-server-demo:1");
+    auto server = std::make_shared<TestableServer>(conn, "cpp-server-demo:1");
 
     std::cout << "Setting initial value for property 'read_write_integer'.\n";
     server->updateReadWriteIntegerProperty(42);

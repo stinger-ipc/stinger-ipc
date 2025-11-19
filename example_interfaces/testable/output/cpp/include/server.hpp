@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-It contains enumerations used by the Test Able interface.
+It contains enumerations used by the testable interface.
 
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
@@ -30,15 +30,15 @@ TODO: Get license text from stinger file
 
 #include "method_payloads.hpp"
 
-class TestAbleServer
+class TestableServer
 {
 public:
-    static constexpr const char NAME[] = "Test Able";
+    static constexpr const char NAME[] = "testable";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
-    TestAbleServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    TestableServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
 
-    virtual ~TestAbleServer();
+    virtual ~TestableServer();
 
     boost::future<bool> emitEmptySignal();
 

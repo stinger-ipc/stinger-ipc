@@ -1,5 +1,5 @@
 [package]
-name = "test_able_ipc"
+name = "testable_ipc"
 version = "0.0.1"
 edition = "2021"
 
@@ -42,11 +42,11 @@ mqttier = "0.7.1"
 stinger-mqtt-trait = { version = "0.5.1", features = ["mock_client"] }
 
 [[example]]
-name = "test_able_client_demo"
+name = "testable_client_demo"
 path = "examples/client_demo.rs"
 required-features = ["client"]
 
 [[example]]
-name = "test_able_server_demo" 
+name = "testable_server_demo" 
 path = "examples/server_demo.rs"
 required-features = ["server"]

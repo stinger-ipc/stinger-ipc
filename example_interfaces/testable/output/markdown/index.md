@@ -76,7 +76,7 @@ The `connection_object` will be passed to client and server constructors.
 ## Discovery
 
 Because there may be multiple instances of the same Stinger Interface, a discovery mechanism is provided to find and connect to them.  A discovery class is provided which connects to
-the MQTT broker and listens for Stinger Interface announcements.  The discovery class can then provide TestAbleClient client instances.  Additionally, the discovery class
+the MQTT broker and listens for Stinger Interface announcements.  The discovery class can then provide TestableClient client instances.  Additionally, the discovery class
 find all the current property values for discovered interfaces in order to initialize the client instance.
 
 ### Discovery Code Examples
@@ -85,9 +85,9 @@ find all the current property values for discovered interfaces in order to initi
   <summary>Python</summary>
 
 ```python
-from testableipc.client import TestAbleClientDiscoverer
+from testableipc.client import TestableClientDiscoverer
 
-discovery = TestAbleClientDiscoverer(connection_object)
+discovery = TestableClientDiscoverer(connection_object)
 
 # To get a single client instance (waits until one is found):
 client = discovery.get_singleton_client().result()
@@ -102,13 +102,13 @@ clients = [discovery.get_client_for_instance(service_id) for service_id in disco
   <summary>Rust</summary>
 
 ```rust
-use test_able_ipc::discovery::TestAbleDiscovery;
+use testable_ipc::discovery::TestableDiscovery;
 
 let discovered_singleton_info = {
-    let service_discovery = TestAbleDiscovery::new(&mut connection_object).await.unwrap();
+    let service_discovery = TestableDiscovery::new(&mut connection_object).await.unwrap();
     service_discovery.get_singleton_instance_info().await // Blocks until a service is discovered.
 }
-let test__able_client = TestAbleClient::new(&mut connection_object, &discovered_singleton_info).await;
+let testable_client = TestableClient::new(&mut connection_object, &discovered_singleton_info).await;
 ```
 
 </details>
@@ -125,11 +125,11 @@ When constructing a server instance, a connection object and initial property va
   <summary>Python Server</summary>
 
 ```python
-from testableipc.server import TestAbleServer, TestAbleInitialPropertyValues
+from testableipc.server import TestableServer, TestableInitialPropertyValues
 
 # Ideally, you would load these initial property values from a configuration file or database.
 
-initial_property_values = TestAbleInitialPropertyValues(
+initial_property_values = TestableInitialPropertyValues(
 
     read_write_integer=42,
         
@@ -175,11 +175,11 @@ initial_property_values = TestAbleInitialPropertyValues(
         ),
     read_write_two_strings_version=8,
 
-    read_write_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+    read_write_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
         
     read_write_struct_version=9,
 
-    read_write_optional_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+    read_write_optional_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
         
     read_write_optional_struct_version=10,
 
@@ -188,7 +188,7 @@ initial_property_values = TestAbleInitialPropertyValues(
             
             first=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
             
-            second=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+            second=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
             
         ),
     read_write_two_structs_version=11,
@@ -219,7 +219,7 @@ initial_property_values = TestAbleInitialPropertyValues(
         
     read_write_datetime_version=16,
 
-    read_write_optional_datetime=datetime.now(UTC),
+    read_write_optional_datetime=None,
         
     read_write_optional_datetime_version=17,
 
@@ -228,7 +228,7 @@ initial_property_values = TestAbleInitialPropertyValues(
             
             first=datetime.now(UTC),
             
-            second=datetime.now(UTC),
+            second=None,
             
         ),
     read_write_two_datetimes_version=18,
@@ -287,27 +287,27 @@ initial_property_values = TestAbleInitialPropertyValues(
 
 
 service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
-server = TestAbleServer(connection_object, service_id, initial_property_values)
+server = TestableServer(connection_object, service_id, initial_property_values)
 ```
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 
 A full example can be viewed by looking at the `example/server_demo.py` file of the generated code.
 
-When decorating class methods, especially when there might be multiple instances of the class with methods being decorated, the Python implementation provides a `TestAbleClientBuilder`
+When decorating class methods, especially when there might be multiple instances of the class with methods being decorated, the Python implementation provides a `TestableClientBuilder`
 class to help capture decorated methods and bind them to a specific instance at runtime. Here is an example of how to use it in a class:
 
 ```python
-from testableipc.client import TestAbleClientBuilder
+from testableipc.client import TestableClientBuilder
 
-test__able_builder = TestAbleClientBuilder()
+testable_builder = TestableClientBuilder()
 
 class MyClass:
     def __init__(self, label: str, connection: MqttBrokerConnection):
         instance_info = ... # Create manually or use discovery to get this
-        self.client = test__able_builder.build(connection_object, instance_info, binding=self) # The binding param binds all decorated methods to the `self` instance.
+        self.client = testable_builder.build(connection_object, instance_info, binding=self) # The binding param binds all decorated methods to the `self` instance.
 
-    @test__able_builder.receive_a_signal
+    @testable_builder.receive_a_signal
     def on_a_signal(self, param1: int, param2: str):
         ...
 ```
@@ -322,18 +322,18 @@ A more complete example, including use with the discovery mechanism, can be view
 Service code for Rust is only available when using the `server` feature:
 
 ```sh
-cargo add test_able_ipc --features=server
+cargo add testable_ipc --features=server
 ```
 
 Here is an example of how to create a server instance:
 
 ```rust
-use test_able_ipc::server::TestAbleServer;
-use test_able_ipc::property::TestAbleInitialPropertyValues;
+use testable_ipc::server::TestableServer;
+use testable_ipc::property::TestableInitialPropertyValues;
 
 let service_id = String::from("rust-server-demo:1");
 
-let initial_property_values = TestAbleInitialPropertyValues {
+let initial_property_values = TestableInitialPropertyValues {
     
     read_write_integer:42,
     read_write_integer_version: 1,
@@ -441,14 +441,14 @@ let initial_property_values = TestAbleInitialPropertyValues {
 
 
 // Create the server object.
-let mut server = TestAbleServer::new(connection_object, method_handlers.clone(), service_id, initial_property_values, ).await;
+let mut server = TestableServer::new(connection_object, method_handlers.clone(), service_id, initial_property_values, ).await;
 
 
 ```
 
 Providing method handlers is better described in the [Methods](#methods) section.  
 
-A full example can be viewed by looking at the generated `examples/server_demo.rs` example and can be compiled with `cargo run --example test__able_server_demo --features=server` in the generated Rust project.
+A full example can be viewed by looking at the generated `examples/server_demo.rs` example and can be compiled with `cargo run --example testable_server_demo --features=server` in the generated Rust project.
 
 </details>
 
@@ -476,12 +476,12 @@ The best way to create a client instance is to use the discovery class to find a
 An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance IDand initial property values, you can create a client directly:
 
 ```rust
-use test_able_ipc::client::TestAbleClient;
+use testable_ipc::client::TestableClient;
 
 let instance_info = DiscoveredInstance {
     service_instance_id: String::from("singleton"),
     
-    initial_property_values: TestAbleInitialPropertyValues {
+    initial_property_values: TestableInitialPropertyValues {
         
         read_write_integer:42,
         read_write_integer_version: 1,
@@ -589,7 +589,7 @@ let instance_info = DiscoveredInstance {
     
 };
 
-let mut test__able_client = TestAbleClient::new(connection_object.clone(), instance_info).await;
+let mut testable_client = TestableClient::new(connection_object.clone(), instance_info).await;
 ```
 
 A full example can be viewed by looking at the generated `client/examples/client_demo.rs` file.
@@ -600,10 +600,10 @@ A full example can be viewed by looking at the generated `client/examples/client
   <summary>Python Client</summary>
 
 ```python
-from testableipc.server import TestAbleServer, TestAbleInitialPropertyValues
+from testableipc.server import TestableServer, TestableInitialPropertyValues
 
 
-initial_property_values = TestAbleInitialPropertyValues(
+initial_property_values = TestableInitialPropertyValues(
 
     read_write_integer=42,
         
@@ -649,18 +649,18 @@ initial_property_values = TestAbleInitialPropertyValues(
         ),
     read_write_two_strings_version=8,
 
-    read_write_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+    read_write_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
         
     read_write_struct_version=9,
 
-    read_write_optional_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+    read_write_optional_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
         
     read_write_optional_struct_version=10,
 
     read_write_two_structs=
         ReadWriteTwoStructsProperty(
             
-            first=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+            first=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
             
             second=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
             
@@ -693,7 +693,7 @@ initial_property_values = TestAbleInitialPropertyValues(
         
     read_write_datetime_version=16,
 
-    read_write_optional_datetime=None,
+    read_write_optional_datetime=datetime.now(UTC),
         
     read_write_optional_datetime_version=17,
 
@@ -702,7 +702,7 @@ initial_property_values = TestAbleInitialPropertyValues(
             
             first=datetime.now(UTC),
             
-            second=None,
+            second=datetime.now(UTC),
             
         ),
     read_write_two_datetimes_version=18,
@@ -761,12 +761,12 @@ initial_property_values = TestAbleInitialPropertyValues(
 
 
 service_instance_id="singleton"
-server = TestAbleServer(connection_object, service_instance_id, initial_property_values)
+server = TestableServer(connection_object, service_instance_id, initial_property_values)
 ```
 
 A full example can be viewed by looking at the generated `examples/client_main.py` file.
 
-Like the Python client, there is a `TestAbleServerBuilder` class to help capture decorated methods and bind them to a specific instance at runtime.
+Like the Python client, there is a `TestableServerBuilder` class to help capture decorated methods and bind them to a specific instance at runtime.
 
 ```python
 
@@ -1752,7 +1752,7 @@ def on_single_struct(value: AllTypes):
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
 ```python
-server.emit_single_struct(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+server.emit_single_struct(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
@@ -1932,7 +1932,7 @@ def on_three_structs(first: AllTypes, second: AllTypes, third: AllTypes):
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
 ```python
-server.emit_three_structs(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+server.emit_three_structs(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
@@ -3133,7 +3133,7 @@ def call_with_nothing() -> None:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callWithNothing` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callWithNothing` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_with_nothing().await.expect("Failed to call callWithNothing");
@@ -3194,7 +3194,7 @@ def call_one_integer(input1: int) -> int:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOneInteger` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOneInteger` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_one_integer(42).await.expect("Failed to call callOneInteger");
@@ -3255,7 +3255,7 @@ def call_optional_integer(input1: Optional[int]) -> Optional[int]:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOptionalInteger` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOptionalInteger` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_optional_integer(Some(42)).await.expect("Failed to call callOptionalInteger");
@@ -3318,7 +3318,7 @@ def call_three_integers(input1: int, input2: int, input3: Optional[int]) -> Call
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callThreeIntegers` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callThreeIntegers` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_three_integers(42, 42, Some(42)).await.expect("Failed to call callThreeIntegers");
@@ -3379,7 +3379,7 @@ def call_one_string(input1: str) -> str:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOneString` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOneString` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_one_string("apples".to_string()).await.expect("Failed to call callOneString");
@@ -3440,7 +3440,7 @@ def call_optional_string(input1: Optional[str]) -> Optional[str]:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOptionalString` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOptionalString` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_optional_string(Some("apples".to_string())).await.expect("Failed to call callOptionalString");
@@ -3503,7 +3503,7 @@ def call_three_strings(input1: str, input2: Optional[str], input3: str) -> CallT
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callThreeStrings` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callThreeStrings` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_three_strings("apples".to_string(), Some("apples".to_string()), "apples".to_string()).await.expect("Failed to call callThreeStrings");
@@ -3564,7 +3564,7 @@ def call_one_enum(input1: Numbers) -> Numbers:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOneEnum` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOneEnum` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_one_enum(Numbers::One).await.expect("Failed to call callOneEnum");
@@ -3625,7 +3625,7 @@ def call_optional_enum(input1: Optional[Numbers]) -> Optional[Numbers]:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOptionalEnum` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOptionalEnum` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_optional_enum(Some(Numbers::One)).await.expect("Failed to call callOptionalEnum");
@@ -3688,7 +3688,7 @@ def call_three_enums(input1: Numbers, input2: Numbers, input3: Optional[Numbers]
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callThreeEnums` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callThreeEnums` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_three_enums(Numbers::One, Numbers::One, Some(Numbers::One)).await.expect("Failed to call callThreeEnums");
@@ -3752,7 +3752,7 @@ def call_one_struct(input1: AllTypes) -> AllTypes:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOneStruct` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOneStruct` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_one_struct(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}).await.expect("Failed to call callOneStruct");
@@ -3816,7 +3816,7 @@ def call_optional_struct(input1: AllTypes) -> AllTypes:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOptionalStruct` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOptionalStruct` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_optional_struct(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])})).await.expect("Failed to call callOptionalStruct");
@@ -3851,7 +3851,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_structs(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+future = client.call_three_structs(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3879,7 +3879,7 @@ def call_three_structs(input1: AllTypes, input2: AllTypes, input3: AllTypes) -> 
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callThreeStructs` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callThreeStructs` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_three_structs(Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}), AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}, AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}).await.expect("Failed to call callThreeStructs");
@@ -3940,7 +3940,7 @@ def call_one_date_time(input1: datetime) -> datetime:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOneDateTime` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOneDateTime` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_one_date_time(chrono::Utc::now()).await.expect("Failed to call callOneDateTime");
@@ -3973,7 +3973,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_date_time(input1=datetime.now(UTC))
+future = client.call_optional_date_time(input1=None)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -4001,7 +4001,7 @@ def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOptionalDateTime` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOptionalDateTime` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_optional_date_time(Some(chrono::Utc::now())).await.expect("Failed to call callOptionalDateTime");
@@ -4036,7 +4036,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
+future = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=None)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -4056,7 +4056,7 @@ The decorated method is called everytime the a request for the method is receive
 def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> CallThreeDateTimesMethodResponse:
     """ This is an example handler for the 'callThreeDateTimes' method.  """
     print(f"Running call_three_date_times'({input1}, {input2}, {input3})'")
-    return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=None)
+    return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=datetime.now(UTC))
 ```
 
 </details>
@@ -4064,7 +4064,7 @@ def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[d
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callThreeDateTimes` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callThreeDateTimes` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_three_date_times(chrono::Utc::now(), chrono::Utc::now(), Some(chrono::Utc::now())).await.expect("Failed to call callThreeDateTimes");
@@ -4125,7 +4125,7 @@ def call_one_duration(input1: timedelta) -> timedelta:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOneDuration` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOneDuration` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_one_duration(chrono::Duration::seconds(3536)).await.expect("Failed to call callOneDuration");
@@ -4186,7 +4186,7 @@ def call_optional_duration(input1: Optional[timedelta]) -> Optional[timedelta]:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOptionalDuration` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOptionalDuration` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_optional_duration(Some(chrono::Duration::seconds(3536))).await.expect("Failed to call callOptionalDuration");
@@ -4249,7 +4249,7 @@ def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callThreeDurations` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callThreeDurations` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_three_durations(chrono::Duration::seconds(3536), chrono::Duration::seconds(3536), Some(chrono::Duration::seconds(3536))).await.expect("Failed to call callThreeDurations");
@@ -4310,7 +4310,7 @@ def call_one_binary(input1: bytes) -> bytes:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOneBinary` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOneBinary` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_one_binary(vec![101, 120, 97, 109, 112, 108, 101]).await.expect("Failed to call callOneBinary");
@@ -4371,7 +4371,7 @@ def call_optional_binary(input1: bytes) -> bytes:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOptionalBinary` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOptionalBinary` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_optional_binary(Some(vec![101, 120, 97, 109, 112, 108, 101])).await.expect("Failed to call callOptionalBinary");
@@ -4434,7 +4434,7 @@ def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> CallThre
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callThreeBinaries` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callThreeBinaries` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_three_binaries(vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], Some(vec![101, 120, 97, 109, 112, 108, 101])).await.expect("Failed to call callThreeBinaries");
@@ -4495,7 +4495,7 @@ def call_one_list_of_integers(input1: List[int]) -> List[int]:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOneListOfIntegers` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOneListOfIntegers` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_one_list_of_integers(vec![42, 2022]).await.expect("Failed to call callOneListOfIntegers");
@@ -4556,7 +4556,7 @@ def call_optional_list_of_floats(input1: List[float]) -> List[float]:
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callOptionalListOfFloats` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callOptionalListOfFloats` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_optional_list_of_floats(Some(vec![3.14, 1.0, 1.0])).await.expect("Failed to call callOptionalListOfFloats");
@@ -4618,7 +4618,7 @@ def call_two_lists(input1: List[Numbers], input2: List[str]) -> CallTwoListsMeth
 <details>
   <summary>Rust Client</summary>
 
-The `TestAbleClient` provides an implementation for the `callTwoLists` method.  It will block and return a Result object of either the return payload value, or an error.
+The `TestableClient` provides an implementation for the `callTwoLists` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
 let result = api_client.call_two_lists(vec![Numbers::One, Numbers::One], Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()])).await.expect("Failed to call callTwoLists");

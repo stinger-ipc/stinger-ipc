@@ -13,7 +13,7 @@
     -->
   </head>
   {%macro arglist(arg_list, model_parts, read_only) -%}
-  {%set modelpath %}{%for part in model_parts%}{%if not loop.first%}.{%endif%}{{part|snake_case}}{%endfor%}{%endset%}
+  {%set modelpath %}{%for part in model_parts%}{%if not loop.first%}.{%endif%}{{part|lowerCamelCase}}{%endfor%}{%endset%}
   <table class="arglist">
   {%for arg in arg_list %}
     <tr class="argrow">
@@ -27,7 +27,7 @@
         {%if arg.arg_type|lower == "argtype.primitive"%}
         <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" />
         {%elif arg.arg_type|lower == "argtype.enum"%}
-        <select {%if read_only%}disabled {%endif%}ng-model="{{modelpath}}.{{arg.name}}" ng-options="n.id as n.name for n in enums.{{arg.enum.name|snake_case}}">
+        <select {%if read_only%}disabled {%endif%}ng-model="{{modelpath}}.{{arg.name}}" ng-options="n.id as n.name for n in enums.{{arg.enum.name|lowerCamelCase}}">
         </select>
         {%elif arg.arg_type|lower == "argtype.list"%}
         <input {%if read_only%}disabled {%endif%}type="text"  ng-model="{{modelpath}}.{{arg.name}}" placeholder="Comma-separated values" />
@@ -36,6 +36,12 @@
           {%set new_model_parts = model_parts + [arg.name] %}
           {{ arglist(arg.members, new_model_parts, read_only) }}
         </div>
+        {%elif arg.arg_type|lower == "argtype.binary"%}
+        Binary: <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%elif arg.arg_type|lower == "argtype.array"%}
+        <span ng-repeat="(index, item) in {{modelpath}}.{{arg.name}} track by $index">
+          <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}[index]" />
+        </span>
         {%else%}
         <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" placeholder="(unknown type)" />
         {%endif%} 
@@ -66,6 +72,7 @@
 {%endmarkdown%}
         {%endif%}
         </div>
+        <!--<div class="signal-topic topic">Subscribe: {{ sig.topic }}</div>-->
         <div class="last-received signal-value">
         {{ arglist(sig.arg_list, ['signals', sig_name, 'received'], true) | indent(8) }}
         </div>
@@ -82,11 +89,12 @@
 {%endmarkdown%}
         {%endif%}
         </div>
+        <!--<div class="property-topic topic">Subscribe: {{ prop.value_topic }}</div>-->
         <div class="last-received property-value">
           {{ arglist(prop.arg_list, ['properties', prop_name, 'received'], prop.read_only) | indent(8) }}
         </div>
         {%if not prop.read_only %}
-        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.{{ prop_name | snake_case }})" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.{{ prop_name | lowerCamelCase }})" />
         {%endif%}
     </div>
     {%endfor%} {# end properties loop #}
@@ -101,13 +109,14 @@
 {%endmarkdown%}
         {%endif%}
         </div>
+        <!--<div class="method-topic topic">Publish: {{ method.topic }}</div>-->
         <div class="method-form-box">
-            <form ng-submit="callMethod(methods.{{method_name|snake_case}})">
+            <form ng-submit="callMethod(methods.{{method_name|lowerCamelCase}})">
                 {{ arglist(method.arg_list, ['methods', method_name, 'args'], false) | indent(8) }}
                 <button type="submit" class="publish-button">Call {{ method_name }}</button>
             </form>
         </div>
-        <div class="last-received method-response" ng-bind="methods['{{ method_name }}'].received">
+        <div class="last-received method-response" ng-bind="methods['{{ method_name | lowerCamelCase }}'].received">
         {{ arglist(method.return_values, ['methods', method_name, 'received'], true) | indent(8) }}
         </div>
     </div>

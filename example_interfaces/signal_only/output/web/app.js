@@ -12,6 +12,35 @@ function makeRequestProperties() {
     }
 }
 
+function getInstanceIdFromHash() {
+    // Return everything after the last '#' and strip an AngularJS hashbang ('!') if present.
+    if (typeof location === 'undefined' || !location || !location.hash) return null;
+    const hash = location.hash;
+    // Find last '#' in case there are multiple hashes; include support for '#!' (hashbang)
+    const lastHashIdx = hash.lastIndexOf('#');
+    if (lastHashIdx === -1 || lastHashIdx === hash.length - 1) return null;
+    let val = hash.substring(lastHashIdx + 1);
+    // Strip leading '!' used by AngularJS hashbang URLs (#!)
+    if (val.startsWith('!')) val = val.substring(1);
+    if (!val) return null;
+    // Convert '+' to space (common in URL-encoding) before decode
+    const plusConverted = val.replace(/\+/g, ' ');
+    try {
+        return decodeURIComponent(plusConverted);
+    } catch (e) {
+        // If decode fails (malformed percent-encoding), return the raw plus-converted string
+        return plusConverted;
+    }
+}
+
+const instanceId = getInstanceIdFromHash();
+
+// Replace '+' tokens in topics with the instance id (if present)
+function resolveTopic(topic) {
+    if (!instanceId) return topic;
+    return topic.replace(/\+/g, instanceId);
+}
+
 var app = angular.module("myApp", []);
 
 app.controller("myCtrl", function ($scope, $filter, $location) {
@@ -26,12 +55,12 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     $scope.enums = {};
 
     $scope.signals = {
-        "another_signal": {
+        "anotherSignal": {
             "subscription_id": null,
             "name": "anotherSignal",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/{}/signal/anotherSignal"
+            "mqtt_topic": "signalOnly/+/signal/anotherSignal"
         },
     
         "bark": {
@@ -39,23 +68,23 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "bark",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/{}/signal/bark"
+            "mqtt_topic": "signalOnly/+/signal/bark"
         },
     
-        "maybe_number": {
+        "maybeNumber": {
             "subscription_id": null,
             "name": "maybe_number",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/{}/signal/maybeNumber"
+            "mqtt_topic": "signalOnly/+/signal/maybeNumber"
         },
     
-        "maybe_name": {
+        "maybeName": {
             "subscription_id": null,
             "name": "maybe_name",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/{}/signal/maybeName"
+            "mqtt_topic": "signalOnly/+/signal/maybeName"
         },
     
         "now": {
@@ -63,7 +92,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "now",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "signalOnly/{}/signal/now"
+            "mqtt_topic": "signalOnly/+/signal/now"
         }
     };
 
@@ -105,12 +134,25 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         return props.correlationData;
     }
 
+    function publish_property_update(name, topic, payload, property_version) {
+        console.log(name + " Sending to " + topic);
+        console.log(payload);
+        let props = {
+            "contentType": "application/json",
+            "userProperties": {
+                "PropertyVersion": property_version.toString()
+            }
+        };
+        $scope.console.requests.unshift({"name":name, "correlationData":null, "topic": topic, "payload": payload, "response": null, "requestTime": Date.now()});
+        client.publish(topic, payload, { "qos": 1, retain: false, properties: props});
+        return;
+    }
+
     client.on('message', function(topic, message, packet) {
         
         const subid = packet.properties.subscriptionIdentifier;
 
         console.log("Message Arrived: " + topic + " (" + subid + ")");
-        console.log($scope.properties);
 
         var obj;
         if (message.toString().length == 0) {
@@ -133,7 +175,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             const prop = $scope.properties[key];
             if (prop.subscription_id == subid) {
                 prop.received = obj;
-                console.log("Set property received object to ", prop.received);
+                console.log("Set property '" + prop.name + "' received object to ", prop.received);
+                prop.property_version = packet.properties.userProperties.PropertyVersion;
             }
         }
         for (const key in $scope.methods) {
@@ -180,9 +223,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["anotherSignal"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/{}/signal/anotherSignal", another_signal_sub_opts);
-        console.log("Subscribing to signal signalOnly/{}/signal/anotherSignal with id ", subscription_count);
+        var resolvedTopic = resolveTopic("signalOnly/+/signal/anotherSignal");
+        client.subscribe(resolvedTopic, another_signal_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const bark_sub_opts = {
@@ -191,9 +236,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["bark"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/{}/signal/bark", bark_sub_opts);
-        console.log("Subscribing to signal signalOnly/{}/signal/bark with id ", subscription_count);
+        var resolvedTopic = resolveTopic("signalOnly/+/signal/bark");
+        client.subscribe(resolvedTopic, bark_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const maybe_number_sub_opts = {
@@ -202,9 +249,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["maybeNumber"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/{}/signal/maybeNumber", maybe_number_sub_opts);
-        console.log("Subscribing to signal signalOnly/{}/signal/maybeNumber with id ", subscription_count);
+        var resolvedTopic = resolveTopic("signalOnly/+/signal/maybeNumber");
+        client.subscribe(resolvedTopic, maybe_number_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const maybe_name_sub_opts = {
@@ -213,9 +262,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["maybeName"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/{}/signal/maybeName", maybe_name_sub_opts);
-        console.log("Subscribing to signal signalOnly/{}/signal/maybeName with id ", subscription_count);
+        var resolvedTopic = resolveTopic("signalOnly/+/signal/maybeName");
+        client.subscribe(resolvedTopic, maybe_name_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const now_sub_opts = {
@@ -224,9 +275,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["now"].subscription_id = subscription_count;
-        client.subscribe("signalOnly/{}/signal/now", now_sub_opts);
-        console.log("Subscribing to signal signalOnly/{}/signal/now with id ", subscription_count);
+        var resolvedTopic = resolveTopic("signalOnly/+/signal/now");
+        client.subscribe(resolvedTopic, now_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
 
@@ -240,8 +293,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 }
             };
             $scope.properties[key].subscription_id = sub_id;
-            client.subscribe($scope.properties[key].mqtt_topic, prop_sub_opts);
-            console.log("Subscribing to property " + $scope.properties[key].mqtt_topic + " with id " + $scope.properties[key].subscription_id);
+            var resolvedTopic = resolveTopic($scope.properties[key].mqtt_topic);
+            client.subscribe(resolvedTopic, prop_sub_opts);
+            console.log("Subscribing to property " + resolvedTopic + " with id " + $scope.properties[key].subscription_id);
         }
 
         subscription_state = 1;
@@ -250,7 +304,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     $scope.updateProperty = function(prop) {
         const payload = JSON.stringify(prop.received);
-        publish("Property Update", prop.update_topic, payload, 1);
+        publish_property_update("Property Update", prop.update_topic, payload, 1);
     };
  
     $scope.callMethod = function(method) {

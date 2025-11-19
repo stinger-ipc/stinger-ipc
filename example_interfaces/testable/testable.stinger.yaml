@@ -2,7 +2,7 @@ stingeripc:
   version: 0.0.7
 
 interface:
-  name: Test Able
+  name: testable
   version: 0.0.1
   title: Interface for testing
   summary: This tries to capture most variants of features.

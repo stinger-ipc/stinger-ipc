@@ -12,6 +12,35 @@ function makeRequestProperties() {
     }
 }
 
+function getInstanceIdFromHash() {
+    // Return everything after the last '#' and strip an AngularJS hashbang ('!') if present.
+    if (typeof location === 'undefined' || !location || !location.hash) return null;
+    const hash = location.hash;
+    // Find last '#' in case there are multiple hashes; include support for '#!' (hashbang)
+    const lastHashIdx = hash.lastIndexOf('#');
+    if (lastHashIdx === -1 || lastHashIdx === hash.length - 1) return null;
+    let val = hash.substring(lastHashIdx + 1);
+    // Strip leading '!' used by AngularJS hashbang URLs (#!)
+    if (val.startsWith('!')) val = val.substring(1);
+    if (!val) return null;
+    // Convert '+' to space (common in URL-encoding) before decode
+    const plusConverted = val.replace(/\+/g, ' ');
+    try {
+        return decodeURIComponent(plusConverted);
+    } catch (e) {
+        // If decode fails (malformed percent-encoding), return the raw plus-converted string
+        return plusConverted;
+    }
+}
+
+const instanceId = getInstanceIdFromHash();
+
+// Replace '+' tokens in topics with the instance id (if present)
+function resolveTopic(topic) {
+    if (!instanceId) return topic;
+    return topic.replace(/\+/g, instanceId);
+}
+
 var app = angular.module("myApp", []);
 
 app.controller("myCtrl", function ($scope, $filter, $location) {
@@ -25,7 +54,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     $scope.enums = {
         {%-for enum_name, enum in stinger.enums.items() %}
-        "{{enum_name | snake_case}}": [
+        "{{enum_name | lowerCamelCase}}": [
             {%-for e in enum.values %}
             {"name": "{{e}}", "id": {{loop.index}} }{%if not loop.last%},{%endif%}
             {%endfor-%}
@@ -33,7 +62,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     {%endfor-%} };
 
     $scope.signals = { {%-for sig_name, signal in stinger.signals.items() %}
-        "{{sig_name | snake_case}}": {
+        "{{sig_name | lowerCamelCase}}": {
             "subscription_id": null,
             "name": "{{sig_name}}",
             "received": null,
@@ -43,28 +72,29 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     {%endfor-%} };
 
     $scope.properties = { {%-for prop_name, prop in stinger.properties.items() %}
-        "{{prop_name | snake_case}}": {
+        "{{prop_name | lowerCamelCase}}": {
             "subscription_id": null,
             "name": "{{prop_name}}",
             "received": { {%for arg in prop.arg_list %}
-                "{{arg.name|snake_case}}": {%if arg.type == "argtype.primitive"%}{%else%}{ {%for member in arg.members %}
-                    "{{member.name|snake_case}}": "{{member.value}}"{%if not loop.last%},{%endif%}
+                "{{arg.name}}": {%if arg.type == "argtype.primitive"%}{%else%}{ {%for member in arg.members %}
+                    "{{member.name}}": "{{member.value}}"{%if not loop.last%},{%endif%}
                 {%endfor%} }{%endif%}{%if not loop.last%},{%endif%}
             {%endfor%} },
-            "mqtt_topic": "{{prop.value_topic}}"{%if not prop.read_only %},
-            "update_topic": "{{prop.update_topic}}"{%endif%}
+            "mqtt_topic": "{{prop.value_topic}}",{%if not prop.read_only %}
+            "update_topic": "{{prop.update_topic}}",{%endif%}
+            "property_version": -1
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
 
     $scope.methods = {
         {%-for method_name, method in stinger.methods.items() %}
-        "{{method_name | snake_case}}": {
+        "{{method_name | lowerCamelCase}}": {
             "name": "{{method_name}}",
             "mqtt_topic": "{{method.topic}}",
             "response_topic": "{{method.response_topic((method.name|lowerCamelCase), '"+clientId+"')}}",
             "pending_correlation_id": null,
             "args": { {%-for arg in method.arg_list %}
-                "{{arg.name|snake_case}}": {
+                "{{arg.name}}": {
                     "type": "{{arg.type}}",
                     "value": null
                 }{%if not loop.last%},{%endif%}
@@ -108,12 +138,25 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         return props.correlationData;
     }
 
+    function publish_property_update(name, topic, payload, property_version) {
+        console.log(name + " Sending to " + topic);
+        console.log(payload);
+        let props = {
+            "contentType": "application/json",
+            "userProperties": {
+                "PropertyVersion": property_version.toString()
+            }
+        };
+        $scope.console.requests.unshift({"name":name, "correlationData":null, "topic": topic, "payload": payload, "response": null, "requestTime": Date.now()});
+        client.publish(topic, payload, { "qos": 1, retain: false, properties: props});
+        return;
+    }
+
     client.on('message', function(topic, message, packet) {
         
         const subid = packet.properties.subscriptionIdentifier;
 
         console.log("Message Arrived: " + topic + " (" + subid + ")");
-        console.log($scope.properties);
 
         var obj;
         if (message.toString().length == 0) {
@@ -136,7 +179,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             const prop = $scope.properties[key];
             if (prop.subscription_id == subid) {
                 prop.received = obj;
-                console.log("Set property received object to ", prop.received);
+                console.log("Set property '" + prop.name + "' received object to ", prop.received);
+                prop.property_version = packet.properties.userProperties.PropertyVersion;
             }
         }
         for (const key in $scope.methods) {
@@ -183,9 +227,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["{{signal_name | lowerCamelCase}}"].subscription_id = subscription_count;
-        client.subscribe("{{signal.topic}}", {{signal_name|snake_case}}_sub_opts);
-        console.log("Subscribing to signal {{signal.topic}} with id ", subscription_count);
+        var resolvedTopic = resolveTopic("{{signal.topic}}");
+        client.subscribe(resolvedTopic, {{signal_name|snake_case}}_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         {%endfor%}
 
@@ -199,8 +245,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 }
             };
             $scope.properties[key].subscription_id = sub_id;
-            client.subscribe($scope.properties[key].mqtt_topic, prop_sub_opts);
-            console.log("Subscribing to property " + $scope.properties[key].mqtt_topic + " with id " + $scope.properties[key].subscription_id);
+            var resolvedTopic = resolveTopic($scope.properties[key].mqtt_topic);
+            client.subscribe(resolvedTopic, prop_sub_opts);
+            console.log("Subscribing to property " + resolvedTopic + " with id " + $scope.properties[key].subscription_id);
         }
 
         subscription_state = 1;
@@ -209,7 +256,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     $scope.updateProperty = function(prop) {
         const payload = JSON.stringify(prop.received);
-        publish("Property Update", prop.update_topic, payload, 1);
+        publish_property_update("Property Update", prop.update_topic, payload, 1);
     };
  
     $scope.callMethod = function(method) {

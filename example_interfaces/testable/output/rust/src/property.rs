@@ -3,7 +3,7 @@ use crate::payloads::*;
 use derive_builder::Builder;
 
 #[derive(Clone, Builder, Debug)]
-pub struct TestAbleInitialPropertyValues {
+pub struct TestableInitialPropertyValues {
     pub read_write_integer: i32,
     pub read_write_integer_version: u32,
 

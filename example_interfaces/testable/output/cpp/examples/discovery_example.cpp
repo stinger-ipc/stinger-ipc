@@ -10,7 +10,7 @@ int main(int argc, char** argv)
     auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "Discovery-example");
 
     // Create a Discovery instance for service "myapp"
-    TestAbleDiscovery discovery(conn);
+    TestableDiscovery discovery(conn);
 
     // Set up a callback for when new services are discovered
     discovery.SetDiscoveryCallback([](const std::string& instance_id)

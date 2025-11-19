@@ -65,7 +65,7 @@ def generate(
                 os.path.join(os.path.dirname(__file__), "../templates", "html")
             )
             with open(input_file, "r") as f:
-                stinger = StingerInterface.from_yaml(f)
+                stinger = StingerInterface.from_yaml(f, placeholder="+")
             for output_file in [
                 "app.js",
                 "styles.css",

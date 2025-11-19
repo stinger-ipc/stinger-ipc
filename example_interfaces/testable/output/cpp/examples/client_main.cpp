@@ -13,17 +13,17 @@
 int main(int argc, char** argv)
 {
     // Create a connection to the broker
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "test--able-client-demo");
+    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "testable-client-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg)
                          {
                              std::cout << "[" << level << "] " << msg << std::endl;
                          });
 
-    // Discover a service ID for a Test Able service.
+    // Discover a service ID for a testable service.
     std::string serviceId;
     { // restrict scope
-        TestAbleDiscovery discovery(conn);
+        TestableDiscovery discovery(conn);
         auto serviceIdFut = discovery.GetSingleton();
         auto serviceIdFutStatus = serviceIdFut.wait_for(boost::chrono::seconds(15));
         if (serviceIdFutStatus == boost::future_status::timeout)
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
     }
 
     // Create the client object.
-    TestAbleClient client(conn, serviceId);
+    TestableClient client(conn, serviceId);
 
     // Register callbacks for signals.
     client.registerEmptyCallback([]()

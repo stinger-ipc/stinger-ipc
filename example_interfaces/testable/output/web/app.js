@@ -1,4 +1,4 @@
-const clientId = "Test Able-web-" + new Date().getTime();
+const clientId = "testable-web-" + new Date().getTime();
 
 const responseTopic = "client/" + clientId + "/responses";
 var responseSubscriptionId = null;
@@ -10,6 +10,35 @@ function makeRequestProperties() {
         "correlationData": correlationData,
         "responseTopic": responseTopic
     }
+}
+
+function getInstanceIdFromHash() {
+    // Return everything after the last '#' and strip an AngularJS hashbang ('!') if present.
+    if (typeof location === 'undefined' || !location || !location.hash) return null;
+    const hash = location.hash;
+    // Find last '#' in case there are multiple hashes; include support for '#!' (hashbang)
+    const lastHashIdx = hash.lastIndexOf('#');
+    if (lastHashIdx === -1 || lastHashIdx === hash.length - 1) return null;
+    let val = hash.substring(lastHashIdx + 1);
+    // Strip leading '!' used by AngularJS hashbang URLs (#!)
+    if (val.startsWith('!')) val = val.substring(1);
+    if (!val) return null;
+    // Convert '+' to space (common in URL-encoding) before decode
+    const plusConverted = val.replace(/\+/g, ' ');
+    try {
+        return decodeURIComponent(plusConverted);
+    } catch (e) {
+        // If decode fails (malformed percent-encoding), return the raw plus-converted string
+        return plusConverted;
+    }
+}
+
+const instanceId = getInstanceIdFromHash();
+
+// Replace '+' tokens in topics with the instance id (if present)
+function resolveTopic(topic) {
+    if (!instanceId) return topic;
+    return topic.replace(/\+/g, instanceId);
 }
 
 var app = angular.module("myApp", []);
@@ -39,233 +68,236 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "empty",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/empty"
+            "mqtt_topic": "testable/+/signal/empty"
         },
     
-        "single_int": {
+        "singleInt": {
             "subscription_id": null,
             "name": "singleInt",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleInt"
+            "mqtt_topic": "testable/+/signal/singleInt"
         },
     
-        "single_optional_int": {
+        "singleOptionalInt": {
             "subscription_id": null,
             "name": "singleOptionalInt",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleOptionalInt"
+            "mqtt_topic": "testable/+/signal/singleOptionalInt"
         },
     
-        "three_integers": {
+        "threeIntegers": {
             "subscription_id": null,
             "name": "threeIntegers",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/threeIntegers"
+            "mqtt_topic": "testable/+/signal/threeIntegers"
         },
     
-        "single_string": {
+        "singleString": {
             "subscription_id": null,
             "name": "singleString",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleString"
+            "mqtt_topic": "testable/+/signal/singleString"
         },
     
-        "single_optional_string": {
+        "singleOptionalString": {
             "subscription_id": null,
             "name": "singleOptionalString",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleOptionalString"
+            "mqtt_topic": "testable/+/signal/singleOptionalString"
         },
     
-        "three_strings": {
+        "threeStrings": {
             "subscription_id": null,
             "name": "threeStrings",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/threeStrings"
+            "mqtt_topic": "testable/+/signal/threeStrings"
         },
     
-        "single_enum": {
+        "singleEnum": {
             "subscription_id": null,
             "name": "singleEnum",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleEnum"
+            "mqtt_topic": "testable/+/signal/singleEnum"
         },
     
-        "single_optional_enum": {
+        "singleOptionalEnum": {
             "subscription_id": null,
             "name": "singleOptionalEnum",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleOptionalEnum"
+            "mqtt_topic": "testable/+/signal/singleOptionalEnum"
         },
     
-        "three_enums": {
+        "threeEnums": {
             "subscription_id": null,
             "name": "threeEnums",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/threeEnums"
+            "mqtt_topic": "testable/+/signal/threeEnums"
         },
     
-        "single_struct": {
+        "singleStruct": {
             "subscription_id": null,
             "name": "singleStruct",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleStruct"
+            "mqtt_topic": "testable/+/signal/singleStruct"
         },
     
-        "single_optional_struct": {
+        "singleOptionalStruct": {
             "subscription_id": null,
             "name": "singleOptionalStruct",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleOptionalStruct"
+            "mqtt_topic": "testable/+/signal/singleOptionalStruct"
         },
     
-        "three_structs": {
+        "threeStructs": {
             "subscription_id": null,
             "name": "threeStructs",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/threeStructs"
+            "mqtt_topic": "testable/+/signal/threeStructs"
         },
     
-        "single_date_time": {
+        "singleDateTime": {
             "subscription_id": null,
             "name": "singleDateTime",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleDateTime"
+            "mqtt_topic": "testable/+/signal/singleDateTime"
         },
     
-        "single_optional_datetime": {
+        "singleOptionalDatetime": {
             "subscription_id": null,
             "name": "singleOptionalDatetime",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleOptionalDatetime"
+            "mqtt_topic": "testable/+/signal/singleOptionalDatetime"
         },
     
-        "three_date_times": {
+        "threeDateTimes": {
             "subscription_id": null,
             "name": "threeDateTimes",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/threeDateTimes"
+            "mqtt_topic": "testable/+/signal/threeDateTimes"
         },
     
-        "single_duration": {
+        "singleDuration": {
             "subscription_id": null,
             "name": "singleDuration",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleDuration"
+            "mqtt_topic": "testable/+/signal/singleDuration"
         },
     
-        "single_optional_duration": {
+        "singleOptionalDuration": {
             "subscription_id": null,
             "name": "singleOptionalDuration",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleOptionalDuration"
+            "mqtt_topic": "testable/+/signal/singleOptionalDuration"
         },
     
-        "three_durations": {
+        "threeDurations": {
             "subscription_id": null,
             "name": "threeDurations",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/threeDurations"
+            "mqtt_topic": "testable/+/signal/threeDurations"
         },
     
-        "single_binary": {
+        "singleBinary": {
             "subscription_id": null,
             "name": "singleBinary",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleBinary"
+            "mqtt_topic": "testable/+/signal/singleBinary"
         },
     
-        "single_optional_binary": {
+        "singleOptionalBinary": {
             "subscription_id": null,
             "name": "singleOptionalBinary",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleOptionalBinary"
+            "mqtt_topic": "testable/+/signal/singleOptionalBinary"
         },
     
-        "three_binaries": {
+        "threeBinaries": {
             "subscription_id": null,
             "name": "threeBinaries",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/threeBinaries"
+            "mqtt_topic": "testable/+/signal/threeBinaries"
         },
     
-        "single_array_of_integers": {
+        "singleArrayOfIntegers": {
             "subscription_id": null,
             "name": "singleArrayOfIntegers",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleArrayOfIntegers"
+            "mqtt_topic": "testable/+/signal/singleArrayOfIntegers"
         },
     
-        "single_optional_array_of_strings": {
+        "singleOptionalArrayOfStrings": {
             "subscription_id": null,
             "name": "singleOptionalArrayOfStrings",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/singleOptionalArrayOfStrings"
+            "mqtt_topic": "testable/+/signal/singleOptionalArrayOfStrings"
         },
     
-        "array_of_every_type": {
+        "arrayOfEveryType": {
             "subscription_id": null,
             "name": "arrayOfEveryType",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "testAble/{}/signal/arrayOfEveryType"
+            "mqtt_topic": "testable/+/signal/arrayOfEveryType"
         }
     };
 
     $scope.properties = {
-        "read_write_integer": {
+        "readWriteInteger": {
             "subscription_id": null,
             "name": "read_write_integer",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteInteger/value",
-            "update_topic": "testAble/{}/property/readWriteInteger/setValue"
+            "mqtt_topic": "testable/+/property/readWriteInteger/value",
+            "update_topic": "testable/+/property/readWriteInteger/setValue",
+            "property_version": -1
         },
     
-        "read_only_integer": {
+        "readOnlyInteger": {
             "subscription_id": null,
             "name": "read_only_integer",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readOnlyInteger/value"
+            "mqtt_topic": "testable/+/property/readOnlyInteger/value",
+            "property_version": -1
         },
     
-        "read_write_optional_integer": {
+        "readWriteOptionalInteger": {
             "subscription_id": null,
             "name": "read_write_optional_integer",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteOptionalInteger/value",
-            "update_topic": "testAble/{}/property/readWriteOptionalInteger/setValue"
+            "mqtt_topic": "testable/+/property/readWriteOptionalInteger/value",
+            "update_topic": "testable/+/property/readWriteOptionalInteger/setValue",
+            "property_version": -1
         },
     
-        "read_write_two_integers": {
+        "readWriteTwoIntegers": {
             "subscription_id": null,
             "name": "read_write_two_integers",
             "received": { 
@@ -273,40 +305,44 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteTwoIntegers/value",
-            "update_topic": "testAble/{}/property/readWriteTwoIntegers/setValue"
+            "mqtt_topic": "testable/+/property/readWriteTwoIntegers/value",
+            "update_topic": "testable/+/property/readWriteTwoIntegers/setValue",
+            "property_version": -1
         },
     
-        "read_only_string": {
+        "readOnlyString": {
             "subscription_id": null,
             "name": "read_only_string",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readOnlyString/value"
+            "mqtt_topic": "testable/+/property/readOnlyString/value",
+            "property_version": -1
         },
     
-        "read_write_string": {
+        "readWriteString": {
             "subscription_id": null,
             "name": "read_write_string",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteString/value",
-            "update_topic": "testAble/{}/property/readWriteString/setValue"
+            "mqtt_topic": "testable/+/property/readWriteString/value",
+            "update_topic": "testable/+/property/readWriteString/setValue",
+            "property_version": -1
         },
     
-        "read_write_optional_string": {
+        "readWriteOptionalString": {
             "subscription_id": null,
             "name": "read_write_optional_string",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteOptionalString/value",
-            "update_topic": "testAble/{}/property/readWriteOptionalString/setValue"
+            "mqtt_topic": "testable/+/property/readWriteOptionalString/value",
+            "update_topic": "testable/+/property/readWriteOptionalString/setValue",
+            "property_version": -1
         },
     
-        "read_write_two_strings": {
+        "readWriteTwoStrings": {
             "subscription_id": null,
             "name": "read_write_two_strings",
             "received": { 
@@ -314,11 +350,12 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteTwoStrings/value",
-            "update_topic": "testAble/{}/property/readWriteTwoStrings/setValue"
+            "mqtt_topic": "testable/+/property/readWriteTwoStrings/value",
+            "update_topic": "testable/+/property/readWriteTwoStrings/setValue",
+            "property_version": -1
         },
     
-        "read_write_struct": {
+        "readWriteStruct": {
             "subscription_id": null,
             "name": "read_write_struct",
             "received": { 
@@ -341,19 +378,19 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "data": "",
                 
-                    "optional_integer": "",
+                    "OptionalInteger": "",
                 
-                    "optional_string": "",
+                    "OptionalString": "",
                 
-                    "optional_enum": "",
+                    "OptionalEnum": "",
                 
-                    "optional_entry_object": "",
+                    "optionalEntryObject": "",
                 
-                    "optional_date_time": "",
+                    "OptionalDateTime": "",
                 
-                    "optional_duration": "",
+                    "OptionalDuration": "",
                 
-                    "optional_binary": "",
+                    "OptionalBinary": "",
                 
                     "array_of_integers": "",
                 
@@ -384,11 +421,12 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "optional_array_of_entry_objects": ""
                  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteStruct/value",
-            "update_topic": "testAble/{}/property/readWriteStruct/setValue"
+            "mqtt_topic": "testable/+/property/readWriteStruct/value",
+            "update_topic": "testable/+/property/readWriteStruct/setValue",
+            "property_version": -1
         },
     
-        "read_write_optional_struct": {
+        "readWriteOptionalStruct": {
             "subscription_id": null,
             "name": "read_write_optional_struct",
             "received": { 
@@ -411,19 +449,19 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "data": "",
                 
-                    "optional_integer": "",
+                    "OptionalInteger": "",
                 
-                    "optional_string": "",
+                    "OptionalString": "",
                 
-                    "optional_enum": "",
+                    "OptionalEnum": "",
                 
-                    "optional_entry_object": "",
+                    "optionalEntryObject": "",
                 
-                    "optional_date_time": "",
+                    "OptionalDateTime": "",
                 
-                    "optional_duration": "",
+                    "OptionalDuration": "",
                 
-                    "optional_binary": "",
+                    "OptionalBinary": "",
                 
                     "array_of_integers": "",
                 
@@ -454,11 +492,12 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "optional_array_of_entry_objects": ""
                  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteOptionalStruct/value",
-            "update_topic": "testAble/{}/property/readWriteOptionalStruct/setValue"
+            "mqtt_topic": "testable/+/property/readWriteOptionalStruct/value",
+            "update_topic": "testable/+/property/readWriteOptionalStruct/setValue",
+            "property_version": -1
         },
     
-        "read_write_two_structs": {
+        "readWriteTwoStructs": {
             "subscription_id": null,
             "name": "read_write_two_structs",
             "received": { 
@@ -481,19 +520,19 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "data": "",
                 
-                    "optional_integer": "",
+                    "OptionalInteger": "",
                 
-                    "optional_string": "",
+                    "OptionalString": "",
                 
-                    "optional_enum": "",
+                    "OptionalEnum": "",
                 
-                    "optional_entry_object": "",
+                    "optionalEntryObject": "",
                 
-                    "optional_date_time": "",
+                    "OptionalDateTime": "",
                 
-                    "optional_duration": "",
+                    "OptionalDuration": "",
                 
-                    "optional_binary": "",
+                    "OptionalBinary": "",
                 
                     "array_of_integers": "",
                 
@@ -543,19 +582,19 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 
                     "data": "",
                 
-                    "optional_integer": "",
+                    "OptionalInteger": "",
                 
-                    "optional_string": "",
+                    "OptionalString": "",
                 
-                    "optional_enum": "",
+                    "OptionalEnum": "",
                 
-                    "optional_entry_object": "",
+                    "optionalEntryObject": "",
                 
-                    "optional_date_time": "",
+                    "OptionalDateTime": "",
                 
-                    "optional_duration": "",
+                    "OptionalDuration": "",
                 
-                    "optional_binary": "",
+                    "OptionalBinary": "",
                 
                     "array_of_integers": "",
                 
@@ -586,40 +625,44 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "optional_array_of_entry_objects": ""
                  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteTwoStructs/value",
-            "update_topic": "testAble/{}/property/readWriteTwoStructs/setValue"
+            "mqtt_topic": "testable/+/property/readWriteTwoStructs/value",
+            "update_topic": "testable/+/property/readWriteTwoStructs/setValue",
+            "property_version": -1
         },
     
-        "read_only_enum": {
+        "readOnlyEnum": {
             "subscription_id": null,
             "name": "read_only_enum",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readOnlyEnum/value"
+            "mqtt_topic": "testable/+/property/readOnlyEnum/value",
+            "property_version": -1
         },
     
-        "read_write_enum": {
+        "readWriteEnum": {
             "subscription_id": null,
             "name": "read_write_enum",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteEnum/value",
-            "update_topic": "testAble/{}/property/readWriteEnum/setValue"
+            "mqtt_topic": "testable/+/property/readWriteEnum/value",
+            "update_topic": "testable/+/property/readWriteEnum/setValue",
+            "property_version": -1
         },
     
-        "read_write_optional_enum": {
+        "readWriteOptionalEnum": {
             "subscription_id": null,
             "name": "read_write_optional_enum",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteOptionalEnum/value",
-            "update_topic": "testAble/{}/property/readWriteOptionalEnum/setValue"
+            "mqtt_topic": "testable/+/property/readWriteOptionalEnum/value",
+            "update_topic": "testable/+/property/readWriteOptionalEnum/setValue",
+            "property_version": -1
         },
     
-        "read_write_two_enums": {
+        "readWriteTwoEnums": {
             "subscription_id": null,
             "name": "read_write_two_enums",
             "received": { 
@@ -627,31 +670,34 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteTwoEnums/value",
-            "update_topic": "testAble/{}/property/readWriteTwoEnums/setValue"
+            "mqtt_topic": "testable/+/property/readWriteTwoEnums/value",
+            "update_topic": "testable/+/property/readWriteTwoEnums/setValue",
+            "property_version": -1
         },
     
-        "read_write_datetime": {
+        "readWriteDatetime": {
             "subscription_id": null,
             "name": "read_write_datetime",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteDatetime/value",
-            "update_topic": "testAble/{}/property/readWriteDatetime/setValue"
+            "mqtt_topic": "testable/+/property/readWriteDatetime/value",
+            "update_topic": "testable/+/property/readWriteDatetime/setValue",
+            "property_version": -1
         },
     
-        "read_write_optional_datetime": {
+        "readWriteOptionalDatetime": {
             "subscription_id": null,
             "name": "read_write_optional_datetime",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteOptionalDatetime/value",
-            "update_topic": "testAble/{}/property/readWriteOptionalDatetime/setValue"
+            "mqtt_topic": "testable/+/property/readWriteOptionalDatetime/value",
+            "update_topic": "testable/+/property/readWriteOptionalDatetime/setValue",
+            "property_version": -1
         },
     
-        "read_write_two_datetimes": {
+        "readWriteTwoDatetimes": {
             "subscription_id": null,
             "name": "read_write_two_datetimes",
             "received": { 
@@ -659,31 +705,34 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteTwoDatetimes/value",
-            "update_topic": "testAble/{}/property/readWriteTwoDatetimes/setValue"
+            "mqtt_topic": "testable/+/property/readWriteTwoDatetimes/value",
+            "update_topic": "testable/+/property/readWriteTwoDatetimes/setValue",
+            "property_version": -1
         },
     
-        "read_write_duration": {
+        "readWriteDuration": {
             "subscription_id": null,
             "name": "read_write_duration",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteDuration/value",
-            "update_topic": "testAble/{}/property/readWriteDuration/setValue"
+            "mqtt_topic": "testable/+/property/readWriteDuration/value",
+            "update_topic": "testable/+/property/readWriteDuration/setValue",
+            "property_version": -1
         },
     
-        "read_write_optional_duration": {
+        "readWriteOptionalDuration": {
             "subscription_id": null,
             "name": "read_write_optional_duration",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteOptionalDuration/value",
-            "update_topic": "testAble/{}/property/readWriteOptionalDuration/setValue"
+            "mqtt_topic": "testable/+/property/readWriteOptionalDuration/value",
+            "update_topic": "testable/+/property/readWriteOptionalDuration/setValue",
+            "property_version": -1
         },
     
-        "read_write_two_durations": {
+        "readWriteTwoDurations": {
             "subscription_id": null,
             "name": "read_write_two_durations",
             "received": { 
@@ -691,31 +740,34 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteTwoDurations/value",
-            "update_topic": "testAble/{}/property/readWriteTwoDurations/setValue"
+            "mqtt_topic": "testable/+/property/readWriteTwoDurations/value",
+            "update_topic": "testable/+/property/readWriteTwoDurations/setValue",
+            "property_version": -1
         },
     
-        "read_write_binary": {
+        "readWriteBinary": {
             "subscription_id": null,
             "name": "read_write_binary",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteBinary/value",
-            "update_topic": "testAble/{}/property/readWriteBinary/setValue"
+            "mqtt_topic": "testable/+/property/readWriteBinary/value",
+            "update_topic": "testable/+/property/readWriteBinary/setValue",
+            "property_version": -1
         },
     
-        "read_write_optional_binary": {
+        "readWriteOptionalBinary": {
             "subscription_id": null,
             "name": "read_write_optional_binary",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteOptionalBinary/value",
-            "update_topic": "testAble/{}/property/readWriteOptionalBinary/setValue"
+            "mqtt_topic": "testable/+/property/readWriteOptionalBinary/value",
+            "update_topic": "testable/+/property/readWriteOptionalBinary/setValue",
+            "property_version": -1
         },
     
-        "read_write_two_binaries": {
+        "readWriteTwoBinaries": {
             "subscription_id": null,
             "name": "read_write_two_binaries",
             "received": { 
@@ -723,46 +775,49 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteTwoBinaries/value",
-            "update_topic": "testAble/{}/property/readWriteTwoBinaries/setValue"
+            "mqtt_topic": "testable/+/property/readWriteTwoBinaries/value",
+            "update_topic": "testable/+/property/readWriteTwoBinaries/setValue",
+            "property_version": -1
         },
     
-        "read_write_list_of_strings": {
+        "readWriteListOfStrings": {
             "subscription_id": null,
             "name": "read_write_list_of_strings",
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteListOfStrings/value",
-            "update_topic": "testAble/{}/property/readWriteListOfStrings/setValue"
+            "mqtt_topic": "testable/+/property/readWriteListOfStrings/value",
+            "update_topic": "testable/+/property/readWriteListOfStrings/setValue",
+            "property_version": -1
         },
     
-        "read_write_lists": {
+        "readWriteLists": {
             "subscription_id": null,
             "name": "read_write_lists",
             "received": { 
                 "the_list": {  },
             
-                "optional_list": {  }
+                "optionalList": {  }
              },
-            "mqtt_topic": "testAble/{}/property/readWriteLists/value",
-            "update_topic": "testAble/{}/property/readWriteLists/setValue"
+            "mqtt_topic": "testable/+/property/readWriteLists/value",
+            "update_topic": "testable/+/property/readWriteLists/setValue",
+            "property_version": -1
         }
     };
 
     $scope.methods = {
-        "call_with_nothing": {
+        "callWithNothing": {
             "name": "callWithNothing",
-            "mqtt_topic": "testAble/{}/method/callWithNothing",
+            "mqtt_topic": "testable/+/method/callWithNothing",
             "response_topic": "client/"+clientId+"/callWithNothing/methodResponse",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
             "received_time": null
         },
-        "call_one_integer": {
+        "callOneInteger": {
             "name": "callOneInteger",
-            "mqtt_topic": "testAble/{}/method/callOneInteger",
+            "mqtt_topic": "testable/+/method/callOneInteger",
             "response_topic": "client/"+clientId+"/callOneInteger/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -774,9 +829,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_optional_integer": {
+        "callOptionalInteger": {
             "name": "callOptionalInteger",
-            "mqtt_topic": "testAble/{}/method/callOptionalInteger",
+            "mqtt_topic": "testable/+/method/callOptionalInteger",
             "response_topic": "client/"+clientId+"/callOptionalInteger/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -788,9 +843,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_three_integers": {
+        "callThreeIntegers": {
             "name": "callThreeIntegers",
-            "mqtt_topic": "testAble/{}/method/callThreeIntegers",
+            "mqtt_topic": "testable/+/method/callThreeIntegers",
             "response_topic": "client/"+clientId+"/callThreeIntegers/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -812,9 +867,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_one_string": {
+        "callOneString": {
             "name": "callOneString",
-            "mqtt_topic": "testAble/{}/method/callOneString",
+            "mqtt_topic": "testable/+/method/callOneString",
             "response_topic": "client/"+clientId+"/callOneString/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -826,9 +881,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_optional_string": {
+        "callOptionalString": {
             "name": "callOptionalString",
-            "mqtt_topic": "testAble/{}/method/callOptionalString",
+            "mqtt_topic": "testable/+/method/callOptionalString",
             "response_topic": "client/"+clientId+"/callOptionalString/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -840,9 +895,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_three_strings": {
+        "callThreeStrings": {
             "name": "callThreeStrings",
-            "mqtt_topic": "testAble/{}/method/callThreeStrings",
+            "mqtt_topic": "testable/+/method/callThreeStrings",
             "response_topic": "client/"+clientId+"/callThreeStrings/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -864,9 +919,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_one_enum": {
+        "callOneEnum": {
             "name": "callOneEnum",
-            "mqtt_topic": "testAble/{}/method/callOneEnum",
+            "mqtt_topic": "testable/+/method/callOneEnum",
             "response_topic": "client/"+clientId+"/callOneEnum/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -878,9 +933,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_optional_enum": {
+        "callOptionalEnum": {
             "name": "callOptionalEnum",
-            "mqtt_topic": "testAble/{}/method/callOptionalEnum",
+            "mqtt_topic": "testable/+/method/callOptionalEnum",
             "response_topic": "client/"+clientId+"/callOptionalEnum/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -892,9 +947,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_three_enums": {
+        "callThreeEnums": {
             "name": "callThreeEnums",
-            "mqtt_topic": "testAble/{}/method/callThreeEnums",
+            "mqtt_topic": "testable/+/method/callThreeEnums",
             "response_topic": "client/"+clientId+"/callThreeEnums/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -916,9 +971,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_one_struct": {
+        "callOneStruct": {
             "name": "callOneStruct",
-            "mqtt_topic": "testAble/{}/method/callOneStruct",
+            "mqtt_topic": "testable/+/method/callOneStruct",
             "response_topic": "client/"+clientId+"/callOneStruct/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -930,9 +985,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_optional_struct": {
+        "callOptionalStruct": {
             "name": "callOptionalStruct",
-            "mqtt_topic": "testAble/{}/method/callOptionalStruct",
+            "mqtt_topic": "testable/+/method/callOptionalStruct",
             "response_topic": "client/"+clientId+"/callOptionalStruct/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -944,9 +999,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_three_structs": {
+        "callThreeStructs": {
             "name": "callThreeStructs",
-            "mqtt_topic": "testAble/{}/method/callThreeStructs",
+            "mqtt_topic": "testable/+/method/callThreeStructs",
             "response_topic": "client/"+clientId+"/callThreeStructs/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -968,9 +1023,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_one_date_time": {
+        "callOneDateTime": {
             "name": "callOneDateTime",
-            "mqtt_topic": "testAble/{}/method/callOneDateTime",
+            "mqtt_topic": "testable/+/method/callOneDateTime",
             "response_topic": "client/"+clientId+"/callOneDateTime/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -982,9 +1037,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_optional_date_time": {
+        "callOptionalDateTime": {
             "name": "callOptionalDateTime",
-            "mqtt_topic": "testAble/{}/method/callOptionalDateTime",
+            "mqtt_topic": "testable/+/method/callOptionalDateTime",
             "response_topic": "client/"+clientId+"/callOptionalDateTime/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -996,9 +1051,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_three_date_times": {
+        "callThreeDateTimes": {
             "name": "callThreeDateTimes",
-            "mqtt_topic": "testAble/{}/method/callThreeDateTimes",
+            "mqtt_topic": "testable/+/method/callThreeDateTimes",
             "response_topic": "client/"+clientId+"/callThreeDateTimes/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1020,9 +1075,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_one_duration": {
+        "callOneDuration": {
             "name": "callOneDuration",
-            "mqtt_topic": "testAble/{}/method/callOneDuration",
+            "mqtt_topic": "testable/+/method/callOneDuration",
             "response_topic": "client/"+clientId+"/callOneDuration/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1034,9 +1089,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_optional_duration": {
+        "callOptionalDuration": {
             "name": "callOptionalDuration",
-            "mqtt_topic": "testAble/{}/method/callOptionalDuration",
+            "mqtt_topic": "testable/+/method/callOptionalDuration",
             "response_topic": "client/"+clientId+"/callOptionalDuration/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1048,9 +1103,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_three_durations": {
+        "callThreeDurations": {
             "name": "callThreeDurations",
-            "mqtt_topic": "testAble/{}/method/callThreeDurations",
+            "mqtt_topic": "testable/+/method/callThreeDurations",
             "response_topic": "client/"+clientId+"/callThreeDurations/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1072,9 +1127,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_one_binary": {
+        "callOneBinary": {
             "name": "callOneBinary",
-            "mqtt_topic": "testAble/{}/method/callOneBinary",
+            "mqtt_topic": "testable/+/method/callOneBinary",
             "response_topic": "client/"+clientId+"/callOneBinary/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1086,9 +1141,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_optional_binary": {
+        "callOptionalBinary": {
             "name": "callOptionalBinary",
-            "mqtt_topic": "testAble/{}/method/callOptionalBinary",
+            "mqtt_topic": "testable/+/method/callOptionalBinary",
             "response_topic": "client/"+clientId+"/callOptionalBinary/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1100,9 +1155,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_three_binaries": {
+        "callThreeBinaries": {
             "name": "callThreeBinaries",
-            "mqtt_topic": "testAble/{}/method/callThreeBinaries",
+            "mqtt_topic": "testable/+/method/callThreeBinaries",
             "response_topic": "client/"+clientId+"/callThreeBinaries/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1124,9 +1179,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_one_list_of_integers": {
+        "callOneListOfIntegers": {
             "name": "callOneListOfIntegers",
-            "mqtt_topic": "testAble/{}/method/callOneListOfIntegers",
+            "mqtt_topic": "testable/+/method/callOneListOfIntegers",
             "response_topic": "client/"+clientId+"/callOneListOfIntegers/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1138,9 +1193,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_optional_list_of_floats": {
+        "callOptionalListOfFloats": {
             "name": "callOptionalListOfFloats",
-            "mqtt_topic": "testAble/{}/method/callOptionalListOfFloats",
+            "mqtt_topic": "testable/+/method/callOptionalListOfFloats",
             "response_topic": "client/"+clientId+"/callOptionalListOfFloats/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1152,9 +1207,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": null,
             "received_time": null
         },
-        "call_two_lists": {
+        "callTwoLists": {
             "name": "callTwoLists",
-            "mqtt_topic": "testAble/{}/method/callTwoLists",
+            "mqtt_topic": "testable/+/method/callTwoLists",
             "response_topic": "client/"+clientId+"/callTwoLists/methodResponse",
             "pending_correlation_id": null,
             "args": {
@@ -1206,12 +1261,25 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         return props.correlationData;
     }
 
+    function publish_property_update(name, topic, payload, property_version) {
+        console.log(name + " Sending to " + topic);
+        console.log(payload);
+        let props = {
+            "contentType": "application/json",
+            "userProperties": {
+                "PropertyVersion": property_version.toString()
+            }
+        };
+        $scope.console.requests.unshift({"name":name, "correlationData":null, "topic": topic, "payload": payload, "response": null, "requestTime": Date.now()});
+        client.publish(topic, payload, { "qos": 1, retain: false, properties: props});
+        return;
+    }
+
     client.on('message', function(topic, message, packet) {
         
         const subid = packet.properties.subscriptionIdentifier;
 
         console.log("Message Arrived: " + topic + " (" + subid + ")");
-        console.log($scope.properties);
 
         var obj;
         if (message.toString().length == 0) {
@@ -1234,7 +1302,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             const prop = $scope.properties[key];
             if (prop.subscription_id == subid) {
                 prop.received = obj;
-                console.log("Set property received object to ", prop.received);
+                console.log("Set property '" + prop.name + "' received object to ", prop.received);
+                prop.property_version = packet.properties.userProperties.PropertyVersion;
             }
         }
         for (const key in $scope.methods) {
@@ -1281,9 +1350,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["empty"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/empty", empty_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/empty with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/empty");
+        client.subscribe(resolvedTopic, empty_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_int_sub_opts = {
@@ -1292,9 +1363,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleInt"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleInt", single_int_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleInt with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleInt");
+        client.subscribe(resolvedTopic, single_int_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_optional_int_sub_opts = {
@@ -1303,9 +1376,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleOptionalInt"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleOptionalInt", single_optional_int_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleOptionalInt with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleOptionalInt");
+        client.subscribe(resolvedTopic, single_optional_int_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const three_integers_sub_opts = {
@@ -1314,9 +1389,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["threeIntegers"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/threeIntegers", three_integers_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/threeIntegers with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/threeIntegers");
+        client.subscribe(resolvedTopic, three_integers_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_string_sub_opts = {
@@ -1325,9 +1402,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleString"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleString", single_string_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleString with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleString");
+        client.subscribe(resolvedTopic, single_string_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_optional_string_sub_opts = {
@@ -1336,9 +1415,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleOptionalString"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleOptionalString", single_optional_string_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleOptionalString with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleOptionalString");
+        client.subscribe(resolvedTopic, single_optional_string_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const three_strings_sub_opts = {
@@ -1347,9 +1428,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["threeStrings"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/threeStrings", three_strings_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/threeStrings with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/threeStrings");
+        client.subscribe(resolvedTopic, three_strings_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_enum_sub_opts = {
@@ -1358,9 +1441,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleEnum"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleEnum", single_enum_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleEnum with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleEnum");
+        client.subscribe(resolvedTopic, single_enum_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_optional_enum_sub_opts = {
@@ -1369,9 +1454,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleOptionalEnum"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleOptionalEnum", single_optional_enum_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleOptionalEnum with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleOptionalEnum");
+        client.subscribe(resolvedTopic, single_optional_enum_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const three_enums_sub_opts = {
@@ -1380,9 +1467,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["threeEnums"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/threeEnums", three_enums_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/threeEnums with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/threeEnums");
+        client.subscribe(resolvedTopic, three_enums_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_struct_sub_opts = {
@@ -1391,9 +1480,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleStruct"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleStruct", single_struct_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleStruct with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleStruct");
+        client.subscribe(resolvedTopic, single_struct_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_optional_struct_sub_opts = {
@@ -1402,9 +1493,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleOptionalStruct"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleOptionalStruct", single_optional_struct_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleOptionalStruct with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleOptionalStruct");
+        client.subscribe(resolvedTopic, single_optional_struct_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const three_structs_sub_opts = {
@@ -1413,9 +1506,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["threeStructs"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/threeStructs", three_structs_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/threeStructs with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/threeStructs");
+        client.subscribe(resolvedTopic, three_structs_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_date_time_sub_opts = {
@@ -1424,9 +1519,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleDateTime"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleDateTime", single_date_time_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleDateTime with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleDateTime");
+        client.subscribe(resolvedTopic, single_date_time_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_optional_datetime_sub_opts = {
@@ -1435,9 +1532,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleOptionalDatetime"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleOptionalDatetime", single_optional_datetime_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleOptionalDatetime with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleOptionalDatetime");
+        client.subscribe(resolvedTopic, single_optional_datetime_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const three_date_times_sub_opts = {
@@ -1446,9 +1545,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["threeDateTimes"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/threeDateTimes", three_date_times_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/threeDateTimes with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/threeDateTimes");
+        client.subscribe(resolvedTopic, three_date_times_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_duration_sub_opts = {
@@ -1457,9 +1558,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleDuration"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleDuration", single_duration_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleDuration with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleDuration");
+        client.subscribe(resolvedTopic, single_duration_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_optional_duration_sub_opts = {
@@ -1468,9 +1571,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleOptionalDuration"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleOptionalDuration", single_optional_duration_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleOptionalDuration with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleOptionalDuration");
+        client.subscribe(resolvedTopic, single_optional_duration_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const three_durations_sub_opts = {
@@ -1479,9 +1584,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["threeDurations"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/threeDurations", three_durations_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/threeDurations with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/threeDurations");
+        client.subscribe(resolvedTopic, three_durations_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_binary_sub_opts = {
@@ -1490,9 +1597,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleBinary"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleBinary", single_binary_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleBinary with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleBinary");
+        client.subscribe(resolvedTopic, single_binary_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_optional_binary_sub_opts = {
@@ -1501,9 +1610,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleOptionalBinary"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleOptionalBinary", single_optional_binary_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleOptionalBinary with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleOptionalBinary");
+        client.subscribe(resolvedTopic, single_optional_binary_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const three_binaries_sub_opts = {
@@ -1512,9 +1623,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["threeBinaries"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/threeBinaries", three_binaries_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/threeBinaries with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/threeBinaries");
+        client.subscribe(resolvedTopic, three_binaries_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_array_of_integers_sub_opts = {
@@ -1523,9 +1636,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleArrayOfIntegers"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleArrayOfIntegers", single_array_of_integers_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleArrayOfIntegers with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleArrayOfIntegers");
+        client.subscribe(resolvedTopic, single_array_of_integers_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const single_optional_array_of_strings_sub_opts = {
@@ -1534,9 +1649,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["singleOptionalArrayOfStrings"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/singleOptionalArrayOfStrings", single_optional_array_of_strings_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/singleOptionalArrayOfStrings with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/singleOptionalArrayOfStrings");
+        client.subscribe(resolvedTopic, single_optional_array_of_strings_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
         const array_of_every_type_sub_opts = {
@@ -1545,9 +1662,11 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 "subscriptionIdentifier": subscription_count
             }
         };
+
         $scope.signals["arrayOfEveryType"].subscription_id = subscription_count;
-        client.subscribe("testAble/{}/signal/arrayOfEveryType", array_of_every_type_sub_opts);
-        console.log("Subscribing to signal testAble/{}/signal/arrayOfEveryType with id ", subscription_count);
+        var resolvedTopic = resolveTopic("testable/+/signal/arrayOfEveryType");
+        client.subscribe(resolvedTopic, array_of_every_type_sub_opts);
+        console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
         
 
@@ -1561,8 +1680,9 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 }
             };
             $scope.properties[key].subscription_id = sub_id;
-            client.subscribe($scope.properties[key].mqtt_topic, prop_sub_opts);
-            console.log("Subscribing to property " + $scope.properties[key].mqtt_topic + " with id " + $scope.properties[key].subscription_id);
+            var resolvedTopic = resolveTopic($scope.properties[key].mqtt_topic);
+            client.subscribe(resolvedTopic, prop_sub_opts);
+            console.log("Subscribing to property " + resolvedTopic + " with id " + $scope.properties[key].subscription_id);
         }
 
         subscription_state = 1;
@@ -1571,7 +1691,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
 
     $scope.updateProperty = function(prop) {
         const payload = JSON.stringify(prop.received);
-        publish("Property Update", prop.update_topic, payload, 1);
+        publish_property_update("Property Update", prop.update_topic, payload, 1);
     };
  
     $scope.callMethod = function(method) {

@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-This is the Server for the Test Able interface.
+This is the Server for the testable interface.
 
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
@@ -25,7 +25,7 @@ from .method_codes import *
 from .interface_types import *
 
 
-from .property import TestAbleInitialPropertyValues
+from .property import TestableInitialPropertyValues
 
 
 T = TypeVar("T")
@@ -46,12 +46,12 @@ class MethodControls:
     callback: Optional[Callable] = None
 
 
-class TestAbleServer:
+class TestableServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: TestAbleInitialPropertyValues):
-        self._logger = logging.getLogger(f"TestAbleServer:{instance_id}")
+    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: TestableInitialPropertyValues):
+        self._logger = logging.getLogger(f"TestableServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing TestAbleServer instance %s", instance_id)
+        self._logger.debug("Initializing TestableServer instance %s", instance_id)
         self._instance_id = instance_id
         self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
@@ -60,248 +60,248 @@ class TestAbleServer:
 
         self._property_read_write_integer: PropertyControls[int] = PropertyControls(value=initial_property_values.read_write_integer, version=initial_property_values.read_write_integer_version)
         self._property_read_write_integer.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteInteger/setValue".format(self._instance_id), self._receive_read_write_integer_update_request_message
+            "testable/{}/property/readWriteInteger/setValue".format(self._instance_id), self._receive_read_write_integer_update_request_message
         )
 
         self._property_read_only_integer: PropertyControls[int] = PropertyControls(value=initial_property_values.read_only_integer, version=initial_property_values.read_only_integer_version)
         self._property_read_only_integer.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readOnlyInteger/setValue".format(self._instance_id), self._receive_read_only_integer_update_request_message
+            "testable/{}/property/readOnlyInteger/setValue".format(self._instance_id), self._receive_read_only_integer_update_request_message
         )
 
         self._property_read_write_optional_integer: PropertyControls[int] = PropertyControls(
             value=initial_property_values.read_write_optional_integer, version=initial_property_values.read_write_optional_integer_version
         )
         self._property_read_write_optional_integer.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteOptionalInteger/setValue".format(self._instance_id), self._receive_read_write_optional_integer_update_request_message
+            "testable/{}/property/readWriteOptionalInteger/setValue".format(self._instance_id), self._receive_read_write_optional_integer_update_request_message
         )
 
         self._property_read_write_two_integers: PropertyControls[ReadWriteTwoIntegersProperty] = PropertyControls(
             value=initial_property_values.read_write_two_integers, version=initial_property_values.read_write_two_integers_version
         )
         self._property_read_write_two_integers.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteTwoIntegers/setValue".format(self._instance_id), self._receive_read_write_two_integers_update_request_message
+            "testable/{}/property/readWriteTwoIntegers/setValue".format(self._instance_id), self._receive_read_write_two_integers_update_request_message
         )
 
         self._property_read_only_string: PropertyControls[str] = PropertyControls(value=initial_property_values.read_only_string, version=initial_property_values.read_only_string_version)
         self._property_read_only_string.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readOnlyString/setValue".format(self._instance_id), self._receive_read_only_string_update_request_message
+            "testable/{}/property/readOnlyString/setValue".format(self._instance_id), self._receive_read_only_string_update_request_message
         )
 
         self._property_read_write_string: PropertyControls[str] = PropertyControls(value=initial_property_values.read_write_string, version=initial_property_values.read_write_string_version)
         self._property_read_write_string.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteString/setValue".format(self._instance_id), self._receive_read_write_string_update_request_message
+            "testable/{}/property/readWriteString/setValue".format(self._instance_id), self._receive_read_write_string_update_request_message
         )
 
         self._property_read_write_optional_string: PropertyControls[str] = PropertyControls(
             value=initial_property_values.read_write_optional_string, version=initial_property_values.read_write_optional_string_version
         )
         self._property_read_write_optional_string.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteOptionalString/setValue".format(self._instance_id), self._receive_read_write_optional_string_update_request_message
+            "testable/{}/property/readWriteOptionalString/setValue".format(self._instance_id), self._receive_read_write_optional_string_update_request_message
         )
 
         self._property_read_write_two_strings: PropertyControls[ReadWriteTwoStringsProperty] = PropertyControls(
             value=initial_property_values.read_write_two_strings, version=initial_property_values.read_write_two_strings_version
         )
         self._property_read_write_two_strings.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteTwoStrings/setValue".format(self._instance_id), self._receive_read_write_two_strings_update_request_message
+            "testable/{}/property/readWriteTwoStrings/setValue".format(self._instance_id), self._receive_read_write_two_strings_update_request_message
         )
 
         self._property_read_write_struct: PropertyControls[AllTypes] = PropertyControls(value=initial_property_values.read_write_struct, version=initial_property_values.read_write_struct_version)
         self._property_read_write_struct.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteStruct/setValue".format(self._instance_id), self._receive_read_write_struct_update_request_message
+            "testable/{}/property/readWriteStruct/setValue".format(self._instance_id), self._receive_read_write_struct_update_request_message
         )
 
         self._property_read_write_optional_struct: PropertyControls[AllTypes] = PropertyControls(
             value=initial_property_values.read_write_optional_struct, version=initial_property_values.read_write_optional_struct_version
         )
         self._property_read_write_optional_struct.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteOptionalStruct/setValue".format(self._instance_id), self._receive_read_write_optional_struct_update_request_message
+            "testable/{}/property/readWriteOptionalStruct/setValue".format(self._instance_id), self._receive_read_write_optional_struct_update_request_message
         )
 
         self._property_read_write_two_structs: PropertyControls[ReadWriteTwoStructsProperty] = PropertyControls(
             value=initial_property_values.read_write_two_structs, version=initial_property_values.read_write_two_structs_version
         )
         self._property_read_write_two_structs.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteTwoStructs/setValue".format(self._instance_id), self._receive_read_write_two_structs_update_request_message
+            "testable/{}/property/readWriteTwoStructs/setValue".format(self._instance_id), self._receive_read_write_two_structs_update_request_message
         )
 
         self._property_read_only_enum: PropertyControls[Numbers] = PropertyControls(value=initial_property_values.read_only_enum, version=initial_property_values.read_only_enum_version)
         self._property_read_only_enum.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readOnlyEnum/setValue".format(self._instance_id), self._receive_read_only_enum_update_request_message
+            "testable/{}/property/readOnlyEnum/setValue".format(self._instance_id), self._receive_read_only_enum_update_request_message
         )
 
         self._property_read_write_enum: PropertyControls[Numbers] = PropertyControls(value=initial_property_values.read_write_enum, version=initial_property_values.read_write_enum_version)
         self._property_read_write_enum.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteEnum/setValue".format(self._instance_id), self._receive_read_write_enum_update_request_message
+            "testable/{}/property/readWriteEnum/setValue".format(self._instance_id), self._receive_read_write_enum_update_request_message
         )
 
         self._property_read_write_optional_enum: PropertyControls[Numbers] = PropertyControls(
             value=initial_property_values.read_write_optional_enum, version=initial_property_values.read_write_optional_enum_version
         )
         self._property_read_write_optional_enum.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteOptionalEnum/setValue".format(self._instance_id), self._receive_read_write_optional_enum_update_request_message
+            "testable/{}/property/readWriteOptionalEnum/setValue".format(self._instance_id), self._receive_read_write_optional_enum_update_request_message
         )
 
         self._property_read_write_two_enums: PropertyControls[ReadWriteTwoEnumsProperty] = PropertyControls(
             value=initial_property_values.read_write_two_enums, version=initial_property_values.read_write_two_enums_version
         )
         self._property_read_write_two_enums.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteTwoEnums/setValue".format(self._instance_id), self._receive_read_write_two_enums_update_request_message
+            "testable/{}/property/readWriteTwoEnums/setValue".format(self._instance_id), self._receive_read_write_two_enums_update_request_message
         )
 
         self._property_read_write_datetime: PropertyControls[datetime] = PropertyControls(
             value=initial_property_values.read_write_datetime, version=initial_property_values.read_write_datetime_version
         )
         self._property_read_write_datetime.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteDatetime/setValue".format(self._instance_id), self._receive_read_write_datetime_update_request_message
+            "testable/{}/property/readWriteDatetime/setValue".format(self._instance_id), self._receive_read_write_datetime_update_request_message
         )
 
         self._property_read_write_optional_datetime: PropertyControls[datetime] = PropertyControls(
             value=initial_property_values.read_write_optional_datetime, version=initial_property_values.read_write_optional_datetime_version
         )
         self._property_read_write_optional_datetime.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteOptionalDatetime/setValue".format(self._instance_id), self._receive_read_write_optional_datetime_update_request_message
+            "testable/{}/property/readWriteOptionalDatetime/setValue".format(self._instance_id), self._receive_read_write_optional_datetime_update_request_message
         )
 
         self._property_read_write_two_datetimes: PropertyControls[ReadWriteTwoDatetimesProperty] = PropertyControls(
             value=initial_property_values.read_write_two_datetimes, version=initial_property_values.read_write_two_datetimes_version
         )
         self._property_read_write_two_datetimes.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteTwoDatetimes/setValue".format(self._instance_id), self._receive_read_write_two_datetimes_update_request_message
+            "testable/{}/property/readWriteTwoDatetimes/setValue".format(self._instance_id), self._receive_read_write_two_datetimes_update_request_message
         )
 
         self._property_read_write_duration: PropertyControls[timedelta] = PropertyControls(
             value=initial_property_values.read_write_duration, version=initial_property_values.read_write_duration_version
         )
         self._property_read_write_duration.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteDuration/setValue".format(self._instance_id), self._receive_read_write_duration_update_request_message
+            "testable/{}/property/readWriteDuration/setValue".format(self._instance_id), self._receive_read_write_duration_update_request_message
         )
 
         self._property_read_write_optional_duration: PropertyControls[timedelta] = PropertyControls(
             value=initial_property_values.read_write_optional_duration, version=initial_property_values.read_write_optional_duration_version
         )
         self._property_read_write_optional_duration.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteOptionalDuration/setValue".format(self._instance_id), self._receive_read_write_optional_duration_update_request_message
+            "testable/{}/property/readWriteOptionalDuration/setValue".format(self._instance_id), self._receive_read_write_optional_duration_update_request_message
         )
 
         self._property_read_write_two_durations: PropertyControls[ReadWriteTwoDurationsProperty] = PropertyControls(
             value=initial_property_values.read_write_two_durations, version=initial_property_values.read_write_two_durations_version
         )
         self._property_read_write_two_durations.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteTwoDurations/setValue".format(self._instance_id), self._receive_read_write_two_durations_update_request_message
+            "testable/{}/property/readWriteTwoDurations/setValue".format(self._instance_id), self._receive_read_write_two_durations_update_request_message
         )
 
         self._property_read_write_binary: PropertyControls[bytes] = PropertyControls(value=initial_property_values.read_write_binary, version=initial_property_values.read_write_binary_version)
         self._property_read_write_binary.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteBinary/setValue".format(self._instance_id), self._receive_read_write_binary_update_request_message
+            "testable/{}/property/readWriteBinary/setValue".format(self._instance_id), self._receive_read_write_binary_update_request_message
         )
 
         self._property_read_write_optional_binary: PropertyControls[bytes] = PropertyControls(
             value=initial_property_values.read_write_optional_binary, version=initial_property_values.read_write_optional_binary_version
         )
         self._property_read_write_optional_binary.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteOptionalBinary/setValue".format(self._instance_id), self._receive_read_write_optional_binary_update_request_message
+            "testable/{}/property/readWriteOptionalBinary/setValue".format(self._instance_id), self._receive_read_write_optional_binary_update_request_message
         )
 
         self._property_read_write_two_binaries: PropertyControls[ReadWriteTwoBinariesProperty] = PropertyControls(
             value=initial_property_values.read_write_two_binaries, version=initial_property_values.read_write_two_binaries_version
         )
         self._property_read_write_two_binaries.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteTwoBinaries/setValue".format(self._instance_id), self._receive_read_write_two_binaries_update_request_message
+            "testable/{}/property/readWriteTwoBinaries/setValue".format(self._instance_id), self._receive_read_write_two_binaries_update_request_message
         )
 
         self._property_read_write_list_of_strings: PropertyControls[list] = PropertyControls(
             value=initial_property_values.read_write_list_of_strings, version=initial_property_values.read_write_list_of_strings_version
         )
         self._property_read_write_list_of_strings.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteListOfStrings/setValue".format(self._instance_id), self._receive_read_write_list_of_strings_update_request_message
+            "testable/{}/property/readWriteListOfStrings/setValue".format(self._instance_id), self._receive_read_write_list_of_strings_update_request_message
         )
 
         self._property_read_write_lists: PropertyControls[ReadWriteListsProperty] = PropertyControls(
             value=initial_property_values.read_write_lists, version=initial_property_values.read_write_lists_version
         )
         self._property_read_write_lists.subscription_id = self._conn.subscribe(
-            "testAble/{}/property/readWriteLists/setValue".format(self._instance_id), self._receive_read_write_lists_update_request_message
+            "testable/{}/property/readWriteLists/setValue".format(self._instance_id), self._receive_read_write_lists_update_request_message
         )
 
         self._method_call_with_nothing = MethodControls()
-        self._method_call_with_nothing.subscription_id = self._conn.subscribe("testAble/{}/method/callWithNothing".format(self._instance_id), self._process_call_with_nothing_call)
+        self._method_call_with_nothing.subscription_id = self._conn.subscribe("testable/{}/method/callWithNothing".format(self._instance_id), self._process_call_with_nothing_call)
 
         self._method_call_one_integer = MethodControls()
-        self._method_call_one_integer.subscription_id = self._conn.subscribe("testAble/{}/method/callOneInteger".format(self._instance_id), self._process_call_one_integer_call)
+        self._method_call_one_integer.subscription_id = self._conn.subscribe("testable/{}/method/callOneInteger".format(self._instance_id), self._process_call_one_integer_call)
 
         self._method_call_optional_integer = MethodControls()
-        self._method_call_optional_integer.subscription_id = self._conn.subscribe("testAble/{}/method/callOptionalInteger".format(self._instance_id), self._process_call_optional_integer_call)
+        self._method_call_optional_integer.subscription_id = self._conn.subscribe("testable/{}/method/callOptionalInteger".format(self._instance_id), self._process_call_optional_integer_call)
 
         self._method_call_three_integers = MethodControls()
-        self._method_call_three_integers.subscription_id = self._conn.subscribe("testAble/{}/method/callThreeIntegers".format(self._instance_id), self._process_call_three_integers_call)
+        self._method_call_three_integers.subscription_id = self._conn.subscribe("testable/{}/method/callThreeIntegers".format(self._instance_id), self._process_call_three_integers_call)
 
         self._method_call_one_string = MethodControls()
-        self._method_call_one_string.subscription_id = self._conn.subscribe("testAble/{}/method/callOneString".format(self._instance_id), self._process_call_one_string_call)
+        self._method_call_one_string.subscription_id = self._conn.subscribe("testable/{}/method/callOneString".format(self._instance_id), self._process_call_one_string_call)
 
         self._method_call_optional_string = MethodControls()
-        self._method_call_optional_string.subscription_id = self._conn.subscribe("testAble/{}/method/callOptionalString".format(self._instance_id), self._process_call_optional_string_call)
+        self._method_call_optional_string.subscription_id = self._conn.subscribe("testable/{}/method/callOptionalString".format(self._instance_id), self._process_call_optional_string_call)
 
         self._method_call_three_strings = MethodControls()
-        self._method_call_three_strings.subscription_id = self._conn.subscribe("testAble/{}/method/callThreeStrings".format(self._instance_id), self._process_call_three_strings_call)
+        self._method_call_three_strings.subscription_id = self._conn.subscribe("testable/{}/method/callThreeStrings".format(self._instance_id), self._process_call_three_strings_call)
 
         self._method_call_one_enum = MethodControls()
-        self._method_call_one_enum.subscription_id = self._conn.subscribe("testAble/{}/method/callOneEnum".format(self._instance_id), self._process_call_one_enum_call)
+        self._method_call_one_enum.subscription_id = self._conn.subscribe("testable/{}/method/callOneEnum".format(self._instance_id), self._process_call_one_enum_call)
 
         self._method_call_optional_enum = MethodControls()
-        self._method_call_optional_enum.subscription_id = self._conn.subscribe("testAble/{}/method/callOptionalEnum".format(self._instance_id), self._process_call_optional_enum_call)
+        self._method_call_optional_enum.subscription_id = self._conn.subscribe("testable/{}/method/callOptionalEnum".format(self._instance_id), self._process_call_optional_enum_call)
 
         self._method_call_three_enums = MethodControls()
-        self._method_call_three_enums.subscription_id = self._conn.subscribe("testAble/{}/method/callThreeEnums".format(self._instance_id), self._process_call_three_enums_call)
+        self._method_call_three_enums.subscription_id = self._conn.subscribe("testable/{}/method/callThreeEnums".format(self._instance_id), self._process_call_three_enums_call)
 
         self._method_call_one_struct = MethodControls()
-        self._method_call_one_struct.subscription_id = self._conn.subscribe("testAble/{}/method/callOneStruct".format(self._instance_id), self._process_call_one_struct_call)
+        self._method_call_one_struct.subscription_id = self._conn.subscribe("testable/{}/method/callOneStruct".format(self._instance_id), self._process_call_one_struct_call)
 
         self._method_call_optional_struct = MethodControls()
-        self._method_call_optional_struct.subscription_id = self._conn.subscribe("testAble/{}/method/callOptionalStruct".format(self._instance_id), self._process_call_optional_struct_call)
+        self._method_call_optional_struct.subscription_id = self._conn.subscribe("testable/{}/method/callOptionalStruct".format(self._instance_id), self._process_call_optional_struct_call)
 
         self._method_call_three_structs = MethodControls()
-        self._method_call_three_structs.subscription_id = self._conn.subscribe("testAble/{}/method/callThreeStructs".format(self._instance_id), self._process_call_three_structs_call)
+        self._method_call_three_structs.subscription_id = self._conn.subscribe("testable/{}/method/callThreeStructs".format(self._instance_id), self._process_call_three_structs_call)
 
         self._method_call_one_date_time = MethodControls()
-        self._method_call_one_date_time.subscription_id = self._conn.subscribe("testAble/{}/method/callOneDateTime".format(self._instance_id), self._process_call_one_date_time_call)
+        self._method_call_one_date_time.subscription_id = self._conn.subscribe("testable/{}/method/callOneDateTime".format(self._instance_id), self._process_call_one_date_time_call)
 
         self._method_call_optional_date_time = MethodControls()
-        self._method_call_optional_date_time.subscription_id = self._conn.subscribe("testAble/{}/method/callOptionalDateTime".format(self._instance_id), self._process_call_optional_date_time_call)
+        self._method_call_optional_date_time.subscription_id = self._conn.subscribe("testable/{}/method/callOptionalDateTime".format(self._instance_id), self._process_call_optional_date_time_call)
 
         self._method_call_three_date_times = MethodControls()
-        self._method_call_three_date_times.subscription_id = self._conn.subscribe("testAble/{}/method/callThreeDateTimes".format(self._instance_id), self._process_call_three_date_times_call)
+        self._method_call_three_date_times.subscription_id = self._conn.subscribe("testable/{}/method/callThreeDateTimes".format(self._instance_id), self._process_call_three_date_times_call)
 
         self._method_call_one_duration = MethodControls()
-        self._method_call_one_duration.subscription_id = self._conn.subscribe("testAble/{}/method/callOneDuration".format(self._instance_id), self._process_call_one_duration_call)
+        self._method_call_one_duration.subscription_id = self._conn.subscribe("testable/{}/method/callOneDuration".format(self._instance_id), self._process_call_one_duration_call)
 
         self._method_call_optional_duration = MethodControls()
-        self._method_call_optional_duration.subscription_id = self._conn.subscribe("testAble/{}/method/callOptionalDuration".format(self._instance_id), self._process_call_optional_duration_call)
+        self._method_call_optional_duration.subscription_id = self._conn.subscribe("testable/{}/method/callOptionalDuration".format(self._instance_id), self._process_call_optional_duration_call)
 
         self._method_call_three_durations = MethodControls()
-        self._method_call_three_durations.subscription_id = self._conn.subscribe("testAble/{}/method/callThreeDurations".format(self._instance_id), self._process_call_three_durations_call)
+        self._method_call_three_durations.subscription_id = self._conn.subscribe("testable/{}/method/callThreeDurations".format(self._instance_id), self._process_call_three_durations_call)
 
         self._method_call_one_binary = MethodControls()
-        self._method_call_one_binary.subscription_id = self._conn.subscribe("testAble/{}/method/callOneBinary".format(self._instance_id), self._process_call_one_binary_call)
+        self._method_call_one_binary.subscription_id = self._conn.subscribe("testable/{}/method/callOneBinary".format(self._instance_id), self._process_call_one_binary_call)
 
         self._method_call_optional_binary = MethodControls()
-        self._method_call_optional_binary.subscription_id = self._conn.subscribe("testAble/{}/method/callOptionalBinary".format(self._instance_id), self._process_call_optional_binary_call)
+        self._method_call_optional_binary.subscription_id = self._conn.subscribe("testable/{}/method/callOptionalBinary".format(self._instance_id), self._process_call_optional_binary_call)
 
         self._method_call_three_binaries = MethodControls()
-        self._method_call_three_binaries.subscription_id = self._conn.subscribe("testAble/{}/method/callThreeBinaries".format(self._instance_id), self._process_call_three_binaries_call)
+        self._method_call_three_binaries.subscription_id = self._conn.subscribe("testable/{}/method/callThreeBinaries".format(self._instance_id), self._process_call_three_binaries_call)
 
         self._method_call_one_list_of_integers = MethodControls()
         self._method_call_one_list_of_integers.subscription_id = self._conn.subscribe(
-            "testAble/{}/method/callOneListOfIntegers".format(self._instance_id), self._process_call_one_list_of_integers_call
+            "testable/{}/method/callOneListOfIntegers".format(self._instance_id), self._process_call_one_list_of_integers_call
         )
 
         self._method_call_optional_list_of_floats = MethodControls()
         self._method_call_optional_list_of_floats.subscription_id = self._conn.subscribe(
-            "testAble/{}/method/callOptionalListOfFloats".format(self._instance_id), self._process_call_optional_list_of_floats_call
+            "testable/{}/method/callOptionalListOfFloats".format(self._instance_id), self._process_call_optional_list_of_floats_call
         )
 
         self._method_call_two_lists = MethodControls()
-        self._method_call_two_lists.subscription_id = self._conn.subscribe("testAble/{}/method/callTwoLists".format(self._instance_id), self._process_call_two_lists_call)
+        self._method_call_two_lists.subscription_id = self._conn.subscribe("testable/{}/method/callTwoLists".format(self._instance_id), self._process_call_two_lists_call)
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
@@ -327,7 +327,7 @@ class TestAbleServer:
     def _publish_interface_info(self):
         data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
-        topic = "testAble/{}/interface".format(self._instance_id)
+        topic = "testable/{}/interface".format(self._instance_id)
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         self._conn.publish_status(topic, data, expiry)
 
@@ -335,115 +335,115 @@ class TestAbleServer:
 
         with self._property_read_write_integer.mutex:
             prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteInteger/value".format(self._instance_id), prop_obj, self._property_read_write_integer.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteInteger/value".format(self._instance_id), prop_obj, self._property_read_write_integer.version)
 
         with self._property_read_only_integer.mutex:
             prop_obj = ReadOnlyIntegerProperty(value=self._property_read_only_integer.value)
-            self._conn.publish_property_state("testAble/{}/property/readOnlyInteger/value".format(self._instance_id), prop_obj, self._property_read_only_integer.version)
+            self._conn.publish_property_state("testable/{}/property/readOnlyInteger/value".format(self._instance_id), prop_obj, self._property_read_only_integer.version)
 
         with self._property_read_write_optional_integer.mutex:
             prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteOptionalInteger/value".format(self._instance_id), prop_obj, self._property_read_write_optional_integer.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteOptionalInteger/value".format(self._instance_id), prop_obj, self._property_read_write_optional_integer.version)
 
         with self._property_read_write_two_integers.mutex:
 
             prop_obj = self._property_read_write_two_integers.value
-            self._conn.publish_property_state("testAble/{}/property/readWriteTwoIntegers/value".format(self._instance_id), prop_obj, self._property_read_write_two_integers.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteTwoIntegers/value".format(self._instance_id), prop_obj, self._property_read_write_two_integers.version)
 
         with self._property_read_only_string.mutex:
             prop_obj = ReadOnlyStringProperty(value=self._property_read_only_string.value)
-            self._conn.publish_property_state("testAble/{}/property/readOnlyString/value".format(self._instance_id), prop_obj, self._property_read_only_string.version)
+            self._conn.publish_property_state("testable/{}/property/readOnlyString/value".format(self._instance_id), prop_obj, self._property_read_only_string.version)
 
         with self._property_read_write_string.mutex:
             prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteString/value".format(self._instance_id), prop_obj, self._property_read_write_string.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteString/value".format(self._instance_id), prop_obj, self._property_read_write_string.version)
 
         with self._property_read_write_optional_string.mutex:
             prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteOptionalString/value".format(self._instance_id), prop_obj, self._property_read_write_optional_string.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteOptionalString/value".format(self._instance_id), prop_obj, self._property_read_write_optional_string.version)
 
         with self._property_read_write_two_strings.mutex:
 
             prop_obj = self._property_read_write_two_strings.value
-            self._conn.publish_property_state("testAble/{}/property/readWriteTwoStrings/value".format(self._instance_id), prop_obj, self._property_read_write_two_strings.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteTwoStrings/value".format(self._instance_id), prop_obj, self._property_read_write_two_strings.version)
 
         with self._property_read_write_struct.mutex:
             prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteStruct/value".format(self._instance_id), prop_obj, self._property_read_write_struct.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteStruct/value".format(self._instance_id), prop_obj, self._property_read_write_struct.version)
 
         with self._property_read_write_optional_struct.mutex:
             prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteOptionalStruct/value".format(self._instance_id), prop_obj, self._property_read_write_optional_struct.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteOptionalStruct/value".format(self._instance_id), prop_obj, self._property_read_write_optional_struct.version)
 
         with self._property_read_write_two_structs.mutex:
 
             prop_obj = self._property_read_write_two_structs.value
-            self._conn.publish_property_state("testAble/{}/property/readWriteTwoStructs/value".format(self._instance_id), prop_obj, self._property_read_write_two_structs.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteTwoStructs/value".format(self._instance_id), prop_obj, self._property_read_write_two_structs.version)
 
         with self._property_read_only_enum.mutex:
             prop_obj = ReadOnlyEnumProperty(value=self._property_read_only_enum.value)
-            self._conn.publish_property_state("testAble/{}/property/readOnlyEnum/value".format(self._instance_id), prop_obj, self._property_read_only_enum.version)
+            self._conn.publish_property_state("testable/{}/property/readOnlyEnum/value".format(self._instance_id), prop_obj, self._property_read_only_enum.version)
 
         with self._property_read_write_enum.mutex:
             prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteEnum/value".format(self._instance_id), prop_obj, self._property_read_write_enum.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteEnum/value".format(self._instance_id), prop_obj, self._property_read_write_enum.version)
 
         with self._property_read_write_optional_enum.mutex:
             prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteOptionalEnum/value".format(self._instance_id), prop_obj, self._property_read_write_optional_enum.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteOptionalEnum/value".format(self._instance_id), prop_obj, self._property_read_write_optional_enum.version)
 
         with self._property_read_write_two_enums.mutex:
 
             prop_obj = self._property_read_write_two_enums.value
-            self._conn.publish_property_state("testAble/{}/property/readWriteTwoEnums/value".format(self._instance_id), prop_obj, self._property_read_write_two_enums.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteTwoEnums/value".format(self._instance_id), prop_obj, self._property_read_write_two_enums.version)
 
         with self._property_read_write_datetime.mutex:
             prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_datetime.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_datetime.version)
 
         with self._property_read_write_optional_datetime.mutex:
             prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_optional_datetime.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_optional_datetime.version)
 
         with self._property_read_write_two_datetimes.mutex:
 
             prop_obj = self._property_read_write_two_datetimes.value
-            self._conn.publish_property_state("testAble/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), prop_obj, self._property_read_write_two_datetimes.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), prop_obj, self._property_read_write_two_datetimes.version)
 
         with self._property_read_write_duration.mutex:
             prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteDuration/value".format(self._instance_id), prop_obj, self._property_read_write_duration.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteDuration/value".format(self._instance_id), prop_obj, self._property_read_write_duration.version)
 
         with self._property_read_write_optional_duration.mutex:
             prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteOptionalDuration/value".format(self._instance_id), prop_obj, self._property_read_write_optional_duration.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteOptionalDuration/value".format(self._instance_id), prop_obj, self._property_read_write_optional_duration.version)
 
         with self._property_read_write_two_durations.mutex:
 
             prop_obj = self._property_read_write_two_durations.value
-            self._conn.publish_property_state("testAble/{}/property/readWriteTwoDurations/value".format(self._instance_id), prop_obj, self._property_read_write_two_durations.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteTwoDurations/value".format(self._instance_id), prop_obj, self._property_read_write_two_durations.version)
 
         with self._property_read_write_binary.mutex:
             prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteBinary/value".format(self._instance_id), prop_obj, self._property_read_write_binary.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteBinary/value".format(self._instance_id), prop_obj, self._property_read_write_binary.version)
 
         with self._property_read_write_optional_binary.mutex:
             prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteOptionalBinary/value".format(self._instance_id), prop_obj, self._property_read_write_optional_binary.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteOptionalBinary/value".format(self._instance_id), prop_obj, self._property_read_write_optional_binary.version)
 
         with self._property_read_write_two_binaries.mutex:
 
             prop_obj = self._property_read_write_two_binaries.value
-            self._conn.publish_property_state("testAble/{}/property/readWriteTwoBinaries/value".format(self._instance_id), prop_obj, self._property_read_write_two_binaries.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteTwoBinaries/value".format(self._instance_id), prop_obj, self._property_read_write_two_binaries.version)
 
         with self._property_read_write_list_of_strings.mutex:
             prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.value)
-            self._conn.publish_property_state("testAble/{}/property/readWriteListOfStrings/value".format(self._instance_id), prop_obj, self._property_read_write_list_of_strings.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteListOfStrings/value".format(self._instance_id), prop_obj, self._property_read_write_list_of_strings.version)
 
         with self._property_read_write_lists.mutex:
 
             prop_obj = self._property_read_write_lists.value
-            self._conn.publish_property_state("testAble/{}/property/readWriteLists/value".format(self._instance_id), prop_obj, self._property_read_write_lists.version)
+            self._conn.publish_property_state("testable/{}/property/readWriteLists/value".format(self._instance_id), prop_obj, self._property_read_write_lists.version)
 
     def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
         correlation_id = request_properties.get("CorrelationData")  # type: Optional[bytes]
@@ -481,7 +481,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteInteger/value".format(self._instance_id), prop_obj, int(self._property_read_write_integer.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteInteger/value".format(self._instance_id), prop_obj, int(self._property_read_write_integer.version))
 
             if response_topic is not None:
 
@@ -532,7 +532,7 @@ class TestAbleServer:
 
                 prop_obj = ReadOnlyIntegerProperty(value=self._property_read_only_integer.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readOnlyInteger/value".format(self._instance_id), prop_obj, int(self._property_read_only_integer.version))
+                self._conn.publish_property_state("testable/{}/property/readOnlyInteger/value".format(self._instance_id), prop_obj, int(self._property_read_only_integer.version))
 
             if response_topic is not None:
 
@@ -583,7 +583,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalInteger/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_integer.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalInteger/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_integer.version))
 
             if response_topic is not None:
 
@@ -641,7 +641,7 @@ class TestAbleServer:
 
                 prop_obj = self._property_read_write_two_integers.value
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoIntegers/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_integers.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoIntegers/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_integers.version))
 
             if response_topic is not None:
 
@@ -692,7 +692,7 @@ class TestAbleServer:
 
                 prop_obj = ReadOnlyStringProperty(value=self._property_read_only_string.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readOnlyString/value".format(self._instance_id), prop_obj, int(self._property_read_only_string.version))
+                self._conn.publish_property_state("testable/{}/property/readOnlyString/value".format(self._instance_id), prop_obj, int(self._property_read_only_string.version))
 
             if response_topic is not None:
 
@@ -743,7 +743,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteString/value".format(self._instance_id), prop_obj, int(self._property_read_write_string.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteString/value".format(self._instance_id), prop_obj, int(self._property_read_write_string.version))
 
             if response_topic is not None:
 
@@ -794,7 +794,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalString/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_string.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalString/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_string.version))
 
             if response_topic is not None:
 
@@ -852,7 +852,7 @@ class TestAbleServer:
 
                 prop_obj = self._property_read_write_two_strings.value
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoStrings/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_strings.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoStrings/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_strings.version))
 
             if response_topic is not None:
 
@@ -903,7 +903,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteStruct/value".format(self._instance_id), prop_obj, int(self._property_read_write_struct.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteStruct/value".format(self._instance_id), prop_obj, int(self._property_read_write_struct.version))
 
             if response_topic is not None:
 
@@ -954,7 +954,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalStruct/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_struct.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalStruct/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_struct.version))
 
             if response_topic is not None:
 
@@ -1012,7 +1012,7 @@ class TestAbleServer:
 
                 prop_obj = self._property_read_write_two_structs.value
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoStructs/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_structs.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoStructs/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_structs.version))
 
             if response_topic is not None:
 
@@ -1063,7 +1063,7 @@ class TestAbleServer:
 
                 prop_obj = ReadOnlyEnumProperty(value=self._property_read_only_enum.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readOnlyEnum/value".format(self._instance_id), prop_obj, int(self._property_read_only_enum.version))
+                self._conn.publish_property_state("testable/{}/property/readOnlyEnum/value".format(self._instance_id), prop_obj, int(self._property_read_only_enum.version))
 
             if response_topic is not None:
 
@@ -1114,7 +1114,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteEnum/value".format(self._instance_id), prop_obj, int(self._property_read_write_enum.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteEnum/value".format(self._instance_id), prop_obj, int(self._property_read_write_enum.version))
 
             if response_topic is not None:
 
@@ -1165,7 +1165,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalEnum/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_enum.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalEnum/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_enum.version))
 
             if response_topic is not None:
 
@@ -1223,7 +1223,7 @@ class TestAbleServer:
 
                 prop_obj = self._property_read_write_two_enums.value
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoEnums/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_enums.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoEnums/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_enums.version))
 
             if response_topic is not None:
 
@@ -1274,7 +1274,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteDatetime/value".format(self._instance_id), prop_obj, int(self._property_read_write_datetime.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteDatetime/value".format(self._instance_id), prop_obj, int(self._property_read_write_datetime.version))
 
             if response_topic is not None:
 
@@ -1325,7 +1325,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_datetime.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_datetime.version))
 
             if response_topic is not None:
 
@@ -1383,7 +1383,7 @@ class TestAbleServer:
 
                 prop_obj = self._property_read_write_two_datetimes.value
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_datetimes.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_datetimes.version))
 
             if response_topic is not None:
 
@@ -1434,7 +1434,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteDuration/value".format(self._instance_id), prop_obj, int(self._property_read_write_duration.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteDuration/value".format(self._instance_id), prop_obj, int(self._property_read_write_duration.version))
 
             if response_topic is not None:
 
@@ -1485,7 +1485,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalDuration/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_duration.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalDuration/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_duration.version))
 
             if response_topic is not None:
 
@@ -1543,7 +1543,7 @@ class TestAbleServer:
 
                 prop_obj = self._property_read_write_two_durations.value
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoDurations/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_durations.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoDurations/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_durations.version))
 
             if response_topic is not None:
 
@@ -1594,7 +1594,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteBinary/value".format(self._instance_id), prop_obj, int(self._property_read_write_binary.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteBinary/value".format(self._instance_id), prop_obj, int(self._property_read_write_binary.version))
 
             if response_topic is not None:
 
@@ -1645,7 +1645,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalBinary/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_binary.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalBinary/value".format(self._instance_id), prop_obj, int(self._property_read_write_optional_binary.version))
 
             if response_topic is not None:
 
@@ -1703,7 +1703,7 @@ class TestAbleServer:
 
                 prop_obj = self._property_read_write_two_binaries.value
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoBinaries/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_binaries.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoBinaries/value".format(self._instance_id), prop_obj, int(self._property_read_write_two_binaries.version))
 
             if response_topic is not None:
 
@@ -1754,7 +1754,7 @@ class TestAbleServer:
 
                 prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.value)
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteListOfStrings/value".format(self._instance_id), prop_obj, int(self._property_read_write_list_of_strings.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteListOfStrings/value".format(self._instance_id), prop_obj, int(self._property_read_write_list_of_strings.version))
 
             if response_topic is not None:
 
@@ -1812,7 +1812,7 @@ class TestAbleServer:
 
                 prop_obj = self._property_read_write_lists.value
 
-                self._conn.publish_property_state("testAble/{}/property/readWriteLists/value".format(self._instance_id), prop_obj, int(self._property_read_write_lists.version))
+                self._conn.publish_property_state("testable/{}/property/readWriteLists/value".format(self._instance_id), prop_obj, int(self._property_read_write_lists.version))
 
             if response_topic is not None:
 
@@ -1846,7 +1846,7 @@ class TestAbleServer:
         """
 
         payload = EmptySignalPayload()
-        self._conn.publish("testAble/{}/signal/empty".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/empty".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_int(self, value: int):
         """Server application code should call this method to emit the 'singleInt' signal.
@@ -1859,7 +1859,7 @@ class TestAbleServer:
         payload = SingleIntSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleInt".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleInt".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_int(self, value: Optional[int]):
         """Server application code should call this method to emit the 'singleOptionalInt' signal.
@@ -1872,7 +1872,7 @@ class TestAbleServer:
         payload = SingleOptionalIntSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalInt".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleOptionalInt".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_integers(self, first: int, second: int, third: Optional[int]):
         """Server application code should call this method to emit the 'threeIntegers' signal.
@@ -1891,7 +1891,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeIntegers".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/threeIntegers".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_string(self, value: str):
         """Server application code should call this method to emit the 'singleString' signal.
@@ -1904,7 +1904,7 @@ class TestAbleServer:
         payload = SingleStringSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleString".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleString".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_string(self, value: Optional[str]):
         """Server application code should call this method to emit the 'singleOptionalString' signal.
@@ -1917,7 +1917,7 @@ class TestAbleServer:
         payload = SingleOptionalStringSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalString".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleOptionalString".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_strings(self, first: str, second: str, third: Optional[str]):
         """Server application code should call this method to emit the 'threeStrings' signal.
@@ -1936,7 +1936,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeStrings".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/threeStrings".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_enum(self, value: Numbers):
         """Server application code should call this method to emit the 'singleEnum' signal.
@@ -1949,7 +1949,7 @@ class TestAbleServer:
         payload = SingleEnumSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleEnum".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleEnum".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_enum(self, value: Optional[Numbers]):
         """Server application code should call this method to emit the 'singleOptionalEnum' signal.
@@ -1962,7 +1962,7 @@ class TestAbleServer:
         payload = SingleOptionalEnumSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalEnum".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleOptionalEnum".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_enums(self, first: Numbers, second: Numbers, third: Optional[Numbers]):
         """Server application code should call this method to emit the 'threeEnums' signal.
@@ -1981,7 +1981,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeEnums".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/threeEnums".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_struct(self, value: AllTypes):
         """Server application code should call this method to emit the 'singleStruct' signal.
@@ -1994,7 +1994,7 @@ class TestAbleServer:
         payload = SingleStructSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleStruct".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleStruct".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_struct(self, value: AllTypes):
         """Server application code should call this method to emit the 'singleOptionalStruct' signal.
@@ -2007,7 +2007,7 @@ class TestAbleServer:
         payload = SingleOptionalStructSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalStruct".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleOptionalStruct".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_structs(self, first: AllTypes, second: AllTypes, third: AllTypes):
         """Server application code should call this method to emit the 'threeStructs' signal.
@@ -2026,7 +2026,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeStructs".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/threeStructs".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_date_time(self, value: datetime):
         """Server application code should call this method to emit the 'singleDateTime' signal.
@@ -2039,7 +2039,7 @@ class TestAbleServer:
         payload = SingleDateTimeSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleDateTime".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleDateTime".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_datetime(self, value: Optional[datetime]):
         """Server application code should call this method to emit the 'singleOptionalDatetime' signal.
@@ -2052,7 +2052,7 @@ class TestAbleServer:
         payload = SingleOptionalDatetimeSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalDatetime".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleOptionalDatetime".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_date_times(self, first: datetime, second: datetime, third: Optional[datetime]):
         """Server application code should call this method to emit the 'threeDateTimes' signal.
@@ -2071,7 +2071,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeDateTimes".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/threeDateTimes".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_duration(self, value: timedelta):
         """Server application code should call this method to emit the 'singleDuration' signal.
@@ -2084,7 +2084,7 @@ class TestAbleServer:
         payload = SingleDurationSignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleDuration".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleDuration".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_duration(self, value: Optional[timedelta]):
         """Server application code should call this method to emit the 'singleOptionalDuration' signal.
@@ -2097,7 +2097,7 @@ class TestAbleServer:
         payload = SingleOptionalDurationSignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalDuration".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleOptionalDuration".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_durations(self, first: timedelta, second: timedelta, third: Optional[timedelta]):
         """Server application code should call this method to emit the 'threeDurations' signal.
@@ -2116,7 +2116,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeDurations".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/threeDurations".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_binary(self, value: bytes):
         """Server application code should call this method to emit the 'singleBinary' signal.
@@ -2129,7 +2129,7 @@ class TestAbleServer:
         payload = SingleBinarySignalPayload(
             value=value,
         )
-        self._conn.publish("testAble/{}/signal/singleBinary".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleBinary".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_binary(self, value: bytes):
         """Server application code should call this method to emit the 'singleOptionalBinary' signal.
@@ -2142,7 +2142,7 @@ class TestAbleServer:
         payload = SingleOptionalBinarySignalPayload(
             value=value if value is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalBinary".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleOptionalBinary".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_three_binaries(self, first: bytes, second: bytes, third: bytes):
         """Server application code should call this method to emit the 'threeBinaries' signal.
@@ -2161,7 +2161,7 @@ class TestAbleServer:
             second=second,
             third=third if third is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/threeBinaries".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/threeBinaries".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_array_of_integers(self, values: List[int]):
         """Server application code should call this method to emit the 'singleArrayOfIntegers' signal.
@@ -2174,7 +2174,7 @@ class TestAbleServer:
         payload = SingleArrayOfIntegersSignalPayload(
             values=values,
         )
-        self._conn.publish("testAble/{}/signal/singleArrayOfIntegers".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleArrayOfIntegers".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_single_optional_array_of_strings(self, values: List[str]):
         """Server application code should call this method to emit the 'singleOptionalArrayOfStrings' signal.
@@ -2187,7 +2187,7 @@ class TestAbleServer:
         payload = SingleOptionalArrayOfStringsSignalPayload(
             values=values if values is not None else None,
         )
-        self._conn.publish("testAble/{}/signal/singleOptionalArrayOfStrings".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/singleOptionalArrayOfStrings".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def emit_array_of_every_type(
         self,
@@ -2231,7 +2231,7 @@ class TestAbleServer:
             seventh_of_durations=seventh_of_durations,
             eighth_of_binaries=eighth_of_binaries,
         )
-        self._conn.publish("testAble/{}/signal/arrayOfEveryType".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        self._conn.publish("testable/{}/signal/arrayOfEveryType".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
 
     def handle_call_with_nothing(self, handler: Callable[[None], None]):
         """This is a decorator to decorate a method that will handle the 'callWithNothing' method calls."""
@@ -3355,7 +3355,7 @@ class TestAbleServer:
             with self._property_read_write_integer.mutex:
                 self._property_read_write_integer.value = prop_obj
                 self._property_read_write_integer.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteInteger/value".format(self._instance_id), payload, self._property_read_write_integer.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteInteger/value".format(self._instance_id), payload, self._property_read_write_integer.version)
             for callback in self._property_read_write_integer.callbacks:
                 callback(prop_obj.value)
 
@@ -3394,7 +3394,7 @@ class TestAbleServer:
             with self._property_read_only_integer.mutex:
                 self._property_read_only_integer.value = prop_obj
                 self._property_read_only_integer.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readOnlyInteger/value".format(self._instance_id), payload, self._property_read_only_integer.version)
+                self._conn.publish_property_state("testable/{}/property/readOnlyInteger/value".format(self._instance_id), payload, self._property_read_only_integer.version)
             for callback in self._property_read_only_integer.callbacks:
                 callback(prop_obj.value)
 
@@ -3433,7 +3433,7 @@ class TestAbleServer:
             with self._property_read_write_optional_integer.mutex:
                 self._property_read_write_optional_integer.value = prop_obj
                 self._property_read_write_optional_integer.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalInteger/value".format(self._instance_id), payload, self._property_read_write_optional_integer.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalInteger/value".format(self._instance_id), payload, self._property_read_write_optional_integer.version)
             for callback in self._property_read_write_optional_integer.callbacks:
                 callback(prop_obj.value)
 
@@ -3471,7 +3471,7 @@ class TestAbleServer:
             with self._property_read_write_two_integers.mutex:
                 self._property_read_write_two_integers.value = value
                 self._property_read_write_two_integers.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoIntegers/value".format(self._instance_id), payload, self._property_read_write_two_integers.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoIntegers/value".format(self._instance_id), payload, self._property_read_write_two_integers.version)
             for callback in self._property_read_write_two_integers.callbacks:
                 callback(value.first, value.second)
 
@@ -3515,7 +3515,7 @@ class TestAbleServer:
             with self._property_read_only_string.mutex:
                 self._property_read_only_string.value = prop_obj
                 self._property_read_only_string.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readOnlyString/value".format(self._instance_id), payload, self._property_read_only_string.version)
+                self._conn.publish_property_state("testable/{}/property/readOnlyString/value".format(self._instance_id), payload, self._property_read_only_string.version)
             for callback in self._property_read_only_string.callbacks:
                 callback(prop_obj.value)
 
@@ -3554,7 +3554,7 @@ class TestAbleServer:
             with self._property_read_write_string.mutex:
                 self._property_read_write_string.value = prop_obj
                 self._property_read_write_string.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteString/value".format(self._instance_id), payload, self._property_read_write_string.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteString/value".format(self._instance_id), payload, self._property_read_write_string.version)
             for callback in self._property_read_write_string.callbacks:
                 callback(prop_obj.value)
 
@@ -3593,7 +3593,7 @@ class TestAbleServer:
             with self._property_read_write_optional_string.mutex:
                 self._property_read_write_optional_string.value = prop_obj
                 self._property_read_write_optional_string.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalString/value".format(self._instance_id), payload, self._property_read_write_optional_string.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalString/value".format(self._instance_id), payload, self._property_read_write_optional_string.version)
             for callback in self._property_read_write_optional_string.callbacks:
                 callback(prop_obj.value)
 
@@ -3631,7 +3631,7 @@ class TestAbleServer:
             with self._property_read_write_two_strings.mutex:
                 self._property_read_write_two_strings.value = value
                 self._property_read_write_two_strings.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoStrings/value".format(self._instance_id), payload, self._property_read_write_two_strings.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoStrings/value".format(self._instance_id), payload, self._property_read_write_two_strings.version)
             for callback in self._property_read_write_two_strings.callbacks:
                 callback(value.first, value.second)
 
@@ -3675,7 +3675,7 @@ class TestAbleServer:
             with self._property_read_write_struct.mutex:
                 self._property_read_write_struct.value = prop_obj
                 self._property_read_write_struct.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteStruct/value".format(self._instance_id), payload, self._property_read_write_struct.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteStruct/value".format(self._instance_id), payload, self._property_read_write_struct.version)
             for callback in self._property_read_write_struct.callbacks:
                 callback(prop_obj.value)
 
@@ -3714,7 +3714,7 @@ class TestAbleServer:
             with self._property_read_write_optional_struct.mutex:
                 self._property_read_write_optional_struct.value = prop_obj
                 self._property_read_write_optional_struct.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalStruct/value".format(self._instance_id), payload, self._property_read_write_optional_struct.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalStruct/value".format(self._instance_id), payload, self._property_read_write_optional_struct.version)
             for callback in self._property_read_write_optional_struct.callbacks:
                 callback(prop_obj.value)
 
@@ -3752,7 +3752,7 @@ class TestAbleServer:
             with self._property_read_write_two_structs.mutex:
                 self._property_read_write_two_structs.value = value
                 self._property_read_write_two_structs.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoStructs/value".format(self._instance_id), payload, self._property_read_write_two_structs.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoStructs/value".format(self._instance_id), payload, self._property_read_write_two_structs.version)
             for callback in self._property_read_write_two_structs.callbacks:
                 callback(value.first, value.second)
 
@@ -3796,7 +3796,7 @@ class TestAbleServer:
             with self._property_read_only_enum.mutex:
                 self._property_read_only_enum.value = prop_obj
                 self._property_read_only_enum.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readOnlyEnum/value".format(self._instance_id), payload, self._property_read_only_enum.version)
+                self._conn.publish_property_state("testable/{}/property/readOnlyEnum/value".format(self._instance_id), payload, self._property_read_only_enum.version)
             for callback in self._property_read_only_enum.callbacks:
                 callback(prop_obj.value)
 
@@ -3835,7 +3835,7 @@ class TestAbleServer:
             with self._property_read_write_enum.mutex:
                 self._property_read_write_enum.value = prop_obj
                 self._property_read_write_enum.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteEnum/value".format(self._instance_id), payload, self._property_read_write_enum.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteEnum/value".format(self._instance_id), payload, self._property_read_write_enum.version)
             for callback in self._property_read_write_enum.callbacks:
                 callback(prop_obj.value)
 
@@ -3874,7 +3874,7 @@ class TestAbleServer:
             with self._property_read_write_optional_enum.mutex:
                 self._property_read_write_optional_enum.value = prop_obj
                 self._property_read_write_optional_enum.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalEnum/value".format(self._instance_id), payload, self._property_read_write_optional_enum.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalEnum/value".format(self._instance_id), payload, self._property_read_write_optional_enum.version)
             for callback in self._property_read_write_optional_enum.callbacks:
                 callback(prop_obj.value)
 
@@ -3912,7 +3912,7 @@ class TestAbleServer:
             with self._property_read_write_two_enums.mutex:
                 self._property_read_write_two_enums.value = value
                 self._property_read_write_two_enums.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoEnums/value".format(self._instance_id), payload, self._property_read_write_two_enums.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoEnums/value".format(self._instance_id), payload, self._property_read_write_two_enums.version)
             for callback in self._property_read_write_two_enums.callbacks:
                 callback(value.first, value.second)
 
@@ -3956,7 +3956,7 @@ class TestAbleServer:
             with self._property_read_write_datetime.mutex:
                 self._property_read_write_datetime.value = prop_obj
                 self._property_read_write_datetime.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteDatetime/value".format(self._instance_id), payload, self._property_read_write_datetime.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteDatetime/value".format(self._instance_id), payload, self._property_read_write_datetime.version)
             for callback in self._property_read_write_datetime.callbacks:
                 callback(prop_obj.value)
 
@@ -3995,7 +3995,7 @@ class TestAbleServer:
             with self._property_read_write_optional_datetime.mutex:
                 self._property_read_write_optional_datetime.value = prop_obj
                 self._property_read_write_optional_datetime.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), payload, self._property_read_write_optional_datetime.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), payload, self._property_read_write_optional_datetime.version)
             for callback in self._property_read_write_optional_datetime.callbacks:
                 callback(prop_obj.value)
 
@@ -4033,7 +4033,7 @@ class TestAbleServer:
             with self._property_read_write_two_datetimes.mutex:
                 self._property_read_write_two_datetimes.value = value
                 self._property_read_write_two_datetimes.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), payload, self._property_read_write_two_datetimes.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), payload, self._property_read_write_two_datetimes.version)
             for callback in self._property_read_write_two_datetimes.callbacks:
                 callback(value.first, value.second)
 
@@ -4077,7 +4077,7 @@ class TestAbleServer:
             with self._property_read_write_duration.mutex:
                 self._property_read_write_duration.value = prop_obj
                 self._property_read_write_duration.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteDuration/value".format(self._instance_id), payload, self._property_read_write_duration.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteDuration/value".format(self._instance_id), payload, self._property_read_write_duration.version)
             for callback in self._property_read_write_duration.callbacks:
                 callback(prop_obj.value)
 
@@ -4116,7 +4116,7 @@ class TestAbleServer:
             with self._property_read_write_optional_duration.mutex:
                 self._property_read_write_optional_duration.value = prop_obj
                 self._property_read_write_optional_duration.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalDuration/value".format(self._instance_id), payload, self._property_read_write_optional_duration.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalDuration/value".format(self._instance_id), payload, self._property_read_write_optional_duration.version)
             for callback in self._property_read_write_optional_duration.callbacks:
                 callback(prop_obj.value)
 
@@ -4154,7 +4154,7 @@ class TestAbleServer:
             with self._property_read_write_two_durations.mutex:
                 self._property_read_write_two_durations.value = value
                 self._property_read_write_two_durations.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoDurations/value".format(self._instance_id), payload, self._property_read_write_two_durations.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoDurations/value".format(self._instance_id), payload, self._property_read_write_two_durations.version)
             for callback in self._property_read_write_two_durations.callbacks:
                 callback(value.first, value.second)
 
@@ -4198,7 +4198,7 @@ class TestAbleServer:
             with self._property_read_write_binary.mutex:
                 self._property_read_write_binary.value = prop_obj
                 self._property_read_write_binary.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteBinary/value".format(self._instance_id), payload, self._property_read_write_binary.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteBinary/value".format(self._instance_id), payload, self._property_read_write_binary.version)
             for callback in self._property_read_write_binary.callbacks:
                 callback(prop_obj.value)
 
@@ -4237,7 +4237,7 @@ class TestAbleServer:
             with self._property_read_write_optional_binary.mutex:
                 self._property_read_write_optional_binary.value = prop_obj
                 self._property_read_write_optional_binary.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteOptionalBinary/value".format(self._instance_id), payload, self._property_read_write_optional_binary.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteOptionalBinary/value".format(self._instance_id), payload, self._property_read_write_optional_binary.version)
             for callback in self._property_read_write_optional_binary.callbacks:
                 callback(prop_obj.value)
 
@@ -4275,7 +4275,7 @@ class TestAbleServer:
             with self._property_read_write_two_binaries.mutex:
                 self._property_read_write_two_binaries.value = value
                 self._property_read_write_two_binaries.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteTwoBinaries/value".format(self._instance_id), payload, self._property_read_write_two_binaries.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteTwoBinaries/value".format(self._instance_id), payload, self._property_read_write_two_binaries.version)
             for callback in self._property_read_write_two_binaries.callbacks:
                 callback(value.first, value.second)
 
@@ -4319,7 +4319,7 @@ class TestAbleServer:
             with self._property_read_write_list_of_strings.mutex:
                 self._property_read_write_list_of_strings.value = prop_obj
                 self._property_read_write_list_of_strings.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteListOfStrings/value".format(self._instance_id), payload, self._property_read_write_list_of_strings.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteListOfStrings/value".format(self._instance_id), payload, self._property_read_write_list_of_strings.version)
             for callback in self._property_read_write_list_of_strings.callbacks:
                 callback(prop_obj.value)
 
@@ -4357,7 +4357,7 @@ class TestAbleServer:
             with self._property_read_write_lists.mutex:
                 self._property_read_write_lists.value = value
                 self._property_read_write_lists.version += 1
-                self._conn.publish_property_state("testAble/{}/property/readWriteLists/value".format(self._instance_id), payload, self._property_read_write_lists.version)
+                self._conn.publish_property_state("testable/{}/property/readWriteLists/value".format(self._instance_id), payload, self._property_read_write_lists.version)
             for callback in self._property_read_write_lists.callbacks:
                 callback(value.the_list, value.optional_list)
 
@@ -4382,9 +4382,9 @@ class TestAbleServer:
             self._property_read_write_lists.callbacks.append(handler)
 
 
-class TestAbleServerBuilder:
+class TestableServerBuilder:
     """
-    This is a builder for the TestAbleServer.  It is used to create a server with the desired parameters.
+    This is a builder for the TestableServer.  It is used to create a server with the desired parameters.
     """
 
     def __init__(self):
@@ -4977,8 +4977,8 @@ class TestAbleServerBuilder:
         self._read_write_lists_property_callbacks.append(wrapper)
         return wrapper
 
-    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: TestAbleInitialPropertyValues, binding: Optional[Any] = None) -> TestAbleServer:
-        new_server = TestAbleServer(connection, instance_id, initial_property_values)
+    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: TestableInitialPropertyValues, binding: Optional[Any] = None) -> TestableServer:
+        new_server = TestableServer(connection, instance_id, initial_property_values)
 
         if self._call_with_nothing_method_handler is not None:
             if binding:

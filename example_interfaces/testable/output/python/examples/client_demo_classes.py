@@ -4,11 +4,11 @@ import concurrent.futures as futures
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from testableipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
-from testableipc.client import TestAbleClient, TestAbleClientBuilder, TestAbleClientDiscoverer
+from testableipc.client import TestableClient, TestableClientBuilder, TestableClientDiscoverer
 from testableipc.interface_types import *
 import threading
 
-client_builder = TestAbleClientBuilder()
+client_builder = TestableClientBuilder()
 
 
 class SuperAwesomeDoerOfThings:
@@ -16,7 +16,7 @@ class SuperAwesomeDoerOfThings:
     def __init__(self, label: str, connection: MqttBrokerConnection):
         self.counter = 0
         self.label = label
-        discovery = TestAbleClientDiscoverer(connection, client_builder, build_binding=self)  # The build binding will bind all @client_builder decorated methods to this instance.
+        discovery = TestableClientDiscoverer(connection, client_builder, build_binding=self)  # The build binding will bind all @client_builder decorated methods to this instance.
         self.client = discovery.get_singleton_client().result()
         threading.Thread(target=self.request_loop, daemon=True).start()
 
@@ -349,7 +349,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -390,7 +390,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -715,7 +715,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -747,7 +747,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],

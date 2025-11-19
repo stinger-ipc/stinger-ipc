@@ -1,4 +1,4 @@
-//! Server module for Test Able IPC
+//! Server module for testable IPC
 //!
 //! This module is only available when the "server" feature is enabled.
 
@@ -6,7 +6,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-This is the Server for the Test Able interface.
+This is the Server for the testable interface.
 
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
@@ -25,7 +25,7 @@ use tokio::sync::Mutex as AsyncMutex;
 use serde_json;
 use tokio::sync::{broadcast, watch};
 
-use crate::property::TestAbleInitialPropertyValues;
+use crate::property::TestableInitialPropertyValues;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use std::future::Future;
@@ -47,7 +47,7 @@ use tracing::{debug, error, info, warn};
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
-struct TestAbleServerSubscriptionIds {
+struct TestableServerSubscriptionIds {
     call_with_nothing_method_req: u32,
     call_one_integer_method_req: u32,
     call_optional_integer_method_req: u32,
@@ -122,7 +122,7 @@ struct TestAbleServerSubscriptionIds {
 }
 
 #[derive(Clone)]
-struct TestAbleProperties {
+struct TestableProperties {
     pub read_write_integer: Arc<RwLockWatch<i32>>,
     read_write_integer_version: Arc<AtomicU32>,
     pub read_only_integer: Arc<RwLockWatch<i32>>,
@@ -179,7 +179,7 @@ struct TestAbleProperties {
 
 #[cfg(feature = "metrics")]
 #[derive(Debug, Serialize)]
-pub struct TestAbleServerMetrics {
+pub struct TestableServerMetrics {
     pub call_with_nothing_calls: u64,
     pub call_with_nothing_errors: u64,
     pub call_one_integer_calls: u64,
@@ -235,9 +235,9 @@ pub struct TestAbleServerMetrics {
 }
 
 #[cfg(feature = "metrics")]
-impl Default for TestAbleServerMetrics {
+impl Default for TestableServerMetrics {
     fn default() -> Self {
-        TestAbleServerMetrics {
+        TestableServerMetrics {
             call_with_nothing_calls: 0,
             call_with_nothing_errors: 0,
             call_one_integer_calls: 0,
@@ -295,7 +295,7 @@ impl Default for TestAbleServerMetrics {
 }
 
 #[derive(Clone)]
-pub struct TestAbleServer<C: Mqtt5PubSub> {
+pub struct TestableServer<C: Mqtt5PubSub> {
     mqtt_client: C,
 
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
@@ -308,13 +308,13 @@ pub struct TestAbleServer<C: Mqtt5PubSub> {
     msg_streamer_tx: broadcast::Sender<MqttMessage>,
 
     /// Struct contains all the method handlers.
-    method_handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+    method_handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
 
     /// Struct contains all the properties.
-    properties: TestAbleProperties,
+    properties: TestableProperties,
 
     /// Subscription IDs for all the subscriptions this makes.
-    subscription_ids: TestAbleServerSubscriptionIds,
+    subscription_ids: TestableServerSubscriptionIds,
 
     /// Copy of MQTT Client ID
     #[allow(dead_code)]
@@ -323,27 +323,27 @@ pub struct TestAbleServer<C: Mqtt5PubSub> {
     pub instance_id: String,
 
     #[cfg(feature = "metrics")]
-    metrics: Arc<AsyncMutex<TestAbleServerMetrics>>,
+    metrics: Arc<AsyncMutex<TestableServerMetrics>>,
 }
 
-impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
+impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     pub async fn new(
         mut connection: C,
-        method_handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        method_handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         instance_id: String,
-        initial_property_values: TestAbleInitialPropertyValues,
+        initial_property_values: TestableInitialPropertyValues,
     ) -> Self {
         #[cfg(feature = "metrics")]
-        let mut metrics = TestAbleServerMetrics::default();
+        let mut metrics = TestableServerMetrics::default();
 
-        // Create a channel for messages to get from the Mqtt5PubSub object to this TestAbleServer object.
+        // Create a channel for messages to get from the Mqtt5PubSub object to this TestableServer object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
         // Create method handler struct
         let subscription_id_call_with_nothing_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callWithNothing", instance_id),
+                format!("testable/{}/method/callWithNothing", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -353,7 +353,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_one_integer_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOneInteger", instance_id),
+                format!("testable/{}/method/callOneInteger", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -363,7 +363,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_optional_integer_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOptionalInteger", instance_id),
+                format!("testable/{}/method/callOptionalInteger", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -373,7 +373,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_three_integers_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callThreeIntegers", instance_id),
+                format!("testable/{}/method/callThreeIntegers", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -383,7 +383,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_one_string_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOneString", instance_id),
+                format!("testable/{}/method/callOneString", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -393,7 +393,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_optional_string_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOptionalString", instance_id),
+                format!("testable/{}/method/callOptionalString", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -403,7 +403,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_three_strings_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callThreeStrings", instance_id),
+                format!("testable/{}/method/callThreeStrings", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -413,7 +413,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_one_enum_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOneEnum", instance_id),
+                format!("testable/{}/method/callOneEnum", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -423,7 +423,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_optional_enum_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOptionalEnum", instance_id),
+                format!("testable/{}/method/callOptionalEnum", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -433,7 +433,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_three_enums_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callThreeEnums", instance_id),
+                format!("testable/{}/method/callThreeEnums", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -443,7 +443,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_one_struct_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOneStruct", instance_id),
+                format!("testable/{}/method/callOneStruct", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -453,7 +453,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_optional_struct_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOptionalStruct", instance_id),
+                format!("testable/{}/method/callOptionalStruct", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -463,7 +463,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_three_structs_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callThreeStructs", instance_id),
+                format!("testable/{}/method/callThreeStructs", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -473,7 +473,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_one_date_time_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOneDateTime", instance_id),
+                format!("testable/{}/method/callOneDateTime", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -483,7 +483,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_optional_date_time_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOptionalDateTime", instance_id),
+                format!("testable/{}/method/callOptionalDateTime", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -493,7 +493,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_three_date_times_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callThreeDateTimes", instance_id),
+                format!("testable/{}/method/callThreeDateTimes", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -503,7 +503,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_one_duration_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOneDuration", instance_id),
+                format!("testable/{}/method/callOneDuration", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -513,7 +513,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_optional_duration_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOptionalDuration", instance_id),
+                format!("testable/{}/method/callOptionalDuration", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -523,7 +523,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_three_durations_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callThreeDurations", instance_id),
+                format!("testable/{}/method/callThreeDurations", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -533,7 +533,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_one_binary_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOneBinary", instance_id),
+                format!("testable/{}/method/callOneBinary", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -543,7 +543,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_optional_binary_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOptionalBinary", instance_id),
+                format!("testable/{}/method/callOptionalBinary", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -553,7 +553,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_three_binaries_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callThreeBinaries", instance_id),
+                format!("testable/{}/method/callThreeBinaries", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -563,7 +563,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_one_list_of_integers_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOneListOfIntegers", instance_id),
+                format!("testable/{}/method/callOneListOfIntegers", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -573,7 +573,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_optional_list_of_floats_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callOptionalListOfFloats", instance_id),
+                format!("testable/{}/method/callOptionalListOfFloats", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -583,7 +583,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_call_two_lists_method_req = connection
             .subscribe(
-                format!("testAble/{}/method/callTwoLists", instance_id),
+                format!("testable/{}/method/callTwoLists", instance_id),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -594,7 +594,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_integer_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteInteger/setValue",
+                    "testable/{}/property/readWriteInteger/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -607,7 +607,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_optional_integer_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteOptionalInteger/setValue",
+                    "testable/{}/property/readWriteOptionalInteger/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -620,7 +620,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_two_integers_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteTwoIntegers/setValue",
+                    "testable/{}/property/readWriteTwoIntegers/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -632,7 +632,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_read_write_string_property_update = connection
             .subscribe(
-                format!("testAble/{}/property/readWriteString/setValue", instance_id),
+                format!("testable/{}/property/readWriteString/setValue", instance_id),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -643,7 +643,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_optional_string_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteOptionalString/setValue",
+                    "testable/{}/property/readWriteOptionalString/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -656,7 +656,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_two_strings_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteTwoStrings/setValue",
+                    "testable/{}/property/readWriteTwoStrings/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -668,7 +668,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_read_write_struct_property_update = connection
             .subscribe(
-                format!("testAble/{}/property/readWriteStruct/setValue", instance_id),
+                format!("testable/{}/property/readWriteStruct/setValue", instance_id),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -679,7 +679,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_optional_struct_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteOptionalStruct/setValue",
+                    "testable/{}/property/readWriteOptionalStruct/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -692,7 +692,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_two_structs_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteTwoStructs/setValue",
+                    "testable/{}/property/readWriteTwoStructs/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -704,7 +704,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_read_write_enum_property_update = connection
             .subscribe(
-                format!("testAble/{}/property/readWriteEnum/setValue", instance_id),
+                format!("testable/{}/property/readWriteEnum/setValue", instance_id),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -715,7 +715,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_optional_enum_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteOptionalEnum/setValue",
+                    "testable/{}/property/readWriteOptionalEnum/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -728,7 +728,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_two_enums_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteTwoEnums/setValue",
+                    "testable/{}/property/readWriteTwoEnums/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -741,7 +741,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_datetime_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteDatetime/setValue",
+                    "testable/{}/property/readWriteDatetime/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -754,7 +754,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_optional_datetime_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteOptionalDatetime/setValue",
+                    "testable/{}/property/readWriteOptionalDatetime/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -767,7 +767,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_two_datetimes_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteTwoDatetimes/setValue",
+                    "testable/{}/property/readWriteTwoDatetimes/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -780,7 +780,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_duration_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteDuration/setValue",
+                    "testable/{}/property/readWriteDuration/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -793,7 +793,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_optional_duration_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteOptionalDuration/setValue",
+                    "testable/{}/property/readWriteOptionalDuration/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -806,7 +806,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_two_durations_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteTwoDurations/setValue",
+                    "testable/{}/property/readWriteTwoDurations/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -818,7 +818,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_read_write_binary_property_update = connection
             .subscribe(
-                format!("testAble/{}/property/readWriteBinary/setValue", instance_id),
+                format!("testable/{}/property/readWriteBinary/setValue", instance_id),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -829,7 +829,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_optional_binary_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteOptionalBinary/setValue",
+                    "testable/{}/property/readWriteOptionalBinary/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -842,7 +842,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_two_binaries_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteTwoBinaries/setValue",
+                    "testable/{}/property/readWriteTwoBinaries/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -855,7 +855,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         let subscription_id_read_write_list_of_strings_property_update = connection
             .subscribe(
                 format!(
-                    "testAble/{}/property/readWriteListOfStrings/setValue",
+                    "testable/{}/property/readWriteListOfStrings/setValue",
                     instance_id
                 ),
                 QoS::AtLeastOnce,
@@ -867,7 +867,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         let subscription_id_read_write_lists_property_update = connection
             .subscribe(
-                format!("testAble/{}/property/readWriteLists/setValue", instance_id),
+                format!("testable/{}/property/readWriteLists/setValue", instance_id),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -876,7 +876,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             subscription_id_read_write_lists_property_update.unwrap_or(u32::MAX);
 
         // Create structure for subscription ids.
-        let sub_ids = TestAbleServerSubscriptionIds {
+        let sub_ids = TestableServerSubscriptionIds {
             call_with_nothing_method_req: subscription_id_call_with_nothing_method_req,
             call_one_integer_method_req: subscription_id_call_one_integer_method_req,
             call_optional_integer_method_req: subscription_id_call_optional_integer_method_req,
@@ -947,7 +947,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             read_write_lists_property_update: subscription_id_read_write_lists_property_update,
         };
 
-        let property_values = TestAbleProperties {
+        let property_values = TestableProperties {
             read_write_integer: Arc::new(RwLockWatch::new(
                 initial_property_values.read_write_integer.clone(),
             )),
@@ -1127,7 +1127,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         #[cfg(feature = "metrics")]
         let start_prop_publish_time = std::time::Instant::now();
         {
-            let topic = format!("testAble/{}/property/readWriteInteger/value", instance_id);
+            let topic = format!("testable/{}/property/readWriteInteger/value", instance_id);
 
             let payload_obj = ReadWriteIntegerProperty {
                 value: initial_property_values.read_write_integer,
@@ -1143,7 +1143,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readOnlyInteger/value", instance_id);
+            let topic = format!("testable/{}/property/readOnlyInteger/value", instance_id);
 
             let payload_obj = ReadOnlyIntegerProperty {
                 value: initial_property_values.read_only_integer,
@@ -1160,7 +1160,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteOptionalInteger/value",
+                "testable/{}/property/readWriteOptionalInteger/value",
                 instance_id
             );
 
@@ -1179,7 +1179,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteTwoIntegers/value",
+                "testable/{}/property/readWriteTwoIntegers/value",
                 instance_id
             );
             let msg = message::property_value(
@@ -1192,7 +1192,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readOnlyString/value", instance_id);
+            let topic = format!("testable/{}/property/readOnlyString/value", instance_id);
 
             let payload_obj = ReadOnlyStringProperty {
                 value: initial_property_values.read_only_string,
@@ -1208,7 +1208,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readWriteString/value", instance_id);
+            let topic = format!("testable/{}/property/readWriteString/value", instance_id);
 
             let payload_obj = ReadWriteStringProperty {
                 value: initial_property_values.read_write_string,
@@ -1225,7 +1225,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteOptionalString/value",
+                "testable/{}/property/readWriteOptionalString/value",
                 instance_id
             );
 
@@ -1244,7 +1244,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteTwoStrings/value",
+                "testable/{}/property/readWriteTwoStrings/value",
                 instance_id
             );
             let msg = message::property_value(
@@ -1257,7 +1257,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readWriteStruct/value", instance_id);
+            let topic = format!("testable/{}/property/readWriteStruct/value", instance_id);
 
             let payload_obj = ReadWriteStructProperty {
                 value: initial_property_values.read_write_struct,
@@ -1274,7 +1274,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteOptionalStruct/value",
+                "testable/{}/property/readWriteOptionalStruct/value",
                 instance_id
             );
 
@@ -1293,7 +1293,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteTwoStructs/value",
+                "testable/{}/property/readWriteTwoStructs/value",
                 instance_id
             );
             let msg = message::property_value(
@@ -1306,7 +1306,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readOnlyEnum/value", instance_id);
+            let topic = format!("testable/{}/property/readOnlyEnum/value", instance_id);
 
             let payload_obj = ReadOnlyEnumProperty {
                 value: initial_property_values.read_only_enum,
@@ -1322,7 +1322,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readWriteEnum/value", instance_id);
+            let topic = format!("testable/{}/property/readWriteEnum/value", instance_id);
 
             let payload_obj = ReadWriteEnumProperty {
                 value: initial_property_values.read_write_enum,
@@ -1339,7 +1339,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteOptionalEnum/value",
+                "testable/{}/property/readWriteOptionalEnum/value",
                 instance_id
             );
 
@@ -1357,7 +1357,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readWriteTwoEnums/value", instance_id);
+            let topic = format!("testable/{}/property/readWriteTwoEnums/value", instance_id);
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_two_enums,
@@ -1368,7 +1368,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readWriteDatetime/value", instance_id);
+            let topic = format!("testable/{}/property/readWriteDatetime/value", instance_id);
 
             let payload_obj = ReadWriteDatetimeProperty {
                 value: initial_property_values.read_write_datetime,
@@ -1385,7 +1385,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteOptionalDatetime/value",
+                "testable/{}/property/readWriteOptionalDatetime/value",
                 instance_id
             );
 
@@ -1404,7 +1404,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteTwoDatetimes/value",
+                "testable/{}/property/readWriteTwoDatetimes/value",
                 instance_id
             );
             let msg = message::property_value(
@@ -1417,7 +1417,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readWriteDuration/value", instance_id);
+            let topic = format!("testable/{}/property/readWriteDuration/value", instance_id);
 
             let payload_obj = ReadWriteDurationProperty {
                 value: initial_property_values.read_write_duration,
@@ -1434,7 +1434,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteOptionalDuration/value",
+                "testable/{}/property/readWriteOptionalDuration/value",
                 instance_id
             );
 
@@ -1453,7 +1453,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteTwoDurations/value",
+                "testable/{}/property/readWriteTwoDurations/value",
                 instance_id
             );
             let msg = message::property_value(
@@ -1466,7 +1466,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readWriteBinary/value", instance_id);
+            let topic = format!("testable/{}/property/readWriteBinary/value", instance_id);
 
             let payload_obj = ReadWriteBinaryProperty {
                 value: initial_property_values.read_write_binary,
@@ -1483,7 +1483,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteOptionalBinary/value",
+                "testable/{}/property/readWriteOptionalBinary/value",
                 instance_id
             );
 
@@ -1502,7 +1502,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteTwoBinaries/value",
+                "testable/{}/property/readWriteTwoBinaries/value",
                 instance_id
             );
             let msg = message::property_value(
@@ -1516,7 +1516,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
         {
             let topic = format!(
-                "testAble/{}/property/readWriteListOfStrings/value",
+                "testable/{}/property/readWriteListOfStrings/value",
                 instance_id
             );
 
@@ -1534,7 +1534,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         }
 
         {
-            let topic = format!("testAble/{}/property/readWriteLists/value", instance_id);
+            let topic = format!("testable/{}/property/readWriteLists/value", instance_id);
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_lists,
@@ -1553,7 +1553,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             );
         }
 
-        TestAbleServer {
+        TestableServer {
             mqtt_client: connection.clone(),
 
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
@@ -1570,7 +1570,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     }
 
     #[cfg(feature = "metrics")]
-    pub fn get_metrics(&self) -> Arc<AsyncMutex<TestAbleServerMetrics>> {
+    pub fn get_metrics(&self) -> Arc<AsyncMutex<TestableServerMetrics>> {
         self.metrics.clone()
     }
 
@@ -1625,7 +1625,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the empty signal with the given arguments.
     pub async fn emit_empty(&mut self) -> SentMessageFuture {
         let data = EmptySignalPayload {};
-        let topic = format!("testAble/{}/signal/empty", self.instance_id);
+        let topic = format!("testable/{}/signal/empty", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1637,7 +1637,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         &mut self,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = EmptySignalPayload {};
-        let topic = format!("testAble/{}/signal/empty", self.instance_id);
+        let topic = format!("testable/{}/signal/empty", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1645,7 +1645,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the singleInt signal with the given arguments.
     pub async fn emit_single_int(&mut self, value: i32) -> SentMessageFuture {
         let data = SingleIntSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleInt", self.instance_id);
+        let topic = format!("testable/{}/signal/singleInt", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1658,7 +1658,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: i32,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleIntSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleInt", self.instance_id);
+        let topic = format!("testable/{}/signal/singleInt", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1666,7 +1666,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the singleOptionalInt signal with the given arguments.
     pub async fn emit_single_optional_int(&mut self, value: Option<i32>) -> SentMessageFuture {
         let data = SingleOptionalIntSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalInt", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalInt", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1679,7 +1679,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Option<i32>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalIntSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalInt", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalInt", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1698,7 +1698,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeIntegers", self.instance_id);
+        let topic = format!("testable/{}/signal/threeIntegers", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1719,7 +1719,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeIntegers", self.instance_id);
+        let topic = format!("testable/{}/signal/threeIntegers", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1727,7 +1727,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the singleString signal with the given arguments.
     pub async fn emit_single_string(&mut self, value: String) -> SentMessageFuture {
         let data = SingleStringSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleString", self.instance_id);
+        let topic = format!("testable/{}/signal/singleString", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1740,7 +1740,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: String,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleStringSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleString", self.instance_id);
+        let topic = format!("testable/{}/signal/singleString", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1751,7 +1751,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Option<String>,
     ) -> SentMessageFuture {
         let data = SingleOptionalStringSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalString", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalString", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1764,7 +1764,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Option<String>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalStringSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalString", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalString", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1783,7 +1783,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeStrings", self.instance_id);
+        let topic = format!("testable/{}/signal/threeStrings", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1804,7 +1804,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeStrings", self.instance_id);
+        let topic = format!("testable/{}/signal/threeStrings", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1812,7 +1812,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the singleEnum signal with the given arguments.
     pub async fn emit_single_enum(&mut self, value: Numbers) -> SentMessageFuture {
         let data = SingleEnumSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleEnum", self.instance_id);
+        let topic = format!("testable/{}/signal/singleEnum", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1825,7 +1825,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Numbers,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleEnumSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleEnum", self.instance_id);
+        let topic = format!("testable/{}/signal/singleEnum", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1833,7 +1833,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the singleOptionalEnum signal with the given arguments.
     pub async fn emit_single_optional_enum(&mut self, value: Option<Numbers>) -> SentMessageFuture {
         let data = SingleOptionalEnumSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalEnum", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalEnum", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1846,7 +1846,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Option<Numbers>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalEnumSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalEnum", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalEnum", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1865,7 +1865,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeEnums", self.instance_id);
+        let topic = format!("testable/{}/signal/threeEnums", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1886,7 +1886,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeEnums", self.instance_id);
+        let topic = format!("testable/{}/signal/threeEnums", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1894,7 +1894,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the singleStruct signal with the given arguments.
     pub async fn emit_single_struct(&mut self, value: AllTypes) -> SentMessageFuture {
         let data = SingleStructSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleStruct", self.instance_id);
+        let topic = format!("testable/{}/signal/singleStruct", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1907,7 +1907,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: AllTypes,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleStructSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleStruct", self.instance_id);
+        let topic = format!("testable/{}/signal/singleStruct", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1918,7 +1918,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Option<AllTypes>,
     ) -> SentMessageFuture {
         let data = SingleOptionalStructSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalStruct", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalStruct", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1931,7 +1931,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Option<AllTypes>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalStructSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalStruct", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalStruct", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1950,7 +1950,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeStructs", self.instance_id);
+        let topic = format!("testable/{}/signal/threeStructs", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1971,7 +1971,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeStructs", self.instance_id);
+        let topic = format!("testable/{}/signal/threeStructs", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1982,7 +1982,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
         let data = SingleDateTimeSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleDateTime", self.instance_id);
+        let topic = format!("testable/{}/signal/singleDateTime", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1995,7 +1995,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: chrono::DateTime<chrono::Utc>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleDateTimeSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleDateTime", self.instance_id);
+        let topic = format!("testable/{}/signal/singleDateTime", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2007,7 +2007,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     ) -> SentMessageFuture {
         let data = SingleOptionalDatetimeSignalPayload { value };
         let topic = format!(
-            "testAble/{}/signal/singleOptionalDatetime",
+            "testable/{}/signal/singleOptionalDatetime",
             self.instance_id
         );
         let msg = message::signal(&topic, &data).unwrap();
@@ -2023,7 +2023,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalDatetimeSignalPayload { value };
         let topic = format!(
-            "testAble/{}/signal/singleOptionalDatetime",
+            "testable/{}/signal/singleOptionalDatetime",
             self.instance_id
         );
         let msg = message::signal(&topic, &data).unwrap();
@@ -2044,7 +2044,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeDateTimes", self.instance_id);
+        let topic = format!("testable/{}/signal/threeDateTimes", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2065,7 +2065,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeDateTimes", self.instance_id);
+        let topic = format!("testable/{}/signal/threeDateTimes", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2073,7 +2073,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the singleDuration signal with the given arguments.
     pub async fn emit_single_duration(&mut self, value: chrono::Duration) -> SentMessageFuture {
         let data = SingleDurationSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleDuration", self.instance_id);
+        let topic = format!("testable/{}/signal/singleDuration", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2086,7 +2086,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: chrono::Duration,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleDurationSignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleDuration", self.instance_id);
+        let topic = format!("testable/{}/signal/singleDuration", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2098,7 +2098,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     ) -> SentMessageFuture {
         let data = SingleOptionalDurationSignalPayload { value };
         let topic = format!(
-            "testAble/{}/signal/singleOptionalDuration",
+            "testable/{}/signal/singleOptionalDuration",
             self.instance_id
         );
         let msg = message::signal(&topic, &data).unwrap();
@@ -2114,7 +2114,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalDurationSignalPayload { value };
         let topic = format!(
-            "testAble/{}/signal/singleOptionalDuration",
+            "testable/{}/signal/singleOptionalDuration",
             self.instance_id
         );
         let msg = message::signal(&topic, &data).unwrap();
@@ -2135,7 +2135,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeDurations", self.instance_id);
+        let topic = format!("testable/{}/signal/threeDurations", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2156,7 +2156,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeDurations", self.instance_id);
+        let topic = format!("testable/{}/signal/threeDurations", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2164,7 +2164,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the singleBinary signal with the given arguments.
     pub async fn emit_single_binary(&mut self, value: Vec<u8>) -> SentMessageFuture {
         let data = SingleBinarySignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleBinary", self.instance_id);
+        let topic = format!("testable/{}/signal/singleBinary", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2177,7 +2177,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Vec<u8>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleBinarySignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleBinary", self.instance_id);
+        let topic = format!("testable/{}/signal/singleBinary", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2188,7 +2188,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Option<Vec<u8>>,
     ) -> SentMessageFuture {
         let data = SingleOptionalBinarySignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalBinary", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalBinary", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2201,7 +2201,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         value: Option<Vec<u8>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalBinarySignalPayload { value };
-        let topic = format!("testAble/{}/signal/singleOptionalBinary", self.instance_id);
+        let topic = format!("testable/{}/signal/singleOptionalBinary", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2220,7 +2220,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeBinaries", self.instance_id);
+        let topic = format!("testable/{}/signal/threeBinaries", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2241,7 +2241,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             third,
         };
-        let topic = format!("testAble/{}/signal/threeBinaries", self.instance_id);
+        let topic = format!("testable/{}/signal/threeBinaries", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2249,7 +2249,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Emits the singleArrayOfIntegers signal with the given arguments.
     pub async fn emit_single_array_of_integers(&mut self, values: Vec<i32>) -> SentMessageFuture {
         let data = SingleArrayOfIntegersSignalPayload { values };
-        let topic = format!("testAble/{}/signal/singleArrayOfIntegers", self.instance_id);
+        let topic = format!("testable/{}/signal/singleArrayOfIntegers", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2262,7 +2262,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
         values: Vec<i32>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleArrayOfIntegersSignalPayload { values };
-        let topic = format!("testAble/{}/signal/singleArrayOfIntegers", self.instance_id);
+        let topic = format!("testable/{}/signal/singleArrayOfIntegers", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2274,7 +2274,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     ) -> SentMessageFuture {
         let data = SingleOptionalArrayOfStringsSignalPayload { values };
         let topic = format!(
-            "testAble/{}/signal/singleOptionalArrayOfStrings",
+            "testable/{}/signal/singleOptionalArrayOfStrings",
             self.instance_id
         );
         let msg = message::signal(&topic, &data).unwrap();
@@ -2290,7 +2290,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalArrayOfStringsSignalPayload { values };
         let topic = format!(
-            "testAble/{}/signal/singleOptionalArrayOfStrings",
+            "testable/{}/signal/singleOptionalArrayOfStrings",
             self.instance_id
         );
         let msg = message::signal(&topic, &data).unwrap();
@@ -2326,7 +2326,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             eighth_of_binaries,
         };
-        let topic = format!("testAble/{}/signal/arrayOfEveryType", self.instance_id);
+        let topic = format!("testable/{}/signal/arrayOfEveryType", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2362,7 +2362,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
             eighth_of_binaries,
         };
-        let topic = format!("testAble/{}/signal/arrayOfEveryType", self.instance_id);
+        let topic = format!("testable/{}/signal/arrayOfEveryType", self.instance_id);
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2371,7 +2371,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callWithNothing method.
     async fn handle_call_with_nothing_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2393,7 +2393,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callWithNothing: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2411,7 +2411,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOneInteger method.
     async fn handle_call_one_integer_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2423,7 +2423,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOneInteger: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -2453,7 +2453,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callOneInteger: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2471,7 +2471,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOptionalInteger method.
     async fn handle_call_optional_integer_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2483,7 +2483,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOptionalInteger: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -2518,7 +2518,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callOptionalInteger: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2538,7 +2538,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callThreeIntegers method.
     async fn handle_call_three_integers_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2550,7 +2550,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callThreeIntegers: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -2584,7 +2584,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callThreeIntegers: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2602,7 +2602,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOneString method.
     async fn handle_call_one_string_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2614,7 +2614,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOneString: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -2644,7 +2644,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callOneString: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2662,7 +2662,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOptionalString method.
     async fn handle_call_optional_string_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2674,7 +2674,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOptionalString: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -2709,7 +2709,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callOptionalString: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2727,7 +2727,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callThreeStrings method.
     async fn handle_call_three_strings_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2739,7 +2739,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callThreeStrings: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -2770,7 +2770,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callThreeStrings: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2788,7 +2788,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOneEnum method.
     async fn handle_call_one_enum_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2800,7 +2800,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOneEnum: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -2830,7 +2830,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callOneEnum: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2848,7 +2848,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOptionalEnum method.
     async fn handle_call_optional_enum_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2860,7 +2860,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOptionalEnum: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -2892,7 +2892,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callOptionalEnum: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2910,7 +2910,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callThreeEnums method.
     async fn handle_call_three_enums_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2922,7 +2922,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callThreeEnums: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -2953,7 +2953,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callThreeEnums: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -2971,7 +2971,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOneStruct method.
     async fn handle_call_one_struct_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -2983,7 +2983,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOneStruct: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3013,7 +3013,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callOneStruct: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3031,7 +3031,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOptionalStruct method.
     async fn handle_call_optional_struct_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3043,7 +3043,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOptionalStruct: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3078,7 +3078,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callOptionalStruct: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3096,7 +3096,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callThreeStructs method.
     async fn handle_call_three_structs_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3108,7 +3108,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callThreeStructs: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3139,7 +3139,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callThreeStructs: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3157,7 +3157,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOneDateTime method.
     async fn handle_call_one_date_time_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3169,7 +3169,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOneDateTime: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3201,7 +3201,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callOneDateTime: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3219,7 +3219,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOptionalDateTime method.
     async fn handle_call_optional_date_time_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3231,7 +3231,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOptionalDateTime: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3266,7 +3266,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callOptionalDateTime: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3286,7 +3286,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callThreeDateTimes method.
     async fn handle_call_three_date_times_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3298,7 +3298,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callThreeDateTimes: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3332,7 +3332,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callThreeDateTimes: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3350,7 +3350,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOneDuration method.
     async fn handle_call_one_duration_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3362,7 +3362,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOneDuration: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3392,7 +3392,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callOneDuration: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3410,7 +3410,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOptionalDuration method.
     async fn handle_call_optional_duration_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3422,7 +3422,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOptionalDuration: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3457,7 +3457,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callOptionalDuration: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3477,7 +3477,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callThreeDurations method.
     async fn handle_call_three_durations_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3489,7 +3489,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callThreeDurations: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3523,7 +3523,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callThreeDurations: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3541,7 +3541,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOneBinary method.
     async fn handle_call_one_binary_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3553,7 +3553,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOneBinary: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3583,7 +3583,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callOneBinary: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3601,7 +3601,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOptionalBinary method.
     async fn handle_call_optional_binary_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3613,7 +3613,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOptionalBinary: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3648,7 +3648,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callOptionalBinary: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3666,7 +3666,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callThreeBinaries method.
     async fn handle_call_three_binaries_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3678,7 +3678,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callThreeBinaries: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3712,7 +3712,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callThreeBinaries: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3730,7 +3730,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOneListOfIntegers method.
     async fn handle_call_one_list_of_integers_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3743,7 +3743,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOneListOfIntegers: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3778,7 +3778,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callOneListOfIntegers: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3798,7 +3798,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callOptionalListOfFloats method.
     async fn handle_call_optional_list_of_floats_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3811,7 +3811,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callOptionalListOfFloats: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3846,7 +3846,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         "Error occurred while handling callOptionalListOfFloats: {:?}",
                         &err
                     );
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -3864,7 +3864,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
     /// Handles a request message for the callTwoLists method.
     async fn handle_call_two_lists_request(
         mut publisher: C,
-        handlers: Arc<AsyncMutex<Box<dyn TestAbleMethodHandlers<C>>>>,
+        handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         msg: MqttMessage,
     ) {
         let opt_corr_data = msg.correlation_data;
@@ -3876,7 +3876,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 "Error deserializing request payload for callTwoLists: {:?}",
                 payload_obj.err()
             );
-            TestAbleServer::<C>::publish_error_response(
+            TestableServer::<C>::publish_error_response(
                 publisher,
                 opt_resp_topic,
                 opt_corr_data,
@@ -3907,7 +3907,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                 }
                 Err(err) => {
                     info!("Error occurred while handling callTwoLists: {:?}", &err);
-                    TestAbleServer::<C>::publish_error_response(
+                    TestableServer::<C>::publish_error_response(
                         publisher,
                         Some(resp_topic),
                         Some(corr_data),
@@ -7561,7 +7561,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_integer_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteInteger/value",
+                            "testable/{}/property/readWriteInteger/value",
                             instance_id_for_read_write_integer_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -7611,7 +7611,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_only_integer_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readOnlyInteger/value",
+                            "testable/{}/property/readOnlyInteger/value",
                             instance_id_for_read_only_integer_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -7662,7 +7662,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_optional_integer_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteOptionalInteger/value",
+                            "testable/{}/property/readWriteOptionalInteger/value",
                             instance_id_for_read_write_optional_integer_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -7712,7 +7712,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_two_integers_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteTwoIntegers/value",
+                            "testable/{}/property/readWriteTwoIntegers/value",
                             instance_id_for_read_write_two_integers_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -7763,7 +7763,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_only_string_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readOnlyString/value",
+                            "testable/{}/property/readOnlyString/value",
                             instance_id_for_read_only_string_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -7813,7 +7813,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_string_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteString/value",
+                            "testable/{}/property/readWriteString/value",
                             instance_id_for_read_write_string_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -7864,7 +7864,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_optional_string_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteOptionalString/value",
+                            "testable/{}/property/readWriteOptionalString/value",
                             instance_id_for_read_write_optional_string_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -7913,7 +7913,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_two_strings_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteTwoStrings/value",
+                            "testable/{}/property/readWriteTwoStrings/value",
                             instance_id_for_read_write_two_strings_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -7963,7 +7963,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_struct_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteStruct/value",
+                            "testable/{}/property/readWriteStruct/value",
                             instance_id_for_read_write_struct_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8014,7 +8014,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_optional_struct_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteOptionalStruct/value",
+                            "testable/{}/property/readWriteOptionalStruct/value",
                             instance_id_for_read_write_optional_struct_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8063,7 +8063,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_two_structs_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteTwoStructs/value",
+                            "testable/{}/property/readWriteTwoStructs/value",
                             instance_id_for_read_write_two_structs_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8113,7 +8113,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_only_enum_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readOnlyEnum/value",
+                            "testable/{}/property/readOnlyEnum/value",
                             instance_id_for_read_only_enum_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8163,7 +8163,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_enum_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteEnum/value",
+                            "testable/{}/property/readWriteEnum/value",
                             instance_id_for_read_write_enum_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8214,7 +8214,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_optional_enum_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteOptionalEnum/value",
+                            "testable/{}/property/readWriteOptionalEnum/value",
                             instance_id_for_read_write_optional_enum_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8263,7 +8263,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_two_enums_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteTwoEnums/value",
+                            "testable/{}/property/readWriteTwoEnums/value",
                             instance_id_for_read_write_two_enums_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8313,7 +8313,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_datetime_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteDatetime/value",
+                            "testable/{}/property/readWriteDatetime/value",
                             instance_id_for_read_write_datetime_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8364,7 +8364,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_optional_datetime_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteOptionalDatetime/value",
+                            "testable/{}/property/readWriteOptionalDatetime/value",
                             instance_id_for_read_write_optional_datetime_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8415,7 +8415,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_two_datetimes_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteTwoDatetimes/value",
+                            "testable/{}/property/readWriteTwoDatetimes/value",
                             instance_id_for_read_write_two_datetimes_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8466,7 +8466,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_duration_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteDuration/value",
+                            "testable/{}/property/readWriteDuration/value",
                             instance_id_for_read_write_duration_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8517,7 +8517,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_optional_duration_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteOptionalDuration/value",
+                            "testable/{}/property/readWriteOptionalDuration/value",
                             instance_id_for_read_write_optional_duration_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8568,7 +8568,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_two_durations_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteTwoDurations/value",
+                            "testable/{}/property/readWriteTwoDurations/value",
                             instance_id_for_read_write_two_durations_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8619,7 +8619,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_binary_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteBinary/value",
+                            "testable/{}/property/readWriteBinary/value",
                             instance_id_for_read_write_binary_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8670,7 +8670,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_optional_binary_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteOptionalBinary/value",
+                            "testable/{}/property/readWriteOptionalBinary/value",
                             instance_id_for_read_write_optional_binary_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8720,7 +8720,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_two_binaries_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteTwoBinaries/value",
+                            "testable/{}/property/readWriteTwoBinaries/value",
                             instance_id_for_read_write_two_binaries_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8772,7 +8772,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_list_of_strings_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteListOfStrings/value",
+                            "testable/{}/property/readWriteListOfStrings/value",
                             instance_id_for_read_write_list_of_strings_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8821,7 +8821,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                         let version_value = read_write_lists_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let topic: String = format!(
-                            "testAble/{}/property/readWriteLists/value",
+                            "testable/{}/property/readWriteLists/value",
                             instance_id_for_read_write_lists_prop
                         );
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -8859,9 +8859,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(120));
             loop {
                 interval.tick().await;
-                let topic = format!("testAble/{}/interface", instance_id);
+                let topic = format!("testable/{}/interface", instance_id);
                 let info = crate::interface::InterfaceInfoBuilder::default()
-                    .interface_name("Test Able".to_string())
+                    .interface_name("testable".to_string())
                     .title("Interface for testing".to_string())
                     .version("0.0.1".to_string())
                     .instance(instance_id.clone())
@@ -8882,7 +8882,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                             match subscription_id {
                                 _i if _i == sub_ids.call_with_nothing_method_req => {
                                     debug!("Received callWithNothing method invocation message.");
-                                    TestAbleServer::<C>::handle_call_with_nothing_request(
+                                    TestableServer::<C>::handle_call_with_nothing_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8891,7 +8891,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_one_integer_method_req => {
                                     debug!("Received callOneInteger method invocation message.");
-                                    TestAbleServer::<C>::handle_call_one_integer_request(
+                                    TestableServer::<C>::handle_call_one_integer_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8902,7 +8902,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received callOptionalInteger method invocation message."
                                     );
-                                    TestAbleServer::<C>::handle_call_optional_integer_request(
+                                    TestableServer::<C>::handle_call_optional_integer_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8911,7 +8911,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_three_integers_method_req => {
                                     debug!("Received callThreeIntegers method invocation message.");
-                                    TestAbleServer::<C>::handle_call_three_integers_request(
+                                    TestableServer::<C>::handle_call_three_integers_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8920,7 +8920,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_one_string_method_req => {
                                     debug!("Received callOneString method invocation message.");
-                                    TestAbleServer::<C>::handle_call_one_string_request(
+                                    TestableServer::<C>::handle_call_one_string_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8931,7 +8931,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received callOptionalString method invocation message."
                                     );
-                                    TestAbleServer::<C>::handle_call_optional_string_request(
+                                    TestableServer::<C>::handle_call_optional_string_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8940,7 +8940,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_three_strings_method_req => {
                                     debug!("Received callThreeStrings method invocation message.");
-                                    TestAbleServer::<C>::handle_call_three_strings_request(
+                                    TestableServer::<C>::handle_call_three_strings_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8949,7 +8949,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_one_enum_method_req => {
                                     debug!("Received callOneEnum method invocation message.");
-                                    TestAbleServer::<C>::handle_call_one_enum_request(
+                                    TestableServer::<C>::handle_call_one_enum_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8958,7 +8958,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_optional_enum_method_req => {
                                     debug!("Received callOptionalEnum method invocation message.");
-                                    TestAbleServer::<C>::handle_call_optional_enum_request(
+                                    TestableServer::<C>::handle_call_optional_enum_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8967,7 +8967,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_three_enums_method_req => {
                                     debug!("Received callThreeEnums method invocation message.");
-                                    TestAbleServer::<C>::handle_call_three_enums_request(
+                                    TestableServer::<C>::handle_call_three_enums_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8976,7 +8976,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_one_struct_method_req => {
                                     debug!("Received callOneStruct method invocation message.");
-                                    TestAbleServer::<C>::handle_call_one_struct_request(
+                                    TestableServer::<C>::handle_call_one_struct_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8987,7 +8987,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received callOptionalStruct method invocation message."
                                     );
-                                    TestAbleServer::<C>::handle_call_optional_struct_request(
+                                    TestableServer::<C>::handle_call_optional_struct_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -8996,7 +8996,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_three_structs_method_req => {
                                     debug!("Received callThreeStructs method invocation message.");
-                                    TestAbleServer::<C>::handle_call_three_structs_request(
+                                    TestableServer::<C>::handle_call_three_structs_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9005,7 +9005,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_one_date_time_method_req => {
                                     debug!("Received callOneDateTime method invocation message.");
-                                    TestAbleServer::<C>::handle_call_one_date_time_request(
+                                    TestableServer::<C>::handle_call_one_date_time_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9016,7 +9016,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received callOptionalDateTime method invocation message."
                                     );
-                                    TestAbleServer::<C>::handle_call_optional_date_time_request(
+                                    TestableServer::<C>::handle_call_optional_date_time_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9027,7 +9027,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received callThreeDateTimes method invocation message."
                                     );
-                                    TestAbleServer::<C>::handle_call_three_date_times_request(
+                                    TestableServer::<C>::handle_call_three_date_times_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9036,7 +9036,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_one_duration_method_req => {
                                     debug!("Received callOneDuration method invocation message.");
-                                    TestAbleServer::<C>::handle_call_one_duration_request(
+                                    TestableServer::<C>::handle_call_one_duration_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9047,7 +9047,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received callOptionalDuration method invocation message."
                                     );
-                                    TestAbleServer::<C>::handle_call_optional_duration_request(
+                                    TestableServer::<C>::handle_call_optional_duration_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9058,7 +9058,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received callThreeDurations method invocation message."
                                     );
-                                    TestAbleServer::<C>::handle_call_three_durations_request(
+                                    TestableServer::<C>::handle_call_three_durations_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9067,7 +9067,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_one_binary_method_req => {
                                     debug!("Received callOneBinary method invocation message.");
-                                    TestAbleServer::<C>::handle_call_one_binary_request(
+                                    TestableServer::<C>::handle_call_one_binary_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9078,7 +9078,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received callOptionalBinary method invocation message."
                                     );
-                                    TestAbleServer::<C>::handle_call_optional_binary_request(
+                                    TestableServer::<C>::handle_call_optional_binary_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9087,7 +9087,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_three_binaries_method_req => {
                                     debug!("Received callThreeBinaries method invocation message.");
-                                    TestAbleServer::<C>::handle_call_three_binaries_request(
+                                    TestableServer::<C>::handle_call_three_binaries_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9098,7 +9098,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received callOneListOfIntegers method invocation message."
                                     );
-                                    TestAbleServer::<C>::handle_call_one_list_of_integers_request(
+                                    TestableServer::<C>::handle_call_one_list_of_integers_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9107,11 +9107,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.call_optional_list_of_floats_method_req => {
                                     debug!("Received callOptionalListOfFloats method invocation message.");
-                                    TestAbleServer::<C>::handle_call_optional_list_of_floats_request(publisher.clone(), method_handlers.clone(), msg).await;
+                                    TestableServer::<C>::handle_call_optional_list_of_floats_request(publisher.clone(), method_handlers.clone(), msg).await;
                                 }
                                 _i if _i == sub_ids.call_two_lists_method_req => {
                                     debug!("Received callTwoLists method invocation message.");
-                                    TestAbleServer::<C>::handle_call_two_lists_request(
+                                    TestableServer::<C>::handle_call_two_lists_request(
                                         publisher.clone(),
                                         method_handlers.clone(),
                                         msg,
@@ -9120,7 +9120,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                 }
                                 _i if _i == sub_ids.read_write_integer_property_update => {
                                     debug!("Received read_write_integer property update request message.");
-                                    TestAbleServer::<C>::update_read_write_integer_value(
+                                    TestableServer::<C>::update_read_write_integer_value(
                                         publisher.clone(),
                                         properties.read_write_integer.clone(),
                                         properties.read_write_integer_version.clone(),
@@ -9131,7 +9131,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_optional_integer_property_update => {
                                     debug!("Received read_write_optional_integer property update request message.");
-                                    TestAbleServer::<C>::update_read_write_optional_integer_value(
+                                    TestableServer::<C>::update_read_write_optional_integer_value(
                                         publisher.clone(),
                                         properties.read_write_optional_integer.clone(),
                                         properties.read_write_optional_integer_version.clone(),
@@ -9142,7 +9142,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_two_integers_property_update => {
                                     debug!("Received read_write_two_integers property update request message.");
-                                    TestAbleServer::<C>::update_read_write_two_integers_value(
+                                    TestableServer::<C>::update_read_write_two_integers_value(
                                         publisher.clone(),
                                         properties.read_write_two_integers.clone(),
                                         properties.read_write_two_integers_version.clone(),
@@ -9153,7 +9153,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_string_property_update => {
                                     debug!("Received read_write_string property update request message.");
-                                    TestAbleServer::<C>::update_read_write_string_value(
+                                    TestableServer::<C>::update_read_write_string_value(
                                         publisher.clone(),
                                         properties.read_write_string.clone(),
                                         properties.read_write_string_version.clone(),
@@ -9164,7 +9164,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_optional_string_property_update => {
                                     debug!("Received read_write_optional_string property update request message.");
-                                    TestAbleServer::<C>::update_read_write_optional_string_value(
+                                    TestableServer::<C>::update_read_write_optional_string_value(
                                         publisher.clone(),
                                         properties.read_write_optional_string.clone(),
                                         properties.read_write_optional_string_version.clone(),
@@ -9175,7 +9175,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_two_strings_property_update => {
                                     debug!("Received read_write_two_strings property update request message.");
-                                    TestAbleServer::<C>::update_read_write_two_strings_value(
+                                    TestableServer::<C>::update_read_write_two_strings_value(
                                         publisher.clone(),
                                         properties.read_write_two_strings.clone(),
                                         properties.read_write_two_strings_version.clone(),
@@ -9186,7 +9186,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_struct_property_update => {
                                     debug!("Received read_write_struct property update request message.");
-                                    TestAbleServer::<C>::update_read_write_struct_value(
+                                    TestableServer::<C>::update_read_write_struct_value(
                                         publisher.clone(),
                                         properties.read_write_struct.clone(),
                                         properties.read_write_struct_version.clone(),
@@ -9197,7 +9197,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_optional_struct_property_update => {
                                     debug!("Received read_write_optional_struct property update request message.");
-                                    TestAbleServer::<C>::update_read_write_optional_struct_value(
+                                    TestableServer::<C>::update_read_write_optional_struct_value(
                                         publisher.clone(),
                                         properties.read_write_optional_struct.clone(),
                                         properties.read_write_optional_struct_version.clone(),
@@ -9208,7 +9208,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_two_structs_property_update => {
                                     debug!("Received read_write_two_structs property update request message.");
-                                    TestAbleServer::<C>::update_read_write_two_structs_value(
+                                    TestableServer::<C>::update_read_write_two_structs_value(
                                         publisher.clone(),
                                         properties.read_write_two_structs.clone(),
                                         properties.read_write_two_structs_version.clone(),
@@ -9221,7 +9221,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     debug!(
                                         "Received read_write_enum property update request message."
                                     );
-                                    TestAbleServer::<C>::update_read_write_enum_value(
+                                    TestableServer::<C>::update_read_write_enum_value(
                                         publisher.clone(),
                                         properties.read_write_enum.clone(),
                                         properties.read_write_enum_version.clone(),
@@ -9232,7 +9232,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_optional_enum_property_update => {
                                     debug!("Received read_write_optional_enum property update request message.");
-                                    TestAbleServer::<C>::update_read_write_optional_enum_value(
+                                    TestableServer::<C>::update_read_write_optional_enum_value(
                                         publisher.clone(),
                                         properties.read_write_optional_enum.clone(),
                                         properties.read_write_optional_enum_version.clone(),
@@ -9243,7 +9243,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_two_enums_property_update => {
                                     debug!("Received read_write_two_enums property update request message.");
-                                    TestAbleServer::<C>::update_read_write_two_enums_value(
+                                    TestableServer::<C>::update_read_write_two_enums_value(
                                         publisher.clone(),
                                         properties.read_write_two_enums.clone(),
                                         properties.read_write_two_enums_version.clone(),
@@ -9254,7 +9254,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_datetime_property_update => {
                                     debug!("Received read_write_datetime property update request message.");
-                                    TestAbleServer::<C>::update_read_write_datetime_value(
+                                    TestableServer::<C>::update_read_write_datetime_value(
                                         publisher.clone(),
                                         properties.read_write_datetime.clone(),
                                         properties.read_write_datetime_version.clone(),
@@ -9267,7 +9267,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     == sub_ids.read_write_optional_datetime_property_update =>
                                 {
                                     debug!("Received read_write_optional_datetime property update request message.");
-                                    TestAbleServer::<C>::update_read_write_optional_datetime_value(
+                                    TestableServer::<C>::update_read_write_optional_datetime_value(
                                         publisher.clone(),
                                         properties.read_write_optional_datetime.clone(),
                                         properties.read_write_optional_datetime_version.clone(),
@@ -9278,7 +9278,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_two_datetimes_property_update => {
                                     debug!("Received read_write_two_datetimes property update request message.");
-                                    TestAbleServer::<C>::update_read_write_two_datetimes_value(
+                                    TestableServer::<C>::update_read_write_two_datetimes_value(
                                         publisher.clone(),
                                         properties.read_write_two_datetimes.clone(),
                                         properties.read_write_two_datetimes_version.clone(),
@@ -9289,7 +9289,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_duration_property_update => {
                                     debug!("Received read_write_duration property update request message.");
-                                    TestAbleServer::<C>::update_read_write_duration_value(
+                                    TestableServer::<C>::update_read_write_duration_value(
                                         publisher.clone(),
                                         properties.read_write_duration.clone(),
                                         properties.read_write_duration_version.clone(),
@@ -9302,7 +9302,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
                                     == sub_ids.read_write_optional_duration_property_update =>
                                 {
                                     debug!("Received read_write_optional_duration property update request message.");
-                                    TestAbleServer::<C>::update_read_write_optional_duration_value(
+                                    TestableServer::<C>::update_read_write_optional_duration_value(
                                         publisher.clone(),
                                         properties.read_write_optional_duration.clone(),
                                         properties.read_write_optional_duration_version.clone(),
@@ -9313,7 +9313,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_two_durations_property_update => {
                                     debug!("Received read_write_two_durations property update request message.");
-                                    TestAbleServer::<C>::update_read_write_two_durations_value(
+                                    TestableServer::<C>::update_read_write_two_durations_value(
                                         publisher.clone(),
                                         properties.read_write_two_durations.clone(),
                                         properties.read_write_two_durations_version.clone(),
@@ -9324,7 +9324,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_binary_property_update => {
                                     debug!("Received read_write_binary property update request message.");
-                                    TestAbleServer::<C>::update_read_write_binary_value(
+                                    TestableServer::<C>::update_read_write_binary_value(
                                         publisher.clone(),
                                         properties.read_write_binary.clone(),
                                         properties.read_write_binary_version.clone(),
@@ -9335,7 +9335,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_optional_binary_property_update => {
                                     debug!("Received read_write_optional_binary property update request message.");
-                                    TestAbleServer::<C>::update_read_write_optional_binary_value(
+                                    TestableServer::<C>::update_read_write_optional_binary_value(
                                         publisher.clone(),
                                         properties.read_write_optional_binary.clone(),
                                         properties.read_write_optional_binary_version.clone(),
@@ -9346,7 +9346,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_two_binaries_property_update => {
                                     debug!("Received read_write_two_binaries property update request message.");
-                                    TestAbleServer::<C>::update_read_write_two_binaries_value(
+                                    TestableServer::<C>::update_read_write_two_binaries_value(
                                         publisher.clone(),
                                         properties.read_write_two_binaries.clone(),
                                         properties.read_write_two_binaries_version.clone(),
@@ -9357,7 +9357,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_list_of_strings_property_update => {
                                     debug!("Received read_write_list_of_strings property update request message.");
-                                    TestAbleServer::<C>::update_read_write_list_of_strings_value(
+                                    TestableServer::<C>::update_read_write_list_of_strings_value(
                                         publisher.clone(),
                                         properties.read_write_list_of_strings.clone(),
                                         properties.read_write_list_of_strings_version.clone(),
@@ -9368,7 +9368,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 
                                 _i if _i == sub_ids.read_write_lists_property_update => {
                                     debug!("Received read_write_lists property update request message.");
-                                    TestAbleServer::<C>::update_read_write_lists_value(
+                                    TestableServer::<C>::update_read_write_lists_value(
                                         publisher.clone(),
                                         properties.read_write_lists.clone(),
                                         properties.read_write_lists_version.clone(),
@@ -9403,8 +9403,8 @@ impl<C: Mqtt5PubSub + Clone + Send> TestAbleServer<C> {
 }
 
 #[async_trait]
-pub trait TestAbleMethodHandlers<C: Mqtt5PubSub>: Send + Sync {
-    async fn initialize(&mut self, server: TestAbleServer<C>) -> Result<(), MethodReturnCode>;
+pub trait TestableMethodHandlers<C: Mqtt5PubSub>: Send + Sync {
+    async fn initialize(&mut self, server: TestableServer<C>) -> Result<(), MethodReturnCode>;
 
     /// Pointer to a function to handle the callWithNothing method request.
     async fn handle_call_with_nothing(&self) -> Result<(), MethodReturnCode>;

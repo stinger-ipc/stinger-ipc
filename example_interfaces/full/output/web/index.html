@@ -29,6 +29,7 @@
         <h3 class="component-title signal-title">Signal: todayIs</h3>
         <div class="component-doc signal-doc">
         </div>
+        <!--<div class="signal-topic topic">Subscribe: full/+/signal/todayIs</div>-->
         <div class="last-received signal-value">
         
           <table class="arglist">
@@ -40,7 +41,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input disabled type="text" ng-model="signals.today_is.received.dayOfMonth" />
+                <input disabled type="text" ng-model="signals.todayIs.received.dayOfMonth" />
                  
               </td>
             </tr>
@@ -52,7 +53,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <select disabled ng-model="signals.today_is.received.dayOfWeek" ng-options="n.id as n.name for n in enums.day_of_the_week">
+                <select disabled ng-model="signals.todayIs.received.dayOfWeek" ng-options="n.id as n.name for n in enums.dayOfTheWeek">
                 </select>
                  
               </td>
@@ -65,7 +66,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input disabled type="text" ng-model="signals.today_is.received.timestamp" placeholder="(unknown type)" />
+                <input disabled type="text" ng-model="signals.todayIs.received.timestamp" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -77,7 +78,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input disabled type="text" ng-model="signals.today_is.received.process_time" placeholder="(unknown type)" />
+                <input disabled type="text" ng-model="signals.todayIs.received.process_time" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -89,7 +90,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input disabled type="text" ng-model="signals.today_is.received.memory_segment" placeholder="(unknown type)" />
+                Binary: <input disabled type="text" ng-model="signals.todayIs.received.memory_segment" />
                  
               </td>
             </tr>
@@ -107,6 +108,7 @@
 <p>My favorite number</p>
         
         </div>
+        <!--<div class="property-topic topic">Subscribe: full/+/property/favoriteNumber/value</div>-->
         <div class="last-received property-value">
           
           <table class="arglist">
@@ -118,7 +120,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.favorite_number.received.number" />
+                <input type="text" ng-model="properties.favoriteNumber.received.number" />
                  
               </td>
             </tr>
@@ -126,7 +128,7 @@
           </table>
         </div>
         
-        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.favorite_number)" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.favoriteNumber)" />
         
     </div>
     
@@ -134,6 +136,7 @@
         <h3 class="component-title prop-title">Property: favorite_foods</h3>
         <div class="component-doc prop-doc">
         </div>
+        <!--<div class="property-topic topic">Subscribe: full/+/property/favoriteFoods/value</div>-->
         <div class="last-received property-value">
           
           <table class="arglist">
@@ -145,7 +148,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.favorite_foods.received.drink" />
+                <input type="text" ng-model="properties.favoriteFoods.received.drink" />
                  
               </td>
             </tr>
@@ -157,7 +160,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.favorite_foods.received.slices_of_pizza" />
+                <input type="text" ng-model="properties.favoriteFoods.received.slices_of_pizza" />
                  
               </td>
             </tr>
@@ -169,7 +172,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.favorite_foods.received.breakfast" />
+                <input type="text" ng-model="properties.favoriteFoods.received.breakfast" />
                  
               </td>
             </tr>
@@ -177,7 +180,7 @@
           </table>
         </div>
         
-        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.favorite_foods)" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.favoriteFoods)" />
         
     </div>
     
@@ -185,6 +188,7 @@
         <h3 class="component-title prop-title">Property: lunch_menu</h3>
         <div class="component-doc prop-doc">
         </div>
+        <!--<div class="property-topic topic">Subscribe: full/+/property/lunchMenu/value</div>-->
         <div class="last-received property-value">
           
           <table class="arglist">
@@ -208,7 +212,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.monday.drink" />
+                <input type="text" ng-model="properties.lunchMenu.received.monday.drink" />
                  
               </td>
             </tr>
@@ -220,7 +224,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.monday.sandwich" />
+                <input type="text" ng-model="properties.lunchMenu.received.monday.sandwich" />
                  
               </td>
             </tr>
@@ -232,7 +236,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.monday.crackers" />
+                <input type="text" ng-model="properties.lunchMenu.received.monday.crackers" />
                  
               </td>
             </tr>
@@ -244,7 +248,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <select ng-model="properties.lunch_menu.received.monday.day" ng-options="n.id as n.name for n in enums.day_of_the_week">
+                <select ng-model="properties.lunchMenu.received.monday.day" ng-options="n.id as n.name for n in enums.dayOfTheWeek">
                 </select>
                  
               </td>
@@ -257,7 +261,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.monday.order_number" />
+                <input type="text" ng-model="properties.lunchMenu.received.monday.order_number" />
                  
               </td>
             </tr>
@@ -269,7 +273,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.monday.time_of_lunch" placeholder="(unknown type)" />
+                <input type="text" ng-model="properties.lunchMenu.received.monday.time_of_lunch" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -281,7 +285,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.monday.duration_of_lunch" placeholder="(unknown type)" />
+                <input type="text" ng-model="properties.lunchMenu.received.monday.duration_of_lunch" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -313,7 +317,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.tuesday.drink" />
+                <input type="text" ng-model="properties.lunchMenu.received.tuesday.drink" />
                  
               </td>
             </tr>
@@ -325,7 +329,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.tuesday.sandwich" />
+                <input type="text" ng-model="properties.lunchMenu.received.tuesday.sandwich" />
                  
               </td>
             </tr>
@@ -337,7 +341,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.tuesday.crackers" />
+                <input type="text" ng-model="properties.lunchMenu.received.tuesday.crackers" />
                  
               </td>
             </tr>
@@ -349,7 +353,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <select ng-model="properties.lunch_menu.received.tuesday.day" ng-options="n.id as n.name for n in enums.day_of_the_week">
+                <select ng-model="properties.lunchMenu.received.tuesday.day" ng-options="n.id as n.name for n in enums.dayOfTheWeek">
                 </select>
                  
               </td>
@@ -362,7 +366,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.tuesday.order_number" />
+                <input type="text" ng-model="properties.lunchMenu.received.tuesday.order_number" />
                  
               </td>
             </tr>
@@ -374,7 +378,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.tuesday.time_of_lunch" placeholder="(unknown type)" />
+                <input type="text" ng-model="properties.lunchMenu.received.tuesday.time_of_lunch" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -386,7 +390,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.lunch_menu.received.tuesday.duration_of_lunch" placeholder="(unknown type)" />
+                <input type="text" ng-model="properties.lunchMenu.received.tuesday.duration_of_lunch" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -400,7 +404,7 @@
           </table>
         </div>
         
-        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.lunch_menu)" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.lunchMenu)" />
         
     </div>
     
@@ -410,6 +414,7 @@
 <p>This is to test a property with a single string value.</p>
         
         </div>
+        <!--<div class="property-topic topic">Subscribe: full/+/property/familyName/value</div>-->
         <div class="last-received property-value">
           
           <table class="arglist">
@@ -421,7 +426,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.family_name.received.family_name" />
+                <input type="text" ng-model="properties.familyName.received.family_name" />
                  
               </td>
             </tr>
@@ -429,7 +434,7 @@
           </table>
         </div>
         
-        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.family_name)" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.familyName)" />
         
     </div>
     
@@ -439,6 +444,7 @@
 <p>This is to test a property with a single datetime value.</p>
         
         </div>
+        <!--<div class="property-topic topic">Subscribe: full/+/property/lastBreakfastTime/value</div>-->
         <div class="last-received property-value">
           
           <table class="arglist">
@@ -450,7 +456,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.last_breakfast_time.received.timestamp" placeholder="(unknown type)" />
+                <input type="text" ng-model="properties.lastBreakfastTime.received.timestamp" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -458,7 +464,7 @@
           </table>
         </div>
         
-        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.last_breakfast_time)" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.lastBreakfastTime)" />
         
     </div>
     
@@ -468,6 +474,7 @@
 <p>This is to test a property with a single duration value.</p>
         
         </div>
+        <!--<div class="property-topic topic">Subscribe: full/+/property/breakfastLength/value</div>-->
         <div class="last-received property-value">
           
           <table class="arglist">
@@ -479,7 +486,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.breakfast_length.received.length" placeholder="(unknown type)" />
+                <input type="text" ng-model="properties.breakfastLength.received.length" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -487,7 +494,7 @@
           </table>
         </div>
         
-        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.breakfast_length)" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.breakfastLength)" />
         
     </div>
     
@@ -497,6 +504,7 @@
 <p>This is to test a property with multiple datetime values.</p>
         
         </div>
+        <!--<div class="property-topic topic">Subscribe: full/+/property/lastBirthdays/value</div>-->
         <div class="last-received property-value">
           
           <table class="arglist">
@@ -508,7 +516,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.last_birthdays.received.mom" placeholder="(unknown type)" />
+                <input type="text" ng-model="properties.lastBirthdays.received.mom" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -520,7 +528,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.last_birthdays.received.dad" placeholder="(unknown type)" />
+                <input type="text" ng-model="properties.lastBirthdays.received.dad" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -532,7 +540,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.last_birthdays.received.sister" placeholder="(unknown type)" />
+                <input type="text" ng-model="properties.lastBirthdays.received.sister" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -544,7 +552,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="properties.last_birthdays.received.brothers_age" />
+                <input type="text" ng-model="properties.lastBirthdays.received.brothers_age" />
                  
               </td>
             </tr>
@@ -552,7 +560,7 @@
           </table>
         </div>
         
-        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.last_birthdays)" />
+        <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.lastBirthdays)" />
         
     </div>
      
@@ -563,8 +571,9 @@
         <h3 class="component-title method-title">Method: addNumbers</h3>
         <div class="component-doc method-doc">
         </div>
+        <!--<div class="method-topic topic">Publish: full/+/method/addNumbers</div>-->
         <div class="method-form-box">
-            <form ng-submit="callMethod(methods.add_numbers)">
+            <form ng-submit="callMethod(methods.addNumbers)">
                 
           <table class="arglist">
           
@@ -575,7 +584,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="methods.add_numbers.args.first" />
+                <input type="text" ng-model="methods.addNumbers.args.first" />
                  
               </td>
             </tr>
@@ -587,7 +596,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="methods.add_numbers.args.second" />
+                <input type="text" ng-model="methods.addNumbers.args.second" />
                  
               </td>
             </tr>
@@ -599,7 +608,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="methods.add_numbers.args.third" />
+                <input type="text" ng-model="methods.addNumbers.args.third" />
                  
               </td>
             </tr>
@@ -620,8 +629,9 @@
         <h3 class="component-title method-title">Method: doSomething</h3>
         <div class="component-doc method-doc">
         </div>
+        <!--<div class="method-topic topic">Publish: full/+/method/doSomething</div>-->
         <div class="method-form-box">
-            <form ng-submit="callMethod(methods.do_something)">
+            <form ng-submit="callMethod(methods.doSomething)">
                 
           <table class="arglist">
           
@@ -632,7 +642,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="methods.do_something.args.aString" />
+                <input type="text" ng-model="methods.doSomething.args.aString" />
                  
               </td>
             </tr>
@@ -655,6 +665,7 @@
 <p>Echo back the received message.</p>
         
         </div>
+        <!--<div class="method-topic topic">Publish: full/+/method/echo</div>-->
         <div class="method-form-box">
             <form ng-submit="callMethod(methods.echo)">
                 
@@ -690,8 +701,9 @@
 <p>Get the current date and time.</p>
         
         </div>
+        <!--<div class="method-topic topic">Publish: full/+/method/whatTimeIsIt</div>-->
         <div class="method-form-box">
-            <form ng-submit="callMethod(methods.what_time_is_it)">
+            <form ng-submit="callMethod(methods.whatTimeIsIt)">
                 
           <table class="arglist">
           
@@ -702,7 +714,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="methods.what_time_is_it.args.the_first_time" placeholder="(unknown type)" />
+                <input type="text" ng-model="methods.whatTimeIsIt.args.the_first_time" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -711,7 +723,7 @@
                 <button type="submit" class="publish-button">Call what_time_is_it</button>
             </form>
         </div>
-        <div class="last-received method-response" ng-bind="methods['what_time_is_it'].received">
+        <div class="last-received method-response" ng-bind="methods['whatTimeIsIt'].received">
         
           <table class="arglist">
           
@@ -723,8 +735,9 @@
         <h3 class="component-title method-title">Method: set_the_time</h3>
         <div class="component-doc method-doc">
         </div>
+        <!--<div class="method-topic topic">Publish: full/+/method/setTheTime</div>-->
         <div class="method-form-box">
-            <form ng-submit="callMethod(methods.set_the_time)">
+            <form ng-submit="callMethod(methods.setTheTime)">
                 
           <table class="arglist">
           
@@ -735,7 +748,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="methods.set_the_time.args.the_first_time" placeholder="(unknown type)" />
+                <input type="text" ng-model="methods.setTheTime.args.the_first_time" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -747,7 +760,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="methods.set_the_time.args.the_second_time" placeholder="(unknown type)" />
+                <input type="text" ng-model="methods.setTheTime.args.the_second_time" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -756,7 +769,7 @@
                 <button type="submit" class="publish-button">Call set_the_time</button>
             </form>
         </div>
-        <div class="last-received method-response" ng-bind="methods['set_the_time'].received">
+        <div class="last-received method-response" ng-bind="methods['setTheTime'].received">
         
           <table class="arglist">
           
@@ -770,8 +783,9 @@
 <p>This method takes a time and a duration, and returns the time plus the duration.</p>
         
         </div>
+        <!--<div class="method-topic topic">Publish: full/+/method/forwardTime</div>-->
         <div class="method-form-box">
-            <form ng-submit="callMethod(methods.forward_time)">
+            <form ng-submit="callMethod(methods.forwardTime)">
                 
           <table class="arglist">
           
@@ -782,7 +796,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="methods.forward_time.args.adjustment" placeholder="(unknown type)" />
+                <input type="text" ng-model="methods.forwardTime.args.adjustment" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -791,7 +805,7 @@
                 <button type="submit" class="publish-button">Call forward_time</button>
             </form>
         </div>
-        <div class="last-received method-response" ng-bind="methods['forward_time'].received">
+        <div class="last-received method-response" ng-bind="methods['forwardTime'].received">
         
           <table class="arglist">
           
@@ -805,8 +819,9 @@
 <p>Returns how far off the clock is from the actual time.</p>
         
         </div>
+        <!--<div class="method-topic topic">Publish: full/+/method/howOffIsTheClock</div>-->
         <div class="method-form-box">
-            <form ng-submit="callMethod(methods.how_off_is_the_clock)">
+            <form ng-submit="callMethod(methods.howOffIsTheClock)">
                 
           <table class="arglist">
           
@@ -817,7 +832,7 @@
               </td>
               <td class="arg-value-cell">
                 
-                <input type="text" ng-model="methods.how_off_is_the_clock.args.actual_time" placeholder="(unknown type)" />
+                <input type="text" ng-model="methods.howOffIsTheClock.args.actual_time" placeholder="(unknown type)" />
                  
               </td>
             </tr>
@@ -826,7 +841,7 @@
                 <button type="submit" class="publish-button">Call how_off_is_the_clock</button>
             </form>
         </div>
-        <div class="last-received method-response" ng-bind="methods['how_off_is_the_clock'].received">
+        <div class="last-received method-response" ng-bind="methods['howOffIsTheClock'].received">
         
           <table class="arglist">
           

@@ -57,9 +57,6 @@ function generate_rust() {
         if [ $? -ne 0 ]; then
             RC=1
         fi
-        if [ "${IFACE_NAME}" == "testable" ]; then
-            EXAMPLE_PREFIX="test_able"
-        fi
         echo "${IFACE_NAME} | cargo check client_demo"
         (cd ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/rust/ && cargo check --example ${EXAMPLE_PREFIX}_client_demo --features client)
         if [ $? -ne 0 ]; then

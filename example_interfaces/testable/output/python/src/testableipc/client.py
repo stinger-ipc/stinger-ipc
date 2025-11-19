@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
 
-This is the Client for the Test Able interface.
+This is the Client for the testable interface.
 
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
@@ -24,7 +24,7 @@ import threading
 
 from .connection import IBrokerConnection
 
-from .property import TestAbleInitialPropertyValues
+from .property import TestableInitialPropertyValues
 
 from pydantic import BaseModel
 
@@ -111,16 +111,16 @@ ReadWriteListsPropertyUpdatedCallbackType = Callable[[ReadWriteListsProperty], N
 
 class DiscoveredInstance(BaseModel):
     instance_id: str
-    initial_property_values: TestAbleInitialPropertyValues
+    initial_property_values: TestableInitialPropertyValues
 
 
-class TestAbleClient:
+class TestableClient:
 
     def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
-        """Constructor for a `TestAbleClient` object."""
-        self._logger = logging.getLogger("TestAbleClient")
+        """Constructor for a `TestableClient` object."""
+        self._logger = logging.getLogger("TestableClient")
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing TestAbleClient")
+        self._logger.debug("Initializing TestableClient")
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
@@ -130,132 +130,132 @@ class TestAbleClient:
         self._property_read_write_integer = instance_info.initial_property_values.read_write_integer  # type: int
         self._property_read_write_integer_mutex = threading.Lock()
         self._property_read_write_integer_version = instance_info.initial_property_values.read_write_integer_version
-        self._conn.subscribe("testAble/{}/property/readWriteInteger/value".format(self._service_id), self._receive_read_write_integer_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteInteger/value".format(self._service_id), self._receive_read_write_integer_property_update_message)
         self._changed_value_callbacks_for_read_write_integer: list[ReadWriteIntegerPropertyUpdatedCallbackType] = []
         self._property_read_only_integer = instance_info.initial_property_values.read_only_integer  # type: int
         self._property_read_only_integer_mutex = threading.Lock()
         self._property_read_only_integer_version = instance_info.initial_property_values.read_only_integer_version
-        self._conn.subscribe("testAble/{}/property/readOnlyInteger/value".format(self._service_id), self._receive_read_only_integer_property_update_message)
+        self._conn.subscribe("testable/{}/property/readOnlyInteger/value".format(self._service_id), self._receive_read_only_integer_property_update_message)
         self._changed_value_callbacks_for_read_only_integer: list[ReadOnlyIntegerPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_integer = instance_info.initial_property_values.read_write_optional_integer  # type: Optional[int]
         self._property_read_write_optional_integer_mutex = threading.Lock()
         self._property_read_write_optional_integer_version = instance_info.initial_property_values.read_write_optional_integer_version
-        self._conn.subscribe("testAble/{}/property/readWriteOptionalInteger/value".format(self._service_id), self._receive_read_write_optional_integer_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteOptionalInteger/value".format(self._service_id), self._receive_read_write_optional_integer_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_integer: list[ReadWriteOptionalIntegerPropertyUpdatedCallbackType] = []
         self._property_read_write_two_integers = instance_info.initial_property_values.read_write_two_integers  # type: ReadWriteTwoIntegersProperty
         self._property_read_write_two_integers_mutex = threading.Lock()
         self._property_read_write_two_integers_version = instance_info.initial_property_values.read_write_two_integers_version
-        self._conn.subscribe("testAble/{}/property/readWriteTwoIntegers/value".format(self._service_id), self._receive_read_write_two_integers_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteTwoIntegers/value".format(self._service_id), self._receive_read_write_two_integers_property_update_message)
         self._changed_value_callbacks_for_read_write_two_integers: list[ReadWriteTwoIntegersPropertyUpdatedCallbackType] = []
         self._property_read_only_string = instance_info.initial_property_values.read_only_string  # type: str
         self._property_read_only_string_mutex = threading.Lock()
         self._property_read_only_string_version = instance_info.initial_property_values.read_only_string_version
-        self._conn.subscribe("testAble/{}/property/readOnlyString/value".format(self._service_id), self._receive_read_only_string_property_update_message)
+        self._conn.subscribe("testable/{}/property/readOnlyString/value".format(self._service_id), self._receive_read_only_string_property_update_message)
         self._changed_value_callbacks_for_read_only_string: list[ReadOnlyStringPropertyUpdatedCallbackType] = []
         self._property_read_write_string = instance_info.initial_property_values.read_write_string  # type: str
         self._property_read_write_string_mutex = threading.Lock()
         self._property_read_write_string_version = instance_info.initial_property_values.read_write_string_version
-        self._conn.subscribe("testAble/{}/property/readWriteString/value".format(self._service_id), self._receive_read_write_string_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteString/value".format(self._service_id), self._receive_read_write_string_property_update_message)
         self._changed_value_callbacks_for_read_write_string: list[ReadWriteStringPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_string = instance_info.initial_property_values.read_write_optional_string  # type: Optional[str]
         self._property_read_write_optional_string_mutex = threading.Lock()
         self._property_read_write_optional_string_version = instance_info.initial_property_values.read_write_optional_string_version
-        self._conn.subscribe("testAble/{}/property/readWriteOptionalString/value".format(self._service_id), self._receive_read_write_optional_string_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteOptionalString/value".format(self._service_id), self._receive_read_write_optional_string_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_string: list[ReadWriteOptionalStringPropertyUpdatedCallbackType] = []
         self._property_read_write_two_strings = instance_info.initial_property_values.read_write_two_strings  # type: ReadWriteTwoStringsProperty
         self._property_read_write_two_strings_mutex = threading.Lock()
         self._property_read_write_two_strings_version = instance_info.initial_property_values.read_write_two_strings_version
-        self._conn.subscribe("testAble/{}/property/readWriteTwoStrings/value".format(self._service_id), self._receive_read_write_two_strings_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteTwoStrings/value".format(self._service_id), self._receive_read_write_two_strings_property_update_message)
         self._changed_value_callbacks_for_read_write_two_strings: list[ReadWriteTwoStringsPropertyUpdatedCallbackType] = []
         self._property_read_write_struct = instance_info.initial_property_values.read_write_struct  # type: AllTypes
         self._property_read_write_struct_mutex = threading.Lock()
         self._property_read_write_struct_version = instance_info.initial_property_values.read_write_struct_version
-        self._conn.subscribe("testAble/{}/property/readWriteStruct/value".format(self._service_id), self._receive_read_write_struct_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteStruct/value".format(self._service_id), self._receive_read_write_struct_property_update_message)
         self._changed_value_callbacks_for_read_write_struct: list[ReadWriteStructPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_struct = instance_info.initial_property_values.read_write_optional_struct  # type: AllTypes
         self._property_read_write_optional_struct_mutex = threading.Lock()
         self._property_read_write_optional_struct_version = instance_info.initial_property_values.read_write_optional_struct_version
-        self._conn.subscribe("testAble/{}/property/readWriteOptionalStruct/value".format(self._service_id), self._receive_read_write_optional_struct_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteOptionalStruct/value".format(self._service_id), self._receive_read_write_optional_struct_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_struct: list[ReadWriteOptionalStructPropertyUpdatedCallbackType] = []
         self._property_read_write_two_structs = instance_info.initial_property_values.read_write_two_structs  # type: ReadWriteTwoStructsProperty
         self._property_read_write_two_structs_mutex = threading.Lock()
         self._property_read_write_two_structs_version = instance_info.initial_property_values.read_write_two_structs_version
-        self._conn.subscribe("testAble/{}/property/readWriteTwoStructs/value".format(self._service_id), self._receive_read_write_two_structs_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteTwoStructs/value".format(self._service_id), self._receive_read_write_two_structs_property_update_message)
         self._changed_value_callbacks_for_read_write_two_structs: list[ReadWriteTwoStructsPropertyUpdatedCallbackType] = []
         self._property_read_only_enum = instance_info.initial_property_values.read_only_enum  # type: Numbers
         self._property_read_only_enum_mutex = threading.Lock()
         self._property_read_only_enum_version = instance_info.initial_property_values.read_only_enum_version
-        self._conn.subscribe("testAble/{}/property/readOnlyEnum/value".format(self._service_id), self._receive_read_only_enum_property_update_message)
+        self._conn.subscribe("testable/{}/property/readOnlyEnum/value".format(self._service_id), self._receive_read_only_enum_property_update_message)
         self._changed_value_callbacks_for_read_only_enum: list[ReadOnlyEnumPropertyUpdatedCallbackType] = []
         self._property_read_write_enum = instance_info.initial_property_values.read_write_enum  # type: Numbers
         self._property_read_write_enum_mutex = threading.Lock()
         self._property_read_write_enum_version = instance_info.initial_property_values.read_write_enum_version
-        self._conn.subscribe("testAble/{}/property/readWriteEnum/value".format(self._service_id), self._receive_read_write_enum_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteEnum/value".format(self._service_id), self._receive_read_write_enum_property_update_message)
         self._changed_value_callbacks_for_read_write_enum: list[ReadWriteEnumPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_enum = instance_info.initial_property_values.read_write_optional_enum  # type: Optional[Numbers]
         self._property_read_write_optional_enum_mutex = threading.Lock()
         self._property_read_write_optional_enum_version = instance_info.initial_property_values.read_write_optional_enum_version
-        self._conn.subscribe("testAble/{}/property/readWriteOptionalEnum/value".format(self._service_id), self._receive_read_write_optional_enum_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteOptionalEnum/value".format(self._service_id), self._receive_read_write_optional_enum_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_enum: list[ReadWriteOptionalEnumPropertyUpdatedCallbackType] = []
         self._property_read_write_two_enums = instance_info.initial_property_values.read_write_two_enums  # type: ReadWriteTwoEnumsProperty
         self._property_read_write_two_enums_mutex = threading.Lock()
         self._property_read_write_two_enums_version = instance_info.initial_property_values.read_write_two_enums_version
-        self._conn.subscribe("testAble/{}/property/readWriteTwoEnums/value".format(self._service_id), self._receive_read_write_two_enums_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteTwoEnums/value".format(self._service_id), self._receive_read_write_two_enums_property_update_message)
         self._changed_value_callbacks_for_read_write_two_enums: list[ReadWriteTwoEnumsPropertyUpdatedCallbackType] = []
         self._property_read_write_datetime = instance_info.initial_property_values.read_write_datetime  # type: datetime
         self._property_read_write_datetime_mutex = threading.Lock()
         self._property_read_write_datetime_version = instance_info.initial_property_values.read_write_datetime_version
-        self._conn.subscribe("testAble/{}/property/readWriteDatetime/value".format(self._service_id), self._receive_read_write_datetime_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteDatetime/value".format(self._service_id), self._receive_read_write_datetime_property_update_message)
         self._changed_value_callbacks_for_read_write_datetime: list[ReadWriteDatetimePropertyUpdatedCallbackType] = []
         self._property_read_write_optional_datetime = instance_info.initial_property_values.read_write_optional_datetime  # type: Optional[datetime]
         self._property_read_write_optional_datetime_mutex = threading.Lock()
         self._property_read_write_optional_datetime_version = instance_info.initial_property_values.read_write_optional_datetime_version
-        self._conn.subscribe("testAble/{}/property/readWriteOptionalDatetime/value".format(self._service_id), self._receive_read_write_optional_datetime_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteOptionalDatetime/value".format(self._service_id), self._receive_read_write_optional_datetime_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_datetime: list[ReadWriteOptionalDatetimePropertyUpdatedCallbackType] = []
         self._property_read_write_two_datetimes = instance_info.initial_property_values.read_write_two_datetimes  # type: ReadWriteTwoDatetimesProperty
         self._property_read_write_two_datetimes_mutex = threading.Lock()
         self._property_read_write_two_datetimes_version = instance_info.initial_property_values.read_write_two_datetimes_version
-        self._conn.subscribe("testAble/{}/property/readWriteTwoDatetimes/value".format(self._service_id), self._receive_read_write_two_datetimes_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteTwoDatetimes/value".format(self._service_id), self._receive_read_write_two_datetimes_property_update_message)
         self._changed_value_callbacks_for_read_write_two_datetimes: list[ReadWriteTwoDatetimesPropertyUpdatedCallbackType] = []
         self._property_read_write_duration = instance_info.initial_property_values.read_write_duration  # type: timedelta
         self._property_read_write_duration_mutex = threading.Lock()
         self._property_read_write_duration_version = instance_info.initial_property_values.read_write_duration_version
-        self._conn.subscribe("testAble/{}/property/readWriteDuration/value".format(self._service_id), self._receive_read_write_duration_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteDuration/value".format(self._service_id), self._receive_read_write_duration_property_update_message)
         self._changed_value_callbacks_for_read_write_duration: list[ReadWriteDurationPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_duration = instance_info.initial_property_values.read_write_optional_duration  # type: Optional[timedelta]
         self._property_read_write_optional_duration_mutex = threading.Lock()
         self._property_read_write_optional_duration_version = instance_info.initial_property_values.read_write_optional_duration_version
-        self._conn.subscribe("testAble/{}/property/readWriteOptionalDuration/value".format(self._service_id), self._receive_read_write_optional_duration_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteOptionalDuration/value".format(self._service_id), self._receive_read_write_optional_duration_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_duration: list[ReadWriteOptionalDurationPropertyUpdatedCallbackType] = []
         self._property_read_write_two_durations = instance_info.initial_property_values.read_write_two_durations  # type: ReadWriteTwoDurationsProperty
         self._property_read_write_two_durations_mutex = threading.Lock()
         self._property_read_write_two_durations_version = instance_info.initial_property_values.read_write_two_durations_version
-        self._conn.subscribe("testAble/{}/property/readWriteTwoDurations/value".format(self._service_id), self._receive_read_write_two_durations_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteTwoDurations/value".format(self._service_id), self._receive_read_write_two_durations_property_update_message)
         self._changed_value_callbacks_for_read_write_two_durations: list[ReadWriteTwoDurationsPropertyUpdatedCallbackType] = []
         self._property_read_write_binary = instance_info.initial_property_values.read_write_binary  # type: bytes
         self._property_read_write_binary_mutex = threading.Lock()
         self._property_read_write_binary_version = instance_info.initial_property_values.read_write_binary_version
-        self._conn.subscribe("testAble/{}/property/readWriteBinary/value".format(self._service_id), self._receive_read_write_binary_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteBinary/value".format(self._service_id), self._receive_read_write_binary_property_update_message)
         self._changed_value_callbacks_for_read_write_binary: list[ReadWriteBinaryPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_binary = instance_info.initial_property_values.read_write_optional_binary  # type: bytes
         self._property_read_write_optional_binary_mutex = threading.Lock()
         self._property_read_write_optional_binary_version = instance_info.initial_property_values.read_write_optional_binary_version
-        self._conn.subscribe("testAble/{}/property/readWriteOptionalBinary/value".format(self._service_id), self._receive_read_write_optional_binary_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteOptionalBinary/value".format(self._service_id), self._receive_read_write_optional_binary_property_update_message)
         self._changed_value_callbacks_for_read_write_optional_binary: list[ReadWriteOptionalBinaryPropertyUpdatedCallbackType] = []
         self._property_read_write_two_binaries = instance_info.initial_property_values.read_write_two_binaries  # type: ReadWriteTwoBinariesProperty
         self._property_read_write_two_binaries_mutex = threading.Lock()
         self._property_read_write_two_binaries_version = instance_info.initial_property_values.read_write_two_binaries_version
-        self._conn.subscribe("testAble/{}/property/readWriteTwoBinaries/value".format(self._service_id), self._receive_read_write_two_binaries_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteTwoBinaries/value".format(self._service_id), self._receive_read_write_two_binaries_property_update_message)
         self._changed_value_callbacks_for_read_write_two_binaries: list[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
         self._property_read_write_list_of_strings = instance_info.initial_property_values.read_write_list_of_strings  # type: List[str]
         self._property_read_write_list_of_strings_mutex = threading.Lock()
         self._property_read_write_list_of_strings_version = instance_info.initial_property_values.read_write_list_of_strings_version
-        self._conn.subscribe("testAble/{}/property/readWriteListOfStrings/value".format(self._service_id), self._receive_read_write_list_of_strings_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteListOfStrings/value".format(self._service_id), self._receive_read_write_list_of_strings_property_update_message)
         self._changed_value_callbacks_for_read_write_list_of_strings: list[ReadWriteListOfStringsPropertyUpdatedCallbackType] = []
         self._property_read_write_lists = instance_info.initial_property_values.read_write_lists  # type: ReadWriteListsProperty
         self._property_read_write_lists_mutex = threading.Lock()
         self._property_read_write_lists_version = instance_info.initial_property_values.read_write_lists_version
-        self._conn.subscribe("testAble/{}/property/readWriteLists/value".format(self._service_id), self._receive_read_write_lists_property_update_message)
+        self._conn.subscribe("testable/{}/property/readWriteLists/value".format(self._service_id), self._receive_read_write_lists_property_update_message)
         self._changed_value_callbacks_for_read_write_lists: list[ReadWriteListsPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_empty: list[EmptySignalCallbackType] = []
         self._signal_recv_callbacks_for_single_int: list[SingleIntSignalCallbackType] = []
@@ -282,9 +282,9 @@ class TestAbleClient:
         self._signal_recv_callbacks_for_single_array_of_integers: list[SingleArrayOfIntegersSignalCallbackType] = []
         self._signal_recv_callbacks_for_single_optional_array_of_strings: list[SingleOptionalArrayOfStringsSignalCallbackType] = []
         self._signal_recv_callbacks_for_array_of_every_type: list[ArrayOfEveryTypeSignalCallbackType] = []
-        self._conn.subscribe(f"client/{self._conn.client_id}/Test Able/methodResponse", self._receive_any_method_response_message)
+        self._conn.subscribe(f"client/{self._conn.client_id}/testable/methodResponse", self._receive_any_method_response_message)
 
-        self._property_response_topic = f"client/{self._conn.client_id}/Test Able/propertyUpdateResponse"
+        self._property_response_topic = f"client/{self._conn.client_id}/testable/propertyUpdateResponse"
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
 
     @property
@@ -302,7 +302,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_integer' property to %s", property_obj)
         with self._property_read_write_integer_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_integer_version), self._property_response_topic
+                "testable/{}/property/readWriteInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_integer_version), self._property_response_topic
             )
 
     def read_write_integer_changed(self, handler: ReadWriteIntegerPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -346,7 +346,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_optional_integer' property to %s", property_obj)
         with self._property_read_write_optional_integer_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteOptionalInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_integer_version), self._property_response_topic
+                "testable/{}/property/readWriteOptionalInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_integer_version), self._property_response_topic
             )
 
     def read_write_optional_integer_changed(self, handler: ReadWriteOptionalIntegerPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -374,7 +374,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_two_integers' property to %s", property_obj)
         with self._property_read_write_two_integers_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteTwoIntegers/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_integers_version), self._property_response_topic
+                "testable/{}/property/readWriteTwoIntegers/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_integers_version), self._property_response_topic
             )
 
     def read_write_two_integers_changed(self, handler: ReadWriteTwoIntegersPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -418,7 +418,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_string' property to %s", property_obj)
         with self._property_read_write_string_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteString/setValue".format(self._service_id), property_obj, str(self._property_read_write_string_version), self._property_response_topic
+                "testable/{}/property/readWriteString/setValue".format(self._service_id), property_obj, str(self._property_read_write_string_version), self._property_response_topic
             )
 
     def read_write_string_changed(self, handler: ReadWriteStringPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -446,7 +446,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_optional_string' property to %s", property_obj)
         with self._property_read_write_optional_string_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteOptionalString/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_string_version), self._property_response_topic
+                "testable/{}/property/readWriteOptionalString/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_string_version), self._property_response_topic
             )
 
     def read_write_optional_string_changed(self, handler: ReadWriteOptionalStringPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -474,7 +474,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_two_strings' property to %s", property_obj)
         with self._property_read_write_two_strings_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteTwoStrings/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_strings_version), self._property_response_topic
+                "testable/{}/property/readWriteTwoStrings/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_strings_version), self._property_response_topic
             )
 
     def read_write_two_strings_changed(self, handler: ReadWriteTwoStringsPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -502,7 +502,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_struct' property to %s", property_obj)
         with self._property_read_write_struct_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_struct_version), self._property_response_topic
+                "testable/{}/property/readWriteStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_struct_version), self._property_response_topic
             )
 
     def read_write_struct_changed(self, handler: ReadWriteStructPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -530,7 +530,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_optional_struct' property to %s", property_obj)
         with self._property_read_write_optional_struct_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteOptionalStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_struct_version), self._property_response_topic
+                "testable/{}/property/readWriteOptionalStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_struct_version), self._property_response_topic
             )
 
     def read_write_optional_struct_changed(self, handler: ReadWriteOptionalStructPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -558,7 +558,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_two_structs' property to %s", property_obj)
         with self._property_read_write_two_structs_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteTwoStructs/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_structs_version), self._property_response_topic
+                "testable/{}/property/readWriteTwoStructs/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_structs_version), self._property_response_topic
             )
 
     def read_write_two_structs_changed(self, handler: ReadWriteTwoStructsPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -602,7 +602,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_enum' property to %s", property_obj)
         with self._property_read_write_enum_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_enum_version), self._property_response_topic
+                "testable/{}/property/readWriteEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_enum_version), self._property_response_topic
             )
 
     def read_write_enum_changed(self, handler: ReadWriteEnumPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -630,7 +630,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_optional_enum' property to %s", property_obj)
         with self._property_read_write_optional_enum_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteOptionalEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_enum_version), self._property_response_topic
+                "testable/{}/property/readWriteOptionalEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_enum_version), self._property_response_topic
             )
 
     def read_write_optional_enum_changed(self, handler: ReadWriteOptionalEnumPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -658,7 +658,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_two_enums' property to %s", property_obj)
         with self._property_read_write_two_enums_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteTwoEnums/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_enums_version), self._property_response_topic
+                "testable/{}/property/readWriteTwoEnums/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_enums_version), self._property_response_topic
             )
 
     def read_write_two_enums_changed(self, handler: ReadWriteTwoEnumsPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -686,7 +686,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_datetime' property to %s", property_obj)
         with self._property_read_write_datetime_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteDatetime/setValue".format(self._service_id), property_obj, str(self._property_read_write_datetime_version), self._property_response_topic
+                "testable/{}/property/readWriteDatetime/setValue".format(self._service_id), property_obj, str(self._property_read_write_datetime_version), self._property_response_topic
             )
 
     def read_write_datetime_changed(self, handler: ReadWriteDatetimePropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -714,7 +714,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_optional_datetime' property to %s", property_obj)
         with self._property_read_write_optional_datetime_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteOptionalDatetime/setValue".format(self._service_id),
+                "testable/{}/property/readWriteOptionalDatetime/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_datetime_version),
                 self._property_response_topic,
@@ -745,7 +745,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_two_datetimes' property to %s", property_obj)
         with self._property_read_write_two_datetimes_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteTwoDatetimes/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_datetimes_version), self._property_response_topic
+                "testable/{}/property/readWriteTwoDatetimes/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_datetimes_version), self._property_response_topic
             )
 
     def read_write_two_datetimes_changed(self, handler: ReadWriteTwoDatetimesPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -773,7 +773,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_duration' property to %s", property_obj)
         with self._property_read_write_duration_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteDuration/setValue".format(self._service_id), property_obj, str(self._property_read_write_duration_version), self._property_response_topic
+                "testable/{}/property/readWriteDuration/setValue".format(self._service_id), property_obj, str(self._property_read_write_duration_version), self._property_response_topic
             )
 
     def read_write_duration_changed(self, handler: ReadWriteDurationPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -801,7 +801,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_optional_duration' property to %s", property_obj)
         with self._property_read_write_optional_duration_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteOptionalDuration/setValue".format(self._service_id),
+                "testable/{}/property/readWriteOptionalDuration/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_duration_version),
                 self._property_response_topic,
@@ -832,7 +832,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_two_durations' property to %s", property_obj)
         with self._property_read_write_two_durations_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteTwoDurations/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_durations_version), self._property_response_topic
+                "testable/{}/property/readWriteTwoDurations/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_durations_version), self._property_response_topic
             )
 
     def read_write_two_durations_changed(self, handler: ReadWriteTwoDurationsPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -860,7 +860,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_binary' property to %s", property_obj)
         with self._property_read_write_binary_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_binary_version), self._property_response_topic
+                "testable/{}/property/readWriteBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_binary_version), self._property_response_topic
             )
 
     def read_write_binary_changed(self, handler: ReadWriteBinaryPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -888,7 +888,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_optional_binary' property to %s", property_obj)
         with self._property_read_write_optional_binary_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteOptionalBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_binary_version), self._property_response_topic
+                "testable/{}/property/readWriteOptionalBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_binary_version), self._property_response_topic
             )
 
     def read_write_optional_binary_changed(self, handler: ReadWriteOptionalBinaryPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -916,7 +916,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_two_binaries' property to %s", property_obj)
         with self._property_read_write_two_binaries_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteTwoBinaries/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_binaries_version), self._property_response_topic
+                "testable/{}/property/readWriteTwoBinaries/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_binaries_version), self._property_response_topic
             )
 
     def read_write_two_binaries_changed(self, handler: ReadWriteTwoBinariesPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -944,7 +944,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_list_of_strings' property to %s", property_obj)
         with self._property_read_write_list_of_strings_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteListOfStrings/setValue".format(self._service_id), property_obj, str(self._property_read_write_list_of_strings_version), self._property_response_topic
+                "testable/{}/property/readWriteListOfStrings/setValue".format(self._service_id), property_obj, str(self._property_read_write_list_of_strings_version), self._property_response_topic
             )
 
     def read_write_list_of_strings_changed(self, handler: ReadWriteListOfStringsPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -972,7 +972,7 @@ class TestAbleClient:
         self._logger.debug("Setting 'read_write_lists' property to %s", property_obj)
         with self._property_read_write_lists_mutex:
             self._conn.publish_property_update_request(
-                "testAble/{}/property/readWriteLists/setValue".format(self._service_id), property_obj, str(self._property_read_write_lists_version), self._property_response_topic
+                "testable/{}/property/readWriteLists/setValue".format(self._service_id), property_obj, str(self._property_read_write_lists_version), self._property_response_topic
             )
 
     def read_write_lists_changed(self, handler: ReadWriteListsPropertyUpdatedCallbackType, call_immediately: bool = False):
@@ -1756,175 +1756,175 @@ class TestAbleClient:
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_empty.append(handler)
         if len(self._signal_recv_callbacks_for_empty) == 1:
-            self._conn.subscribe("testAble/{}/signal/empty".format(self._service_id), self._receive_empty_signal_message)
+            self._conn.subscribe("testable/{}/signal/empty".format(self._service_id), self._receive_empty_signal_message)
         return handler
 
     def receive_single_int(self, handler: SingleIntSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_int.append(handler)
         if len(self._signal_recv_callbacks_for_single_int) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleInt".format(self._service_id), self._receive_single_int_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleInt".format(self._service_id), self._receive_single_int_signal_message)
         return handler
 
     def receive_single_optional_int(self, handler: SingleOptionalIntSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_int.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_int) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleOptionalInt".format(self._service_id), self._receive_single_optional_int_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleOptionalInt".format(self._service_id), self._receive_single_optional_int_signal_message)
         return handler
 
     def receive_three_integers(self, handler: ThreeIntegersSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_integers.append(handler)
         if len(self._signal_recv_callbacks_for_three_integers) == 1:
-            self._conn.subscribe("testAble/{}/signal/threeIntegers".format(self._service_id), self._receive_three_integers_signal_message)
+            self._conn.subscribe("testable/{}/signal/threeIntegers".format(self._service_id), self._receive_three_integers_signal_message)
         return handler
 
     def receive_single_string(self, handler: SingleStringSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_string.append(handler)
         if len(self._signal_recv_callbacks_for_single_string) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleString".format(self._service_id), self._receive_single_string_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleString".format(self._service_id), self._receive_single_string_signal_message)
         return handler
 
     def receive_single_optional_string(self, handler: SingleOptionalStringSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_string.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_string) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleOptionalString".format(self._service_id), self._receive_single_optional_string_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleOptionalString".format(self._service_id), self._receive_single_optional_string_signal_message)
         return handler
 
     def receive_three_strings(self, handler: ThreeStringsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_strings.append(handler)
         if len(self._signal_recv_callbacks_for_three_strings) == 1:
-            self._conn.subscribe("testAble/{}/signal/threeStrings".format(self._service_id), self._receive_three_strings_signal_message)
+            self._conn.subscribe("testable/{}/signal/threeStrings".format(self._service_id), self._receive_three_strings_signal_message)
         return handler
 
     def receive_single_enum(self, handler: SingleEnumSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_enum.append(handler)
         if len(self._signal_recv_callbacks_for_single_enum) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleEnum".format(self._service_id), self._receive_single_enum_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleEnum".format(self._service_id), self._receive_single_enum_signal_message)
         return handler
 
     def receive_single_optional_enum(self, handler: SingleOptionalEnumSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_enum.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_enum) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleOptionalEnum".format(self._service_id), self._receive_single_optional_enum_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleOptionalEnum".format(self._service_id), self._receive_single_optional_enum_signal_message)
         return handler
 
     def receive_three_enums(self, handler: ThreeEnumsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_enums.append(handler)
         if len(self._signal_recv_callbacks_for_three_enums) == 1:
-            self._conn.subscribe("testAble/{}/signal/threeEnums".format(self._service_id), self._receive_three_enums_signal_message)
+            self._conn.subscribe("testable/{}/signal/threeEnums".format(self._service_id), self._receive_three_enums_signal_message)
         return handler
 
     def receive_single_struct(self, handler: SingleStructSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_struct.append(handler)
         if len(self._signal_recv_callbacks_for_single_struct) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleStruct".format(self._service_id), self._receive_single_struct_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleStruct".format(self._service_id), self._receive_single_struct_signal_message)
         return handler
 
     def receive_single_optional_struct(self, handler: SingleOptionalStructSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_struct.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_struct) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleOptionalStruct".format(self._service_id), self._receive_single_optional_struct_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleOptionalStruct".format(self._service_id), self._receive_single_optional_struct_signal_message)
         return handler
 
     def receive_three_structs(self, handler: ThreeStructsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_structs.append(handler)
         if len(self._signal_recv_callbacks_for_three_structs) == 1:
-            self._conn.subscribe("testAble/{}/signal/threeStructs".format(self._service_id), self._receive_three_structs_signal_message)
+            self._conn.subscribe("testable/{}/signal/threeStructs".format(self._service_id), self._receive_three_structs_signal_message)
         return handler
 
     def receive_single_date_time(self, handler: SingleDateTimeSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_date_time.append(handler)
         if len(self._signal_recv_callbacks_for_single_date_time) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleDateTime".format(self._service_id), self._receive_single_date_time_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleDateTime".format(self._service_id), self._receive_single_date_time_signal_message)
         return handler
 
     def receive_single_optional_datetime(self, handler: SingleOptionalDatetimeSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_datetime.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_datetime) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleOptionalDatetime".format(self._service_id), self._receive_single_optional_datetime_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleOptionalDatetime".format(self._service_id), self._receive_single_optional_datetime_signal_message)
         return handler
 
     def receive_three_date_times(self, handler: ThreeDateTimesSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_date_times.append(handler)
         if len(self._signal_recv_callbacks_for_three_date_times) == 1:
-            self._conn.subscribe("testAble/{}/signal/threeDateTimes".format(self._service_id), self._receive_three_date_times_signal_message)
+            self._conn.subscribe("testable/{}/signal/threeDateTimes".format(self._service_id), self._receive_three_date_times_signal_message)
         return handler
 
     def receive_single_duration(self, handler: SingleDurationSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_duration.append(handler)
         if len(self._signal_recv_callbacks_for_single_duration) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleDuration".format(self._service_id), self._receive_single_duration_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleDuration".format(self._service_id), self._receive_single_duration_signal_message)
         return handler
 
     def receive_single_optional_duration(self, handler: SingleOptionalDurationSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_duration.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_duration) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleOptionalDuration".format(self._service_id), self._receive_single_optional_duration_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleOptionalDuration".format(self._service_id), self._receive_single_optional_duration_signal_message)
         return handler
 
     def receive_three_durations(self, handler: ThreeDurationsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_durations.append(handler)
         if len(self._signal_recv_callbacks_for_three_durations) == 1:
-            self._conn.subscribe("testAble/{}/signal/threeDurations".format(self._service_id), self._receive_three_durations_signal_message)
+            self._conn.subscribe("testable/{}/signal/threeDurations".format(self._service_id), self._receive_three_durations_signal_message)
         return handler
 
     def receive_single_binary(self, handler: SingleBinarySignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_binary.append(handler)
         if len(self._signal_recv_callbacks_for_single_binary) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleBinary".format(self._service_id), self._receive_single_binary_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleBinary".format(self._service_id), self._receive_single_binary_signal_message)
         return handler
 
     def receive_single_optional_binary(self, handler: SingleOptionalBinarySignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_binary.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_binary) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleOptionalBinary".format(self._service_id), self._receive_single_optional_binary_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleOptionalBinary".format(self._service_id), self._receive_single_optional_binary_signal_message)
         return handler
 
     def receive_three_binaries(self, handler: ThreeBinariesSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_binaries.append(handler)
         if len(self._signal_recv_callbacks_for_three_binaries) == 1:
-            self._conn.subscribe("testAble/{}/signal/threeBinaries".format(self._service_id), self._receive_three_binaries_signal_message)
+            self._conn.subscribe("testable/{}/signal/threeBinaries".format(self._service_id), self._receive_three_binaries_signal_message)
         return handler
 
     def receive_single_array_of_integers(self, handler: SingleArrayOfIntegersSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_array_of_integers.append(handler)
         if len(self._signal_recv_callbacks_for_single_array_of_integers) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleArrayOfIntegers".format(self._service_id), self._receive_single_array_of_integers_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleArrayOfIntegers".format(self._service_id), self._receive_single_array_of_integers_signal_message)
         return handler
 
     def receive_single_optional_array_of_strings(self, handler: SingleOptionalArrayOfStringsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_array_of_strings.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_array_of_strings) == 1:
-            self._conn.subscribe("testAble/{}/signal/singleOptionalArrayOfStrings".format(self._service_id), self._receive_single_optional_array_of_strings_signal_message)
+            self._conn.subscribe("testable/{}/signal/singleOptionalArrayOfStrings".format(self._service_id), self._receive_single_optional_array_of_strings_signal_message)
         return handler
 
     def receive_array_of_every_type(self, handler: ArrayOfEveryTypeSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_array_of_every_type.append(handler)
         if len(self._signal_recv_callbacks_for_array_of_every_type) == 1:
-            self._conn.subscribe("testAble/{}/signal/arrayOfEveryType".format(self._service_id), self._receive_array_of_every_type_signal_message)
+            self._conn.subscribe("testable/{}/signal/arrayOfEveryType".format(self._service_id), self._receive_array_of_every_type_signal_message)
         return handler
 
     def call_with_nothing(
@@ -1937,8 +1937,8 @@ class TestAbleClient:
         payload = CallWithNothingMethodRequest()
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callWithNothing' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callWithNothing".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callWithNothing".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_with_nothing_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -1971,8 +1971,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneInteger' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOneInteger".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOneInteger".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_one_integer_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2004,8 +2004,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalInteger' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOptionalInteger".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOptionalInteger".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_optional_integer_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2039,8 +2039,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeIntegers' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callThreeIntegers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callThreeIntegers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_three_integers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2072,8 +2072,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneString' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOneString".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOneString".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_one_string_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2105,8 +2105,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalString' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOptionalString".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOptionalString".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_optional_string_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2140,8 +2140,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeStrings' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callThreeStrings".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callThreeStrings".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_three_strings_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2173,8 +2173,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneEnum' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOneEnum".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOneEnum".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_one_enum_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2206,8 +2206,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalEnum' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOptionalEnum".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOptionalEnum".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_optional_enum_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2241,8 +2241,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeEnums' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callThreeEnums".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callThreeEnums".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_three_enums_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2274,8 +2274,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneStruct' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOneStruct".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOneStruct".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_one_struct_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2307,8 +2307,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalStruct' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOptionalStruct".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOptionalStruct".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_optional_struct_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2342,8 +2342,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeStructs' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callThreeStructs".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callThreeStructs".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_three_structs_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2375,8 +2375,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneDateTime' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOneDateTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOneDateTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_one_date_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2408,8 +2408,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalDateTime' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOptionalDateTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOptionalDateTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_optional_date_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2443,8 +2443,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeDateTimes' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callThreeDateTimes".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callThreeDateTimes".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_three_date_times_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2476,8 +2476,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneDuration' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOneDuration".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOneDuration".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_one_duration_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2509,8 +2509,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalDuration' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOptionalDuration".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOptionalDuration".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_optional_duration_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2544,8 +2544,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeDurations' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callThreeDurations".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callThreeDurations".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_three_durations_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2577,8 +2577,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneBinary' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOneBinary".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOneBinary".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_one_binary_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2610,8 +2610,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalBinary' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOptionalBinary".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOptionalBinary".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_optional_binary_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2645,8 +2645,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callThreeBinaries' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callThreeBinaries".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callThreeBinaries".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_three_binaries_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2678,8 +2678,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOneListOfIntegers' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOneListOfIntegers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOneListOfIntegers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_one_list_of_integers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2711,8 +2711,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callOptionalListOfFloats' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callOptionalListOfFloats".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callOptionalListOfFloats".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_optional_list_of_floats_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2745,8 +2745,8 @@ class TestAbleClient:
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'callTwoLists' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Test Able/methodResponse"
-        self._conn.publish("testAble/{}/method/callTwoLists".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
+        self._conn.publish("testable/{}/method/callTwoLists".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
     def _handle_call_two_lists_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2769,16 +2769,16 @@ class TestAbleClient:
             self._logger.warning("Future for 'callTwoLists' method was already done!")
 
 
-class TestAbleClientBuilder:
-    """Using decorators from TestAbleClient doesn't work if you are trying to create multiple instances of TestAbleClient.
+class TestableClientBuilder:
+    """Using decorators from TestableClient doesn't work if you are trying to create multiple instances of TestableClient.
     Instead, use this builder to create a registry of callbacks, and then build clients using the registry.
 
-    When ready to create a TestAbleClient instance, call the `build(broker, service_instance_id)` method.
+    When ready to create a TestableClient instance, call the `build(broker, service_instance_id)` method.
     """
 
     def __init__(self):
-        """Creates a new TestAbleClientBuilder."""
-        self._logger = logging.getLogger("TestAbleClientBuilder")
+        """Creates a new TestableClientBuilder."""
+        self._logger = logging.getLogger("TestableClientBuilder")
         self._signal_recv_callbacks_for_empty = []  # type: List[EmptySignalCallbackType]
         self._signal_recv_callbacks_for_single_int = []  # type: List[SingleIntSignalCallbackType]
         self._signal_recv_callbacks_for_single_optional_int = []  # type: List[SingleOptionalIntSignalCallbackType]
@@ -3341,10 +3341,10 @@ class TestAbleClientBuilder:
         self._property_updated_callbacks_for_read_write_lists.append(wrapper)
         return wrapper
 
-    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> TestAbleClient:
-        """Builds a new TestAbleClient."""
-        self._logger.debug("Building TestAbleClient for service instance %s", instance_info.instance_id)
-        client = TestAbleClient(broker, instance_info)
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> TestableClient:
+        """Builds a new TestableClient."""
+        self._logger.debug("Building TestableClient for service instance %s", instance_info.instance_id)
+        client = TestableClient(broker, instance_info)
 
         for cb in self._signal_recv_callbacks_for_empty:
             if binding:
@@ -3706,18 +3706,18 @@ class TestAbleClientBuilder:
         return client
 
 
-class TestAbleClientDiscoverer:
+class TestableClientDiscoverer:
 
-    def __init__(self, connection: IBrokerConnection, builder: Optional[TestAbleClientBuilder] = None, build_binding: Optional[Any] = None):
-        """Creates a new TestAbleClientDiscoverer."""
+    def __init__(self, connection: IBrokerConnection, builder: Optional[TestableClientBuilder] = None, build_binding: Optional[Any] = None):
+        """Creates a new TestableClientDiscoverer."""
         self._conn = connection
         self._builder = builder
         self._build_binding = build_binding
-        self._logger = logging.getLogger("TestAbleClientDiscoverer")
+        self._logger = logging.getLogger("TestableClientDiscoverer")
         self._logger.setLevel(logging.DEBUG)
-        service_discovery_topic = "testAble/{}/interface".format("+")
+        service_discovery_topic = "testable/{}/interface".format("+")
         self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
-        self._conn.subscribe("testAble/+/property/+/value", self._process_property_value_message)
+        self._conn.subscribe("testable/+/property/+/value", self._process_property_value_message)
         self._mutex = threading.Lock()
         self._pending_futures: List[futures.Future] = []
         self._removed_service_callbacks: List[Callable[[str], None]] = []
@@ -3750,16 +3750,16 @@ class TestAbleClientDiscoverer:
         with self._mutex:
             return self._discovered_services.get(instance_id, None)
 
-    def get_singleton_client(self) -> futures.Future[TestAbleClient]:
-        """Returns a TestAbleClient for the single discovered service.
+    def get_singleton_client(self) -> futures.Future[TestableClient]:
+        """Returns a TestableClient for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
-        fut = futures.Future()  # type: futures.Future[TestAbleClient]
+        fut = futures.Future()  # type: futures.Future[TestableClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
                 instance_info = next(iter(self._discovered_services))
                 if self._builder is None:
-                    fut.set_result(TestAbleClient(self._conn, instance_info))
+                    fut.set_result(TestableClient(self._conn, instance_info))
                 else:
                     new_client = self._builder.build(self._conn, instance_info, self._build_binding)
                     fut.set_result(new_client)
@@ -3772,7 +3772,7 @@ class TestAbleClientDiscoverer:
         with self._mutex:
             if instance_id in self._discovered_properties and len(self._discovered_properties[instance_id]) == 52 and instance_id in self._discovered_interface_infos:
 
-                entry = DiscoveredInstance(instance_id=instance_id, initial_property_values=TestAbleInitialPropertyValues(**self._discovered_properties[instance_id]))
+                entry = DiscoveredInstance(instance_id=instance_id, initial_property_values=TestableInitialPropertyValues(**self._discovered_properties[instance_id]))
 
                 self._discovered_services[instance_id] = entry
                 while self._pending_futures:
@@ -3781,7 +3781,7 @@ class TestAbleClientDiscoverer:
                         if self._builder is not None:
                             fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
                         else:
-                            fut.set_result(TestAbleClient(self._conn, entry))
+                            fut.set_result(TestableClient(self._conn, entry))
                 if not instance_id in self._discovered_services:
                     self._logger.info("Discovered service: %s.instance", instance_id)
                     for cb in self._discovered_service_callbacks:

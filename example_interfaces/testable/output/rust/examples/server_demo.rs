@@ -2,7 +2,7 @@
 DO NOT MODIFY THIS FILE .  It is automatically generated and changes will be over-written
 on the next generation.
 
-It contains enumerations used by the Test Able interface.
+It contains enumerations used by the testable interface.
 
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
@@ -10,8 +10,8 @@ TODO: Get license text from stinger file
 use std::any::Any;
 
 use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
-use test_able_ipc::property::TestAbleInitialPropertyValues;
-use test_able_ipc::server::{TestAbleMethodHandlers, TestAbleServer};
+use testable_ipc::property::TestableInitialPropertyValues;
+use testable_ipc::server::{TestableMethodHandlers, TestableServer};
 use tokio::time::{sleep, Duration};
 
 use async_trait::async_trait;
@@ -20,24 +20,24 @@ use tokio::sync::Mutex;
 use tracing_subscriber;
 
 #[allow(unused_imports)]
-use test_able_ipc::payloads::{MethodReturnCode, *};
+use testable_ipc::payloads::{MethodReturnCode, *};
 use tokio::join;
 
-struct TestAbleMethodImpl {
-    server: Option<TestAbleServer<MqttierClient>>,
+struct TestableMethodImpl {
+    server: Option<TestableServer<MqttierClient>>,
 }
 
-impl TestAbleMethodImpl {
+impl TestableMethodImpl {
     fn new() -> Self {
         Self { server: None }
     }
 }
 
 #[async_trait]
-impl TestAbleMethodHandlers<MqttierClient> for TestAbleMethodImpl {
+impl TestableMethodHandlers<MqttierClient> for TestableMethodImpl {
     async fn initialize(
         &mut self,
-        server: TestAbleServer<MqttierClient>,
+        server: TestableServer<MqttierClient>,
     ) -> Result<(), MethodReturnCode> {
         self.server = Some(server.clone());
         Ok(())
@@ -719,7 +719,7 @@ async fn main() {
     let mut connection = MqttierClient::new(mqttier_options).unwrap();
     let _ = connection.start().await.unwrap();
 
-    let initial_property_values = TestAbleInitialPropertyValues {
+    let initial_property_values = TestableInitialPropertyValues {
         read_write_integer: 42,
         read_write_integer_version: 1,
 
@@ -1152,11 +1152,11 @@ async fn main() {
     };
 
     // Create an object that implements the method handlers.
-    let handlers: Arc<Mutex<Box<dyn TestAbleMethodHandlers<MqttierClient>>>> =
-        Arc::new(Mutex::new(Box::new(TestAbleMethodImpl::new())));
+    let handlers: Arc<Mutex<Box<dyn TestableMethodHandlers<MqttierClient>>>> =
+        Arc::new(Mutex::new(Box::new(TestableMethodImpl::new())));
 
     // Create the server object.
-    let mut server = TestAbleServer::new(
+    let mut server = TestableServer::new(
         connection,
         handlers.clone(),
         "rust-server-demo:1".to_string(),

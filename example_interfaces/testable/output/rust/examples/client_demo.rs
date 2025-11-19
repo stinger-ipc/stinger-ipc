@@ -13,10 +13,10 @@ TODO: Get license text from stinger file
 */
 
 use mqttier::{Connection, MqttierClient, MqttierOptionsBuilder};
-use test_able_ipc::client::TestAbleClient;
-use test_able_ipc::discovery::TestAbleDiscovery;
+use testable_ipc::client::TestableClient;
+use testable_ipc::discovery::TestableDiscovery;
 #[allow(unused_imports)]
-use test_able_ipc::payloads::{MethodReturnCode, *};
+use testable_ipc::payloads::{MethodReturnCode, *};
 use tokio::join;
 use tokio::time::{sleep, Duration};
 #[allow(unused_imports)]
@@ -31,7 +31,7 @@ async fn main() {
         )
         .init();
 
-    info!("Starting Test Able client demo...");
+    info!("Starting testable client demo...");
 
     // Create an MQTT client that implements the MqttPubSub trait.
     // Application code is responsible for managing the client object.
@@ -45,7 +45,7 @@ async fn main() {
 
     // We need to discover a service instance before we can create the client.
     // For this demo, we assume a singleton server.
-    let service_discovery = TestAbleDiscovery::new(&mut mqttier_client).await.unwrap();
+    let service_discovery = TestableDiscovery::new(&mut mqttier_client).await.unwrap();
     // The `discovered_singleton` struct contains the service_id and initial property values.
     let discovered_singleton = service_discovery.get_singleton_service().await;
 
@@ -62,15 +62,15 @@ async fn main() {
         );
     };
     drop(service_discovery);
-    let mut test__able_client =
-        TestAbleClient::new(mqttier_client.clone(), discovered_singleton).await;
+    let mut testable_client =
+        TestableClient::new(mqttier_client.clone(), discovered_singleton).await;
 
-    let mut client_for_loop = test__able_client.clone();
+    let mut client_for_loop = testable_client.clone();
     tokio::spawn(async move {
         let _conn_loop = client_for_loop.run_loop().await;
     });
 
-    let mut sig_rx = test__able_client.get_empty_receiver();
+    let mut sig_rx = testable_client.get_empty_receiver();
     println!("Got signal receiver for empty");
 
     sleep(Duration::from_secs(5)).await;
@@ -90,7 +90,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_int_receiver();
+    let mut sig_rx = testable_client.get_single_int_receiver();
     println!("Got signal receiver for singleInt");
 
     sleep(Duration::from_secs(5)).await;
@@ -110,7 +110,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_optional_int_receiver();
+    let mut sig_rx = testable_client.get_single_optional_int_receiver();
     println!("Got signal receiver for singleOptionalInt");
 
     sleep(Duration::from_secs(5)).await;
@@ -133,7 +133,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_three_integers_receiver();
+    let mut sig_rx = testable_client.get_three_integers_receiver();
     println!("Got signal receiver for threeIntegers");
 
     sleep(Duration::from_secs(5)).await;
@@ -156,7 +156,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_string_receiver();
+    let mut sig_rx = testable_client.get_single_string_receiver();
     println!("Got signal receiver for singleString");
 
     sleep(Duration::from_secs(5)).await;
@@ -179,7 +179,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_optional_string_receiver();
+    let mut sig_rx = testable_client.get_single_optional_string_receiver();
     println!("Got signal receiver for singleOptionalString");
 
     sleep(Duration::from_secs(5)).await;
@@ -202,7 +202,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_three_strings_receiver();
+    let mut sig_rx = testable_client.get_three_strings_receiver();
     println!("Got signal receiver for threeStrings");
 
     sleep(Duration::from_secs(5)).await;
@@ -225,7 +225,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_enum_receiver();
+    let mut sig_rx = testable_client.get_single_enum_receiver();
     println!("Got signal receiver for singleEnum");
 
     sleep(Duration::from_secs(5)).await;
@@ -245,7 +245,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_optional_enum_receiver();
+    let mut sig_rx = testable_client.get_single_optional_enum_receiver();
     println!("Got signal receiver for singleOptionalEnum");
 
     sleep(Duration::from_secs(5)).await;
@@ -268,7 +268,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_three_enums_receiver();
+    let mut sig_rx = testable_client.get_three_enums_receiver();
     println!("Got signal receiver for threeEnums");
 
     sleep(Duration::from_secs(5)).await;
@@ -288,7 +288,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_struct_receiver();
+    let mut sig_rx = testable_client.get_single_struct_receiver();
     println!("Got signal receiver for singleStruct");
 
     sleep(Duration::from_secs(5)).await;
@@ -311,7 +311,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_optional_struct_receiver();
+    let mut sig_rx = testable_client.get_single_optional_struct_receiver();
     println!("Got signal receiver for singleOptionalStruct");
 
     sleep(Duration::from_secs(5)).await;
@@ -334,7 +334,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_three_structs_receiver();
+    let mut sig_rx = testable_client.get_three_structs_receiver();
     println!("Got signal receiver for threeStructs");
 
     sleep(Duration::from_secs(5)).await;
@@ -357,7 +357,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_date_time_receiver();
+    let mut sig_rx = testable_client.get_single_date_time_receiver();
     println!("Got signal receiver for singleDateTime");
 
     sleep(Duration::from_secs(5)).await;
@@ -380,7 +380,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_optional_datetime_receiver();
+    let mut sig_rx = testable_client.get_single_optional_datetime_receiver();
     println!("Got signal receiver for singleOptionalDatetime");
 
     sleep(Duration::from_secs(5)).await;
@@ -403,7 +403,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_three_date_times_receiver();
+    let mut sig_rx = testable_client.get_three_date_times_receiver();
     println!("Got signal receiver for threeDateTimes");
 
     sleep(Duration::from_secs(5)).await;
@@ -426,7 +426,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_duration_receiver();
+    let mut sig_rx = testable_client.get_single_duration_receiver();
     println!("Got signal receiver for singleDuration");
 
     sleep(Duration::from_secs(5)).await;
@@ -449,7 +449,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_optional_duration_receiver();
+    let mut sig_rx = testable_client.get_single_optional_duration_receiver();
     println!("Got signal receiver for singleOptionalDuration");
 
     sleep(Duration::from_secs(5)).await;
@@ -472,7 +472,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_three_durations_receiver();
+    let mut sig_rx = testable_client.get_three_durations_receiver();
     println!("Got signal receiver for threeDurations");
 
     sleep(Duration::from_secs(5)).await;
@@ -495,7 +495,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_binary_receiver();
+    let mut sig_rx = testable_client.get_single_binary_receiver();
     println!("Got signal receiver for singleBinary");
 
     sleep(Duration::from_secs(5)).await;
@@ -518,7 +518,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_optional_binary_receiver();
+    let mut sig_rx = testable_client.get_single_optional_binary_receiver();
     println!("Got signal receiver for singleOptionalBinary");
 
     sleep(Duration::from_secs(5)).await;
@@ -541,7 +541,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_three_binaries_receiver();
+    let mut sig_rx = testable_client.get_three_binaries_receiver();
     println!("Got signal receiver for threeBinaries");
 
     sleep(Duration::from_secs(5)).await;
@@ -564,7 +564,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_array_of_integers_receiver();
+    let mut sig_rx = testable_client.get_single_array_of_integers_receiver();
     println!("Got signal receiver for singleArrayOfIntegers");
 
     sleep(Duration::from_secs(5)).await;
@@ -587,7 +587,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_single_optional_array_of_strings_receiver();
+    let mut sig_rx = testable_client.get_single_optional_array_of_strings_receiver();
     println!("Got signal receiver for singleOptionalArrayOfStrings");
 
     sleep(Duration::from_secs(5)).await;
@@ -613,7 +613,7 @@ async fn main() {
         }
     });
 
-    let mut sig_rx = test__able_client.get_array_of_every_type_receiver();
+    let mut sig_rx = testable_client.get_array_of_every_type_receiver();
     println!("Got signal receiver for arrayOfEveryType");
 
     sleep(Duration::from_secs(5)).await;
@@ -637,7 +637,7 @@ async fn main() {
     });
 
     // This task subscribes to a watch chanel for each property to get notified of changes.
-    let client_for_prop_change = test__able_client.clone();
+    let client_for_prop_change = testable_client.clone();
     let _prop_change_rx_task = tokio::spawn(async move {
         let mut read_write_integer_change_rx = client_for_prop_change.watch_read_write_integer();
         let mut read_only_integer_change_rx = client_for_prop_change.watch_read_only_integer();
@@ -765,7 +765,7 @@ async fn main() {
         }
     });
 
-    let mut client_for_method_calling = test__able_client.clone();
+    let mut client_for_method_calling = testable_client.clone();
     let method_calling_task = tokio::spawn(async move {
         sleep(Duration::from_secs(19)).await;
         loop {
@@ -1388,64 +1388,60 @@ async fn main() {
 
     // Property handles are Send so we can move them into tasks.
 
-    let read_write_integer_handle = test__able_client.get_read_write_integer_handle();
+    let read_write_integer_handle = testable_client.get_read_write_integer_handle();
 
-    let read_only_integer_handle = test__able_client.get_read_only_integer_handle();
+    let read_only_integer_handle = testable_client.get_read_only_integer_handle();
 
     let read_write_optional_integer_handle =
-        test__able_client.get_read_write_optional_integer_handle();
+        testable_client.get_read_write_optional_integer_handle();
 
-    let read_write_two_integers_handle = test__able_client.get_read_write_two_integers_handle();
+    let read_write_two_integers_handle = testable_client.get_read_write_two_integers_handle();
 
-    let read_only_string_handle = test__able_client.get_read_only_string_handle();
+    let read_only_string_handle = testable_client.get_read_only_string_handle();
 
-    let read_write_string_handle = test__able_client.get_read_write_string_handle();
+    let read_write_string_handle = testable_client.get_read_write_string_handle();
 
-    let read_write_optional_string_handle =
-        test__able_client.get_read_write_optional_string_handle();
+    let read_write_optional_string_handle = testable_client.get_read_write_optional_string_handle();
 
-    let read_write_two_strings_handle = test__able_client.get_read_write_two_strings_handle();
+    let read_write_two_strings_handle = testable_client.get_read_write_two_strings_handle();
 
-    let read_write_struct_handle = test__able_client.get_read_write_struct_handle();
+    let read_write_struct_handle = testable_client.get_read_write_struct_handle();
 
-    let read_write_optional_struct_handle =
-        test__able_client.get_read_write_optional_struct_handle();
+    let read_write_optional_struct_handle = testable_client.get_read_write_optional_struct_handle();
 
-    let read_write_two_structs_handle = test__able_client.get_read_write_two_structs_handle();
+    let read_write_two_structs_handle = testable_client.get_read_write_two_structs_handle();
 
-    let read_only_enum_handle = test__able_client.get_read_only_enum_handle();
+    let read_only_enum_handle = testable_client.get_read_only_enum_handle();
 
-    let read_write_enum_handle = test__able_client.get_read_write_enum_handle();
+    let read_write_enum_handle = testable_client.get_read_write_enum_handle();
 
-    let read_write_optional_enum_handle = test__able_client.get_read_write_optional_enum_handle();
+    let read_write_optional_enum_handle = testable_client.get_read_write_optional_enum_handle();
 
-    let read_write_two_enums_handle = test__able_client.get_read_write_two_enums_handle();
+    let read_write_two_enums_handle = testable_client.get_read_write_two_enums_handle();
 
-    let read_write_datetime_handle = test__able_client.get_read_write_datetime_handle();
+    let read_write_datetime_handle = testable_client.get_read_write_datetime_handle();
 
     let read_write_optional_datetime_handle =
-        test__able_client.get_read_write_optional_datetime_handle();
+        testable_client.get_read_write_optional_datetime_handle();
 
-    let read_write_two_datetimes_handle = test__able_client.get_read_write_two_datetimes_handle();
+    let read_write_two_datetimes_handle = testable_client.get_read_write_two_datetimes_handle();
 
-    let read_write_duration_handle = test__able_client.get_read_write_duration_handle();
+    let read_write_duration_handle = testable_client.get_read_write_duration_handle();
 
     let read_write_optional_duration_handle =
-        test__able_client.get_read_write_optional_duration_handle();
+        testable_client.get_read_write_optional_duration_handle();
 
-    let read_write_two_durations_handle = test__able_client.get_read_write_two_durations_handle();
+    let read_write_two_durations_handle = testable_client.get_read_write_two_durations_handle();
 
-    let read_write_binary_handle = test__able_client.get_read_write_binary_handle();
+    let read_write_binary_handle = testable_client.get_read_write_binary_handle();
 
-    let read_write_optional_binary_handle =
-        test__able_client.get_read_write_optional_binary_handle();
+    let read_write_optional_binary_handle = testable_client.get_read_write_optional_binary_handle();
 
-    let read_write_two_binaries_handle = test__able_client.get_read_write_two_binaries_handle();
+    let read_write_two_binaries_handle = testable_client.get_read_write_two_binaries_handle();
 
-    let read_write_list_of_strings_handle =
-        test__able_client.get_read_write_list_of_strings_handle();
+    let read_write_list_of_strings_handle = testable_client.get_read_write_list_of_strings_handle();
 
-    let read_write_lists_handle = test__able_client.get_read_write_lists_handle();
+    let read_write_lists_handle = testable_client.get_read_write_lists_handle();
 
     let property_update_task = tokio::spawn(async move {
         let mut i = 0;
