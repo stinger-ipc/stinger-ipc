@@ -1,58 +1,150 @@
 cmake_minimum_required(VERSION 3.16)
-{% set project_name %}{{stinger.name|snake_case|replace('_', '-')|replace('--', '-')}}-ipc{% endset %}
-project ({{project_name}})
-set(CMAKE_CXX_STANDARD 11) 
+cmake_policy(VERSION 3.16)
+{% set project_name %}{{stinger.name|snake_case|replace('_', '-')|replace('--', '-')}}{% endset %}
+{% set cmake_name %}{{stinger.name|PascalCase|replace('_', '')|replace('--', '')}}{% endset %}
+project ({{project_name}}
+	LANGUAGES CXX
+	VERSION {{stinger.version}})
 
-include_directories(include)
- 
-set(CLIENT_SOURCE_FILES {%for src_file in client_source_files|sort%}{{src_file}} {%endfor%})
-set(SERVER_SOURCE_FILES {%for src_file in server_source_files|sort%}{{src_file}} {%endfor%})
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-add_library(lib-{{project_name}}-server ${SERVER_SOURCE_FILES})
-add_library(lib-{{project_name}}-client ${CLIENT_SOURCE_FILES})
+# more secure code
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
+find_package(PkgConfig REQUIRED)
+find_package(RapidJSON REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS thread chrono)
+pkg_check_modules(mosquitto REQUIRED libmosquitto IMPORTED_TARGET)
 
+set(CLIENT_SOURCE_FILES
+	{%for src_file in client_source_files|sort-%}
+		{{src_file}}
+	{%endfor-%}
+)
+
+set(SERVER_SOURCE_FILES
+	{%for src_file in server_source_files|sort-%}
+		{{src_file}}
+	{%endfor-%}
+)
+
+# server lib
+add_library({{project_name}}-server ${SERVER_SOURCE_FILES})
+add_library({{cmake_name}}::Server ALIAS {{project_name}}-server)
+target_include_directories({{project_name}}-server
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${mosquitto_INCLUDE_DIRS}
+		${rapidJSON_INCLUDE_DIRS}
+)
+target_link_libraries({{project_name}}-server
+	PUBLIC
+		PkgConfig::mosquitto
+		Boost::thread
+)
+
+# client lib
+add_library({{project_name}}-client ${CLIENT_SOURCE_FILES})
+add_library({{cmake_name}}::Client ALIAS {{project_name}}-client)
+target_include_directories({{project_name}}-client
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${rapidJSON_INCLUDE_DIRS}
+)
+target_link_libraries({{project_name}}-client
+	PUBLIC
+		PkgConfig::mosquitto
+		Boost::thread
+)
+
+# example client
 add_executable({{project_name}}-client-demo examples/client_main.cpp)
-target_link_libraries({{project_name}}-client-demo PUBLIC lib-{{project_name}}-client)
-target_link_libraries({{project_name}}-client-demo PUBLIC mosquitto)
-target_link_libraries({{project_name}}-client-demo PUBLIC boost_thread)
-target_link_libraries({{project_name}}-client-demo PUBLIC boost_chrono)
-target_link_libraries({{project_name}}-client-demo PRIVATE Threads::Threads)
+target_link_libraries({{project_name}}-client-demo
+	PRIVATE
+		{{cmake_name}}::Client
+)
 
 add_executable({{project_name}}-server-demo examples/server_main.cpp)
-target_link_libraries({{project_name}}-server-demo PUBLIC lib-{{project_name}}-server)
-target_link_libraries({{project_name}}-server-demo PUBLIC mosquitto)
-target_link_libraries({{project_name}}-server-demo PUBLIC boost_thread)
-target_link_libraries({{project_name}}-server-demo PRIVATE Threads::Threads)
+target_link_libraries({{project_name}}-server-demo
+	PRIVATE
+		{{cmake_name}}::Server
+)
 
 add_executable({{project_name}}-discovery-example examples/discovery_example.cpp)
-target_link_libraries({{project_name}}-discovery-example PUBLIC lib-{{project_name}}-client)
-target_link_libraries({{project_name}}-discovery-example PUBLIC mosquitto)
-target_link_libraries({{project_name}}-discovery-example PUBLIC boost_thread)
-target_link_libraries({{project_name}}-discovery-example PUBLIC boost_chrono)
-target_link_libraries({{project_name}}-discovery-example PRIVATE Threads::Threads)
+target_link_libraries({{project_name}}-discovery-example
+	PRIVATE
+		{{cmake_name}}::Client
+)
 
 add_executable({{project_name}}-discovery-publisher examples/discovery_publisher.cpp)
-target_link_libraries({{project_name}}-discovery-publisher PUBLIC lib-{{project_name}}-client)
-target_link_libraries({{project_name}}-discovery-publisher PUBLIC mosquitto)
-target_link_libraries({{project_name}}-discovery-publisher PUBLIC boost_thread)
-target_link_libraries({{project_name}}-discovery-publisher PUBLIC boost_chrono)
-target_link_libraries({{project_name}}-discovery-publisher PRIVATE Threads::Threads)
+target_link_libraries({{project_name}}-discovery-publisher
+	PRIVATE
+		{{cmake_name}}::Client
+)
 
-# Install rules
-install(TARGETS lib-{{project_name}}-server lib-{{project_name}}-client
-	ARCHIVE DESTINATION lib
-	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin)
-install(TARGETS {{project_name}}-client-demo {{project_name}}-server-demo
-	RUNTIME DESTINATION bin)
-install(DIRECTORY include/ DESTINATION include)
+set_target_properties(
+	{{project_name}}-client
+	{{project_name}}-server
+	{{project_name}}-client-demo
+	{{project_name}}-server-demo
+	{{project_name}}-discovery-publisher
+	{{project_name}}-discovery-example
+	PROPERTIES
+		CXX_STANDARD 17 # use 17, if you can
+		CXX_STANDARD_REQUIRED ON # use 17, I insist
+		CXX_EXTENSIONS OFF # use c++17 not gnu++17
+)
 
-# CPack configuration
-set(CPACK_PACKAGE_NAME "{{project_name}}-${CMAKE_SYSTEM_PROCESSOR}")
-set(CPACK_PACKAGE_VERSION "{{stinger.version}}")
-set(CPACK_GENERATOR "TGZ")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "{{stinger.summary}}")
-include(CPack)
+# help cmake find this
+configure_package_config_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/{{cmake_name}}-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/{{cmake_name}}-config.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/{{cmake_name}}
+	PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
+)
+
+# help cmake enforce version rules
+write_basic_package_version_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/{{cmake_name}}-config-version.cmake
+	VERSION {{stinger.version}}
+	COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES
+	${CMAKE_CURRENT_BINARY_DIR}/{{cmake_name}}-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/{{cmake_name}}-config-version.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/{{cmake_name}}
+)
+
+install(DIRECTORY
+	${CMAKE_CURRENT_SOURCE_DIR}/include/{{cmake_name}}
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(TARGETS
+	{{project_name}}-server
+	{{project_name}}-client
+	{{project_name}}-server-demo
+	{{project_name}}-client-demo
+	{{project_name}}-discovery-example
+	{{project_name}}-discovery-publisher
+	EXPORT {{cmake_name}}Targets
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # .a files
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so files
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # executables
+)
+
+install(EXPORT
+	{{cmake_name}}Targets
+	FILE {{cmake_name}}-targets.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/{{cmake_name}}
+	NAMESPACE {{cmake_name}}::
+)
+
+export (EXPORT {{cmake_name}}Targets
+	FILE ${CMAKE_CURRENT_BINARY_DIR}/{{cmake_name}}-targets.cmake
+	NAMESPACE {{cmake_name}}::
+)

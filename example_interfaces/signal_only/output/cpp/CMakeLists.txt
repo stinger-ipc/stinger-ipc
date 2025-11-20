@@ -1,58 +1,162 @@
 cmake_minimum_required(VERSION 3.16)
+cmake_policy(VERSION 3.16)
 
-project (signal-only-ipc)
-set(CMAKE_CXX_STANDARD 11) 
 
-include_directories(include)
- 
-set(CLIENT_SOURCE_FILES src/broker.cpp src/client.cpp src/conversions.cpp src/discovery.cpp src/interface_exceptions.cpp src/method_payloads.cpp src/property_structs.cpp src/signal_payloads.cpp src/structs.cpp )
-set(SERVER_SOURCE_FILES src/broker.cpp src/conversions.cpp src/discovery.cpp src/interface_exceptions.cpp src/method_payloads.cpp src/property_structs.cpp src/server.cpp src/signal_payloads.cpp src/structs.cpp )
+project (signal-only
+	LANGUAGES CXX
+	VERSION 0.0.1)
 
-add_library(lib-signal-only-ipc-server ${SERVER_SOURCE_FILES})
-add_library(lib-signal-only-ipc-client ${CLIENT_SOURCE_FILES})
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
+# more secure code
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_executable(signal-only-ipc-client-demo examples/client_main.cpp)
-target_link_libraries(signal-only-ipc-client-demo PUBLIC lib-signal-only-ipc-client)
-target_link_libraries(signal-only-ipc-client-demo PUBLIC mosquitto)
-target_link_libraries(signal-only-ipc-client-demo PUBLIC boost_thread)
-target_link_libraries(signal-only-ipc-client-demo PUBLIC boost_chrono)
-target_link_libraries(signal-only-ipc-client-demo PRIVATE Threads::Threads)
+find_package(PkgConfig REQUIRED)
+find_package(RapidJSON REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS thread chrono)
+pkg_check_modules(mosquitto REQUIRED libmosquitto IMPORTED_TARGET)
 
-add_executable(signal-only-ipc-server-demo examples/server_main.cpp)
-target_link_libraries(signal-only-ipc-server-demo PUBLIC lib-signal-only-ipc-server)
-target_link_libraries(signal-only-ipc-server-demo PUBLIC mosquitto)
-target_link_libraries(signal-only-ipc-server-demo PUBLIC boost_thread)
-target_link_libraries(signal-only-ipc-server-demo PRIVATE Threads::Threads)
+set(CLIENT_SOURCE_FILES
+	src/broker.cpp
+	src/client.cpp
+	src/conversions.cpp
+	src/discovery.cpp
+	src/interface_exceptions.cpp
+	src/method_payloads.cpp
+	src/property_structs.cpp
+	src/signal_payloads.cpp
+	src/structs.cpp
+	)
 
-add_executable(signal-only-ipc-discovery-example examples/discovery_example.cpp)
-target_link_libraries(signal-only-ipc-discovery-example PUBLIC lib-signal-only-ipc-client)
-target_link_libraries(signal-only-ipc-discovery-example PUBLIC mosquitto)
-target_link_libraries(signal-only-ipc-discovery-example PUBLIC boost_thread)
-target_link_libraries(signal-only-ipc-discovery-example PUBLIC boost_chrono)
-target_link_libraries(signal-only-ipc-discovery-example PRIVATE Threads::Threads)
+set(SERVER_SOURCE_FILES
+	src/broker.cpp
+	src/conversions.cpp
+	src/discovery.cpp
+	src/interface_exceptions.cpp
+	src/method_payloads.cpp
+	src/property_structs.cpp
+	src/server.cpp
+	src/signal_payloads.cpp
+	src/structs.cpp
+	)
 
-add_executable(signal-only-ipc-discovery-publisher examples/discovery_publisher.cpp)
-target_link_libraries(signal-only-ipc-discovery-publisher PUBLIC lib-signal-only-ipc-client)
-target_link_libraries(signal-only-ipc-discovery-publisher PUBLIC mosquitto)
-target_link_libraries(signal-only-ipc-discovery-publisher PUBLIC boost_thread)
-target_link_libraries(signal-only-ipc-discovery-publisher PUBLIC boost_chrono)
-target_link_libraries(signal-only-ipc-discovery-publisher PRIVATE Threads::Threads)
+# server lib
+add_library(signal-only-server ${SERVER_SOURCE_FILES})
+add_library(SignalOnly::Server ALIAS signal-only-server)
+target_include_directories(signal-only-server
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${mosquitto_INCLUDE_DIRS}
+		${rapidJSON_INCLUDE_DIRS}
+)
+target_link_libraries(signal-only-server
+	PUBLIC
+		PkgConfig::mosquitto
+		Boost::thread
+)
 
-# Install rules
-install(TARGETS lib-signal-only-ipc-server lib-signal-only-ipc-client
-	ARCHIVE DESTINATION lib
-	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin)
-install(TARGETS signal-only-ipc-client-demo signal-only-ipc-server-demo
-	RUNTIME DESTINATION bin)
-install(DIRECTORY include/ DESTINATION include)
+# client lib
+add_library(signal-only-client ${CLIENT_SOURCE_FILES})
+add_library(SignalOnly::Client ALIAS signal-only-client)
+target_include_directories(signal-only-client
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${rapidJSON_INCLUDE_DIRS}
+)
+target_link_libraries(signal-only-client
+	PUBLIC
+		PkgConfig::mosquitto
+		Boost::thread
+)
 
-# CPack configuration
-set(CPACK_PACKAGE_NAME "signal-only-ipc-${CMAKE_SYSTEM_PROCESSOR}")
-set(CPACK_PACKAGE_VERSION "0.0.1")
-set(CPACK_GENERATOR "TGZ")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "")
-include(CPack)
+# example client
+add_executable(signal-only-client-demo examples/client_main.cpp)
+target_link_libraries(signal-only-client-demo
+	PRIVATE
+		SignalOnly::Client
+)
+
+add_executable(signal-only-server-demo examples/server_main.cpp)
+target_link_libraries(signal-only-server-demo
+	PRIVATE
+		SignalOnly::Server
+)
+
+add_executable(signal-only-discovery-example examples/discovery_example.cpp)
+target_link_libraries(signal-only-discovery-example
+	PRIVATE
+		SignalOnly::Client
+)
+
+add_executable(signal-only-discovery-publisher examples/discovery_publisher.cpp)
+target_link_libraries(signal-only-discovery-publisher
+	PRIVATE
+		SignalOnly::Client
+)
+
+set_target_properties(
+	signal-only-client
+	signal-only-server
+	signal-only-client-demo
+	signal-only-server-demo
+	signal-only-discovery-publisher
+	signal-only-discovery-example
+	PROPERTIES
+		CXX_STANDARD 17 # use 17, if you can
+		CXX_STANDARD_REQUIRED ON # use 17, I insist
+		CXX_EXTENSIONS OFF # use c++17 not gnu++17
+)
+
+# help cmake find this
+configure_package_config_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/SignalOnly-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/SignalOnly-config.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/SignalOnly
+	PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
+)
+
+# help cmake enforce version rules
+write_basic_package_version_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/SignalOnly-config-version.cmake
+	VERSION 0.0.1
+	COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES
+	${CMAKE_CURRENT_BINARY_DIR}/SignalOnly-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/SignalOnly-config-version.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/SignalOnly
+)
+
+install(DIRECTORY
+	${CMAKE_CURRENT_SOURCE_DIR}/include/SignalOnly
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(TARGETS
+	signal-only-server
+	signal-only-client
+	signal-only-server-demo
+	signal-only-client-demo
+	signal-only-discovery-example
+	signal-only-discovery-publisher
+	EXPORT SignalOnlyTargets
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # .a files
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so files
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # executables
+)
+
+install(EXPORT
+	SignalOnlyTargets
+	FILE SignalOnly-targets.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/SignalOnly
+	NAMESPACE SignalOnly::
+)
+
+export (EXPORT SignalOnlyTargets
+	FILE ${CMAKE_CURRENT_BINARY_DIR}/SignalOnly-targets.cmake
+	NAMESPACE SignalOnly::
+)

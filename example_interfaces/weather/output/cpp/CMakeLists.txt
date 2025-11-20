@@ -1,58 +1,162 @@
 cmake_minimum_required(VERSION 3.16)
+cmake_policy(VERSION 3.16)
 
-project (weather-ipc)
-set(CMAKE_CXX_STANDARD 11) 
 
-include_directories(include)
- 
-set(CLIENT_SOURCE_FILES src/broker.cpp src/client.cpp src/conversions.cpp src/discovery.cpp src/interface_exceptions.cpp src/method_payloads.cpp src/property_structs.cpp src/signal_payloads.cpp src/structs.cpp )
-set(SERVER_SOURCE_FILES src/broker.cpp src/conversions.cpp src/discovery.cpp src/interface_exceptions.cpp src/method_payloads.cpp src/property_structs.cpp src/server.cpp src/signal_payloads.cpp src/structs.cpp )
+project (weather
+	LANGUAGES CXX
+	VERSION 0.1.2)
 
-add_library(lib-weather-ipc-server ${SERVER_SOURCE_FILES})
-add_library(lib-weather-ipc-client ${CLIENT_SOURCE_FILES})
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
+# more secure code
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_executable(weather-ipc-client-demo examples/client_main.cpp)
-target_link_libraries(weather-ipc-client-demo PUBLIC lib-weather-ipc-client)
-target_link_libraries(weather-ipc-client-demo PUBLIC mosquitto)
-target_link_libraries(weather-ipc-client-demo PUBLIC boost_thread)
-target_link_libraries(weather-ipc-client-demo PUBLIC boost_chrono)
-target_link_libraries(weather-ipc-client-demo PRIVATE Threads::Threads)
+find_package(PkgConfig REQUIRED)
+find_package(RapidJSON REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS thread chrono)
+pkg_check_modules(mosquitto REQUIRED libmosquitto IMPORTED_TARGET)
 
-add_executable(weather-ipc-server-demo examples/server_main.cpp)
-target_link_libraries(weather-ipc-server-demo PUBLIC lib-weather-ipc-server)
-target_link_libraries(weather-ipc-server-demo PUBLIC mosquitto)
-target_link_libraries(weather-ipc-server-demo PUBLIC boost_thread)
-target_link_libraries(weather-ipc-server-demo PRIVATE Threads::Threads)
+set(CLIENT_SOURCE_FILES
+	src/broker.cpp
+	src/client.cpp
+	src/conversions.cpp
+	src/discovery.cpp
+	src/interface_exceptions.cpp
+	src/method_payloads.cpp
+	src/property_structs.cpp
+	src/signal_payloads.cpp
+	src/structs.cpp
+	)
 
-add_executable(weather-ipc-discovery-example examples/discovery_example.cpp)
-target_link_libraries(weather-ipc-discovery-example PUBLIC lib-weather-ipc-client)
-target_link_libraries(weather-ipc-discovery-example PUBLIC mosquitto)
-target_link_libraries(weather-ipc-discovery-example PUBLIC boost_thread)
-target_link_libraries(weather-ipc-discovery-example PUBLIC boost_chrono)
-target_link_libraries(weather-ipc-discovery-example PRIVATE Threads::Threads)
+set(SERVER_SOURCE_FILES
+	src/broker.cpp
+	src/conversions.cpp
+	src/discovery.cpp
+	src/interface_exceptions.cpp
+	src/method_payloads.cpp
+	src/property_structs.cpp
+	src/server.cpp
+	src/signal_payloads.cpp
+	src/structs.cpp
+	)
 
-add_executable(weather-ipc-discovery-publisher examples/discovery_publisher.cpp)
-target_link_libraries(weather-ipc-discovery-publisher PUBLIC lib-weather-ipc-client)
-target_link_libraries(weather-ipc-discovery-publisher PUBLIC mosquitto)
-target_link_libraries(weather-ipc-discovery-publisher PUBLIC boost_thread)
-target_link_libraries(weather-ipc-discovery-publisher PUBLIC boost_chrono)
-target_link_libraries(weather-ipc-discovery-publisher PRIVATE Threads::Threads)
+# server lib
+add_library(weather-server ${SERVER_SOURCE_FILES})
+add_library(Weather::Server ALIAS weather-server)
+target_include_directories(weather-server
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${mosquitto_INCLUDE_DIRS}
+		${rapidJSON_INCLUDE_DIRS}
+)
+target_link_libraries(weather-server
+	PUBLIC
+		PkgConfig::mosquitto
+		Boost::thread
+)
 
-# Install rules
-install(TARGETS lib-weather-ipc-server lib-weather-ipc-client
-	ARCHIVE DESTINATION lib
-	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin)
-install(TARGETS weather-ipc-client-demo weather-ipc-server-demo
-	RUNTIME DESTINATION bin)
-install(DIRECTORY include/ DESTINATION include)
+# client lib
+add_library(weather-client ${CLIENT_SOURCE_FILES})
+add_library(Weather::Client ALIAS weather-client)
+target_include_directories(weather-client
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${rapidJSON_INCLUDE_DIRS}
+)
+target_link_libraries(weather-client
+	PUBLIC
+		PkgConfig::mosquitto
+		Boost::thread
+)
 
-# CPack configuration
-set(CPACK_PACKAGE_NAME "weather-ipc-${CMAKE_SYSTEM_PROCESSOR}")
-set(CPACK_PACKAGE_VERSION "0.1.2")
-set(CPACK_GENERATOR "TGZ")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Current conditions, daily and hourly forecasts from the NWS API")
-include(CPack)
+# example client
+add_executable(weather-client-demo examples/client_main.cpp)
+target_link_libraries(weather-client-demo
+	PRIVATE
+		Weather::Client
+)
+
+add_executable(weather-server-demo examples/server_main.cpp)
+target_link_libraries(weather-server-demo
+	PRIVATE
+		Weather::Server
+)
+
+add_executable(weather-discovery-example examples/discovery_example.cpp)
+target_link_libraries(weather-discovery-example
+	PRIVATE
+		Weather::Client
+)
+
+add_executable(weather-discovery-publisher examples/discovery_publisher.cpp)
+target_link_libraries(weather-discovery-publisher
+	PRIVATE
+		Weather::Client
+)
+
+set_target_properties(
+	weather-client
+	weather-server
+	weather-client-demo
+	weather-server-demo
+	weather-discovery-publisher
+	weather-discovery-example
+	PROPERTIES
+		CXX_STANDARD 17 # use 17, if you can
+		CXX_STANDARD_REQUIRED ON # use 17, I insist
+		CXX_EXTENSIONS OFF # use c++17 not gnu++17
+)
+
+# help cmake find this
+configure_package_config_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/Weather-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/Weather-config.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/Weather
+	PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
+)
+
+# help cmake enforce version rules
+write_basic_package_version_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/Weather-config-version.cmake
+	VERSION 0.1.2
+	COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES
+	${CMAKE_CURRENT_BINARY_DIR}/Weather-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/Weather-config-version.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/Weather
+)
+
+install(DIRECTORY
+	${CMAKE_CURRENT_SOURCE_DIR}/include/Weather
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(TARGETS
+	weather-server
+	weather-client
+	weather-server-demo
+	weather-client-demo
+	weather-discovery-example
+	weather-discovery-publisher
+	EXPORT WeatherTargets
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # .a files
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so files
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # executables
+)
+
+install(EXPORT
+	WeatherTargets
+	FILE Weather-targets.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/Weather
+	NAMESPACE Weather::
+)
+
+export (EXPORT WeatherTargets
+	FILE ${CMAKE_CURRENT_BINARY_DIR}/Weather-targets.cmake
+	NAMESPACE Weather::
+)
