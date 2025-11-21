@@ -1,0 +1,65 @@
+
+// TODO: This should move into the stinger-cpp-utils project later.
+
+#pragma once
+
+#include <string>
+#include <random>
+#include <sstream>
+#include <iomanip>
+#include <optional>
+#include <future>
+
+inline std::string generate_uuid_string()
+{
+    static std::random_device rd;
+    static std::mt19937_64 eng(rd());
+    static std::uniform_int_distribution<uint64_t> dist;
+    std::ostringstream ss;
+    ss << std::hex << std::setfill('0');
+    ss << std::setw(16) << dist(eng);
+    ss << std::setw(16) << dist(eng);
+    return ss.str();
+}
+
+// Mini header-only format implementation (C++17)
+// Usage: format("Hello %1% %2%") % "world" % 42
+class format {
+    std::string fmt_;
+    std::ostringstream result_;
+    int next_arg_ = 1;
+
+public:
+    explicit format(std::string fmt) : fmt_(std::move(fmt)) {}
+
+    template<typename T>
+    format& operator%(const T& value) {
+        std::string placeholder = "%" + std::to_string(next_arg_) + "%";
+        size_t pos = fmt_.find(placeholder);
+        
+        if (pos != std::string::npos) {
+            std::ostringstream oss;
+            oss << value;
+            fmt_.replace(pos, placeholder.length(), oss.str());
+        }
+        
+        ++next_arg_;
+        return *this;
+    }
+
+    std::string str() const {
+        return fmt_;
+    }
+
+    operator std::string() const {
+        return str();
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const format& f) {
+        return os << f.str();
+    }
+};
+
+using std::optional;
+using std::promise;
+using std::future;

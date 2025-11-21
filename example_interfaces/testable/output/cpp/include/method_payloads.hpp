@@ -12,7 +12,7 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
@@ -49,7 +49,7 @@ struct CallOptionalIntegerRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalIntegerRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<int> input1;
+    std::optional<int> input1;
 };
 
 struct CallOptionalIntegerReturnValues
@@ -57,7 +57,7 @@ struct CallOptionalIntegerReturnValues
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalIntegerReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<int> output1;
+    std::optional<int> output1;
 };
 
 struct CallThreeIntegersRequestArguments
@@ -67,7 +67,7 @@ struct CallThreeIntegersRequestArguments
     // Values...
     int input1;
     int input2;
-    boost::optional<int> input3;
+    std::optional<int> input3;
 };
 
 struct CallThreeIntegersReturnValues
@@ -77,7 +77,7 @@ struct CallThreeIntegersReturnValues
     // Values...
     int output1;
     int output2;
-    boost::optional<int> output3;
+    std::optional<int> output3;
 };
 
 struct CallOneStringRequestArguments
@@ -101,7 +101,7 @@ struct CallOptionalStringRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalStringRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::string> input1;
+    std::optional<std::string> input1;
 };
 
 struct CallOptionalStringReturnValues
@@ -109,7 +109,7 @@ struct CallOptionalStringReturnValues
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalStringReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::string> output1;
+    std::optional<std::string> output1;
 };
 
 struct CallThreeStringsRequestArguments
@@ -118,7 +118,7 @@ struct CallThreeStringsRequestArguments
     static CallThreeStringsRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::string input1;
-    boost::optional<std::string> input2;
+    std::optional<std::string> input2;
     std::string input3;
 };
 
@@ -128,7 +128,7 @@ struct CallThreeStringsReturnValues
     static CallThreeStringsReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::string output1;
-    boost::optional<std::string> output2;
+    std::optional<std::string> output2;
     std::string output3;
 };
 
@@ -153,7 +153,7 @@ struct CallOptionalEnumRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalEnumRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<Numbers> input1;
+    std::optional<Numbers> input1;
 };
 
 struct CallOptionalEnumReturnValues
@@ -161,7 +161,7 @@ struct CallOptionalEnumReturnValues
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalEnumReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<Numbers> output1;
+    std::optional<Numbers> output1;
 };
 
 struct CallThreeEnumsRequestArguments
@@ -171,7 +171,7 @@ struct CallThreeEnumsRequestArguments
     // Values...
     Numbers input1;
     Numbers input2;
-    boost::optional<Numbers> input3;
+    std::optional<Numbers> input3;
 };
 
 struct CallThreeEnumsReturnValues
@@ -181,7 +181,7 @@ struct CallThreeEnumsReturnValues
     // Values...
     Numbers output1;
     Numbers output2;
-    boost::optional<Numbers> output3;
+    std::optional<Numbers> output3;
 };
 
 struct CallOneStructRequestArguments
@@ -205,7 +205,7 @@ struct CallOptionalStructRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalStructRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<AllTypes> input1;
+    std::optional<AllTypes> input1;
 };
 
 struct CallOptionalStructReturnValues
@@ -213,7 +213,7 @@ struct CallOptionalStructReturnValues
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalStructReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<AllTypes> output1;
+    std::optional<AllTypes> output1;
 };
 
 struct CallThreeStructsRequestArguments
@@ -221,7 +221,7 @@ struct CallThreeStructsRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallThreeStructsRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<AllTypes> input1;
+    std::optional<AllTypes> input1;
     AllTypes input2;
     AllTypes input3;
 };
@@ -231,7 +231,7 @@ struct CallThreeStructsReturnValues
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallThreeStructsReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<AllTypes> output1;
+    std::optional<AllTypes> output1;
     AllTypes output2;
     AllTypes output3;
 };
@@ -257,7 +257,7 @@ struct CallOptionalDateTimeRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalDateTimeRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> input1;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> input1;
 };
 
 struct CallOptionalDateTimeReturnValues
@@ -265,7 +265,7 @@ struct CallOptionalDateTimeReturnValues
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalDateTimeReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> output1;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> output1;
 };
 
 struct CallThreeDateTimesRequestArguments
@@ -275,7 +275,7 @@ struct CallThreeDateTimesRequestArguments
     // Values...
     std::chrono::time_point<std::chrono::system_clock> input1;
     std::chrono::time_point<std::chrono::system_clock> input2;
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> input3;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> input3;
 };
 
 struct CallThreeDateTimesReturnValues
@@ -285,7 +285,7 @@ struct CallThreeDateTimesReturnValues
     // Values...
     std::chrono::time_point<std::chrono::system_clock> output1;
     std::chrono::time_point<std::chrono::system_clock> output2;
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> output3;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> output3;
 };
 
 struct CallOneDurationRequestArguments
@@ -309,7 +309,7 @@ struct CallOptionalDurationRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalDurationRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::chrono::duration<double>> input1;
+    std::optional<std::chrono::duration<double>> input1;
 };
 
 struct CallOptionalDurationReturnValues
@@ -317,7 +317,7 @@ struct CallOptionalDurationReturnValues
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalDurationReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::chrono::duration<double>> output1;
+    std::optional<std::chrono::duration<double>> output1;
 };
 
 struct CallThreeDurationsRequestArguments
@@ -327,7 +327,7 @@ struct CallThreeDurationsRequestArguments
     // Values...
     std::chrono::duration<double> input1;
     std::chrono::duration<double> input2;
-    boost::optional<std::chrono::duration<double>> input3;
+    std::optional<std::chrono::duration<double>> input3;
 };
 
 struct CallThreeDurationsReturnValues
@@ -337,7 +337,7 @@ struct CallThreeDurationsReturnValues
     // Values...
     std::chrono::duration<double> output1;
     std::chrono::duration<double> output2;
-    boost::optional<std::chrono::duration<double>> output3;
+    std::optional<std::chrono::duration<double>> output3;
 };
 
 struct CallOneBinaryRequestArguments
@@ -361,7 +361,7 @@ struct CallOptionalBinaryRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalBinaryRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::vector<uint8_t>> input1;
+    std::optional<std::vector<uint8_t>> input1;
 };
 
 struct CallOptionalBinaryReturnValues
@@ -369,7 +369,7 @@ struct CallOptionalBinaryReturnValues
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalBinaryReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::vector<uint8_t>> output1;
+    std::optional<std::vector<uint8_t>> output1;
 };
 
 struct CallThreeBinariesRequestArguments
@@ -379,7 +379,7 @@ struct CallThreeBinariesRequestArguments
     // Values...
     std::vector<uint8_t> input1;
     std::vector<uint8_t> input2;
-    boost::optional<std::vector<uint8_t>> input3;
+    std::optional<std::vector<uint8_t>> input3;
 };
 
 struct CallThreeBinariesReturnValues
@@ -389,7 +389,7 @@ struct CallThreeBinariesReturnValues
     // Values...
     std::vector<uint8_t> output1;
     std::vector<uint8_t> output2;
-    boost::optional<std::vector<uint8_t>> output3;
+    std::optional<std::vector<uint8_t>> output3;
 };
 
 struct CallOneListOfIntegersRequestArguments
@@ -413,7 +413,7 @@ struct CallOptionalListOfFloatsRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalListOfFloatsRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::vector<double>> input1;
+    std::optional<std::vector<double>> input1;
 };
 
 struct CallOptionalListOfFloatsReturnValues
@@ -421,7 +421,7 @@ struct CallOptionalListOfFloatsReturnValues
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CallOptionalListOfFloatsReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::vector<double>> output1;
+    std::optional<std::vector<double>> output1;
 };
 
 struct CallTwoListsRequestArguments
@@ -430,7 +430,7 @@ struct CallTwoListsRequestArguments
     static CallTwoListsRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::vector<Numbers> input1;
-    boost::optional<std::vector<std::string>> input2;
+    std::optional<std::vector<std::string>> input2;
 };
 
 struct CallTwoListsReturnValues
@@ -439,5 +439,5 @@ struct CallTwoListsReturnValues
     static CallTwoListsReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::vector<Numbers> output1;
-    boost::optional<std::vector<std::string>> output2;
+    std::optional<std::vector<std::string>> output2;
 };

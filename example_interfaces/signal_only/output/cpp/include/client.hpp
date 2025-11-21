@@ -18,8 +18,7 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include <boost/uuid/uuid.hpp>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
 #include "method_payloads.hpp"
@@ -49,11 +48,11 @@ public:
 
     // Register a callback for the `maybe_number` signal.  The argument is optional.
     // The provided method will be called whenever a `maybe_number` is received.
-    void registerMaybeNumberCallback(const std::function<void(boost::optional<int>)>& cb);
+    void registerMaybeNumberCallback(const std::function<void(std::optional<int>)>& cb);
 
     // Register a callback for the `maybe_name` signal.  The argument is optional.
     // The provided method will be called whenever a `maybe_name` is received.
-    void registerMaybeNameCallback(const std::function<void(boost::optional<std::string>)>& cb);
+    void registerMaybeNameCallback(const std::function<void(std::optional<std::string>)>& cb);
 
     // Register a callback for the `now` signal.
     // The provided method will be called whenever a `now` is received.
@@ -92,14 +91,14 @@ private:
     int _barkSignalSubscriptionId = -1;
 
     // List of callbacks to be called whenever the `maybe_number` signal is received.
-    std::vector<std::function<void(boost::optional<int>)>> _maybeNumberSignalCallbacks;
+    std::vector<std::function<void(std::optional<int>)>> _maybeNumberSignalCallbacks;
     std::mutex _maybeNumberSignalCallbacksMutex;
 
     // MQTT Subscription ID for `maybe_number` signal receptions.
     int _maybeNumberSignalSubscriptionId = -1;
 
     // List of callbacks to be called whenever the `maybe_name` signal is received.
-    std::vector<std::function<void(boost::optional<std::string>)>> _maybeNameSignalCallbacks;
+    std::vector<std::function<void(std::optional<std::string>)>> _maybeNameSignalCallbacks;
     std::mutex _maybeNameSignalCallbacksMutex;
 
     // MQTT Subscription ID for `maybe_name` signal receptions.

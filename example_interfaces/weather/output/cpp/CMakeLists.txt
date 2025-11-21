@@ -14,7 +14,6 @@ set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(PkgConfig REQUIRED)
 find_package(RapidJSON REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS thread chrono)
 pkg_check_modules(mosquitto REQUIRED libmosquitto IMPORTED_TARGET)
 
 set(CLIENT_SOURCE_FILES
@@ -54,8 +53,6 @@ target_include_directories(weather-server
 target_link_libraries(weather-server
 	PUBLIC
 		PkgConfig::mosquitto
-		Boost::thread
-		Boost::chrono
 )
 
 # client lib
@@ -70,8 +67,6 @@ target_include_directories(weather-client
 target_link_libraries(weather-client
 	PUBLIC
 		PkgConfig::mosquitto
-		Boost::thread
-		Boost::chrono
 )
 
 # example client

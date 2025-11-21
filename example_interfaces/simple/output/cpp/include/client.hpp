@@ -18,8 +18,7 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include <boost/uuid/uuid.hpp>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
 #include "method_payloads.hpp"
@@ -49,7 +48,7 @@ public:
 
     // Calls the `trade_numbers` method.
     // Returns a future.  When that future resolves, it will have the returned value. <ArgPrimitive name=my_number type=int>
-    boost::future<int> tradeNumbers(int your_number);
+    std::future<int> tradeNumbers(int your_number);
 
     // ---------------- PROPERTIES ------------------
 
@@ -58,13 +57,13 @@ public:
     // Gets the latest value of the `school` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<const std::string&> getSchoolProperty() const;
+    std::optional<std::string&> getSchoolProperty();
 
     // Add a callback that will be called whenever the `school` property is updated.
     // The provided method will be called whenever a new value for the `school` property is received.
     void registerSchoolPropertyCallback(const std::function<void(std::string)>& cb);
 
-    boost::future<bool> updateSchoolProperty(std::string) const;
+    std::future<bool> updateSchoolProperty(std::string) const;
 
 private:
     // Pointer to the broker connection.
@@ -93,7 +92,7 @@ private:
 
     // ------------------- METHODS --------------------
     // Holds promises for pending `trade_numbers` method calls.
-    std::map<boost::uuids::uuid, boost::promise<int>> _pendingTradeNumbersMethodCalls;
+    std::map<std::string, std::promise<int>> _pendingTradeNumbersMethodCalls;
     int _tradeNumbersMethodSubscriptionId = -1;
     // This is called internally to process responses to `trade_numbers` method calls.
     void _handleTradeNumbersResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
@@ -103,7 +102,7 @@ private:
     // ---school Property---
 
     // Last received value for the `school` property.
-    boost::optional<SchoolProperty> _schoolProperty;
+    std::optional<SchoolProperty> _schoolProperty;
 
     // This is the property version of the last received `school` property update.
     int _lastSchoolPropertyVersion = -1;
@@ -115,7 +114,7 @@ private:
     int _schoolPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `school` property.
-    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `school` property.
     std::vector<std::function<void(std::string)>> _schoolPropertyCallbacks;

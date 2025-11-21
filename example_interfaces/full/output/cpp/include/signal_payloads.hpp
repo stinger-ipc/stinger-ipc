@@ -12,7 +12,7 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
@@ -22,7 +22,7 @@ struct TodayIsPayload
     static TodayIsPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     int dayOfMonth;
-    boost::optional<DayOfTheWeek> dayOfWeek;
+    std::optional<DayOfTheWeek> dayOfWeek;
     std::chrono::time_point<std::chrono::system_clock> timestamp;
     std::chrono::duration<double> processTime;
     std::vector<uint8_t> memorySegment;

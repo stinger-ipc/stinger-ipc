@@ -91,7 +91,7 @@ CallOptionalIntegerRequestArguments CallOptionalIntegerRequestArguments::FromRap
         }
         else
         {
-            callOptionalIntegerArgs.input1 = boost::none;
+            callOptionalIntegerArgs.input1 = std::nullopt;
         }
     }
 
@@ -117,7 +117,7 @@ CallOptionalIntegerReturnValues CallOptionalIntegerReturnValues::FromRapidJsonOb
         }
         else
         {
-            callOptionalIntegerRc.output1 = boost::none;
+            callOptionalIntegerRc.output1 = std::nullopt;
         }
     }
 
@@ -165,7 +165,7 @@ CallThreeIntegersRequestArguments CallThreeIntegersRequestArguments::FromRapidJs
         }
         else
         {
-            callThreeIntegersArgs.input3 = boost::none;
+            callThreeIntegersArgs.input3 = std::nullopt;
         }
     }
 
@@ -217,7 +217,7 @@ CallThreeIntegersReturnValues CallThreeIntegersReturnValues::FromRapidJsonObject
         }
         else
         {
-            callThreeIntegersRc.output3 = boost::none;
+            callThreeIntegersRc.output3 = std::nullopt;
         }
     }
 
@@ -305,7 +305,7 @@ CallOptionalStringRequestArguments CallOptionalStringRequestArguments::FromRapid
         }
         else
         {
-            callOptionalStringArgs.input1 = boost::none;
+            callOptionalStringArgs.input1 = std::nullopt;
         }
     }
 
@@ -335,7 +335,7 @@ CallOptionalStringReturnValues CallOptionalStringReturnValues::FromRapidJsonObje
         }
         else
         {
-            callOptionalStringRc.output1 = boost::none;
+            callOptionalStringRc.output1 = std::nullopt;
         }
     }
 
@@ -376,7 +376,7 @@ CallThreeStringsRequestArguments CallThreeStringsRequestArguments::FromRapidJson
         }
         else
         {
-            callThreeStringsArgs.input2 = boost::none;
+            callThreeStringsArgs.input2 = std::nullopt;
         }
     }
     { // Scoping
@@ -440,7 +440,7 @@ CallThreeStringsReturnValues CallThreeStringsReturnValues::FromRapidJsonObject(c
         }
         else
         {
-            callThreeStringsRc.output2 = boost::none;
+            callThreeStringsRc.output2 = std::nullopt;
         }
     }
     { // Scoping
@@ -543,7 +543,7 @@ CallOptionalEnumRequestArguments CallOptionalEnumRequestArguments::FromRapidJson
         }
         else
         {
-            callOptionalEnumArgs.input1 = boost::none;
+            callOptionalEnumArgs.input1 = std::nullopt;
         }
     }
 
@@ -568,7 +568,7 @@ CallOptionalEnumReturnValues CallOptionalEnumReturnValues::FromRapidJsonObject(c
         }
         else
         {
-            callOptionalEnumRc.output1 = boost::none;
+            callOptionalEnumRc.output1 = std::nullopt;
         }
     }
 
@@ -615,7 +615,7 @@ CallThreeEnumsRequestArguments CallThreeEnumsRequestArguments::FromRapidJsonObje
         }
         else
         {
-            callThreeEnumsArgs.input3 = boost::none;
+            callThreeEnumsArgs.input3 = std::nullopt;
         }
     }
 
@@ -666,7 +666,7 @@ CallThreeEnumsReturnValues CallThreeEnumsReturnValues::FromRapidJsonObject(const
         }
         else
         {
-            callThreeEnumsRc.output3 = boost::none;
+            callThreeEnumsRc.output3 = std::nullopt;
         }
     }
 
@@ -759,7 +759,7 @@ CallOptionalStructRequestArguments CallOptionalStructRequestArguments::FromRapid
         }
         else
         {
-            callOptionalStructArgs.input1 = boost::none;
+            callOptionalStructArgs.input1 = std::nullopt;
         }
     }
 
@@ -796,7 +796,7 @@ CallOptionalStructReturnValues CallOptionalStructReturnValues::FromRapidJsonObje
         }
         else
         {
-            callOptionalStructRc.output1 = boost::none;
+            callOptionalStructRc.output1 = std::nullopt;
         }
     }
 
@@ -833,7 +833,7 @@ CallThreeStructsRequestArguments CallThreeStructsRequestArguments::FromRapidJson
         }
         else
         {
-            callThreeStructsArgs.input1 = boost::none;
+            callThreeStructsArgs.input1 = std::nullopt;
         }
     }
     { // Scoping
@@ -910,7 +910,7 @@ CallThreeStructsReturnValues CallThreeStructsReturnValues::FromRapidJsonObject(c
         }
         else
         {
-            callThreeStructsRc.output1 = boost::none;
+            callThreeStructsRc.output1 = std::nullopt;
         }
     }
     { // Scoping
@@ -1050,7 +1050,7 @@ CallOptionalDateTimeRequestArguments CallOptionalDateTimeRequestArguments::FromR
         }
         else
         {
-            callOptionalDateTimeArgs.input1 = boost::none;
+            callOptionalDateTimeArgs.input1 = std::nullopt;
         }
     }
 
@@ -1081,7 +1081,7 @@ CallOptionalDateTimeReturnValues CallOptionalDateTimeReturnValues::FromRapidJson
         }
         else
         {
-            callOptionalDateTimeRc.output1 = boost::none;
+            callOptionalDateTimeRc.output1 = std::nullopt;
         }
     }
 
@@ -1136,7 +1136,7 @@ CallThreeDateTimesRequestArguments CallThreeDateTimesRequestArguments::FromRapid
         }
         else
         {
-            callThreeDateTimesArgs.input3 = boost::none;
+            callThreeDateTimesArgs.input3 = std::nullopt;
         }
     }
 
@@ -1205,7 +1205,7 @@ CallThreeDateTimesReturnValues CallThreeDateTimesReturnValues::FromRapidJsonObje
         }
         else
         {
-            callThreeDateTimesRc.output3 = boost::none;
+            callThreeDateTimesRc.output3 = std::nullopt;
         }
     }
 
@@ -1312,7 +1312,7 @@ CallOptionalDurationRequestArguments CallOptionalDurationRequestArguments::FromR
         }
         else
         {
-            callOptionalDurationArgs.input1 = boost::none;
+            callOptionalDurationArgs.input1 = std::nullopt;
         }
     }
 
@@ -1343,7 +1343,7 @@ CallOptionalDurationReturnValues CallOptionalDurationReturnValues::FromRapidJson
         }
         else
         {
-            callOptionalDurationRc.output1 = boost::none;
+            callOptionalDurationRc.output1 = std::nullopt;
         }
     }
 
@@ -1398,7 +1398,7 @@ CallThreeDurationsRequestArguments CallThreeDurationsRequestArguments::FromRapid
         }
         else
         {
-            callThreeDurationsArgs.input3 = boost::none;
+            callThreeDurationsArgs.input3 = std::nullopt;
         }
     }
 
@@ -1467,7 +1467,7 @@ CallThreeDurationsReturnValues CallThreeDurationsReturnValues::FromRapidJsonObje
         }
         else
         {
-            callThreeDurationsRc.output3 = boost::none;
+            callThreeDurationsRc.output3 = std::nullopt;
         }
     }
 
@@ -1574,7 +1574,7 @@ CallOptionalBinaryRequestArguments CallOptionalBinaryRequestArguments::FromRapid
         }
         else
         {
-            callOptionalBinaryArgs.input1 = boost::none;
+            callOptionalBinaryArgs.input1 = std::nullopt;
         }
     }
 
@@ -1605,7 +1605,7 @@ CallOptionalBinaryReturnValues CallOptionalBinaryReturnValues::FromRapidJsonObje
         }
         else
         {
-            callOptionalBinaryRc.output1 = boost::none;
+            callOptionalBinaryRc.output1 = std::nullopt;
         }
     }
 
@@ -1660,7 +1660,7 @@ CallThreeBinariesRequestArguments CallThreeBinariesRequestArguments::FromRapidJs
         }
         else
         {
-            callThreeBinariesArgs.input3 = boost::none;
+            callThreeBinariesArgs.input3 = std::nullopt;
         }
     }
 
@@ -1729,7 +1729,7 @@ CallThreeBinariesReturnValues CallThreeBinariesReturnValues::FromRapidJsonObject
         }
         else
         {
-            callThreeBinariesRc.output3 = boost::none;
+            callThreeBinariesRc.output3 = std::nullopt;
         }
     }
 
@@ -1869,7 +1869,7 @@ CallOptionalListOfFloatsRequestArguments CallOptionalListOfFloatsRequestArgument
         }
         else
         {
-            callOptionalListOfFloatsArgs.input1 = boost::none;
+            callOptionalListOfFloatsArgs.input1 = std::nullopt;
         }
     }
 
@@ -1912,7 +1912,7 @@ CallOptionalListOfFloatsReturnValues CallOptionalListOfFloatsReturnValues::FromR
         }
         else
         {
-            callOptionalListOfFloatsRc.output1 = boost::none;
+            callOptionalListOfFloatsRc.output1 = std::nullopt;
         }
     }
 
@@ -1976,7 +1976,7 @@ CallTwoListsRequestArguments CallTwoListsRequestArguments::FromRapidJsonObject(c
         }
         else
         {
-            callTwoListsArgs.input2 = boost::none;
+            callTwoListsArgs.input2 = std::nullopt;
         }
     }
 
@@ -2052,7 +2052,7 @@ CallTwoListsReturnValues CallTwoListsReturnValues::FromRapidJsonObject(const rap
         }
         else
         {
-            callTwoListsRc.output2 = boost::none;
+            callTwoListsRc.output2 = std::nullopt;
         }
     }
 

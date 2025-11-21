@@ -19,8 +19,7 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include <boost/uuid/uuid.hpp>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include "ibrokerconnection.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include "method_payloads.hpp"
@@ -55,7 +54,7 @@ public:
     {%for method_name, method in stinger.methods.items()%}
     // Calls the `{{method_name}}` method.
     // Returns a future.  When that future resolves, it will have the returned value. {{method.return_value}}
-    boost::future<{{method.return_value_cpp_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+    std::future<{{method.return_value_cpp_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}
@@ -94,7 +93,7 @@ private:
 
     {%-for method_name, method in stinger.methods.items()%}
     // Holds promises for pending `{{method_name}}` method calls.
-    std::map<boost::uuids::uuid, boost::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+    std::map<std::string, std::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
     int _{{method_name | lowerCamelCase}}MethodSubscriptionId = -1;
     // This is called internally to process responses to `{{method_name}}` method calls.
     void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);

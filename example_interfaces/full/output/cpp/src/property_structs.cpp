@@ -61,7 +61,7 @@ FavoriteFoodsProperty FavoriteFoodsProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            favoriteFoods.breakfast = boost::none;
+            favoriteFoods.breakfast = std::nullopt;
         }
     }
 
@@ -262,7 +262,7 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            lastBirthdays.sister = boost::none;
+            lastBirthdays.sister = std::nullopt;
         }
     }
     { // Scoping
@@ -273,7 +273,7 @@ LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            lastBirthdays.brothersAge = boost::none;
+            lastBirthdays.brothersAge = std::nullopt;
         }
     }
 

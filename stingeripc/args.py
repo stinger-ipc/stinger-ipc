@@ -88,24 +88,24 @@ class ArgPrimitiveType(Enum):
     def to_cpp_type(cls, arg_type: ArgPrimitiveType, optional: bool = False) -> str:
         if arg_type == cls.BOOLEAN:
             if optional:
-                return "boost::optional<bool>"
+                return "std::optional<bool>"
             else:
                 return "bool"
         elif arg_type == cls.INTEGER:
             if optional:
-                return "boost::optional<int>"
+                return "std::optional<int>"
             else:
                 return "int"
         elif arg_type == cls.FLOAT:
             if optional:
-                return "boost::optional<double>"
+                return "std::optional<double>"
             else:
                 return "double"
         elif arg_type == cls.STRING:
             if optional:
-                return "boost::optional<std::string>"
+                return "std::optional<std::string>"
             else:
-                return "const std::string&"
+                return "std::string&"
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod

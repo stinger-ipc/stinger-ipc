@@ -12,7 +12,7 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
@@ -39,7 +39,7 @@ struct MaybeNumberPayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static MaybeNumberPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<int> number;
+    std::optional<int> number;
 };
 
 struct MaybeNamePayload
@@ -47,7 +47,7 @@ struct MaybeNamePayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static MaybeNamePayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::string> name;
+    std::optional<std::string> name;
 };
 
 struct NowPayload

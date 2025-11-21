@@ -20,7 +20,7 @@ TODO: Get license text from stinger file
 #include <chrono>
 #include <thread>
 #include <atomic>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include <rapidjson/document.h>
 
 #include "property_structs.hpp"
@@ -40,9 +40,9 @@ public:
 
     virtual ~FullServer();
 
-    boost::future<bool> emitTodayIsSignal(int, boost::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>);
+    std::future<bool> emitTodayIsSignal(int, std::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>);
 
-    void registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func);
+    void registerAddNumbersHandler(std::function<int(int, int, std::optional<int>)> func);
 
     void registerDoSomethingHandler(std::function<DoSomethingReturnValues(std::string)> func);
 
@@ -61,7 +61,7 @@ public:
     // Gets the latest value of the `favorite_number` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<int> getFavoriteNumberProperty() const;
+    std::optional<int> getFavoriteNumberProperty();
 
     // Add a callback that will be called whenever the `favorite_number` property is updated.
     // The provided method will be called whenever a new value for the `favorite_number` property is received.
@@ -76,13 +76,13 @@ public:
     // Gets the latest value of the `favorite_foods` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<FavoriteFoodsProperty> getFavoriteFoodsProperty() const;
+    std::optional<FavoriteFoodsProperty> getFavoriteFoodsProperty();
 
     // Add a callback that will be called whenever the `favorite_foods` property is updated.
     // The provided method will be called whenever a new value for the `favorite_foods` property is received.
-    void registerFavoriteFoodsPropertyCallback(const std::function<void(std::string, int, boost::optional<std::string>)>& cb);
+    void registerFavoriteFoodsPropertyCallback(const std::function<void(std::string, int, std::optional<std::string>)>& cb);
 
-    void updateFavoriteFoodsProperty(std::string, int, boost::optional<std::string>);
+    void updateFavoriteFoodsProperty(std::string, int, std::optional<std::string>);
 
     void republishFavoriteFoodsProperty() const;
 
@@ -91,7 +91,7 @@ public:
     // Gets the latest value of the `lunch_menu` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<LunchMenuProperty> getLunchMenuProperty() const;
+    std::optional<LunchMenuProperty> getLunchMenuProperty();
 
     // Add a callback that will be called whenever the `lunch_menu` property is updated.
     // The provided method will be called whenever a new value for the `lunch_menu` property is received.
@@ -106,7 +106,7 @@ public:
     // Gets the latest value of the `family_name` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<const std::string&> getFamilyNameProperty() const;
+    std::optional<std::string&> getFamilyNameProperty();
 
     // Add a callback that will be called whenever the `family_name` property is updated.
     // The provided method will be called whenever a new value for the `family_name` property is received.
@@ -121,7 +121,7 @@ public:
     // Gets the latest value of the `last_breakfast_time` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> getLastBreakfastTimeProperty() const;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> getLastBreakfastTimeProperty();
 
     // Add a callback that will be called whenever the `last_breakfast_time` property is updated.
     // The provided method will be called whenever a new value for the `last_breakfast_time` property is received.
@@ -136,7 +136,7 @@ public:
     // Gets the latest value of the `breakfast_length` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<std::chrono::duration<double>> getBreakfastLengthProperty() const;
+    std::optional<std::chrono::duration<double>> getBreakfastLengthProperty();
 
     // Add a callback that will be called whenever the `breakfast_length` property is updated.
     // The provided method will be called whenever a new value for the `breakfast_length` property is received.
@@ -151,13 +151,13 @@ public:
     // Gets the latest value of the `last_birthdays` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<LastBirthdaysProperty> getLastBirthdaysProperty() const;
+    std::optional<LastBirthdaysProperty> getLastBirthdaysProperty();
 
     // Add a callback that will be called whenever the `last_birthdays` property is updated.
     // The provided method will be called whenever a new value for the `last_birthdays` property is received.
-    void registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>, boost::optional<int>)>& cb);
+    void registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>, std::optional<int>)>& cb);
 
-    void updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>, boost::optional<int>);
+    void updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>, std::optional<int>);
 
     void republishLastBirthdaysProperty() const;
 
@@ -171,31 +171,31 @@ private:
             const MqttProperties& mqttProps
     );
 
-    void _callAddNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
-    std::function<int(int, int, boost::optional<int>)> _addNumbersHandler;
+    void _callAddNumbersHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    std::function<int(int, int, std::optional<int>)> _addNumbersHandler;
     int _addNumbersMethodSubscriptionId;
 
-    void _callDoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    void _callDoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
     std::function<DoSomethingReturnValues(std::string)> _doSomethingHandler;
     int _doSomethingMethodSubscriptionId;
 
-    void _callEchoHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    void _callEchoHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
     std::function<std::string(std::string)> _echoHandler;
     int _echoMethodSubscriptionId;
 
-    void _callWhatTimeIsItHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    void _callWhatTimeIsItHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
     std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> _whatTimeIsItHandler;
     int _whatTimeIsItMethodSubscriptionId;
 
-    void _callSetTheTimeHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    void _callSetTheTimeHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
     std::function<SetTheTimeReturnValues(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>)> _setTheTimeHandler;
     int _setTheTimeMethodSubscriptionId;
 
-    void _callForwardTimeHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    void _callForwardTimeHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
     std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::duration<double>)> _forwardTimeHandler;
     int _forwardTimeMethodSubscriptionId;
 
-    void _callHowOffIsTheClockHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    void _callHowOffIsTheClockHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
     std::function<std::chrono::duration<double>(std::chrono::time_point<std::chrono::system_clock>)> _howOffIsTheClockHandler;
     int _howOffIsTheClockMethodSubscriptionId;
 
@@ -204,7 +204,7 @@ private:
     // ---favorite_number Property---
 
     // Current value for the `favorite_number` property.
-    boost::optional<FavoriteNumberProperty> _favoriteNumberProperty;
+    std::optional<FavoriteNumberProperty> _favoriteNumberProperty;
 
     // This is the property version  of `favorite_number`.
     int _lastFavoriteNumberPropertyVersion = -1;
@@ -216,7 +216,7 @@ private:
     int _favoriteNumberPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `favorite_number` property.
-    void _receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `favorite_number` property.
     std::vector<std::function<void(int)>> _favoriteNumberPropertyCallbacks;
@@ -225,7 +225,7 @@ private:
     // ---favorite_foods Property---
 
     // Current values for the `favorite_foods` property.
-    boost::optional<FavoriteFoodsProperty> _favoriteFoodsProperty;
+    std::optional<FavoriteFoodsProperty> _favoriteFoodsProperty;
 
     // This is the property version  of `favorite_foods`.
     int _lastFavoriteFoodsPropertyVersion = -1;
@@ -237,16 +237,16 @@ private:
     int _favoriteFoodsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `favorite_foods` property.
-    void _receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `favorite_foods` property.
-    std::vector<std::function<void(std::string, int, boost::optional<std::string>)>> _favoriteFoodsPropertyCallbacks;
+    std::vector<std::function<void(std::string, int, std::optional<std::string>)>> _favoriteFoodsPropertyCallbacks;
     std::mutex _favoriteFoodsPropertyCallbacksMutex;
 
     // ---lunch_menu Property---
 
     // Current values for the `lunch_menu` property.
-    boost::optional<LunchMenuProperty> _lunchMenuProperty;
+    std::optional<LunchMenuProperty> _lunchMenuProperty;
 
     // This is the property version  of `lunch_menu`.
     int _lastLunchMenuPropertyVersion = -1;
@@ -258,7 +258,7 @@ private:
     int _lunchMenuPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `lunch_menu` property.
-    void _receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `lunch_menu` property.
     std::vector<std::function<void(Lunch, Lunch)>> _lunchMenuPropertyCallbacks;
@@ -267,7 +267,7 @@ private:
     // ---family_name Property---
 
     // Current value for the `family_name` property.
-    boost::optional<FamilyNameProperty> _familyNameProperty;
+    std::optional<FamilyNameProperty> _familyNameProperty;
 
     // This is the property version  of `family_name`.
     int _lastFamilyNamePropertyVersion = -1;
@@ -279,7 +279,7 @@ private:
     int _familyNamePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `family_name` property.
-    void _receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `family_name` property.
     std::vector<std::function<void(std::string)>> _familyNamePropertyCallbacks;
@@ -288,7 +288,7 @@ private:
     // ---last_breakfast_time Property---
 
     // Current value for the `last_breakfast_time` property.
-    boost::optional<LastBreakfastTimeProperty> _lastBreakfastTimeProperty;
+    std::optional<LastBreakfastTimeProperty> _lastBreakfastTimeProperty;
 
     // This is the property version  of `last_breakfast_time`.
     int _lastLastBreakfastTimePropertyVersion = -1;
@@ -300,7 +300,7 @@ private:
     int _lastBreakfastTimePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `last_breakfast_time` property.
-    void _receiveLastBreakfastTimePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveLastBreakfastTimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `last_breakfast_time` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _lastBreakfastTimePropertyCallbacks;
@@ -309,7 +309,7 @@ private:
     // ---breakfast_length Property---
 
     // Current value for the `breakfast_length` property.
-    boost::optional<BreakfastLengthProperty> _breakfastLengthProperty;
+    std::optional<BreakfastLengthProperty> _breakfastLengthProperty;
 
     // This is the property version  of `breakfast_length`.
     int _lastBreakfastLengthPropertyVersion = -1;
@@ -321,7 +321,7 @@ private:
     int _breakfastLengthPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `breakfast_length` property.
-    void _receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `breakfast_length` property.
     std::vector<std::function<void(std::chrono::duration<double>)>> _breakfastLengthPropertyCallbacks;
@@ -330,7 +330,7 @@ private:
     // ---last_birthdays Property---
 
     // Current values for the `last_birthdays` property.
-    boost::optional<LastBirthdaysProperty> _lastBirthdaysProperty;
+    std::optional<LastBirthdaysProperty> _lastBirthdaysProperty;
 
     // This is the property version  of `last_birthdays`.
     int _lastLastBirthdaysPropertyVersion = -1;
@@ -342,10 +342,10 @@ private:
     int _lastBirthdaysPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `last_birthdays` property.
-    void _receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `last_birthdays` property.
-    std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>, boost::optional<int>)>> _lastBirthdaysPropertyCallbacks;
+    std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>, std::optional<int>)>> _lastBirthdaysPropertyCallbacks;
     std::mutex _lastBirthdaysPropertyCallbacksMutex;
 
     // ---------------- SERVICE ADVERTISEMENT ------------------

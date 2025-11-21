@@ -13,11 +13,7 @@ TODO: Get license text from stinger file
 
 #include <functional>
 #include <string>
-
-#define BOOST_THREAD_PROVIDES_FUTURE
-#include <boost/thread/future.hpp>
-#include <boost/optional.hpp> // Include the Boost.Optional header
-
+#include "utils.hpp"
 enum class MethodReturnCode
 {
     {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
@@ -28,21 +24,21 @@ enum class MethodReturnCode
 struct MqttProperties
 {
     MqttProperties()
-        : correlationId(boost::none),
-            responseTopic(boost::none),
-            returnCode(boost::none),
-            subscriptionId(boost::none),
-            propertyVersion(boost::none),
-            messageExpiryInterval(boost::none),
-            debugInfo(boost::none)
+        : correlationId(std::nullopt),
+            responseTopic(std::nullopt),
+            returnCode(std::nullopt),
+            subscriptionId(std::nullopt),
+            propertyVersion(std::nullopt),
+            messageExpiryInterval(std::nullopt),
+            debugInfo(std::nullopt)
     {}
-    boost::optional<std::string> correlationId;
-    boost::optional<std::string> responseTopic;
-    boost::optional<MethodReturnCode> returnCode;
-    boost::optional<int> subscriptionId;
-    boost::optional<int> propertyVersion;
-    boost::optional<int> messageExpiryInterval;
-    boost::optional<std::string> debugInfo;
+    std::optional<std::string> correlationId;
+    std::optional<std::string> responseTopic;
+    std::optional<MethodReturnCode> returnCode;
+    std::optional<int> subscriptionId;
+    std::optional<int> propertyVersion;
+    std::optional<int> messageExpiryInterval;
+    std::optional<std::string> debugInfo;
 };
 
 typedef std::function<void(int, const char *)> LogFunctionType;
@@ -54,7 +50,7 @@ public:
     /*! Publish to a topic.
      * Implementations should queue up messages when not connected.
      */
-    virtual boost::future<bool> Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain, const MqttProperties& mqttProps) = 0;
+    virtual std::future<bool> Publish(const std::string& topic, const std::string& payload, unsigned qos, bool retain, const MqttProperties& mqttProps) = 0;
 
     /*! Subscribe to a topic.
      * Implementation should queue up subscriptions when not connected.

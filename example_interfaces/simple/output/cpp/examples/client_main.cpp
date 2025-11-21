@@ -3,7 +3,9 @@
 #include <iostream>
 #include <sstream>
 #include <syslog.h>
-#include <boost/chrono/chrono.hpp>
+#include <chrono>
+#include <thread>
+#include "utils.hpp"
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
@@ -25,8 +27,8 @@ int main(int argc, char** argv)
     { // restrict scope
         SimpleDiscovery discovery(conn);
         auto serviceIdFut = discovery.GetSingleton();
-        auto serviceIdFutStatus = serviceIdFut.wait_for(boost::chrono::seconds(15));
-        if (serviceIdFutStatus == boost::future_status::timeout)
+        auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
+        if (serviceIdFutStatus == std::future_status::timeout)
         {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
@@ -57,8 +59,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `trade_numbers` method call.
         std::cout << "CALLING TRADE_NUMBERS" << std::endl;
         auto tradeNumbersResultFuture = client.tradeNumbers(42);
-        auto tradeNumbersStatus = tradeNumbersResultFuture.wait_for(boost::chrono::seconds(5));
-        if (tradeNumbersStatus == boost::future_status::timeout)
+        auto tradeNumbersStatus = tradeNumbersResultFuture.wait_for(std::chrono::seconds(5));
+        if (tradeNumbersStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for TRADE_NUMBERS response." << std::endl;
         }
@@ -87,7 +89,7 @@ int main(int argc, char** argv)
 
     while (true)
     {
-        sleep(10);
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 
     return 0;

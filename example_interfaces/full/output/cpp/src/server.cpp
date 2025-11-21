@@ -3,10 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <syslog.h>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/functional/hash.hpp>
+
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
@@ -32,21 +29,21 @@ FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker, const std::str
                                                                    _receiveMessage(topic, payload, mqttProps);
                                                                });
 
-    _addNumbersMethodSubscriptionId = _broker->Subscribe((boost::format("full/%1%/method/addNumbers") % _instanceId).str(), 2);
-    _doSomethingMethodSubscriptionId = _broker->Subscribe((boost::format("full/%1%/method/doSomething") % _instanceId).str(), 2);
-    _echoMethodSubscriptionId = _broker->Subscribe((boost::format("full/%1%/method/echo") % _instanceId).str(), 2);
-    _whatTimeIsItMethodSubscriptionId = _broker->Subscribe((boost::format("full/%1%/method/whatTimeIsIt") % _instanceId).str(), 2);
-    _setTheTimeMethodSubscriptionId = _broker->Subscribe((boost::format("full/%1%/method/setTheTime") % _instanceId).str(), 2);
-    _forwardTimeMethodSubscriptionId = _broker->Subscribe((boost::format("full/%1%/method/forwardTime") % _instanceId).str(), 2);
-    _howOffIsTheClockMethodSubscriptionId = _broker->Subscribe((boost::format("full/%1%/method/howOffIsTheClock") % _instanceId).str(), 2);
+    _addNumbersMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/addNumbers") % _instanceId).str(), 2);
+    _doSomethingMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/doSomething") % _instanceId).str(), 2);
+    _echoMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/echo") % _instanceId).str(), 2);
+    _whatTimeIsItMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/whatTimeIsIt") % _instanceId).str(), 2);
+    _setTheTimeMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/setTheTime") % _instanceId).str(), 2);
+    _forwardTimeMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/forwardTime") % _instanceId).str(), 2);
+    _howOffIsTheClockMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/howOffIsTheClock") % _instanceId).str(), 2);
 
-    _favoriteNumberPropertySubscriptionId = _broker->Subscribe((boost::format("full/%1%/property/favoriteNumber/setValue") % _instanceId).str(), 1);
-    _favoriteFoodsPropertySubscriptionId = _broker->Subscribe((boost::format("full/%1%/property/favoriteFoods/setValue") % _instanceId).str(), 1);
-    _lunchMenuPropertySubscriptionId = _broker->Subscribe((boost::format("full/%1%/property/lunchMenu/setValue") % _instanceId).str(), 1);
-    _familyNamePropertySubscriptionId = _broker->Subscribe((boost::format("full/%1%/property/familyName/setValue") % _instanceId).str(), 1);
-    _lastBreakfastTimePropertySubscriptionId = _broker->Subscribe((boost::format("full/%1%/property/lastBreakfastTime/setValue") % _instanceId).str(), 1);
-    _breakfastLengthPropertySubscriptionId = _broker->Subscribe((boost::format("full/%1%/property/breakfastLength/setValue") % _instanceId).str(), 1);
-    _lastBirthdaysPropertySubscriptionId = _broker->Subscribe((boost::format("full/%1%/property/lastBirthdays/setValue") % _instanceId).str(), 1);
+    _favoriteNumberPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/favoriteNumber/setValue") % _instanceId).str(), 1);
+    _favoriteFoodsPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/favoriteFoods/setValue") % _instanceId).str(), 1);
+    _lunchMenuPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/lunchMenu/setValue") % _instanceId).str(), 1);
+    _familyNamePropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/familyName/setValue") % _instanceId).str(), 1);
+    _lastBreakfastTimePropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/lastBreakfastTime/setValue") % _instanceId).str(), 1);
+    _breakfastLengthPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/breakfastLength/setValue") % _instanceId).str(), 1);
+    _lastBirthdaysPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/lastBirthdays/setValue") % _instanceId).str(), 1);
 
     // Start the service advertisement thread
     _advertisementThreadRunning = true;
@@ -69,24 +66,24 @@ FullServer::~FullServer()
         _advertisementThread.join();
     }
 
-    std::string topic = (boost::format("full/%1%/interface") % _instanceId).str();
+    std::string topic = (format("full/%1%/interface") % _instanceId).str();
     _broker->Publish(topic, "", 1, true, MqttProperties());
 
-    _broker->Unsubscribe((boost::format("full/%1%/method/addNumbers") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/method/doSomething") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/method/echo") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/method/whatTimeIsIt") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/method/setTheTime") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/method/forwardTime") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/method/howOffIsTheClock") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/method/addNumbers") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/method/doSomething") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/method/echo") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/method/whatTimeIsIt") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/method/setTheTime") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/method/forwardTime") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/method/howOffIsTheClock") % _instanceId).str());
 
-    _broker->Unsubscribe((boost::format("full/%1%/property/favoriteNumber/setValue") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/property/favoriteFoods/setValue") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/property/lunchMenu/setValue") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/property/familyName/setValue") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/property/lastBreakfastTime/setValue") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/property/breakfastLength/setValue") % _instanceId).str());
-    _broker->Unsubscribe((boost::format("full/%1%/property/lastBirthdays/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/property/favoriteNumber/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/property/favoriteFoods/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/property/lunchMenu/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/property/familyName/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/property/lastBreakfastTime/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/property/breakfastLength/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/property/lastBirthdays/setValue") % _instanceId).str());
 }
 
 void FullServer::_receiveMessage(
@@ -98,7 +95,7 @@ void FullServer::_receiveMessage(
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
 
-    if ((subscriptionId == _addNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/method/addNumbers") % _instanceId).str())))
+    if ((subscriptionId == _addNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/addNumbers") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as addNumbers method request.", topic.c_str());
         rapidjson::Document doc;
@@ -121,7 +118,7 @@ void FullServer::_receiveMessage(
                 _callAddNumbersHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -129,7 +126,7 @@ void FullServer::_receiveMessage(
         }
     }
 
-    else if ((subscriptionId == _doSomethingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/method/doSomething") % _instanceId).str())))
+    else if ((subscriptionId == _doSomethingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/doSomething") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as doSomething method request.", topic.c_str());
         rapidjson::Document doc;
@@ -152,7 +149,7 @@ void FullServer::_receiveMessage(
                 _callDoSomethingHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -160,7 +157,7 @@ void FullServer::_receiveMessage(
         }
     }
 
-    else if ((subscriptionId == _echoMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/method/echo") % _instanceId).str())))
+    else if ((subscriptionId == _echoMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/echo") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as echo method request.", topic.c_str());
         rapidjson::Document doc;
@@ -183,7 +180,7 @@ void FullServer::_receiveMessage(
                 _callEchoHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -191,7 +188,7 @@ void FullServer::_receiveMessage(
         }
     }
 
-    else if ((subscriptionId == _whatTimeIsItMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/method/whatTimeIsIt") % _instanceId).str())))
+    else if ((subscriptionId == _whatTimeIsItMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/whatTimeIsIt") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as what_time_is_it method request.", topic.c_str());
         rapidjson::Document doc;
@@ -214,7 +211,7 @@ void FullServer::_receiveMessage(
                 _callWhatTimeIsItHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -222,7 +219,7 @@ void FullServer::_receiveMessage(
         }
     }
 
-    else if ((subscriptionId == _setTheTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/method/setTheTime") % _instanceId).str())))
+    else if ((subscriptionId == _setTheTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/setTheTime") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as set_the_time method request.", topic.c_str());
         rapidjson::Document doc;
@@ -245,7 +242,7 @@ void FullServer::_receiveMessage(
                 _callSetTheTimeHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -253,7 +250,7 @@ void FullServer::_receiveMessage(
         }
     }
 
-    else if ((subscriptionId == _forwardTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/method/forwardTime") % _instanceId).str())))
+    else if ((subscriptionId == _forwardTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/forwardTime") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as forward_time method request.", topic.c_str());
         rapidjson::Document doc;
@@ -276,7 +273,7 @@ void FullServer::_receiveMessage(
                 _callForwardTimeHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -284,7 +281,7 @@ void FullServer::_receiveMessage(
         }
     }
 
-    else if ((subscriptionId == _howOffIsTheClockMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/method/howOffIsTheClock") % _instanceId).str())))
+    else if ((subscriptionId == _howOffIsTheClockMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/howOffIsTheClock") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as how_off_is_the_clock method request.", topic.c_str());
         rapidjson::Document doc;
@@ -307,7 +304,7 @@ void FullServer::_receiveMessage(
                 _callHowOffIsTheClockHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -315,50 +312,50 @@ void FullServer::_receiveMessage(
         }
     }
 
-    if (subscriptionId == _favoriteNumberPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/property/favoriteNumber/setValue") % _instanceId).str())))
+    if (subscriptionId == _favoriteNumberPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/property/favoriteNumber/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as favorite_number property update.", topic.c_str());
         _receiveFavoriteNumberPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _favoriteFoodsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/property/favoriteFoods/setValue") % _instanceId).str())))
+    else if (subscriptionId == _favoriteFoodsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/property/favoriteFoods/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as favorite_foods property update.", topic.c_str());
         _receiveFavoriteFoodsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _lunchMenuPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/property/lunchMenu/setValue") % _instanceId).str())))
+    else if (subscriptionId == _lunchMenuPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/property/lunchMenu/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as lunch_menu property update.", topic.c_str());
         _receiveLunchMenuPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _familyNamePropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/property/familyName/setValue") % _instanceId).str())))
+    else if (subscriptionId == _familyNamePropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/property/familyName/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as family_name property update.", topic.c_str());
         _receiveFamilyNamePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _lastBreakfastTimePropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/property/lastBreakfastTime/setValue") % _instanceId).str())))
+    else if (subscriptionId == _lastBreakfastTimePropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/property/lastBreakfastTime/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as last_breakfast_time property update.", topic.c_str());
         _receiveLastBreakfastTimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _breakfastLengthPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/property/breakfastLength/setValue") % _instanceId).str())))
+    else if (subscriptionId == _breakfastLengthPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/property/breakfastLength/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as breakfast_length property update.", topic.c_str());
         _receiveBreakfastLengthPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _lastBirthdaysPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("full/%1%/property/lastBirthdays/setValue") % _instanceId).str())))
+    else if (subscriptionId == _lastBirthdaysPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/property/lastBirthdays/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as last_birthdays property update.", topic.c_str());
         _receiveLastBirthdaysPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 }
 
-boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> processTime, std::vector<uint8_t> memorySegment)
+std::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, std::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> processTime, std::vector<uint8_t> memorySegment)
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -392,10 +389,10 @@ boost::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, boost::optiona
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish((boost::format("full/%1%/signal/todayIs") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish((format("full/%1%/signal/todayIs") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-void FullServer::registerAddNumbersHandler(std::function<int(int, int, boost::optional<int>)> func)
+void FullServer::registerAddNumbersHandler(std::function<int(int, int, std::optional<int>)> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle full/+/method/addNumbers method requests.");
     _addNumbersHandler = func;
@@ -440,8 +437,8 @@ void FullServer::registerHowOffIsTheClockHandler(std::function<std::chrono::dura
 void FullServer::_callAddNumbersHandler(
         const std::string& topic,
         const rapidjson::Document& doc,
-        const boost::optional<std::string> optCorrelationId,
-        const boost::optional<std::string> optResponseTopic
+        const std::optional<std::string> optCorrelationId,
+        const std::optional<std::string> optResponseTopic
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to addNumbers");
@@ -477,8 +474,8 @@ void FullServer::_callAddNumbersHandler(
 void FullServer::_callDoSomethingHandler(
         const std::string& topic,
         const rapidjson::Document& doc,
-        const boost::optional<std::string> optCorrelationId,
-        const boost::optional<std::string> optResponseTopic
+        const std::optional<std::string> optCorrelationId,
+        const std::optional<std::string> optResponseTopic
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to doSomething");
@@ -513,8 +510,8 @@ void FullServer::_callDoSomethingHandler(
 void FullServer::_callEchoHandler(
         const std::string& topic,
         const rapidjson::Document& doc,
-        const boost::optional<std::string> optCorrelationId,
-        const boost::optional<std::string> optResponseTopic
+        const std::optional<std::string> optCorrelationId,
+        const std::optional<std::string> optResponseTopic
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to echo");
@@ -550,8 +547,8 @@ void FullServer::_callEchoHandler(
 void FullServer::_callWhatTimeIsItHandler(
         const std::string& topic,
         const rapidjson::Document& doc,
-        const boost::optional<std::string> optCorrelationId,
-        const boost::optional<std::string> optResponseTopic
+        const std::optional<std::string> optCorrelationId,
+        const std::optional<std::string> optResponseTopic
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to what_time_is_it");
@@ -587,8 +584,8 @@ void FullServer::_callWhatTimeIsItHandler(
 void FullServer::_callSetTheTimeHandler(
         const std::string& topic,
         const rapidjson::Document& doc,
-        const boost::optional<std::string> optCorrelationId,
-        const boost::optional<std::string> optResponseTopic
+        const std::optional<std::string> optCorrelationId,
+        const std::optional<std::string> optResponseTopic
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to set_the_time");
@@ -623,8 +620,8 @@ void FullServer::_callSetTheTimeHandler(
 void FullServer::_callForwardTimeHandler(
         const std::string& topic,
         const rapidjson::Document& doc,
-        const boost::optional<std::string> optCorrelationId,
-        const boost::optional<std::string> optResponseTopic
+        const std::optional<std::string> optCorrelationId,
+        const std::optional<std::string> optResponseTopic
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to forward_time");
@@ -660,8 +657,8 @@ void FullServer::_callForwardTimeHandler(
 void FullServer::_callHowOffIsTheClockHandler(
         const std::string& topic,
         const rapidjson::Document& doc,
-        const boost::optional<std::string> optCorrelationId,
-        const boost::optional<std::string> optResponseTopic
+        const std::optional<std::string> optCorrelationId,
+        const std::optional<std::string> optResponseTopic
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to how_off_is_the_clock");
@@ -694,14 +691,14 @@ void FullServer::_callHowOffIsTheClockHandler(
     }
 }
 
-boost::optional<int> FullServer::getFavoriteNumberProperty() const
+std::optional<int> FullServer::getFavoriteNumberProperty()
 {
     std::lock_guard<std::mutex> lock(_favoriteNumberPropertyMutex);
     if (_favoriteNumberProperty)
     {
         return _favoriteNumberProperty->number;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void FullServer::registerFavoriteNumberPropertyCallback(const std::function<void(int number)>& cb)
@@ -746,10 +743,10 @@ void FullServer::republishFavoriteNumberProperty() const
     doc.Accept(writer);
     MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastFavoriteNumberPropertyVersion;
-    _broker->Publish((boost::format("full/%1%/property/favoriteNumber/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("full/%1%/property/favoriteNumber/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-void FullServer::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void FullServer::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -778,23 +775,23 @@ void FullServer::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, 
     republishFavoriteNumberProperty();
 }
 
-boost::optional<FavoriteFoodsProperty> FullServer::getFavoriteFoodsProperty() const
+std::optional<FavoriteFoodsProperty> FullServer::getFavoriteFoodsProperty()
 {
     std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
     if (_favoriteFoodsProperty)
     {
         return *_favoriteFoodsProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void FullServer::registerFavoriteFoodsPropertyCallback(const std::function<void(std::string drink, int slicesOfPizza, boost::optional<std::string> breakfast)>& cb)
+void FullServer::registerFavoriteFoodsPropertyCallback(const std::function<void(std::string drink, int slicesOfPizza, std::optional<std::string> breakfast)>& cb)
 {
     std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyCallbacksMutex);
     _favoriteFoodsPropertyCallbacks.push_back(cb);
 }
 
-void FullServer::updateFavoriteFoodsProperty(std::string drink, int slicesOfPizza, boost::optional<std::string> breakfast)
+void FullServer::updateFavoriteFoodsProperty(std::string drink, int slicesOfPizza, std::optional<std::string> breakfast)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
@@ -830,10 +827,10 @@ void FullServer::republishFavoriteFoodsProperty() const
     doc.Accept(writer);
     MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastFavoriteFoodsPropertyVersion;
-    _broker->Publish((boost::format("full/%1%/property/favoriteFoods/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("full/%1%/property/favoriteFoods/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-void FullServer::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void FullServer::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -862,14 +859,14 @@ void FullServer::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, c
     republishFavoriteFoodsProperty();
 }
 
-boost::optional<LunchMenuProperty> FullServer::getLunchMenuProperty() const
+std::optional<LunchMenuProperty> FullServer::getLunchMenuProperty()
 {
     std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
     if (_lunchMenuProperty)
     {
         return *_lunchMenuProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void FullServer::registerLunchMenuPropertyCallback(const std::function<void(Lunch monday, Lunch tuesday)>& cb)
@@ -914,10 +911,10 @@ void FullServer::republishLunchMenuProperty() const
     doc.Accept(writer);
     MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastLunchMenuPropertyVersion;
-    _broker->Publish((boost::format("full/%1%/property/lunchMenu/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("full/%1%/property/lunchMenu/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-void FullServer::_receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void FullServer::_receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -946,14 +943,14 @@ void FullServer::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
     republishLunchMenuProperty();
 }
 
-boost::optional<const std::string&> FullServer::getFamilyNameProperty() const
+std::optional<std::string&> FullServer::getFamilyNameProperty()
 {
     std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
     if (_familyNameProperty)
     {
         return _familyNameProperty->familyName;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void FullServer::registerFamilyNamePropertyCallback(const std::function<void(std::string familyName)>& cb)
@@ -998,10 +995,10 @@ void FullServer::republishFamilyNameProperty() const
     doc.Accept(writer);
     MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastFamilyNamePropertyVersion;
-    _broker->Publish((boost::format("full/%1%/property/familyName/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("full/%1%/property/familyName/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-void FullServer::_receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void FullServer::_receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -1030,14 +1027,14 @@ void FullServer::_receiveFamilyNamePropertyUpdate(const std::string& topic, cons
     republishFamilyNameProperty();
 }
 
-boost::optional<std::chrono::time_point<std::chrono::system_clock>> FullServer::getLastBreakfastTimeProperty() const
+std::optional<std::chrono::time_point<std::chrono::system_clock>> FullServer::getLastBreakfastTimeProperty()
 {
     std::lock_guard<std::mutex> lock(_lastBreakfastTimePropertyMutex);
     if (_lastBreakfastTimeProperty)
     {
         return _lastBreakfastTimeProperty->timestamp;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void FullServer::registerLastBreakfastTimePropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> timestamp)>& cb)
@@ -1082,10 +1079,10 @@ void FullServer::republishLastBreakfastTimeProperty() const
     doc.Accept(writer);
     MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastLastBreakfastTimePropertyVersion;
-    _broker->Publish((boost::format("full/%1%/property/lastBreakfastTime/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("full/%1%/property/lastBreakfastTime/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-void FullServer::_receiveLastBreakfastTimePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void FullServer::_receiveLastBreakfastTimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -1114,14 +1111,14 @@ void FullServer::_receiveLastBreakfastTimePropertyUpdate(const std::string& topi
     republishLastBreakfastTimeProperty();
 }
 
-boost::optional<std::chrono::duration<double>> FullServer::getBreakfastLengthProperty() const
+std::optional<std::chrono::duration<double>> FullServer::getBreakfastLengthProperty()
 {
     std::lock_guard<std::mutex> lock(_breakfastLengthPropertyMutex);
     if (_breakfastLengthProperty)
     {
         return _breakfastLengthProperty->length;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void FullServer::registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::duration<double> length)>& cb)
@@ -1166,10 +1163,10 @@ void FullServer::republishBreakfastLengthProperty() const
     doc.Accept(writer);
     MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastBreakfastLengthPropertyVersion;
-    _broker->Publish((boost::format("full/%1%/property/breakfastLength/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("full/%1%/property/breakfastLength/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-void FullServer::_receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void FullServer::_receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -1198,23 +1195,23 @@ void FullServer::_receiveBreakfastLengthPropertyUpdate(const std::string& topic,
     republishBreakfastLengthProperty();
 }
 
-boost::optional<LastBirthdaysProperty> FullServer::getLastBirthdaysProperty() const
+std::optional<LastBirthdaysProperty> FullServer::getLastBirthdaysProperty()
 {
     std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyMutex);
     if (_lastBirthdaysProperty)
     {
         return *_lastBirthdaysProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void FullServer::registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister, boost::optional<int> brothersAge)>& cb)
+void FullServer::registerLastBirthdaysPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, std::optional<std::chrono::time_point<std::chrono::system_clock>> sister, std::optional<int> brothersAge)>& cb)
 {
     std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyCallbacksMutex);
     _lastBirthdaysPropertyCallbacks.push_back(cb);
 }
 
-void FullServer::updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister, boost::optional<int> brothersAge)
+void FullServer::updateLastBirthdaysProperty(std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, std::optional<std::chrono::time_point<std::chrono::system_clock>> sister, std::optional<int> brothersAge)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyMutex);
@@ -1250,10 +1247,10 @@ void FullServer::republishLastBirthdaysProperty() const
     doc.Accept(writer);
     MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastLastBirthdaysPropertyVersion;
-    _broker->Publish((boost::format("full/%1%/property/lastBirthdays/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("full/%1%/property/lastBirthdays/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-void FullServer::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void FullServer::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -1312,7 +1309,7 @@ void FullServer::_advertisementThreadLoop()
         mqttProps.messageExpiryInterval = 150;
 
         // Publish to full/<instance_id>/interface
-        std::string topic = (boost::format("full/%1%/interface") % _instanceId).str();
+        std::string topic = (format("full/%1%/interface") % _instanceId).str();
         _broker->Publish(topic, buf.GetString(), 1, true, mqttProps);
 
         _broker->Log(LOG_INFO, "Published service advertisement to %s", topic.c_str());

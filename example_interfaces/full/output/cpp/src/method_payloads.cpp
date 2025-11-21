@@ -39,7 +39,7 @@ AddNumbersRequestArguments AddNumbersRequestArguments::FromRapidJsonObject(const
         }
         else
         {
-            addNumbersArgs.third = boost::none;
+            addNumbersArgs.third = std::nullopt;
         }
     }
 

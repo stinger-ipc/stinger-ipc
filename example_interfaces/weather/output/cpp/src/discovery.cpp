@@ -4,14 +4,13 @@
 #include <iostream>
 #include <algorithm>
 #include <sstream>
-#include <boost/format.hpp>
 
 WeatherDiscovery::WeatherDiscovery(std::shared_ptr<IBrokerConnection> broker):
     _broker(broker)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;
-    topicStream << boost::format("weather/%1%/interface") % "+";
+    topicStream << format("weather/%1%/interface") % "+";
     _broker->Subscribe(topicStream.str(), 2);
 
     // Register message callback
@@ -40,14 +39,14 @@ void WeatherDiscovery::SetDiscoveryCallback(const std::function<void(const std::
     _discovery_callback = cb;
 }
 
-boost::future<std::string> WeatherDiscovery::GetSingleton()
+std::future<std::string> WeatherDiscovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
     // If we already have at least one instance, return it immediately
     if (!_instance_ids.empty())
     {
-        boost::promise<std::string> promise;
+        std::promise<std::string> promise;
         promise.set_value(_instance_ids[0]);
         return promise.get_future();
     }
@@ -67,7 +66,7 @@ void WeatherDiscovery::_onMessage(const std::string& topic, const std::string& p
 {
     // Check if this message is for our discovery topic
     std::stringstream topicPattern;
-    topicPattern << boost::format("weather/%1%/interface") % "+";
+    topicPattern << format("weather/%1%/interface") % "+";
 
     if (!_broker->TopicMatchesSubscription(topic, topicPattern.str()))
     {

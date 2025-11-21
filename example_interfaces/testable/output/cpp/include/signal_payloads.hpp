@@ -12,7 +12,7 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
@@ -35,7 +35,7 @@ struct SingleOptionalIntPayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static SingleOptionalIntPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<int> value;
+    std::optional<int> value;
 };
 
 struct ThreeIntegersPayload
@@ -45,7 +45,7 @@ struct ThreeIntegersPayload
     // Values...
     int first;
     int second;
-    boost::optional<int> third;
+    std::optional<int> third;
 };
 
 struct SingleStringPayload
@@ -61,7 +61,7 @@ struct SingleOptionalStringPayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static SingleOptionalStringPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::string> value;
+    std::optional<std::string> value;
 };
 
 struct ThreeStringsPayload
@@ -71,7 +71,7 @@ struct ThreeStringsPayload
     // Values...
     std::string first;
     std::string second;
-    boost::optional<std::string> third;
+    std::optional<std::string> third;
 };
 
 struct SingleEnumPayload
@@ -87,7 +87,7 @@ struct SingleOptionalEnumPayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static SingleOptionalEnumPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<Numbers> value;
+    std::optional<Numbers> value;
 };
 
 struct ThreeEnumsPayload
@@ -97,7 +97,7 @@ struct ThreeEnumsPayload
     // Values...
     Numbers first;
     Numbers second;
-    boost::optional<Numbers> third;
+    std::optional<Numbers> third;
 };
 
 struct SingleStructPayload
@@ -113,7 +113,7 @@ struct SingleOptionalStructPayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static SingleOptionalStructPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<AllTypes> value;
+    std::optional<AllTypes> value;
 };
 
 struct ThreeStructsPayload
@@ -123,7 +123,7 @@ struct ThreeStructsPayload
     // Values...
     AllTypes first;
     AllTypes second;
-    boost::optional<AllTypes> third;
+    std::optional<AllTypes> third;
 };
 
 struct SingleDateTimePayload
@@ -139,7 +139,7 @@ struct SingleOptionalDatetimePayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static SingleOptionalDatetimePayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> value;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> value;
 };
 
 struct ThreeDateTimesPayload
@@ -149,7 +149,7 @@ struct ThreeDateTimesPayload
     // Values...
     std::chrono::time_point<std::chrono::system_clock> first;
     std::chrono::time_point<std::chrono::system_clock> second;
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> third;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> third;
 };
 
 struct SingleDurationPayload
@@ -165,7 +165,7 @@ struct SingleOptionalDurationPayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static SingleOptionalDurationPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::chrono::duration<double>> value;
+    std::optional<std::chrono::duration<double>> value;
 };
 
 struct ThreeDurationsPayload
@@ -175,7 +175,7 @@ struct ThreeDurationsPayload
     // Values...
     std::chrono::duration<double> first;
     std::chrono::duration<double> second;
-    boost::optional<std::chrono::duration<double>> third;
+    std::optional<std::chrono::duration<double>> third;
 };
 
 struct SingleBinaryPayload
@@ -191,7 +191,7 @@ struct SingleOptionalBinaryPayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static SingleOptionalBinaryPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::vector<uint8_t>> value;
+    std::optional<std::vector<uint8_t>> value;
 };
 
 struct ThreeBinariesPayload
@@ -201,7 +201,7 @@ struct ThreeBinariesPayload
     // Values...
     std::vector<uint8_t> first;
     std::vector<uint8_t> second;
-    boost::optional<std::vector<uint8_t>> third;
+    std::optional<std::vector<uint8_t>> third;
 };
 
 struct SingleArrayOfIntegersPayload
@@ -217,7 +217,7 @@ struct SingleOptionalArrayOfStringsPayload
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static SingleOptionalArrayOfStringsPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    boost::optional<std::vector<std::string>> values;
+    std::optional<std::vector<std::string>> values;
 };
 
 struct ArrayOfEveryTypePayload

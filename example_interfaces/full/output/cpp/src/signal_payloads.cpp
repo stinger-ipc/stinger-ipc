@@ -25,7 +25,7 @@ TodayIsPayload TodayIsPayload::FromRapidJsonObject(const rapidjson::Value& jsonO
         }
         else
         {
-            todayIsPayload.dayOfWeek = boost::none;
+            todayIsPayload.dayOfWeek = std::nullopt;
         }
     }
     { // Scoping

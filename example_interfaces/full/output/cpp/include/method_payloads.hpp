@@ -12,7 +12,7 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
@@ -23,7 +23,7 @@ struct AddNumbersRequestArguments
     // Values...
     int first;
     int second;
-    boost::optional<int> third;
+    std::optional<int> third;
 };
 
 struct AddNumbersReturnValues

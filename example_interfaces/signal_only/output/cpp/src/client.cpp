@@ -7,12 +7,8 @@
 #include <iomanip>
 #include <ctime>
 #include <syslog.h>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <boost/uuid/uuid_generators.hpp>
+#include <sstream>
+#include "utils.hpp"
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
@@ -37,11 +33,11 @@ SignalOnlyClient::SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker, co
                                                                {
                                                                    _receiveMessage(topic, payload, mqttProps);
                                                                });
-    _anotherSignalSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/anotherSignal") % _instanceId).str(), 2);
-    _barkSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/bark") % _instanceId).str(), 2);
-    _maybeNumberSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/maybeNumber") % _instanceId).str(), 2);
-    _maybeNameSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/maybeName") % _instanceId).str(), 2);
-    _nowSignalSubscriptionId = _broker->Subscribe((boost::format("signalOnly/%1%/signal/now") % _instanceId).str(), 2);
+    _anotherSignalSignalSubscriptionId = _broker->Subscribe((format("signalOnly/%1%/signal/anotherSignal") % _instanceId).str(), 2);
+    _barkSignalSubscriptionId = _broker->Subscribe((format("signalOnly/%1%/signal/bark") % _instanceId).str(), 2);
+    _maybeNumberSignalSubscriptionId = _broker->Subscribe((format("signalOnly/%1%/signal/maybeNumber") % _instanceId).str(), 2);
+    _maybeNameSignalSubscriptionId = _broker->Subscribe((format("signalOnly/%1%/signal/maybeName") % _instanceId).str(), 2);
+    _nowSignalSubscriptionId = _broker->Subscribe((format("signalOnly/%1%/signal/now") % _instanceId).str(), 2);
 }
 
 SignalOnlyClient::~SignalOnlyClient()
@@ -62,7 +58,7 @@ void SignalOnlyClient::_receiveMessage(
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
     _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", topic.c_str(), subscriptionId);
-    if ((subscriptionId == _anotherSignalSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/anotherSignal") % _instanceId).str())))
+    if ((subscriptionId == _anotherSignalSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("signalOnly/%1%/signal/anotherSignal") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling anotherSignal signal");
         rapidjson::Document doc;
@@ -129,14 +125,14 @@ void SignalOnlyClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _barkSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/bark") % _instanceId).str())))
+    if ((subscriptionId == _barkSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("signalOnly/%1%/signal/bark") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling bark signal");
         rapidjson::Document doc;
@@ -177,14 +173,14 @@ void SignalOnlyClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _maybeNumberSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/maybeNumber") % _instanceId).str())))
+    if ((subscriptionId == _maybeNumberSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("signalOnly/%1%/signal/maybeNumber") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling maybe_number signal");
         rapidjson::Document doc;
@@ -205,7 +201,7 @@ void SignalOnlyClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<int> tempNumber;
+                std::optional<int> tempNumber;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("number");
                     if (itr != doc.MemberEnd() && itr->value.IsInt())
@@ -214,7 +210,7 @@ void SignalOnlyClient::_receiveMessage(
                     }
                     else
                     {
-                        tempNumber = boost::none;
+                        tempNumber = std::nullopt;
                     }
                 }
 
@@ -225,14 +221,14 @@ void SignalOnlyClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _maybeNameSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/maybeName") % _instanceId).str())))
+    if ((subscriptionId == _maybeNameSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("signalOnly/%1%/signal/maybeName") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling maybe_name signal");
         rapidjson::Document doc;
@@ -253,7 +249,7 @@ void SignalOnlyClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<std::string> tempName;
+                std::optional<std::string> tempName;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("name");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
@@ -262,7 +258,7 @@ void SignalOnlyClient::_receiveMessage(
                     }
                     else
                     {
-                        tempName = boost::none;
+                        tempName = std::nullopt;
                     }
                 }
 
@@ -273,14 +269,14 @@ void SignalOnlyClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _nowSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("signalOnly/%1%/signal/now") % _instanceId).str())))
+    if ((subscriptionId == _nowSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("signalOnly/%1%/signal/now") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling now signal");
         rapidjson::Document doc;
@@ -328,7 +324,7 @@ void SignalOnlyClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -349,13 +345,13 @@ void SignalOnlyClient::registerBarkCallback(const std::function<void(std::string
     _barkSignalCallbacks.push_back(cb);
 }
 
-void SignalOnlyClient::registerMaybeNumberCallback(const std::function<void(boost::optional<int>)>& cb)
+void SignalOnlyClient::registerMaybeNumberCallback(const std::function<void(std::optional<int>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_maybeNumberSignalCallbacksMutex);
     _maybeNumberSignalCallbacks.push_back(cb);
 }
 
-void SignalOnlyClient::registerMaybeNameCallback(const std::function<void(boost::optional<std::string>)>& cb)
+void SignalOnlyClient::registerMaybeNameCallback(const std::function<void(std::optional<std::string>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_maybeNameSignalCallbacksMutex);
     _maybeNameSignalCallbacks.push_back(cb);

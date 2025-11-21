@@ -22,7 +22,7 @@ int main(int argc, char** argv)
     auto anotherSignalFuture = server->emitAnotherSignalSignal(3.14, true, "apples");
     auto barkFuture = server->emitBarkSignal("apples");
     auto maybe_numberFuture = server->emitMaybeNumberSignal(42);
-    auto maybe_nameFuture = server->emitMaybeNameSignal(boost::make_optional(std::string("apples")));
+    auto maybe_nameFuture = server->emitMaybeNameSignal(std::make_optional(std::string("apples")));
     auto nowFuture = server->emitNowSignal(std::chrono::system_clock::now());
     anotherSignalFuture.wait();
     barkFuture.wait();
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             auto maybe_numberFuture = server->emitMaybeNumberSignal(42);
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
-                                            auto maybe_nameFuture = server->emitMaybeNameSignal(boost::make_optional(std::string("apples")));
+                                            auto maybe_nameFuture = server->emitMaybeNameSignal(std::make_optional(std::string("apples")));
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             auto nowFuture = server->emitNowSignal(std::chrono::system_clock::now());
                                             std::this_thread::sleep_for(std::chrono::seconds(1));

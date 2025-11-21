@@ -4,14 +4,13 @@
 #include <iostream>
 #include <algorithm>
 #include <sstream>
-#include <boost/format.hpp>
 
 SimpleDiscovery::SimpleDiscovery(std::shared_ptr<IBrokerConnection> broker):
     _broker(broker)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;
-    topicStream << boost::format("simple/%1%/interface") % "+";
+    topicStream << format("simple/%1%/interface") % "+";
     _broker->Subscribe(topicStream.str(), 2);
 
     // Register message callback
@@ -40,14 +39,14 @@ void SimpleDiscovery::SetDiscoveryCallback(const std::function<void(const std::s
     _discovery_callback = cb;
 }
 
-boost::future<std::string> SimpleDiscovery::GetSingleton()
+std::future<std::string> SimpleDiscovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
     // If we already have at least one instance, return it immediately
     if (!_instance_ids.empty())
     {
-        boost::promise<std::string> promise;
+        std::promise<std::string> promise;
         promise.set_value(_instance_ids[0]);
         return promise.get_future();
     }
@@ -67,7 +66,7 @@ void SimpleDiscovery::_onMessage(const std::string& topic, const std::string& pa
 {
     // Check if this message is for our discovery topic
     std::stringstream topicPattern;
-    topicPattern << boost::format("simple/%1%/interface") % "+";
+    topicPattern << format("simple/%1%/interface") % "+";
 
     if (!_broker->TopicMatchesSubscription(topic, topicPattern.str()))
     {

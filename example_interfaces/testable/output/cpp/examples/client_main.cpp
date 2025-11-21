@@ -3,7 +3,9 @@
 #include <iostream>
 #include <sstream>
 #include <syslog.h>
-#include <boost/chrono/chrono.hpp>
+#include <chrono>
+#include <thread>
+#include "utils.hpp"
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
@@ -25,8 +27,8 @@ int main(int argc, char** argv)
     { // restrict scope
         TestableDiscovery discovery(conn);
         auto serviceIdFut = discovery.GetSingleton();
-        auto serviceIdFutStatus = serviceIdFut.wait_for(boost::chrono::seconds(15));
-        if (serviceIdFutStatus == boost::future_status::timeout)
+        auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
+        if (serviceIdFutStatus == std::future_status::timeout)
         {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
@@ -50,13 +52,13 @@ int main(int argc, char** argv)
                                                    << "value=" << value << std::endl;
                                      });
 
-    client.registerSingleOptionalIntCallback([](boost::optional<int> value)
+    client.registerSingleOptionalIntCallback([](std::optional<int> value)
                                              {
                                                  std::cout << "Received SINGLE_OPTIONAL_INT signal: "
                                                            << "value=" << *value << std::endl;
                                              });
 
-    client.registerThreeIntegersCallback([](int first, int second, boost::optional<int> third)
+    client.registerThreeIntegersCallback([](int first, int second, std::optional<int> third)
                                          {
                                              std::cout << "Received THREE_INTEGERS signal: "
                                                        << "first=" << first << " | " << "second=" << second << " | " << "third=" << *third << std::endl;
@@ -68,13 +70,13 @@ int main(int argc, char** argv)
                                                       << "value=" << value << std::endl;
                                         });
 
-    client.registerSingleOptionalStringCallback([](boost::optional<std::string> value)
+    client.registerSingleOptionalStringCallback([](std::optional<std::string> value)
                                                 {
                                                     std::cout << "Received SINGLE_OPTIONAL_STRING signal: "
                                                               << "value=" << *value << std::endl;
                                                 });
 
-    client.registerThreeStringsCallback([](std::string first, std::string second, boost::optional<std::string> third)
+    client.registerThreeStringsCallback([](std::string first, std::string second, std::optional<std::string> third)
                                         {
                                             std::cout << "Received THREE_STRINGS signal: "
                                                       << "first=" << first << " | " << "second=" << second << " | " << "third=" << *third << std::endl;
@@ -86,13 +88,13 @@ int main(int argc, char** argv)
                                                     << "value=" << numbersStrings[static_cast<int>(value)] << std::endl;
                                       });
 
-    client.registerSingleOptionalEnumCallback([](boost::optional<Numbers> value)
+    client.registerSingleOptionalEnumCallback([](std::optional<Numbers> value)
                                               {
                                                   std::cout << "Received SINGLE_OPTIONAL_ENUM signal: "
                                                             << "value=" << numbersStrings[static_cast<int>(*value)] << std::endl;
                                               });
 
-    client.registerThreeEnumsCallback([](Numbers first, Numbers second, boost::optional<Numbers> third)
+    client.registerThreeEnumsCallback([](Numbers first, Numbers second, std::optional<Numbers> third)
                                       {
                                           std::cout << "Received THREE_ENUMS signal: "
                                                     << "first=" << numbersStrings[static_cast<int>(first)] << " | " << "second=" << numbersStrings[static_cast<int>(second)] << " | " << "third=" << numbersStrings[static_cast<int>(*third)] << std::endl;
@@ -105,14 +107,14 @@ int main(int argc, char** argv)
                                                       << std::endl;
                                         });
 
-    client.registerSingleOptionalStructCallback([](boost::optional<AllTypes> value)
+    client.registerSingleOptionalStructCallback([](std::optional<AllTypes> value)
                                                 {
                                                     std::cout << "Received SINGLE_OPTIONAL_STRUCT signal: "
                                                               << "value=" << "[AllTypes object]"
                                                               << std::endl;
                                                 });
 
-    client.registerThreeStructsCallback([](AllTypes first, AllTypes second, boost::optional<AllTypes> third)
+    client.registerThreeStructsCallback([](AllTypes first, AllTypes second, std::optional<AllTypes> third)
                                         {
                                             std::cout << "Received THREE_STRUCTS signal: "
                                                       << "first=" << "[AllTypes object]"
@@ -129,7 +131,7 @@ int main(int argc, char** argv)
                                                         << "value=" << valueStr << std::endl;
                                           });
 
-    client.registerSingleOptionalDatetimeCallback([](boost::optional<std::chrono::time_point<std::chrono::system_clock>> value)
+    client.registerSingleOptionalDatetimeCallback([](std::optional<std::chrono::time_point<std::chrono::system_clock>> value)
                                                   {
                                                       std::string valueStr = "None";
                                                       if (value)
@@ -141,7 +143,7 @@ int main(int argc, char** argv)
                                                                 << "value=" << valueStr << std::endl;
                                                   });
 
-    client.registerThreeDateTimesCallback([](std::chrono::time_point<std::chrono::system_clock> first, std::chrono::time_point<std::chrono::system_clock> second, boost::optional<std::chrono::time_point<std::chrono::system_clock>> third)
+    client.registerThreeDateTimesCallback([](std::chrono::time_point<std::chrono::system_clock> first, std::chrono::time_point<std::chrono::system_clock> second, std::optional<std::chrono::time_point<std::chrono::system_clock>> third)
                                           {
                                               std::string firstStr = timePointToIsoString(first);
 
@@ -165,7 +167,7 @@ int main(int argc, char** argv)
                                                         << "value=" << valueStr << std::endl;
                                           });
 
-    client.registerSingleOptionalDurationCallback([](boost::optional<std::chrono::duration<double>> value)
+    client.registerSingleOptionalDurationCallback([](std::optional<std::chrono::duration<double>> value)
                                                   {
                                                       std::string valueStr = "None";
                                                       if (value)
@@ -177,7 +179,7 @@ int main(int argc, char** argv)
                                                                 << "value=" << valueStr << std::endl;
                                                   });
 
-    client.registerThreeDurationsCallback([](std::chrono::duration<double> first, std::chrono::duration<double> second, boost::optional<std::chrono::duration<double>> third)
+    client.registerThreeDurationsCallback([](std::chrono::duration<double> first, std::chrono::duration<double> second, std::optional<std::chrono::duration<double>> third)
                                           {
                                               std::string firstStr = durationToIsoString(first);
                                               std::string secondStr = durationToIsoString(second);
@@ -200,7 +202,7 @@ int main(int argc, char** argv)
                                                       << "value=" << valueStr << std::endl;
                                         });
 
-    client.registerSingleOptionalBinaryCallback([](boost::optional<std::vector<uint8_t>> value)
+    client.registerSingleOptionalBinaryCallback([](std::optional<std::vector<uint8_t>> value)
                                                 {
                                                     std::string valueStr = "[Binary Data]";
 
@@ -208,7 +210,7 @@ int main(int argc, char** argv)
                                                               << "value=" << valueStr << std::endl;
                                                 });
 
-    client.registerThreeBinariesCallback([](std::vector<uint8_t> first, std::vector<uint8_t> second, boost::optional<std::vector<uint8_t>> third)
+    client.registerThreeBinariesCallback([](std::vector<uint8_t> first, std::vector<uint8_t> second, std::optional<std::vector<uint8_t>> third)
                                          {
                                              std::string firstStr = "[Binary Data]";
 
@@ -226,7 +228,7 @@ int main(int argc, char** argv)
                                                                << "values=" << "[Array of " << values.size() << " PRIMITIVE values]" << std::endl;
                                                  });
 
-    client.registerSingleOptionalArrayOfStringsCallback([](boost::optional<std::vector<std::string>> values)
+    client.registerSingleOptionalArrayOfStringsCallback([](std::optional<std::vector<std::string>> values)
                                                         {
                                                             std::cout << "Received SINGLE_OPTIONAL_ARRAY_OF_STRINGS signal: "
                                                                       << "values=" << "[Array of " << values->size() << " PRIMITIVE values]" << std::endl;
@@ -249,12 +251,12 @@ int main(int argc, char** argv)
                                                        std::cout << "Received update for read_only_integer property: " << "value=" << value /* unhandled arg type*/ << std::endl;
                                                    });
 
-    client.registerReadWriteOptionalIntegerPropertyCallback([](boost::optional<int> value)
+    client.registerReadWriteOptionalIntegerPropertyCallback([](std::optional<int> value)
                                                             {
                                                                 std::cout << "Received update for read_write_optional_integer property: " << "value=" << "None" << std::endl;
                                                             });
 
-    client.registerReadWriteTwoIntegersPropertyCallback([](int first, boost::optional<int> second)
+    client.registerReadWriteTwoIntegersPropertyCallback([](int first, std::optional<int> second)
                                                         {
                                                             std::cout << "Received update for read_write_two_integers property: " << "first=" << first /* unhandled arg type*/ << " | " << "second=" << "None" << std::endl;
                                                         });
@@ -269,12 +271,12 @@ int main(int argc, char** argv)
                                                        std::cout << "Received update for read_write_string property: " << "value=" << value /* unhandled arg type*/ << std::endl;
                                                    });
 
-    client.registerReadWriteOptionalStringPropertyCallback([](boost::optional<std::string> value)
+    client.registerReadWriteOptionalStringPropertyCallback([](std::optional<std::string> value)
                                                            {
                                                                std::cout << "Received update for read_write_optional_string property: " << "value=" << "None" << std::endl;
                                                            });
 
-    client.registerReadWriteTwoStringsPropertyCallback([](std::string first, boost::optional<std::string> second)
+    client.registerReadWriteTwoStringsPropertyCallback([](std::string first, std::optional<std::string> second)
                                                        {
                                                            std::cout << "Received update for read_write_two_strings property: " << "first=" << first /* unhandled arg type*/ << " | " << "second=" << "None" << std::endl;
                                                        });
@@ -285,12 +287,12 @@ int main(int argc, char** argv)
                                                                  << std::endl;
                                                    });
 
-    client.registerReadWriteOptionalStructPropertyCallback([](boost::optional<AllTypes> value)
+    client.registerReadWriteOptionalStructPropertyCallback([](std::optional<AllTypes> value)
                                                            {
                                                                std::cout << "Received update for read_write_optional_struct property: " << "value=" << "None" << std::endl;
                                                            });
 
-    client.registerReadWriteTwoStructsPropertyCallback([](AllTypes first, boost::optional<AllTypes> second)
+    client.registerReadWriteTwoStructsPropertyCallback([](AllTypes first, std::optional<AllTypes> second)
                                                        {
                                                            std::cout << "Received update for read_write_two_structs property: " << "first=" << "[AllTypes object]"
                                                                      << " | " << "second=" << "None" << std::endl;
@@ -308,12 +310,12 @@ int main(int argc, char** argv)
                                                                << std::endl;
                                                  });
 
-    client.registerReadWriteOptionalEnumPropertyCallback([](boost::optional<Numbers> value)
+    client.registerReadWriteOptionalEnumPropertyCallback([](std::optional<Numbers> value)
                                                          {
                                                              std::cout << "Received update for read_write_optional_enum property: " << "value=" << "None" << std::endl;
                                                          });
 
-    client.registerReadWriteTwoEnumsPropertyCallback([](Numbers first, boost::optional<Numbers> second)
+    client.registerReadWriteTwoEnumsPropertyCallback([](Numbers first, std::optional<Numbers> second)
                                                      {
                                                          std::cout << "Received update for read_write_two_enums property: " << "first=" << numbersStrings[static_cast<int>(first)]
                                                                    << " | " << "second=" << "None" << std::endl;
@@ -327,7 +329,7 @@ int main(int argc, char** argv)
                                                                    << std::endl;
                                                      });
 
-    client.registerReadWriteOptionalDatetimePropertyCallback([](boost::optional<std::chrono::time_point<std::chrono::system_clock>> value)
+    client.registerReadWriteOptionalDatetimePropertyCallback([](std::optional<std::chrono::time_point<std::chrono::system_clock>> value)
                                                              {
                                                                  std::string valueStr = "None";
                                                                  if (value)
@@ -338,7 +340,7 @@ int main(int argc, char** argv)
                                                                  std::cout << "Received update for read_write_optional_datetime property: " << "value=" << "None" << std::endl;
                                                              });
 
-    client.registerReadWriteTwoDatetimesPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> first, boost::optional<std::chrono::time_point<std::chrono::system_clock>> second)
+    client.registerReadWriteTwoDatetimesPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> first, std::optional<std::chrono::time_point<std::chrono::system_clock>> second)
                                                          {
                                                              std::string firstStr = timePointToIsoString(first);
 
@@ -360,7 +362,7 @@ int main(int argc, char** argv)
                                                                    << std::endl;
                                                      });
 
-    client.registerReadWriteOptionalDurationPropertyCallback([](boost::optional<std::chrono::duration<double>> value)
+    client.registerReadWriteOptionalDurationPropertyCallback([](std::optional<std::chrono::duration<double>> value)
                                                              {
                                                                  std::string valueStr = "None";
                                                                  if (value)
@@ -371,7 +373,7 @@ int main(int argc, char** argv)
                                                                  std::cout << "Received update for read_write_optional_duration property: " << "value=" << "None" << std::endl;
                                                              });
 
-    client.registerReadWriteTwoDurationsPropertyCallback([](std::chrono::duration<double> first, boost::optional<std::chrono::duration<double>> second)
+    client.registerReadWriteTwoDurationsPropertyCallback([](std::chrono::duration<double> first, std::optional<std::chrono::duration<double>> second)
                                                          {
                                                              std::string firstStr = durationToIsoString(first);
 
@@ -391,12 +393,12 @@ int main(int argc, char** argv)
                                                                  << std::endl;
                                                    });
 
-    client.registerReadWriteOptionalBinaryPropertyCallback([](boost::optional<std::vector<uint8_t>> value)
+    client.registerReadWriteOptionalBinaryPropertyCallback([](std::optional<std::vector<uint8_t>> value)
                                                            {
                                                                std::cout << "Received update for read_write_optional_binary property: " << "value=" << "None" << std::endl;
                                                            });
 
-    client.registerReadWriteTwoBinariesPropertyCallback([](std::vector<uint8_t> first, boost::optional<std::vector<uint8_t>> second)
+    client.registerReadWriteTwoBinariesPropertyCallback([](std::vector<uint8_t> first, std::optional<std::vector<uint8_t>> second)
                                                         {
                                                             std::cout << "Received update for read_write_two_binaries property: " << "first=" << "[BINARY DATA]"
                                                                       << " | " << "second=" << "None" << std::endl;
@@ -407,7 +409,7 @@ int main(int argc, char** argv)
                                                               std::cout << "Received update for read_write_list_of_strings property: " << "value=" << "[Array of " << value.size() << "PRIMITIVE values]" << std::endl;
                                                           });
 
-    client.registerReadWriteListsPropertyCallback([](std::vector<Numbers> theList, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList)
+    client.registerReadWriteListsPropertyCallback([](std::vector<Numbers> theList, std::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList)
                                                   {
                                                       std::cout << "Received update for read_write_lists property: " << "the_list=" << "[Array of " << theList.size() << "ENUM values]" << " | " << "optionalList=" << "None" << std::endl;
                                                   });
@@ -418,8 +420,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callWithNothing` method call.
         std::cout << "CALLING CALL_WITH_NOTHING" << std::endl;
         auto callWithNothingResultFuture = client.callWithNothing();
-        auto callWithNothingStatus = callWithNothingResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callWithNothingStatus == boost::future_status::timeout)
+        auto callWithNothingStatus = callWithNothingResultFuture.wait_for(std::chrono::seconds(5));
+        if (callWithNothingStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_WITH_NOTHING response." << std::endl;
         }
@@ -433,8 +435,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOneInteger` method call.
         std::cout << "CALLING CALL_ONE_INTEGER" << std::endl;
         auto callOneIntegerResultFuture = client.callOneInteger(42);
-        auto callOneIntegerStatus = callOneIntegerResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOneIntegerStatus == boost::future_status::timeout)
+        auto callOneIntegerStatus = callOneIntegerResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOneIntegerStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_INTEGER response." << std::endl;
         }
@@ -463,14 +465,14 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOptionalInteger` method call.
         std::cout << "CALLING CALL_OPTIONAL_INTEGER" << std::endl;
         auto callOptionalIntegerResultFuture = client.callOptionalInteger(42);
-        auto callOptionalIntegerStatus = callOptionalIntegerResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOptionalIntegerStatus == boost::future_status::timeout)
+        auto callOptionalIntegerStatus = callOptionalIntegerResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOptionalIntegerStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_INTEGER response." << std::endl;
         }
         else
         {
-            boost::optional<int> returnValue;
+            std::optional<int> returnValue;
             bool success = false;
             try
             {
@@ -503,8 +505,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callThreeIntegers` method call.
         std::cout << "CALLING CALL_THREE_INTEGERS" << std::endl;
         auto callThreeIntegersResultFuture = client.callThreeIntegers(42, 42, 42);
-        auto callThreeIntegersStatus = callThreeIntegersResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callThreeIntegersStatus == boost::future_status::timeout)
+        auto callThreeIntegersStatus = callThreeIntegersResultFuture.wait_for(std::chrono::seconds(5));
+        if (callThreeIntegersStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_INTEGERS response." << std::endl;
         }
@@ -543,8 +545,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOneString` method call.
         std::cout << "CALLING CALL_ONE_STRING" << std::endl;
         auto callOneStringResultFuture = client.callOneString("apples");
-        auto callOneStringStatus = callOneStringResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOneStringStatus == boost::future_status::timeout)
+        auto callOneStringStatus = callOneStringResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOneStringStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_STRING response." << std::endl;
         }
@@ -572,15 +574,15 @@ int main(int argc, char** argv)
     // ----------------------METHOD CALL_OPTIONAL_STRING-----------------------------------------
     { // Restrict scope for the `callOptionalString` method call.
         std::cout << "CALLING CALL_OPTIONAL_STRING" << std::endl;
-        auto callOptionalStringResultFuture = client.callOptionalString(boost::make_optional(std::string("apples")));
-        auto callOptionalStringStatus = callOptionalStringResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOptionalStringStatus == boost::future_status::timeout)
+        auto callOptionalStringResultFuture = client.callOptionalString(std::make_optional(std::string("apples")));
+        auto callOptionalStringStatus = callOptionalStringResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOptionalStringStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_STRING response." << std::endl;
         }
         else
         {
-            boost::optional<std::string> returnValue;
+            std::optional<std::string> returnValue;
             bool success = false;
             try
             {
@@ -612,9 +614,9 @@ int main(int argc, char** argv)
     // ----------------------METHOD CALL_THREE_STRINGS-----------------------------------------
     { // Restrict scope for the `callThreeStrings` method call.
         std::cout << "CALLING CALL_THREE_STRINGS" << std::endl;
-        auto callThreeStringsResultFuture = client.callThreeStrings("apples", boost::make_optional(std::string("apples")), "apples");
-        auto callThreeStringsStatus = callThreeStringsResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callThreeStringsStatus == boost::future_status::timeout)
+        auto callThreeStringsResultFuture = client.callThreeStrings("apples", std::make_optional(std::string("apples")), "apples");
+        auto callThreeStringsStatus = callThreeStringsResultFuture.wait_for(std::chrono::seconds(5));
+        if (callThreeStringsStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_STRINGS response." << std::endl;
         }
@@ -653,8 +655,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOneEnum` method call.
         std::cout << "CALLING CALL_ONE_ENUM" << std::endl;
         auto callOneEnumResultFuture = client.callOneEnum(Numbers::ONE);
-        auto callOneEnumStatus = callOneEnumResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOneEnumStatus == boost::future_status::timeout)
+        auto callOneEnumStatus = callOneEnumResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOneEnumStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_ENUM response." << std::endl;
         }
@@ -683,14 +685,14 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOptionalEnum` method call.
         std::cout << "CALLING CALL_OPTIONAL_ENUM" << std::endl;
         auto callOptionalEnumResultFuture = client.callOptionalEnum(Numbers::ONE);
-        auto callOptionalEnumStatus = callOptionalEnumResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOptionalEnumStatus == boost::future_status::timeout)
+        auto callOptionalEnumStatus = callOptionalEnumResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOptionalEnumStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_ENUM response." << std::endl;
         }
         else
         {
-            boost::optional<Numbers> returnValue;
+            std::optional<Numbers> returnValue;
             bool success = false;
             try
             {
@@ -723,8 +725,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callThreeEnums` method call.
         std::cout << "CALLING CALL_THREE_ENUMS" << std::endl;
         auto callThreeEnumsResultFuture = client.callThreeEnums(Numbers::ONE, Numbers::ONE, Numbers::ONE);
-        auto callThreeEnumsStatus = callThreeEnumsResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callThreeEnumsStatus == boost::future_status::timeout)
+        auto callThreeEnumsStatus = callThreeEnumsResultFuture.wait_for(std::chrono::seconds(5));
+        if (callThreeEnumsStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_ENUMS response." << std::endl;
         }
@@ -762,10 +764,10 @@ int main(int argc, char** argv)
     // ----------------------METHOD CALL_ONE_STRUCT-----------------------------------------
     { // Restrict scope for the `callOneStruct` method call.
         std::cout << "CALLING CALL_ONE_STRUCT" << std::endl;
-        AllTypes input1Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
+        AllTypes input1Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, std::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
         auto callOneStructResultFuture = client.callOneStruct(input1Arg);
-        auto callOneStructStatus = callOneStructResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOneStructStatus == boost::future_status::timeout)
+        auto callOneStructStatus = callOneStructResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOneStructStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_STRUCT response." << std::endl;
         }
@@ -793,16 +795,16 @@ int main(int argc, char** argv)
     // ----------------------METHOD CALL_OPTIONAL_STRUCT-----------------------------------------
     { // Restrict scope for the `callOptionalStruct` method call.
         std::cout << "CALLING CALL_OPTIONAL_STRUCT" << std::endl;
-        AllTypes input1Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
+        AllTypes input1Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, std::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
         auto callOptionalStructResultFuture = client.callOptionalStruct(input1Arg);
-        auto callOptionalStructStatus = callOptionalStructResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOptionalStructStatus == boost::future_status::timeout)
+        auto callOptionalStructStatus = callOptionalStructResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOptionalStructStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_STRUCT response." << std::endl;
         }
         else
         {
-            boost::optional<AllTypes> returnValue;
+            std::optional<AllTypes> returnValue;
             bool success = false;
             try
             {
@@ -834,14 +836,14 @@ int main(int argc, char** argv)
     // ----------------------METHOD CALL_THREE_STRUCTS-----------------------------------------
     { // Restrict scope for the `callThreeStructs` method call.
         std::cout << "CALLING CALL_THREE_STRUCTS" << std::endl;
-        AllTypes input1Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
+        AllTypes input1Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, std::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
 
-        AllTypes input2Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
+        AllTypes input2Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, std::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
 
-        AllTypes input3Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, boost::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
+        AllTypes input3Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, std::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022 }, std::vector<int>{ 42, 2022 }, std::vector<std::string>{ "apples", "foo" }, std::vector<std::string>{ "apples", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" } } };
         auto callThreeStructsResultFuture = client.callThreeStructs(input1Arg, input2Arg, input3Arg);
-        auto callThreeStructsStatus = callThreeStructsResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callThreeStructsStatus == boost::future_status::timeout)
+        auto callThreeStructsStatus = callThreeStructsResultFuture.wait_for(std::chrono::seconds(5));
+        if (callThreeStructsStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_STRUCTS response." << std::endl;
         }
@@ -880,8 +882,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOneDateTime` method call.
         std::cout << "CALLING CALL_ONE_DATE_TIME" << std::endl;
         auto callOneDateTimeResultFuture = client.callOneDateTime(std::chrono::system_clock::now());
-        auto callOneDateTimeStatus = callOneDateTimeResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOneDateTimeStatus == boost::future_status::timeout)
+        auto callOneDateTimeStatus = callOneDateTimeResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOneDateTimeStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_DATE_TIME response." << std::endl;
         }
@@ -910,14 +912,14 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOptionalDateTime` method call.
         std::cout << "CALLING CALL_OPTIONAL_DATE_TIME" << std::endl;
         auto callOptionalDateTimeResultFuture = client.callOptionalDateTime(std::chrono::system_clock::now());
-        auto callOptionalDateTimeStatus = callOptionalDateTimeResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOptionalDateTimeStatus == boost::future_status::timeout)
+        auto callOptionalDateTimeStatus = callOptionalDateTimeResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOptionalDateTimeStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_DATE_TIME response." << std::endl;
         }
         else
         {
-            boost::optional<std::chrono::time_point<std::chrono::system_clock>> returnValue;
+            std::optional<std::chrono::time_point<std::chrono::system_clock>> returnValue;
             bool success = false;
             try
             {
@@ -950,8 +952,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callThreeDateTimes` method call.
         std::cout << "CALLING CALL_THREE_DATE_TIMES" << std::endl;
         auto callThreeDateTimesResultFuture = client.callThreeDateTimes(std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now());
-        auto callThreeDateTimesStatus = callThreeDateTimesResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callThreeDateTimesStatus == boost::future_status::timeout)
+        auto callThreeDateTimesStatus = callThreeDateTimesResultFuture.wait_for(std::chrono::seconds(5));
+        if (callThreeDateTimesStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_DATE_TIMES response." << std::endl;
         }
@@ -990,8 +992,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOneDuration` method call.
         std::cout << "CALLING CALL_ONE_DURATION" << std::endl;
         auto callOneDurationResultFuture = client.callOneDuration(std::chrono::duration<double>(3536));
-        auto callOneDurationStatus = callOneDurationResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOneDurationStatus == boost::future_status::timeout)
+        auto callOneDurationStatus = callOneDurationResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOneDurationStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_DURATION response." << std::endl;
         }
@@ -1020,14 +1022,14 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOptionalDuration` method call.
         std::cout << "CALLING CALL_OPTIONAL_DURATION" << std::endl;
         auto callOptionalDurationResultFuture = client.callOptionalDuration(std::chrono::duration<double>(3536));
-        auto callOptionalDurationStatus = callOptionalDurationResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOptionalDurationStatus == boost::future_status::timeout)
+        auto callOptionalDurationStatus = callOptionalDurationResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOptionalDurationStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_DURATION response." << std::endl;
         }
         else
         {
-            boost::optional<std::chrono::duration<double>> returnValue;
+            std::optional<std::chrono::duration<double>> returnValue;
             bool success = false;
             try
             {
@@ -1060,8 +1062,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callThreeDurations` method call.
         std::cout << "CALLING CALL_THREE_DURATIONS" << std::endl;
         auto callThreeDurationsResultFuture = client.callThreeDurations(std::chrono::duration<double>(3536), std::chrono::duration<double>(3536), std::chrono::duration<double>(3536));
-        auto callThreeDurationsStatus = callThreeDurationsResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callThreeDurationsStatus == boost::future_status::timeout)
+        auto callThreeDurationsStatus = callThreeDurationsResultFuture.wait_for(std::chrono::seconds(5));
+        if (callThreeDurationsStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_DURATIONS response." << std::endl;
         }
@@ -1100,8 +1102,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOneBinary` method call.
         std::cout << "CALLING CALL_ONE_BINARY" << std::endl;
         auto callOneBinaryResultFuture = client.callOneBinary(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
-        auto callOneBinaryStatus = callOneBinaryResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOneBinaryStatus == boost::future_status::timeout)
+        auto callOneBinaryStatus = callOneBinaryResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOneBinaryStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_BINARY response." << std::endl;
         }
@@ -1131,14 +1133,14 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOptionalBinary` method call.
         std::cout << "CALLING CALL_OPTIONAL_BINARY" << std::endl;
         auto callOptionalBinaryResultFuture = client.callOptionalBinary(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
-        auto callOptionalBinaryStatus = callOptionalBinaryResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOptionalBinaryStatus == boost::future_status::timeout)
+        auto callOptionalBinaryStatus = callOptionalBinaryResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOptionalBinaryStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_BINARY response." << std::endl;
         }
         else
         {
-            boost::optional<std::vector<uint8_t>> returnValue;
+            std::optional<std::vector<uint8_t>> returnValue;
             bool success = false;
             try
             {
@@ -1171,8 +1173,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callThreeBinaries` method call.
         std::cout << "CALLING CALL_THREE_BINARIES" << std::endl;
         auto callThreeBinariesResultFuture = client.callThreeBinaries(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
-        auto callThreeBinariesStatus = callThreeBinariesResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callThreeBinariesStatus == boost::future_status::timeout)
+        auto callThreeBinariesStatus = callThreeBinariesResultFuture.wait_for(std::chrono::seconds(5));
+        if (callThreeBinariesStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_BINARIES response." << std::endl;
         }
@@ -1213,8 +1215,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOneListOfIntegers` method call.
         std::cout << "CALLING CALL_ONE_LIST_OF_INTEGERS" << std::endl;
         auto callOneListOfIntegersResultFuture = client.callOneListOfIntegers(std::vector<int>{ 42, 2022 });
-        auto callOneListOfIntegersStatus = callOneListOfIntegersResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOneListOfIntegersStatus == boost::future_status::timeout)
+        auto callOneListOfIntegersStatus = callOneListOfIntegersResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOneListOfIntegersStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_LIST_OF_INTEGERS response." << std::endl;
         }
@@ -1243,14 +1245,14 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callOptionalListOfFloats` method call.
         std::cout << "CALLING CALL_OPTIONAL_LIST_OF_FLOATS" << std::endl;
         auto callOptionalListOfFloatsResultFuture = client.callOptionalListOfFloats(std::vector<double>{ 3.14, 1.0 });
-        auto callOptionalListOfFloatsStatus = callOptionalListOfFloatsResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callOptionalListOfFloatsStatus == boost::future_status::timeout)
+        auto callOptionalListOfFloatsStatus = callOptionalListOfFloatsResultFuture.wait_for(std::chrono::seconds(5));
+        if (callOptionalListOfFloatsStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_LIST_OF_FLOATS response." << std::endl;
         }
         else
         {
-            boost::optional<std::vector<double>> returnValue;
+            std::optional<std::vector<double>> returnValue;
             bool success = false;
             try
             {
@@ -1283,8 +1285,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `callTwoLists` method call.
         std::cout << "CALLING CALL_TWO_LISTS" << std::endl;
         auto callTwoListsResultFuture = client.callTwoLists(std::vector<Numbers>{ Numbers::ONE, Numbers::ONE }, std::vector<std::string>{ "apples", "foo" });
-        auto callTwoListsStatus = callTwoListsResultFuture.wait_for(boost::chrono::seconds(5));
-        if (callTwoListsStatus == boost::future_status::timeout)
+        auto callTwoListsStatus = callTwoListsResultFuture.wait_for(std::chrono::seconds(5));
+        if (callTwoListsStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_TWO_LISTS response." << std::endl;
         }
@@ -1323,7 +1325,7 @@ int main(int argc, char** argv)
 
     while (true)
     {
-        sleep(10);
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 
     return 0;

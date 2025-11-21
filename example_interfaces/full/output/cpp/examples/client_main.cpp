@@ -3,7 +3,9 @@
 #include <iostream>
 #include <sstream>
 #include <syslog.h>
-#include <boost/chrono/chrono.hpp>
+#include <chrono>
+#include <thread>
+#include "utils.hpp"
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
@@ -25,8 +27,8 @@ int main(int argc, char** argv)
     { // restrict scope
         FullDiscovery discovery(conn);
         auto serviceIdFut = discovery.GetSingleton();
-        auto serviceIdFutStatus = serviceIdFut.wait_for(boost::chrono::seconds(15));
-        if (serviceIdFutStatus == boost::future_status::timeout)
+        auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
+        if (serviceIdFutStatus == std::future_status::timeout)
         {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
@@ -38,7 +40,7 @@ int main(int argc, char** argv)
     FullClient client(conn, serviceId);
 
     // Register callbacks for signals.
-    client.registerTodayIsCallback([](int dayOfMonth, boost::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> processTime, std::vector<uint8_t> memorySegment)
+    client.registerTodayIsCallback([](int dayOfMonth, std::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> processTime, std::vector<uint8_t> memorySegment)
                                    {
                                        std::string timestampStr = timePointToIsoString(timestamp);
 
@@ -55,7 +57,7 @@ int main(int argc, char** argv)
                                                       std::cout << "Received update for favorite_number property: " << "number=" << number /* unhandled arg type*/ << std::endl;
                                                   });
 
-    client.registerFavoriteFoodsPropertyCallback([](std::string drink, int slicesOfPizza, boost::optional<std::string> breakfast)
+    client.registerFavoriteFoodsPropertyCallback([](std::string drink, int slicesOfPizza, std::optional<std::string> breakfast)
                                                  {
                                                      std::cout << "Received update for favorite_foods property: " << "drink=" << drink /* unhandled arg type*/ << " | " << "slices_of_pizza=" << slicesOfPizza /* unhandled arg type*/ << " | " << "breakfast=" << "None" << std::endl;
                                                  });
@@ -88,7 +90,7 @@ int main(int argc, char** argv)
                                                                  << std::endl;
                                                    });
 
-    client.registerLastBirthdaysPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister, boost::optional<int> brothersAge)
+    client.registerLastBirthdaysPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, std::optional<std::chrono::time_point<std::chrono::system_clock>> sister, std::optional<int> brothersAge)
                                                  {
                                                      std::string momStr = timePointToIsoString(mom);
 
@@ -111,8 +113,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `addNumbers` method call.
         std::cout << "CALLING ADD_NUMBERS" << std::endl;
         auto addNumbersResultFuture = client.addNumbers(42, 42, 42);
-        auto addNumbersStatus = addNumbersResultFuture.wait_for(boost::chrono::seconds(5));
-        if (addNumbersStatus == boost::future_status::timeout)
+        auto addNumbersStatus = addNumbersResultFuture.wait_for(std::chrono::seconds(5));
+        if (addNumbersStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for ADD_NUMBERS response." << std::endl;
         }
@@ -141,8 +143,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `doSomething` method call.
         std::cout << "CALLING DO_SOMETHING" << std::endl;
         auto doSomethingResultFuture = client.doSomething("apples");
-        auto doSomethingStatus = doSomethingResultFuture.wait_for(boost::chrono::seconds(5));
-        if (doSomethingStatus == boost::future_status::timeout)
+        auto doSomethingStatus = doSomethingResultFuture.wait_for(std::chrono::seconds(5));
+        if (doSomethingStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for DO_SOMETHING response." << std::endl;
         }
@@ -171,8 +173,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `echo` method call.
         std::cout << "CALLING ECHO" << std::endl;
         auto echoResultFuture = client.echo("apples");
-        auto echoStatus = echoResultFuture.wait_for(boost::chrono::seconds(5));
-        if (echoStatus == boost::future_status::timeout)
+        auto echoStatus = echoResultFuture.wait_for(std::chrono::seconds(5));
+        if (echoStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for ECHO response." << std::endl;
         }
@@ -201,8 +203,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `what_time_is_it` method call.
         std::cout << "CALLING WHAT_TIME_IS_IT" << std::endl;
         auto whatTimeIsItResultFuture = client.whatTimeIsIt(std::chrono::system_clock::now());
-        auto whatTimeIsItStatus = whatTimeIsItResultFuture.wait_for(boost::chrono::seconds(5));
-        if (whatTimeIsItStatus == boost::future_status::timeout)
+        auto whatTimeIsItStatus = whatTimeIsItResultFuture.wait_for(std::chrono::seconds(5));
+        if (whatTimeIsItStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for WHAT_TIME_IS_IT response." << std::endl;
         }
@@ -231,8 +233,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `set_the_time` method call.
         std::cout << "CALLING SET_THE_TIME" << std::endl;
         auto setTheTimeResultFuture = client.setTheTime(std::chrono::system_clock::now(), std::chrono::system_clock::now());
-        auto setTheTimeStatus = setTheTimeResultFuture.wait_for(boost::chrono::seconds(5));
-        if (setTheTimeStatus == boost::future_status::timeout)
+        auto setTheTimeStatus = setTheTimeResultFuture.wait_for(std::chrono::seconds(5));
+        if (setTheTimeStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for SET_THE_TIME response." << std::endl;
         }
@@ -261,8 +263,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `forward_time` method call.
         std::cout << "CALLING FORWARD_TIME" << std::endl;
         auto forwardTimeResultFuture = client.forwardTime(std::chrono::duration<double>(3536));
-        auto forwardTimeStatus = forwardTimeResultFuture.wait_for(boost::chrono::seconds(5));
-        if (forwardTimeStatus == boost::future_status::timeout)
+        auto forwardTimeStatus = forwardTimeResultFuture.wait_for(std::chrono::seconds(5));
+        if (forwardTimeStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for FORWARD_TIME response." << std::endl;
         }
@@ -291,8 +293,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `how_off_is_the_clock` method call.
         std::cout << "CALLING HOW_OFF_IS_THE_CLOCK" << std::endl;
         auto howOffIsTheClockResultFuture = client.howOffIsTheClock(std::chrono::system_clock::now());
-        auto howOffIsTheClockStatus = howOffIsTheClockResultFuture.wait_for(boost::chrono::seconds(5));
-        if (howOffIsTheClockStatus == boost::future_status::timeout)
+        auto howOffIsTheClockStatus = howOffIsTheClockResultFuture.wait_for(std::chrono::seconds(5));
+        if (howOffIsTheClockStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for HOW_OFF_IS_THE_CLOCK response." << std::endl;
         }
@@ -321,7 +323,7 @@ int main(int argc, char** argv)
 
     while (true)
     {
-        sleep(10);
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 
     return 0;

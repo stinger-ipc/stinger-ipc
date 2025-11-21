@@ -2,16 +2,15 @@
 #include <exception>
 #include <string>
 #include <functional>
-#include <boost/interprocess/sync/scoped_lock.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
+#include "utils.hpp"
+#include <algorithm>
+#include <sstream>
 #include <mosquitto.h>
 #include <mqtt_protocol.h>
 #include <iostream>
 #include <cstdarg>
 #include <syslog.h>
-
+#include <cstring>
 #include "broker.hpp"
 
 using namespace std;
@@ -19,7 +18,7 @@ using namespace std;
 MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, const std::string &clientId):
     _mosq(NULL), _host(host), _port(port), _clientId(clientId), _logLevel(LOG_NOTICE)
 {
-    boost::mutex::scoped_lock lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     if (mosquitto_lib_init() != MOSQ_ERR_SUCCESS)
     {
@@ -54,7 +53,7 @@ MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, co
                                               }
                                           }
 
-                                          boost::mutex::scoped_lock lock(thisClient->_mutex);
+                                          std::lock_guard<std::mutex> lock(thisClient->_mutex);
                                           while (!thisClient->_subscriptions.empty())
                                           {
                                               auto sub = thisClient->_subscriptions.front();
@@ -159,12 +158,12 @@ MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, co
                                                   {
                                                       if (strcmp(name, "ReturnValue") == 0)
                                                       {
-                                                          int returnValueInt = boost::lexical_cast<int>(value);
+                                                          int returnValueInt = std::stoi(value);
                                                           mqttProps.returnCode = static_cast<MethodReturnCode>(returnValueInt);
                                                       }
                                                       else if (strcmp(name, "PropertyVersion") == 0)
                                                       {
-                                                          int propertyVersionInt = boost::lexical_cast<int>(value);
+                                                          int propertyVersionInt = std::stoi(value);
                                                           mqttProps.propertyVersion = propertyVersionInt;
                                                       }
                                                       else if (strcmp(name, "DebugInfo") == 0)
@@ -210,7 +209,7 @@ MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, co
 
 MqttBrokerConnection::~MqttBrokerConnection()
 {
-    boost::mutex::scoped_lock lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     mosquitto_loop_stop(_mosq, true);
     mosquitto_disconnect(_mosq);
     mosquitto_destroy(_mosq);
@@ -252,7 +251,7 @@ void MqttBrokerConnection::Connect()
     }
 }
 
-boost::future<bool> MqttBrokerConnection::Publish(
+std::future<bool> MqttBrokerConnection::Publish(
         const std::string &topic,
         const std::string &payload,
         unsigned qos,
@@ -290,16 +289,16 @@ boost::future<bool> MqttBrokerConnection::Publish(
         Log(LOG_DEBUG, "Delayed published queued to: %s", topic.c_str());
         MqttBrokerConnection::MqttMessage msg(topic, payload, qos, retain, mqttProps.correlationId, mqttProps.responseTopic, mqttProps.messageExpiryInterval);
         auto future = msg.getFuture();
-        boost::mutex::scoped_lock lock(_mutex);
+        std::lock_guard<std::mutex> lock(_mutex);
         _msgQueue.push(std::move(msg));
         return future;
     }
     else if (rc == MOSQ_ERR_SUCCESS)
     {
         Log(LOG_INFO, "Published to: %s | %s", topic.c_str(), payload.c_str());
-        auto pPromise = std::make_shared<boost::promise<bool>>();
+        auto pPromise = std::make_shared<std::promise<bool>>();
         auto future = pPromise->get_future();
-        boost::mutex::scoped_lock lock(_mutex);
+        std::lock_guard<std::mutex> lock(_mutex);
         _sendMessages[mid] = std::move(pPromise);
         return future;
     }
@@ -312,7 +311,7 @@ boost::future<bool> MqttBrokerConnection::Publish(
 
 int MqttBrokerConnection::Subscribe(const std::string &topic, int qos)
 {
-    boost::mutex::scoped_lock lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     // Check if we already have a subscription for this topic
     auto it = _subscriptionRefCounts.find(topic);
@@ -351,7 +350,7 @@ int MqttBrokerConnection::Subscribe(const std::string &topic, int qos)
 
 void MqttBrokerConnection::Unsubscribe(const std::string &topic)
 {
-    boost::mutex::scoped_lock lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     auto it = _subscriptionRefCounts.find(topic);
     if (it == _subscriptionRefCounts.end())
@@ -391,7 +390,7 @@ CallbackHandleType MqttBrokerConnection::AddMessageCallback(
         )> &cb
 )
 {
-    boost::mutex::scoped_lock lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     CallbackHandleType handle = _nextCallbackHandle++;
     _messageCallbacks[handle] = cb;
     Log(LOG_DEBUG, "Message callback set with handle %d", handle);
@@ -402,7 +401,7 @@ void MqttBrokerConnection::RemoveMessageCallback(CallbackHandleType handle)
 {
     if (handle > 0)
     {
-        boost::mutex::scoped_lock lock(_mutex);
+        std::lock_guard<std::mutex> lock(_mutex);
         auto found = _messageCallbacks.find(handle);
         if (found != _messageCallbacks.end())
         {
@@ -434,7 +433,9 @@ std::string MqttBrokerConnection::GetClientId() const
 
 std::string MqttBrokerConnection::GetOnlineTopic() const
 {
-    return boost::str(boost::format("client/%1%/online") % _clientId);
+    std::ostringstream oss;
+    oss << "client/" << _clientId << "/online";
+    return oss.str();
 }
 
 void MqttBrokerConnection::SetLogFunction(const LogFunctionType &logFunc)

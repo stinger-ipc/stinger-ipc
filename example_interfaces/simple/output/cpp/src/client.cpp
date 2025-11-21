@@ -7,12 +7,8 @@
 #include <iomanip>
 #include <ctime>
 #include <syslog.h>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <boost/uuid/uuid_generators.hpp>
+#include <sstream>
+#include "utils.hpp"
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
@@ -37,13 +33,13 @@ SimpleClient::SimpleClient(std::shared_ptr<IBrokerConnection> broker, const std:
                                                                {
                                                                    _receiveMessage(topic, payload, mqttProps);
                                                                });
-    _personEnteredSignalSubscriptionId = _broker->Subscribe((boost::format("simple/%1%/signal/personEntered") % _instanceId).str(), 2);
+    _personEnteredSignalSubscriptionId = _broker->Subscribe((format("simple/%1%/signal/personEntered") % _instanceId).str(), 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/tradeNumbers/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/tradeNumbers/methodResponse") % _broker->GetClientId();
         _tradeNumbersMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
-    _schoolPropertySubscriptionId = _broker->Subscribe((boost::format("simple/%1%/property/school/value") % _instanceId).str(), 1);
+    _schoolPropertySubscriptionId = _broker->Subscribe((format("simple/%1%/property/school/value") % _instanceId).str(), 1);
 }
 
 SimpleClient::~SimpleClient()
@@ -64,7 +60,7 @@ void SimpleClient::_receiveMessage(
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
     _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", topic.c_str(), subscriptionId);
-    if ((subscriptionId == _personEnteredSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("simple/%1%/signal/personEntered") % _instanceId).str())))
+    if ((subscriptionId == _personEnteredSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("simple/%1%/signal/personEntered") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling person_entered signal");
         rapidjson::Document doc;
@@ -104,7 +100,7 @@ void SimpleClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -116,7 +112,7 @@ void SimpleClient::_receiveMessage(
         _broker->Log(LOG_DEBUG, "Matched topic for trade_numbers response");
         _handleTradeNumbersResponse(topic, payload, mqttProps);
     }
-    if ((subscriptionId == _schoolPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("simple/%1%/property/school/value") % _instanceId).str()))
+    if ((subscriptionId == _schoolPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("simple/%1%/property/school/value") % _instanceId).str()))
     {
         _receiveSchoolPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
@@ -128,11 +124,10 @@ void SimpleClient::registerPersonEnteredCallback(const std::function<void(Person
     _personEnteredSignalCallbacks.push_back(cb);
 }
 
-boost::future<int> SimpleClient::tradeNumbers(int yourNumber)
+std::future<int> SimpleClient::tradeNumbers(int yourNumber)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingTradeNumbersMethodCalls[correlationId] = boost::promise<int>();
+    auto correlationId = generate_uuid_string();
+    _pendingTradeNumbersMethodCalls[correlationId] = std::promise<int>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -143,12 +138,12 @@ boost::future<int> SimpleClient::tradeNumbers(int yourNumber)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/tradeNumbers/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/tradeNumbers/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("simple/%1%/method/tradeNumbers") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("simple/%1%/method/tradeNumbers") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingTradeNumbersMethodCalls[correlationId].get_future();
 }
@@ -173,8 +168,8 @@ void SimpleClient::_handleTradeNumbersResponse(
         throw std::runtime_error("Received payload for 'trade_numbers' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingTradeNumbersMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingTradeNumbersMethodCalls.find(correlationId);
     if (promiseItr != _pendingTradeNumbersMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -194,7 +189,7 @@ void SimpleClient::_handleTradeNumbersResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for trade_numbers");
 }
 
-void SimpleClient::_receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void SimpleClient::_receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -238,14 +233,14 @@ void SimpleClient::_receiveSchoolPropertyUpdate(const std::string& topic, const 
     }
 }
 
-boost::optional<const std::string&> SimpleClient::getSchoolProperty() const
+std::optional<std::string&> SimpleClient::getSchoolProperty()
 {
     std::lock_guard<std::mutex> lock(_schoolPropertyMutex);
     if (_schoolProperty)
     {
         return _schoolProperty->name;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void SimpleClient::registerSchoolPropertyCallback(const std::function<void(std::string name)>& cb)
@@ -254,7 +249,7 @@ void SimpleClient::registerSchoolPropertyCallback(const std::function<void(std::
     _schoolPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> SimpleClient::updateSchoolProperty(std::string name) const
+std::future<bool> SimpleClient::updateSchoolProperty(std::string name) const
 {
     rapidjson::Document doc;
     doc.SetObject();

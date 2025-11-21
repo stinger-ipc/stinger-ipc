@@ -18,8 +18,7 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include <boost/uuid/uuid.hpp>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include "ibrokerconnection.hpp"
 #include "enums.hpp"
 #include "method_payloads.hpp"
@@ -49,15 +48,15 @@ public:
 
     // Calls the `refresh_daily_forecast` method.
     // Returns a future.  When that future resolves, it will have the returned value. None
-    boost::future<void> refreshDailyForecast();
+    std::future<void> refreshDailyForecast();
 
     // Calls the `refresh_hourly_forecast` method.
     // Returns a future.  When that future resolves, it will have the returned value. None
-    boost::future<void> refreshHourlyForecast();
+    std::future<void> refreshHourlyForecast();
 
     // Calls the `refresh_current_conditions` method.
     // Returns a future.  When that future resolves, it will have the returned value. None
-    boost::future<void> refreshCurrentConditions();
+    std::future<void> refreshCurrentConditions();
 
     // ---------------- PROPERTIES ------------------
 
@@ -66,20 +65,20 @@ public:
     // Gets the latest value of the `location` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<LocationProperty> getLocationProperty() const;
+    std::optional<LocationProperty> getLocationProperty();
 
     // Add a callback that will be called whenever the `location` property is updated.
     // The provided method will be called whenever a new value for the `location` property is received.
     void registerLocationPropertyCallback(const std::function<void(double, double)>& cb);
 
-    boost::future<bool> updateLocationProperty(double, double) const;
+    std::future<bool> updateLocationProperty(double, double) const;
 
     // ---current_temperature Property---
 
     // Gets the latest value of the `current_temperature` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<double> getCurrentTemperatureProperty() const;
+    std::optional<double> getCurrentTemperatureProperty();
 
     // Add a callback that will be called whenever the `current_temperature` property is updated.
     // The provided method will be called whenever a new value for the `current_temperature` property is received.
@@ -90,7 +89,7 @@ public:
     // Gets the latest value of the `current_condition` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<CurrentConditionProperty> getCurrentConditionProperty() const;
+    std::optional<CurrentConditionProperty> getCurrentConditionProperty();
 
     // Add a callback that will be called whenever the `current_condition` property is updated.
     // The provided method will be called whenever a new value for the `current_condition` property is received.
@@ -101,7 +100,7 @@ public:
     // Gets the latest value of the `daily_forecast` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<DailyForecastProperty> getDailyForecastProperty() const;
+    std::optional<DailyForecastProperty> getDailyForecastProperty();
 
     // Add a callback that will be called whenever the `daily_forecast` property is updated.
     // The provided method will be called whenever a new value for the `daily_forecast` property is received.
@@ -112,7 +111,7 @@ public:
     // Gets the latest value of the `hourly_forecast` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<HourlyForecastProperty> getHourlyForecastProperty() const;
+    std::optional<HourlyForecastProperty> getHourlyForecastProperty();
 
     // Add a callback that will be called whenever the `hourly_forecast` property is updated.
     // The provided method will be called whenever a new value for the `hourly_forecast` property is received.
@@ -123,39 +122,39 @@ public:
     // Gets the latest value of the `current_condition_refresh_interval` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<int> getCurrentConditionRefreshIntervalProperty() const;
+    std::optional<int> getCurrentConditionRefreshIntervalProperty();
 
     // Add a callback that will be called whenever the `current_condition_refresh_interval` property is updated.
     // The provided method will be called whenever a new value for the `current_condition_refresh_interval` property is received.
     void registerCurrentConditionRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
 
-    boost::future<bool> updateCurrentConditionRefreshIntervalProperty(int) const;
+    std::future<bool> updateCurrentConditionRefreshIntervalProperty(int) const;
 
     // ---hourly_forecast_refresh_interval Property---
 
     // Gets the latest value of the `hourly_forecast_refresh_interval` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<int> getHourlyForecastRefreshIntervalProperty() const;
+    std::optional<int> getHourlyForecastRefreshIntervalProperty();
 
     // Add a callback that will be called whenever the `hourly_forecast_refresh_interval` property is updated.
     // The provided method will be called whenever a new value for the `hourly_forecast_refresh_interval` property is received.
     void registerHourlyForecastRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
 
-    boost::future<bool> updateHourlyForecastRefreshIntervalProperty(int) const;
+    std::future<bool> updateHourlyForecastRefreshIntervalProperty(int) const;
 
     // ---daily_forecast_refresh_interval Property---
 
     // Gets the latest value of the `daily_forecast_refresh_interval` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<int> getDailyForecastRefreshIntervalProperty() const;
+    std::optional<int> getDailyForecastRefreshIntervalProperty();
 
     // Add a callback that will be called whenever the `daily_forecast_refresh_interval` property is updated.
     // The provided method will be called whenever a new value for the `daily_forecast_refresh_interval` property is received.
     void registerDailyForecastRefreshIntervalPropertyCallback(const std::function<void(int)>& cb);
 
-    boost::future<bool> updateDailyForecastRefreshIntervalProperty(int) const;
+    std::future<bool> updateDailyForecastRefreshIntervalProperty(int) const;
 
 private:
     // Pointer to the broker connection.
@@ -184,19 +183,19 @@ private:
 
     // ------------------- METHODS --------------------
     // Holds promises for pending `refresh_daily_forecast` method calls.
-    std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshDailyForecastMethodCalls;
+    std::map<std::string, std::promise<void>> _pendingRefreshDailyForecastMethodCalls;
     int _refreshDailyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_daily_forecast` method calls.
     void _handleRefreshDailyForecastResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `refresh_hourly_forecast` method calls.
-    std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshHourlyForecastMethodCalls;
+    std::map<std::string, std::promise<void>> _pendingRefreshHourlyForecastMethodCalls;
     int _refreshHourlyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_hourly_forecast` method calls.
     void _handleRefreshHourlyForecastResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // Holds promises for pending `refresh_current_conditions` method calls.
-    std::map<boost::uuids::uuid, boost::promise<void>> _pendingRefreshCurrentConditionsMethodCalls;
+    std::map<std::string, std::promise<void>> _pendingRefreshCurrentConditionsMethodCalls;
     int _refreshCurrentConditionsMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_current_conditions` method calls.
     void _handleRefreshCurrentConditionsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
@@ -206,7 +205,7 @@ private:
     // ---location Property---
 
     // Last received values for the `location` property.
-    boost::optional<LocationProperty> _locationProperty;
+    std::optional<LocationProperty> _locationProperty;
 
     // This is the property version of the last received `location` property update.
     int _lastLocationPropertyVersion = -1;
@@ -218,7 +217,7 @@ private:
     int _locationPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `location` property.
-    void _receiveLocationPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveLocationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `location` property.
     std::vector<std::function<void(double, double)>> _locationPropertyCallbacks;
@@ -227,7 +226,7 @@ private:
     // ---current_temperature Property---
 
     // Last received value for the `current_temperature` property.
-    boost::optional<CurrentTemperatureProperty> _currentTemperatureProperty;
+    std::optional<CurrentTemperatureProperty> _currentTemperatureProperty;
 
     // This is the property version of the last received `current_temperature` property update.
     int _lastCurrentTemperaturePropertyVersion = -1;
@@ -239,7 +238,7 @@ private:
     int _currentTemperaturePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `current_temperature` property.
-    void _receiveCurrentTemperaturePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveCurrentTemperaturePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `current_temperature` property.
     std::vector<std::function<void(double)>> _currentTemperaturePropertyCallbacks;
@@ -248,7 +247,7 @@ private:
     // ---current_condition Property---
 
     // Last received values for the `current_condition` property.
-    boost::optional<CurrentConditionProperty> _currentConditionProperty;
+    std::optional<CurrentConditionProperty> _currentConditionProperty;
 
     // This is the property version of the last received `current_condition` property update.
     int _lastCurrentConditionPropertyVersion = -1;
@@ -260,7 +259,7 @@ private:
     int _currentConditionPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `current_condition` property.
-    void _receiveCurrentConditionPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveCurrentConditionPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `current_condition` property.
     std::vector<std::function<void(WeatherCondition, std::string)>> _currentConditionPropertyCallbacks;
@@ -269,7 +268,7 @@ private:
     // ---daily_forecast Property---
 
     // Last received values for the `daily_forecast` property.
-    boost::optional<DailyForecastProperty> _dailyForecastProperty;
+    std::optional<DailyForecastProperty> _dailyForecastProperty;
 
     // This is the property version of the last received `daily_forecast` property update.
     int _lastDailyForecastPropertyVersion = -1;
@@ -281,7 +280,7 @@ private:
     int _dailyForecastPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `daily_forecast` property.
-    void _receiveDailyForecastPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveDailyForecastPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `daily_forecast` property.
     std::vector<std::function<void(ForecastForDay, ForecastForDay, ForecastForDay)>> _dailyForecastPropertyCallbacks;
@@ -290,7 +289,7 @@ private:
     // ---hourly_forecast Property---
 
     // Last received values for the `hourly_forecast` property.
-    boost::optional<HourlyForecastProperty> _hourlyForecastProperty;
+    std::optional<HourlyForecastProperty> _hourlyForecastProperty;
 
     // This is the property version of the last received `hourly_forecast` property update.
     int _lastHourlyForecastPropertyVersion = -1;
@@ -302,7 +301,7 @@ private:
     int _hourlyForecastPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `hourly_forecast` property.
-    void _receiveHourlyForecastPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveHourlyForecastPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `hourly_forecast` property.
     std::vector<std::function<void(ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour)>> _hourlyForecastPropertyCallbacks;
@@ -311,7 +310,7 @@ private:
     // ---current_condition_refresh_interval Property---
 
     // Last received value for the `current_condition_refresh_interval` property.
-    boost::optional<CurrentConditionRefreshIntervalProperty> _currentConditionRefreshIntervalProperty;
+    std::optional<CurrentConditionRefreshIntervalProperty> _currentConditionRefreshIntervalProperty;
 
     // This is the property version of the last received `current_condition_refresh_interval` property update.
     int _lastCurrentConditionRefreshIntervalPropertyVersion = -1;
@@ -323,7 +322,7 @@ private:
     int _currentConditionRefreshIntervalPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `current_condition_refresh_interval` property.
-    void _receiveCurrentConditionRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveCurrentConditionRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `current_condition_refresh_interval` property.
     std::vector<std::function<void(int)>> _currentConditionRefreshIntervalPropertyCallbacks;
@@ -332,7 +331,7 @@ private:
     // ---hourly_forecast_refresh_interval Property---
 
     // Last received value for the `hourly_forecast_refresh_interval` property.
-    boost::optional<HourlyForecastRefreshIntervalProperty> _hourlyForecastRefreshIntervalProperty;
+    std::optional<HourlyForecastRefreshIntervalProperty> _hourlyForecastRefreshIntervalProperty;
 
     // This is the property version of the last received `hourly_forecast_refresh_interval` property update.
     int _lastHourlyForecastRefreshIntervalPropertyVersion = -1;
@@ -344,7 +343,7 @@ private:
     int _hourlyForecastRefreshIntervalPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `hourly_forecast_refresh_interval` property.
-    void _receiveHourlyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveHourlyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `hourly_forecast_refresh_interval` property.
     std::vector<std::function<void(int)>> _hourlyForecastRefreshIntervalPropertyCallbacks;
@@ -353,7 +352,7 @@ private:
     // ---daily_forecast_refresh_interval Property---
 
     // Last received value for the `daily_forecast_refresh_interval` property.
-    boost::optional<DailyForecastRefreshIntervalProperty> _dailyForecastRefreshIntervalProperty;
+    std::optional<DailyForecastRefreshIntervalProperty> _dailyForecastRefreshIntervalProperty;
 
     // This is the property version of the last received `daily_forecast_refresh_interval` property update.
     int _lastDailyForecastRefreshIntervalPropertyVersion = -1;
@@ -365,7 +364,7 @@ private:
     int _dailyForecastRefreshIntervalPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `daily_forecast_refresh_interval` property.
-    void _receiveDailyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveDailyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `daily_forecast_refresh_interval` property.
     std::vector<std::function<void(int)>> _dailyForecastRefreshIntervalPropertyCallbacks;

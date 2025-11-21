@@ -13,7 +13,7 @@ TODO: Get license text from stinger file
 #include <cstddef>
 #include <chrono>
 #include <vector>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include <rapidjson/document.h>
 #include "enums.hpp"
 #include "conversions.hpp"
@@ -26,7 +26,7 @@ struct Lunch
     std::string sandwich;
     double crackers;
     DayOfTheWeek day;
-    boost::optional<int> orderNumber;
+    std::optional<int> orderNumber;
     std::chrono::time_point<std::chrono::system_clock> timeOfLunch;
     std::chrono::duration<double> durationOfLunch;
 };

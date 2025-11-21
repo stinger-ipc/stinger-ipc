@@ -20,7 +20,7 @@ TODO: Get license text from stinger file
 #include <chrono>
 #include <thread>
 #include <atomic>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include <rapidjson/document.h>
 
 #include "ibrokerconnection.hpp"
@@ -36,15 +36,15 @@ public:
 
     virtual ~SignalOnlyServer();
 
-    boost::future<bool> emitAnotherSignalSignal(double, bool, const std::string&);
+    std::future<bool> emitAnotherSignalSignal(double, bool, std::string&);
 
-    boost::future<bool> emitBarkSignal(const std::string&);
+    std::future<bool> emitBarkSignal(std::string&);
 
-    boost::future<bool> emitMaybeNumberSignal(boost::optional<int>);
+    std::future<bool> emitMaybeNumberSignal(std::optional<int>);
 
-    boost::future<bool> emitMaybeNameSignal(boost::optional<std::string>);
+    std::future<bool> emitMaybeNameSignal(std::optional<std::string>);
 
-    boost::future<bool> emitNowSignal(std::chrono::time_point<std::chrono::system_clock>);
+    std::future<bool> emitNowSignal(std::chrono::time_point<std::chrono::system_clock>);
 
 private:
     std::shared_ptr<IBrokerConnection> _broker;

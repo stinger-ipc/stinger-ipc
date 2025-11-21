@@ -3,10 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <syslog.h>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/functional/hash.hpp>
+
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
@@ -32,9 +29,9 @@ SimpleServer::SimpleServer(std::shared_ptr<IBrokerConnection> broker, const std:
                                                                    _receiveMessage(topic, payload, mqttProps);
                                                                });
 
-    _tradeNumbersMethodSubscriptionId = _broker->Subscribe((boost::format("simple/%1%/method/tradeNumbers") % _instanceId).str(), 2);
+    _tradeNumbersMethodSubscriptionId = _broker->Subscribe((format("simple/%1%/method/tradeNumbers") % _instanceId).str(), 2);
 
-    _schoolPropertySubscriptionId = _broker->Subscribe((boost::format("simple/%1%/property/school/setValue") % _instanceId).str(), 1);
+    _schoolPropertySubscriptionId = _broker->Subscribe((format("simple/%1%/property/school/setValue") % _instanceId).str(), 1);
 
     // Start the service advertisement thread
     _advertisementThreadRunning = true;
@@ -57,12 +54,12 @@ SimpleServer::~SimpleServer()
         _advertisementThread.join();
     }
 
-    std::string topic = (boost::format("simple/%1%/interface") % _instanceId).str();
+    std::string topic = (format("simple/%1%/interface") % _instanceId).str();
     _broker->Publish(topic, "", 1, true, MqttProperties());
 
-    _broker->Unsubscribe((boost::format("simple/%1%/method/tradeNumbers") % _instanceId).str());
+    _broker->Unsubscribe((format("simple/%1%/method/tradeNumbers") % _instanceId).str());
 
-    _broker->Unsubscribe((boost::format("simple/%1%/property/school/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("simple/%1%/property/school/setValue") % _instanceId).str());
 }
 
 void SimpleServer::_receiveMessage(
@@ -74,7 +71,7 @@ void SimpleServer::_receiveMessage(
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
 
-    if ((subscriptionId == _tradeNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("simple/%1%/method/tradeNumbers") % _instanceId).str())))
+    if ((subscriptionId == _tradeNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("simple/%1%/method/tradeNumbers") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as trade_numbers method request.", topic.c_str());
         rapidjson::Document doc;
@@ -97,7 +94,7 @@ void SimpleServer::_receiveMessage(
                 _callTradeNumbersHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -105,14 +102,14 @@ void SimpleServer::_receiveMessage(
         }
     }
 
-    if (subscriptionId == _schoolPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("simple/%1%/property/school/setValue") % _instanceId).str())))
+    if (subscriptionId == _schoolPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("simple/%1%/property/school/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as school property update.", topic.c_str());
         _receiveSchoolPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 }
 
-boost::future<bool> SimpleServer::emitPersonEnteredSignal(Person person)
+std::future<bool> SimpleServer::emitPersonEnteredSignal(Person person)
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -130,7 +127,7 @@ boost::future<bool> SimpleServer::emitPersonEnteredSignal(Person person)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
-    return _broker->Publish((boost::format("simple/%1%/signal/personEntered") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    return _broker->Publish((format("simple/%1%/signal/personEntered") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void SimpleServer::registerTradeNumbersHandler(std::function<int(int)> func)
@@ -142,8 +139,8 @@ void SimpleServer::registerTradeNumbersHandler(std::function<int(int)> func)
 void SimpleServer::_callTradeNumbersHandler(
         const std::string& topic,
         const rapidjson::Document& doc,
-        const boost::optional<std::string> optCorrelationId,
-        const boost::optional<std::string> optResponseTopic
+        const std::optional<std::string> optCorrelationId,
+        const std::optional<std::string> optResponseTopic
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to trade_numbers");
@@ -176,14 +173,14 @@ void SimpleServer::_callTradeNumbersHandler(
     }
 }
 
-boost::optional<const std::string&> SimpleServer::getSchoolProperty() const
+std::optional<std::string&> SimpleServer::getSchoolProperty()
 {
     std::lock_guard<std::mutex> lock(_schoolPropertyMutex);
     if (_schoolProperty)
     {
         return _schoolProperty->name;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void SimpleServer::registerSchoolPropertyCallback(const std::function<void(std::string name)>& cb)
@@ -228,10 +225,10 @@ void SimpleServer::republishSchoolProperty() const
     doc.Accept(writer);
     MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastSchoolPropertyVersion;
-    _broker->Publish((boost::format("simple/%1%/property/school/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("simple/%1%/property/school/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-void SimpleServer::_receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void SimpleServer::_receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -290,7 +287,7 @@ void SimpleServer::_advertisementThreadLoop()
         mqttProps.messageExpiryInterval = 150;
 
         // Publish to simple/<instance_id>/interface
-        std::string topic = (boost::format("simple/%1%/interface") % _instanceId).str();
+        std::string topic = (format("simple/%1%/interface") % _instanceId).str();
         _broker->Publish(topic, buf.GetString(), 1, true, mqttProps);
 
         _broker->Log(LOG_INFO, "Published service advertisement to %s", topic.c_str());

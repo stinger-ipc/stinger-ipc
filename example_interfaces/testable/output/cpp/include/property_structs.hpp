@@ -41,7 +41,7 @@ struct ReadWriteOptionalIntegerProperty
 {
     static ReadWriteOptionalIntegerProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    boost::optional<int> value;
+    std::optional<int> value;
 };
 
 /**
@@ -52,7 +52,7 @@ struct ReadWriteTwoIntegersProperty
     static ReadWriteTwoIntegersProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     int first; ///< An integer value.
-    boost::optional<int> second;
+    std::optional<int> second;
 };
 
 /**
@@ -82,7 +82,7 @@ struct ReadWriteOptionalStringProperty
 {
     static ReadWriteOptionalStringProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    boost::optional<std::string> value;
+    std::optional<std::string> value;
 };
 
 /**
@@ -93,7 +93,7 @@ struct ReadWriteTwoStringsProperty
     static ReadWriteTwoStringsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::string first; ///< A string value.
-    boost::optional<std::string> second;
+    std::optional<std::string> second;
 };
 
 /**
@@ -113,7 +113,7 @@ struct ReadWriteOptionalStructProperty
 {
     static ReadWriteOptionalStructProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    boost::optional<AllTypes> value;
+    std::optional<AllTypes> value;
 };
 
 /**
@@ -124,7 +124,7 @@ struct ReadWriteTwoStructsProperty
     static ReadWriteTwoStructsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     AllTypes first; ///< A struct value.
-    boost::optional<AllTypes> second;
+    std::optional<AllTypes> second;
 };
 
 /**
@@ -154,7 +154,7 @@ struct ReadWriteOptionalEnumProperty
 {
     static ReadWriteOptionalEnumProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    boost::optional<Numbers> value;
+    std::optional<Numbers> value;
 };
 
 /**
@@ -165,7 +165,7 @@ struct ReadWriteTwoEnumsProperty
     static ReadWriteTwoEnumsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     Numbers first; ///< An enum value.
-    boost::optional<Numbers> second;
+    std::optional<Numbers> second;
 };
 
 /**
@@ -185,7 +185,7 @@ struct ReadWriteOptionalDatetimeProperty
 {
     static ReadWriteOptionalDatetimeProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> value;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> value;
 };
 
 /**
@@ -196,7 +196,7 @@ struct ReadWriteTwoDatetimesProperty
     static ReadWriteTwoDatetimesProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::chrono::time_point<std::chrono::system_clock> first; ///< A date and time value.
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> second;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> second;
 };
 
 /**
@@ -216,7 +216,7 @@ struct ReadWriteOptionalDurationProperty
 {
     static ReadWriteOptionalDurationProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    boost::optional<std::chrono::duration<double>> value;
+    std::optional<std::chrono::duration<double>> value;
 };
 
 /**
@@ -227,7 +227,7 @@ struct ReadWriteTwoDurationsProperty
     static ReadWriteTwoDurationsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::chrono::duration<double> first; ///< A duration of time.
-    boost::optional<std::chrono::duration<double>> second;
+    std::optional<std::chrono::duration<double>> second;
 };
 
 /**
@@ -247,7 +247,7 @@ struct ReadWriteOptionalBinaryProperty
 {
     static ReadWriteOptionalBinaryProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    boost::optional<std::vector<uint8_t>> value;
+    std::optional<std::vector<uint8_t>> value;
 };
 
 /**
@@ -258,7 +258,7 @@ struct ReadWriteTwoBinariesProperty
     static ReadWriteTwoBinariesProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::vector<uint8_t> first; ///< A binary blob of data.
-    boost::optional<std::vector<uint8_t>> second;
+    std::optional<std::vector<uint8_t>> second;
 };
 
 /**
@@ -279,5 +279,5 @@ struct ReadWriteListsProperty
     static ReadWriteListsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::vector<Numbers> theList;
-    boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList;
+    std::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList;
 };

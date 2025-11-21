@@ -117,13 +117,13 @@ class Arg(LanguageSymbolMixin):
     @property
     def cpp_temp_type(self) -> str:
         if self.optional and "optional" not in self.cpp_type:
-            return f"boost::optional<{self.cpp_type}>"
+            return f"std::optional<{self.cpp_type}>"
         return self.cpp_type
 
     @property
     def cpp_func_param_type(self) -> str:
         if self.optional and "optional" not in self.cpp_type:
-            return f"boost::optional<{self.cpp_type}>"
+            return f"std::optional<{self.cpp_type}>"
         return self.cpp_type
 
     @classmethod
@@ -280,7 +280,7 @@ class ArgEnum(Arg, LanguageSymbolMixin):
     @property
     def cpp_type(self) -> str:
         if self.optional:
-            return f"boost::optional<{self._enum.cpp_type}>"
+            return f"std::optional<{self._enum.cpp_type}>"
         return self._enum.cpp_type
 
     @property
@@ -371,7 +371,7 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
     def cpp_temp_type(self) -> str:
         if self._arg_type == ArgPrimitiveType.STRING:
             if self.optional:
-                return "boost::optional<std::string>"
+                return "std::optional<std::string>"
             return "std::string"
         else:
             return self.cpp_type
@@ -405,7 +405,7 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
             if lang == "rust":
                 retval = f"{retval}.to_string()"
             if self.optional and lang in ["cpp", "c++"]:
-                retval = f'boost::make_optional(std::string({retval}))'
+                retval = f'std::make_optional(std::string({retval}))'
         if self.optional and lang == "rust":
             retval = f"Some({retval})"
         random.setstate(random_state)
@@ -530,7 +530,7 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
     @property
     def cpp_type(self) -> str:
         if self.optional:
-            return "boost::optional<std::chrono::time_point<std::chrono::system_clock>>"
+            return "std::optional<std::chrono::time_point<std::chrono::system_clock>>"
         return "std::chrono::time_point<std::chrono::system_clock>"
 
     @property
@@ -596,7 +596,7 @@ class ArgDuration(Arg, LanguageSymbolMixin):
     @property
     def cpp_type(self) -> str:
         if self.optional:
-            return "boost::optional<std::chrono::duration<double>>"
+            return "std::optional<std::chrono::duration<double>>"
         return "std::chrono::duration<double>"
 
     @property
@@ -681,7 +681,7 @@ class ArgBinary(Arg, LanguageSymbolMixin):
     @property
     def cpp_type(self) -> str:
         if self.optional:
-            return "boost::optional<std::vector<uint8_t>>"
+            return "std::optional<std::vector<uint8_t>>"
         return "std::vector<uint8_t>"
     
     @property
@@ -721,7 +721,7 @@ class ArgArray(Arg, LanguageSymbolMixin):
     @property
     def cpp_type(self) -> str:
         if self.optional:
-            return f"boost::optional<std::vector<{self.element.cpp_temp_type}>>"
+            return f"std::optional<std::vector<{self.element.cpp_temp_type}>>"
         return f"std::vector<{self.element.cpp_temp_type}>"
 
     @property
@@ -899,10 +899,10 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
         elif isinstance(self._return_value, Arg):
             if isinstance(self._return_value, ArgPrimitive) and self._return_value.type == ArgPrimitiveType.STRING:
                 if self._return_value.optional:
-                    return "boost::optional<std::string>"
+                    return "std::optional<std::string>"
                 return "std::string"
             elif isinstance(self._return_value, ArgStruct) and self._return_value.optional:
-                return f"boost::optional<{self._return_value.cpp_type}>"
+                return f"std::optional<{self._return_value.cpp_type}>"
             return self._return_value.cpp_type
         elif isinstance(self._return_value, list):
             return stringmanip.upper_camel_case(self.return_value_name)

@@ -370,7 +370,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `anotherSignal` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerAnotherSignalCallback([](double one, bool two, const std::string& three) {
+client.registerAnotherSignalCallback([](double one, bool two, std::string& three) {
     std::cout << "one=" <<one << " | " << "two=" <<two << " | " << "three=" <<three <<  std::endl;
 });
 ```
@@ -459,7 +459,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `bark` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerBarkCallback([](const std::string& word) {
+client.registerBarkCallback([](std::string& word) {
     std::cout << "word=" <<word <<  std::endl;
 });
 ```
@@ -548,7 +548,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `maybe_number` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerMaybeNumberCallback([](boost::optional<int> number) {
+client.registerMaybeNumberCallback([](std::optional<int> number) {
     std::cout << "number=" << "None" <<  std::endl;
 });
 ```
@@ -637,7 +637,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `maybe_name` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerMaybeNameCallback([](boost::optional<std::string> name) {
+client.registerMaybeNameCallback([](std::optional<std::string> name) {
     std::cout << "name=" << "None" <<  std::endl;
 });
 ```
@@ -650,7 +650,7 @@ client.registerMaybeNameCallback([](boost::optional<std::string> name) {
 A `maybe_name` signal can be emitted by calling the server's `emitMaybeNameSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
 ```cpp
-auto maybeNameFuture = server.emitMaybeNameSignal(boost::make_optional(std::string("apples")));
+auto maybeNameFuture = server.emitMaybeNameSignal(std::make_optional(std::string("apples")));
 maybeNameFuture.wait(); // Optional, to block until signal is sent.
 ```
 

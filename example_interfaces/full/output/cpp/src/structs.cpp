@@ -58,7 +58,7 @@ Lunch Lunch::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            lunch.orderNumber = boost::none;
+            lunch.orderNumber = std::nullopt;
         }
     }
     { // Scoping

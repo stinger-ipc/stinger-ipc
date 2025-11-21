@@ -3,7 +3,9 @@
 #include <iostream>
 #include <sstream>
 #include <syslog.h>
-#include <boost/chrono/chrono.hpp>
+#include <chrono>
+#include <thread>
+#include "utils.hpp"
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
@@ -25,8 +27,8 @@ int main(int argc, char** argv)
     { // restrict scope
         WeatherDiscovery discovery(conn);
         auto serviceIdFut = discovery.GetSingleton();
-        auto serviceIdFutStatus = serviceIdFut.wait_for(boost::chrono::seconds(15));
-        if (serviceIdFutStatus == boost::future_status::timeout)
+        auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
+        if (serviceIdFutStatus == std::future_status::timeout)
         {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
@@ -99,8 +101,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `refresh_daily_forecast` method call.
         std::cout << "CALLING REFRESH_DAILY_FORECAST" << std::endl;
         auto refreshDailyForecastResultFuture = client.refreshDailyForecast();
-        auto refreshDailyForecastStatus = refreshDailyForecastResultFuture.wait_for(boost::chrono::seconds(5));
-        if (refreshDailyForecastStatus == boost::future_status::timeout)
+        auto refreshDailyForecastStatus = refreshDailyForecastResultFuture.wait_for(std::chrono::seconds(5));
+        if (refreshDailyForecastStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for REFRESH_DAILY_FORECAST response." << std::endl;
         }
@@ -114,8 +116,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `refresh_hourly_forecast` method call.
         std::cout << "CALLING REFRESH_HOURLY_FORECAST" << std::endl;
         auto refreshHourlyForecastResultFuture = client.refreshHourlyForecast();
-        auto refreshHourlyForecastStatus = refreshHourlyForecastResultFuture.wait_for(boost::chrono::seconds(5));
-        if (refreshHourlyForecastStatus == boost::future_status::timeout)
+        auto refreshHourlyForecastStatus = refreshHourlyForecastResultFuture.wait_for(std::chrono::seconds(5));
+        if (refreshHourlyForecastStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for REFRESH_HOURLY_FORECAST response." << std::endl;
         }
@@ -129,8 +131,8 @@ int main(int argc, char** argv)
     { // Restrict scope for the `refresh_current_conditions` method call.
         std::cout << "CALLING REFRESH_CURRENT_CONDITIONS" << std::endl;
         auto refreshCurrentConditionsResultFuture = client.refreshCurrentConditions();
-        auto refreshCurrentConditionsStatus = refreshCurrentConditionsResultFuture.wait_for(boost::chrono::seconds(5));
-        if (refreshCurrentConditionsStatus == boost::future_status::timeout)
+        auto refreshCurrentConditionsStatus = refreshCurrentConditionsResultFuture.wait_for(std::chrono::seconds(5));
+        if (refreshCurrentConditionsStatus == std::future_status::timeout)
         {
             std::cout << "TIMEOUT after 5 seconds waiting for REFRESH_CURRENT_CONDITIONS response." << std::endl;
         }
@@ -144,7 +146,7 @@ int main(int argc, char** argv)
 
     while (true)
     {
-        sleep(10);
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 
     return 0;

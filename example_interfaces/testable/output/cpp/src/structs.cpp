@@ -157,7 +157,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalInteger = boost::none;
+            allTypes.optionalInteger = std::nullopt;
         }
     }
     { // Scoping
@@ -168,7 +168,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalString = boost::none;
+            allTypes.optionalString = std::nullopt;
         }
     }
     { // Scoping
@@ -179,7 +179,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalEnum = boost::none;
+            allTypes.optionalEnum = std::nullopt;
         }
     }
     { // Scoping
@@ -190,7 +190,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalEntryObject = boost::none;
+            allTypes.optionalEntryObject = std::nullopt;
         }
     }
     { // Scoping
@@ -202,7 +202,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalDateTime = boost::none;
+            allTypes.optionalDateTime = std::nullopt;
         }
     }
     { // Scoping
@@ -214,7 +214,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalDuration = boost::none;
+            allTypes.optionalDuration = std::nullopt;
         }
     }
     { // Scoping
@@ -226,7 +226,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalBinary = boost::none;
+            allTypes.optionalBinary = std::nullopt;
         }
     }
     { // Scoping
@@ -268,7 +268,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalArrayOfIntegers = boost::none;
+            allTypes.optionalArrayOfIntegers = std::nullopt;
         }
     }
     { // Scoping
@@ -310,7 +310,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalArrayOfStrings = boost::none;
+            allTypes.optionalArrayOfStrings = std::nullopt;
         }
     }
     { // Scoping
@@ -352,7 +352,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalArrayOfEnums = boost::none;
+            allTypes.optionalArrayOfEnums = std::nullopt;
         }
     }
     { // Scoping
@@ -400,7 +400,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalArrayOfDatetimes = boost::none;
+            allTypes.optionalArrayOfDatetimes = std::nullopt;
         }
     }
     { // Scoping
@@ -448,7 +448,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalArrayOfDurations = boost::none;
+            allTypes.optionalArrayOfDurations = std::nullopt;
         }
     }
     { // Scoping
@@ -496,7 +496,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalArrayOfBinaries = boost::none;
+            allTypes.optionalArrayOfBinaries = std::nullopt;
         }
     }
     { // Scoping
@@ -538,7 +538,7 @@ AllTypes AllTypes::FromRapidJsonObject(const rapidjson::Value& jsonObj)
         }
         else
         {
-            allTypes.optionalArrayOfEntryObjects = boost::none;
+            allTypes.optionalArrayOfEntryObjects = std::nullopt;
         }
     }
 

@@ -3,7 +3,6 @@
 
 # Ensure consumers get dependencies
 include(CMakeFindDependencyMacro)
-find_dependency(Boost REQUIRED COMPONENTS thread chrono)
 find_dependency(PkgConfig REQUIRED)
 find_dependency(RapidJSON REQUIRED)
 

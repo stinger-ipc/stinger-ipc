@@ -98,7 +98,7 @@ MaybeNumberPayload MaybeNumberPayload::FromRapidJsonObject(const rapidjson::Valu
         }
         else
         {
-            maybeNumberPayload.number = boost::none;
+            maybeNumberPayload.number = std::nullopt;
         }
     }
 
@@ -124,7 +124,7 @@ MaybeNamePayload MaybeNamePayload::FromRapidJsonObject(const rapidjson::Value& j
         }
         else
         {
-            maybeNamePayload.name = boost::none;
+            maybeNamePayload.name = std::nullopt;
         }
     }
 

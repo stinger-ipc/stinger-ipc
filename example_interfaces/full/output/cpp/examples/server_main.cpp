@@ -23,7 +23,7 @@ int main(int argc, char** argv)
     server->updateFavoriteNumberProperty(42);
 
     std::cout << "Setting initial value for property 'favorite_foods'.\n";
-    server->updateFavoriteFoodsProperty("apples", 42, boost::make_optional(std::string("apples")));
+    server->updateFavoriteFoodsProperty("apples", 42, std::make_optional(std::string("apples")));
 
     std::cout << "Setting initial value for property 'lunch_menu'.\n";
     server->updateLunchMenuProperty(Lunch{ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) }, Lunch{ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) });
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 
     auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
     todayIsFuture.wait();
-    server->registerAddNumbersHandler([](int unused1, int unused2, boost::optional<int> unused3) -> int
+    server->registerAddNumbersHandler([](int unused1, int unused2, std::optional<int> unused3) -> int
                                       {
                                           std::cout << "Received call for addNumbers\n";
                                           return 42;
@@ -115,7 +115,7 @@ int main(int argc, char** argv)
                                             server->updateFavoriteNumberProperty(42);
 
                                             std::cout << "Updating value for property 'favorite_foods'.\n";
-                                            server->updateFavoriteFoodsProperty("apples", 42, boost::make_optional(std::string("apples")));
+                                            server->updateFavoriteFoodsProperty("apples", 42, std::make_optional(std::string("apples")));
 
                                             std::cout << "Updating value for property 'lunch_menu'.\n";
                                             server->updateLunchMenuProperty(Lunch{ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) }, Lunch{ true, "apples", 3.14, DayOfTheWeek::SATURDAY, 42, std::chrono::system_clock::now(), std::chrono::duration<double>(3536) });

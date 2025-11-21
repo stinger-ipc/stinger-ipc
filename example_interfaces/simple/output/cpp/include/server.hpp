@@ -20,7 +20,7 @@ TODO: Get license text from stinger file
 #include <chrono>
 #include <thread>
 #include <atomic>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include <rapidjson/document.h>
 
 #include "property_structs.hpp"
@@ -40,7 +40,7 @@ public:
 
     virtual ~SimpleServer();
 
-    boost::future<bool> emitPersonEnteredSignal(Person);
+    std::future<bool> emitPersonEnteredSignal(Person);
 
     void registerTradeNumbersHandler(std::function<int(int)> func);
 
@@ -49,7 +49,7 @@ public:
     // Gets the latest value of the `school` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    boost::optional<const std::string&> getSchoolProperty() const;
+    std::optional<std::string&> getSchoolProperty();
 
     // Add a callback that will be called whenever the `school` property is updated.
     // The provided method will be called whenever a new value for the `school` property is received.
@@ -69,7 +69,7 @@ private:
             const MqttProperties& mqttProps
     );
 
-    void _callTradeNumbersHandler(const std::string& topic, const rapidjson::Document& doc, boost::optional<std::string> clientId, boost::optional<std::string> correlationId) const;
+    void _callTradeNumbersHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
     std::function<int(int)> _tradeNumbersHandler;
     int _tradeNumbersMethodSubscriptionId;
 
@@ -78,7 +78,7 @@ private:
     // ---school Property---
 
     // Current value for the `school` property.
-    boost::optional<SchoolProperty> _schoolProperty;
+    std::optional<SchoolProperty> _schoolProperty;
 
     // This is the property version  of `school`.
     int _lastSchoolPropertyVersion = -1;
@@ -90,7 +90,7 @@ private:
     int _schoolPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `school` property.
-    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion);
+    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `school` property.
     std::vector<std::function<void(std::string)>> _schoolPropertyCallbacks;

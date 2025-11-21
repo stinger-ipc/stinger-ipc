@@ -3,7 +3,9 @@
 #include <iostream>
 #include <sstream>
 #include <syslog.h>
-#include <boost/chrono/chrono.hpp>
+#include <chrono>
+#include <thread>
+#include "utils.hpp"
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
@@ -25,8 +27,8 @@ int main(int argc, char** argv)
     { // restrict scope
         SignalOnlyDiscovery discovery(conn);
         auto serviceIdFut = discovery.GetSingleton();
-        auto serviceIdFutStatus = serviceIdFut.wait_for(boost::chrono::seconds(15));
-        if (serviceIdFutStatus == boost::future_status::timeout)
+        auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
+        if (serviceIdFutStatus == std::future_status::timeout)
         {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
@@ -50,13 +52,13 @@ int main(int argc, char** argv)
                                               << "word=" << word << std::endl;
                                 });
 
-    client.registerMaybeNumberCallback([](boost::optional<int> number)
+    client.registerMaybeNumberCallback([](std::optional<int> number)
                                        {
                                            std::cout << "Received MAYBE_NUMBER signal: "
                                                      << "number=" << *number << std::endl;
                                        });
 
-    client.registerMaybeNameCallback([](boost::optional<std::string> name)
+    client.registerMaybeNameCallback([](std::optional<std::string> name)
                                      {
                                          std::cout << "Received MAYBE_NAME signal: "
                                                    << "name=" << *name << std::endl;
@@ -78,7 +80,7 @@ int main(int argc, char** argv)
 
     while (true)
     {
-        sleep(10);
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 
     return 0;

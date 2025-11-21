@@ -15,12 +15,8 @@ TODO: Get license text from stinger file
 #include <string>
 #include <map>
 #include <utility>
-#include <boost/interprocess/sync/scoped_lock.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/core/noncopyable.hpp>
-
-#define BOOST_THREAD_PROVIDES_FUTURE
-#include <boost/thread/future.hpp>
+#include <mutex>
+#include "utils.hpp"
 
 #include "ibrokerconnection.hpp"
 
@@ -47,7 +43,7 @@ public:
      * \param optReturnValue Optional (predetermined) value for the result of a method call.
      * \return A future which is resolved to true when the message has been published to the MQTT broker.
      */
-    virtual boost::future<bool> Publish(
+    virtual std::future<bool> Publish(
             const std::string& topic,
             const std::string& payload,
             unsigned qos,
@@ -93,10 +89,10 @@ protected:
     virtual void Connect();
 
 private:
-    class MqttMessage: private boost::noncopyable
+    class MqttMessage
     {
     public:
-        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic, boost::optional<int> optMessageExpiryInterval):
+        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, std::optional<std::string> optCorrelationId, std::optional<std::string> optResponseTopic, std::optional<int> optMessageExpiryInterval):
             _topic(topic), _payload(payload), _qos(qos), _retain(retain), _optCorrelationId(optCorrelationId), _optResponseTopic(optResponseTopic), _optMessageExpiryInterval(optMessageExpiryInterval) { }
 
         MqttMessage(const MqttMessage& other):
@@ -104,16 +100,16 @@ private:
 
         virtual ~MqttMessage() = default;
 
-        boost::future<bool> getFuture() { return _pSentPromise->get_future(); };
+        std::future<bool> getFuture() { return _pSentPromise->get_future(); };
 
         std::string _topic;
         std::string _payload;
         int _qos;
         bool _retain;
-        std::shared_ptr<boost::promise<bool>> _pSentPromise;
-        boost::optional<std::string> _optCorrelationId;
-        boost::optional<std::string> _optResponseTopic;
-        boost::optional<int> _optMessageExpiryInterval;
+        std::shared_ptr<std::promise<bool>> _pSentPromise;
+        std::optional<std::string> _optCorrelationId;
+        std::optional<std::string> _optResponseTopic;
+        std::optional<int> _optMessageExpiryInterval;
     };
 
     struct MqttSubscription
@@ -133,11 +129,11 @@ private:
     std::string _clientId;
     int _nextSubscriptionId = 1;
     std::queue<MqttSubscription> _subscriptions;
-    boost::mutex _mutex;
+    std::mutex _mutex;
     CallbackHandleType _nextCallbackHandle = 1;
     std::map<CallbackHandleType, std::function<void(const std::string&, const std::string&, const MqttProperties&)>> _messageCallbacks;
     std::queue<MqttMessage> _msgQueue;
-    std::map<int, std::shared_ptr<boost::promise<bool>>> _sendMessages;
+    std::map<int, std::shared_ptr<std::promise<bool>>> _sendMessages;
 
     // Track subscription reference counts: topic -> (count, subscriptionId)
     std::map<std::string, std::pair<int, int>> _subscriptionRefCounts;

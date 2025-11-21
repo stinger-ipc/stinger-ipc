@@ -31,7 +31,7 @@ struct FavoriteFoodsProperty
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::string drink;
     int slicesOfPizza;
-    boost::optional<std::string> breakfast;
+    std::optional<std::string> breakfast;
 };
 
 struct LunchMenuProperty
@@ -81,6 +81,6 @@ struct LastBirthdaysProperty
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::chrono::time_point<std::chrono::system_clock> mom;
     std::chrono::time_point<std::chrono::system_clock> dad;
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> sister;
-    boost::optional<int> brothersAge;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> sister;
+    std::optional<int> brothersAge;
 };

@@ -7,12 +7,8 @@
 #include <iomanip>
 #include <ctime>
 #include <syslog.h>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <boost/uuid/uuid_generators.hpp>
+#include <sstream>
+#include "utils.hpp"
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
@@ -37,182 +33,182 @@ TestableClient::TestableClient(std::shared_ptr<IBrokerConnection> broker, const 
                                                                {
                                                                    _receiveMessage(topic, payload, mqttProps);
                                                                });
-    _emptySignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/empty") % _instanceId).str(), 2);
-    _singleIntSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleInt") % _instanceId).str(), 2);
-    _singleOptionalIntSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleOptionalInt") % _instanceId).str(), 2);
-    _threeIntegersSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/threeIntegers") % _instanceId).str(), 2);
-    _singleStringSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleString") % _instanceId).str(), 2);
-    _singleOptionalStringSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleOptionalString") % _instanceId).str(), 2);
-    _threeStringsSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/threeStrings") % _instanceId).str(), 2);
-    _singleEnumSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleEnum") % _instanceId).str(), 2);
-    _singleOptionalEnumSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleOptionalEnum") % _instanceId).str(), 2);
-    _threeEnumsSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/threeEnums") % _instanceId).str(), 2);
-    _singleStructSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleStruct") % _instanceId).str(), 2);
-    _singleOptionalStructSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleOptionalStruct") % _instanceId).str(), 2);
-    _threeStructsSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/threeStructs") % _instanceId).str(), 2);
-    _singleDateTimeSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleDateTime") % _instanceId).str(), 2);
-    _singleOptionalDatetimeSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleOptionalDatetime") % _instanceId).str(), 2);
-    _threeDateTimesSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/threeDateTimes") % _instanceId).str(), 2);
-    _singleDurationSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleDuration") % _instanceId).str(), 2);
-    _singleOptionalDurationSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleOptionalDuration") % _instanceId).str(), 2);
-    _threeDurationsSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/threeDurations") % _instanceId).str(), 2);
-    _singleBinarySignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleBinary") % _instanceId).str(), 2);
-    _singleOptionalBinarySignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleOptionalBinary") % _instanceId).str(), 2);
-    _threeBinariesSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/threeBinaries") % _instanceId).str(), 2);
-    _singleArrayOfIntegersSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleArrayOfIntegers") % _instanceId).str(), 2);
-    _singleOptionalArrayOfStringsSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/singleOptionalArrayOfStrings") % _instanceId).str(), 2);
-    _arrayOfEveryTypeSignalSubscriptionId = _broker->Subscribe((boost::format("testable/%1%/signal/arrayOfEveryType") % _instanceId).str(), 2);
+    _emptySignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/empty") % _instanceId).str(), 2);
+    _singleIntSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleInt") % _instanceId).str(), 2);
+    _singleOptionalIntSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleOptionalInt") % _instanceId).str(), 2);
+    _threeIntegersSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/threeIntegers") % _instanceId).str(), 2);
+    _singleStringSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleString") % _instanceId).str(), 2);
+    _singleOptionalStringSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleOptionalString") % _instanceId).str(), 2);
+    _threeStringsSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/threeStrings") % _instanceId).str(), 2);
+    _singleEnumSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleEnum") % _instanceId).str(), 2);
+    _singleOptionalEnumSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleOptionalEnum") % _instanceId).str(), 2);
+    _threeEnumsSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/threeEnums") % _instanceId).str(), 2);
+    _singleStructSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleStruct") % _instanceId).str(), 2);
+    _singleOptionalStructSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleOptionalStruct") % _instanceId).str(), 2);
+    _threeStructsSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/threeStructs") % _instanceId).str(), 2);
+    _singleDateTimeSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleDateTime") % _instanceId).str(), 2);
+    _singleOptionalDatetimeSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleOptionalDatetime") % _instanceId).str(), 2);
+    _threeDateTimesSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/threeDateTimes") % _instanceId).str(), 2);
+    _singleDurationSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleDuration") % _instanceId).str(), 2);
+    _singleOptionalDurationSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleOptionalDuration") % _instanceId).str(), 2);
+    _threeDurationsSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/threeDurations") % _instanceId).str(), 2);
+    _singleBinarySignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleBinary") % _instanceId).str(), 2);
+    _singleOptionalBinarySignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleOptionalBinary") % _instanceId).str(), 2);
+    _threeBinariesSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/threeBinaries") % _instanceId).str(), 2);
+    _singleArrayOfIntegersSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleArrayOfIntegers") % _instanceId).str(), 2);
+    _singleOptionalArrayOfStringsSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/singleOptionalArrayOfStrings") % _instanceId).str(), 2);
+    _arrayOfEveryTypeSignalSubscriptionId = _broker->Subscribe((format("testable/%1%/signal/arrayOfEveryType") % _instanceId).str(), 2);
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callWithNothing/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callWithNothing/methodResponse") % _broker->GetClientId();
         _callWithNothingMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneInteger/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOneInteger/methodResponse") % _broker->GetClientId();
         _callOneIntegerMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalInteger/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOptionalInteger/methodResponse") % _broker->GetClientId();
         _callOptionalIntegerMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeIntegers/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callThreeIntegers/methodResponse") % _broker->GetClientId();
         _callThreeIntegersMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneString/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOneString/methodResponse") % _broker->GetClientId();
         _callOneStringMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalString/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOptionalString/methodResponse") % _broker->GetClientId();
         _callOptionalStringMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeStrings/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callThreeStrings/methodResponse") % _broker->GetClientId();
         _callThreeStringsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneEnum/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOneEnum/methodResponse") % _broker->GetClientId();
         _callOneEnumMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalEnum/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOptionalEnum/methodResponse") % _broker->GetClientId();
         _callOptionalEnumMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeEnums/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callThreeEnums/methodResponse") % _broker->GetClientId();
         _callThreeEnumsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneStruct/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOneStruct/methodResponse") % _broker->GetClientId();
         _callOneStructMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalStruct/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOptionalStruct/methodResponse") % _broker->GetClientId();
         _callOptionalStructMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeStructs/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callThreeStructs/methodResponse") % _broker->GetClientId();
         _callThreeStructsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneDateTime/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOneDateTime/methodResponse") % _broker->GetClientId();
         _callOneDateTimeMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalDateTime/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOptionalDateTime/methodResponse") % _broker->GetClientId();
         _callOptionalDateTimeMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeDateTimes/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callThreeDateTimes/methodResponse") % _broker->GetClientId();
         _callThreeDateTimesMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneDuration/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOneDuration/methodResponse") % _broker->GetClientId();
         _callOneDurationMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalDuration/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOptionalDuration/methodResponse") % _broker->GetClientId();
         _callOptionalDurationMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeDurations/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callThreeDurations/methodResponse") % _broker->GetClientId();
         _callThreeDurationsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneBinary/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOneBinary/methodResponse") % _broker->GetClientId();
         _callOneBinaryMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalBinary/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOptionalBinary/methodResponse") % _broker->GetClientId();
         _callOptionalBinaryMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callThreeBinaries/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callThreeBinaries/methodResponse") % _broker->GetClientId();
         _callThreeBinariesMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOneListOfIntegers/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOneListOfIntegers/methodResponse") % _broker->GetClientId();
         _callOneListOfIntegersMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callOptionalListOfFloats/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callOptionalListOfFloats/methodResponse") % _broker->GetClientId();
         _callOptionalListOfFloatsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << boost::format("client/%1%/callTwoLists/methodResponse") % _broker->GetClientId();
+        responseTopicStringStream << format("client/%1%/callTwoLists/methodResponse") % _broker->GetClientId();
         _callTwoListsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
-    _readWriteIntegerPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteInteger/value") % _instanceId).str(), 1);
-    _readOnlyIntegerPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readOnlyInteger/value") % _instanceId).str(), 1);
-    _readWriteOptionalIntegerPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteOptionalInteger/value") % _instanceId).str(), 1);
-    _readWriteTwoIntegersPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteTwoIntegers/value") % _instanceId).str(), 1);
-    _readOnlyStringPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readOnlyString/value") % _instanceId).str(), 1);
-    _readWriteStringPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteString/value") % _instanceId).str(), 1);
-    _readWriteOptionalStringPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteOptionalString/value") % _instanceId).str(), 1);
-    _readWriteTwoStringsPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteTwoStrings/value") % _instanceId).str(), 1);
-    _readWriteStructPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteStruct/value") % _instanceId).str(), 1);
-    _readWriteOptionalStructPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteOptionalStruct/value") % _instanceId).str(), 1);
-    _readWriteTwoStructsPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteTwoStructs/value") % _instanceId).str(), 1);
-    _readOnlyEnumPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readOnlyEnum/value") % _instanceId).str(), 1);
-    _readWriteEnumPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteEnum/value") % _instanceId).str(), 1);
-    _readWriteOptionalEnumPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteOptionalEnum/value") % _instanceId).str(), 1);
-    _readWriteTwoEnumsPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteTwoEnums/value") % _instanceId).str(), 1);
-    _readWriteDatetimePropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteDatetime/value") % _instanceId).str(), 1);
-    _readWriteOptionalDatetimePropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteOptionalDatetime/value") % _instanceId).str(), 1);
-    _readWriteTwoDatetimesPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteTwoDatetimes/value") % _instanceId).str(), 1);
-    _readWriteDurationPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteDuration/value") % _instanceId).str(), 1);
-    _readWriteOptionalDurationPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteOptionalDuration/value") % _instanceId).str(), 1);
-    _readWriteTwoDurationsPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteTwoDurations/value") % _instanceId).str(), 1);
-    _readWriteBinaryPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteBinary/value") % _instanceId).str(), 1);
-    _readWriteOptionalBinaryPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteOptionalBinary/value") % _instanceId).str(), 1);
-    _readWriteTwoBinariesPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteTwoBinaries/value") % _instanceId).str(), 1);
-    _readWriteListOfStringsPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteListOfStrings/value") % _instanceId).str(), 1);
-    _readWriteListsPropertySubscriptionId = _broker->Subscribe((boost::format("testable/%1%/property/readWriteLists/value") % _instanceId).str(), 1);
+    _readWriteIntegerPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteInteger/value") % _instanceId).str(), 1);
+    _readOnlyIntegerPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readOnlyInteger/value") % _instanceId).str(), 1);
+    _readWriteOptionalIntegerPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalInteger/value") % _instanceId).str(), 1);
+    _readWriteTwoIntegersPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoIntegers/value") % _instanceId).str(), 1);
+    _readOnlyStringPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readOnlyString/value") % _instanceId).str(), 1);
+    _readWriteStringPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteString/value") % _instanceId).str(), 1);
+    _readWriteOptionalStringPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalString/value") % _instanceId).str(), 1);
+    _readWriteTwoStringsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoStrings/value") % _instanceId).str(), 1);
+    _readWriteStructPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteStruct/value") % _instanceId).str(), 1);
+    _readWriteOptionalStructPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalStruct/value") % _instanceId).str(), 1);
+    _readWriteTwoStructsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoStructs/value") % _instanceId).str(), 1);
+    _readOnlyEnumPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readOnlyEnum/value") % _instanceId).str(), 1);
+    _readWriteEnumPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteEnum/value") % _instanceId).str(), 1);
+    _readWriteOptionalEnumPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalEnum/value") % _instanceId).str(), 1);
+    _readWriteTwoEnumsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoEnums/value") % _instanceId).str(), 1);
+    _readWriteDatetimePropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteDatetime/value") % _instanceId).str(), 1);
+    _readWriteOptionalDatetimePropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalDatetime/value") % _instanceId).str(), 1);
+    _readWriteTwoDatetimesPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoDatetimes/value") % _instanceId).str(), 1);
+    _readWriteDurationPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteDuration/value") % _instanceId).str(), 1);
+    _readWriteOptionalDurationPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalDuration/value") % _instanceId).str(), 1);
+    _readWriteTwoDurationsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoDurations/value") % _instanceId).str(), 1);
+    _readWriteBinaryPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteBinary/value") % _instanceId).str(), 1);
+    _readWriteOptionalBinaryPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalBinary/value") % _instanceId).str(), 1);
+    _readWriteTwoBinariesPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoBinaries/value") % _instanceId).str(), 1);
+    _readWriteListOfStringsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteListOfStrings/value") % _instanceId).str(), 1);
+    _readWriteListsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteLists/value") % _instanceId).str(), 1);
 }
 
 TestableClient::~TestableClient()
@@ -233,7 +229,7 @@ void TestableClient::_receiveMessage(
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
     _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", topic.c_str(), subscriptionId);
-    if ((subscriptionId == _emptySignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/empty") % _instanceId).str())))
+    if ((subscriptionId == _emptySignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/empty") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling empty signal");
         rapidjson::Document doc;
@@ -261,14 +257,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleIntSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleInt") % _instanceId).str())))
+    if ((subscriptionId == _singleIntSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleInt") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleInt signal");
         rapidjson::Document doc;
@@ -309,14 +305,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleOptionalIntSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleOptionalInt") % _instanceId).str())))
+    if ((subscriptionId == _singleOptionalIntSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleOptionalInt") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleOptionalInt signal");
         rapidjson::Document doc;
@@ -337,7 +333,7 @@ void TestableClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<int> tempValue;
+                std::optional<int> tempValue;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
                     if (itr != doc.MemberEnd() && itr->value.IsInt())
@@ -346,7 +342,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempValue = boost::none;
+                        tempValue = std::nullopt;
                     }
                 }
 
@@ -357,14 +353,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _threeIntegersSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/threeIntegers") % _instanceId).str())))
+    if ((subscriptionId == _threeIntegersSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/threeIntegers") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling threeIntegers signal");
         rapidjson::Document doc;
@@ -411,7 +407,7 @@ void TestableClient::_receiveMessage(
                     }
                 }
 
-                boost::optional<int> tempThird;
+                std::optional<int> tempThird;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
                     if (itr != doc.MemberEnd() && itr->value.IsInt())
@@ -420,7 +416,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempThird = boost::none;
+                        tempThird = std::nullopt;
                     }
                 }
 
@@ -431,14 +427,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleStringSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleString") % _instanceId).str())))
+    if ((subscriptionId == _singleStringSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleString") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleString signal");
         rapidjson::Document doc;
@@ -479,14 +475,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleOptionalStringSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleOptionalString") % _instanceId).str())))
+    if ((subscriptionId == _singleOptionalStringSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleOptionalString") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleOptionalString signal");
         rapidjson::Document doc;
@@ -507,7 +503,7 @@ void TestableClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<std::string> tempValue;
+                std::optional<std::string> tempValue;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
@@ -516,7 +512,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempValue = boost::none;
+                        tempValue = std::nullopt;
                     }
                 }
 
@@ -527,14 +523,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _threeStringsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/threeStrings") % _instanceId).str())))
+    if ((subscriptionId == _threeStringsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/threeStrings") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling threeStrings signal");
         rapidjson::Document doc;
@@ -581,7 +577,7 @@ void TestableClient::_receiveMessage(
                     }
                 }
 
-                boost::optional<std::string> tempThird;
+                std::optional<std::string> tempThird;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
@@ -590,7 +586,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempThird = boost::none;
+                        tempThird = std::nullopt;
                     }
                 }
 
@@ -601,14 +597,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleEnumSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleEnum") % _instanceId).str())))
+    if ((subscriptionId == _singleEnumSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleEnum") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleEnum signal");
         rapidjson::Document doc;
@@ -649,14 +645,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleOptionalEnumSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleOptionalEnum") % _instanceId).str())))
+    if ((subscriptionId == _singleOptionalEnumSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleOptionalEnum") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleOptionalEnum signal");
         rapidjson::Document doc;
@@ -677,7 +673,7 @@ void TestableClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<Numbers> tempValue;
+                std::optional<Numbers> tempValue;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
                     if (itr != doc.MemberEnd() && itr->value.IsInt())
@@ -686,7 +682,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempValue = boost::none;
+                        tempValue = std::nullopt;
                     }
                 }
 
@@ -697,14 +693,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _threeEnumsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/threeEnums") % _instanceId).str())))
+    if ((subscriptionId == _threeEnumsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/threeEnums") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling threeEnums signal");
         rapidjson::Document doc;
@@ -751,7 +747,7 @@ void TestableClient::_receiveMessage(
                     }
                 }
 
-                boost::optional<Numbers> tempThird;
+                std::optional<Numbers> tempThird;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
                     if (itr != doc.MemberEnd() && itr->value.IsInt())
@@ -760,7 +756,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempThird = boost::none;
+                        tempThird = std::nullopt;
                     }
                 }
 
@@ -771,14 +767,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleStructSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleStruct") % _instanceId).str())))
+    if ((subscriptionId == _singleStructSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleStruct") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleStruct signal");
         rapidjson::Document doc;
@@ -818,14 +814,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleOptionalStructSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleOptionalStruct") % _instanceId).str())))
+    if ((subscriptionId == _singleOptionalStructSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleOptionalStruct") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleOptionalStruct signal");
         rapidjson::Document doc;
@@ -846,7 +842,7 @@ void TestableClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<AllTypes> tempValue;
+                std::optional<AllTypes> tempValue;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
                     if (itr != doc.MemberEnd() && itr->value.IsObject())
@@ -854,7 +850,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempValue = boost::none;
+                        tempValue = std::nullopt;
                     }
                 }
 
@@ -865,14 +861,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _threeStructsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/threeStructs") % _instanceId).str())))
+    if ((subscriptionId == _threeStructsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/threeStructs") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling threeStructs signal");
         rapidjson::Document doc;
@@ -917,7 +913,7 @@ void TestableClient::_receiveMessage(
                     }
                 }
 
-                boost::optional<AllTypes> tempThird;
+                std::optional<AllTypes> tempThird;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
                     if (itr != doc.MemberEnd() && itr->value.IsObject())
@@ -925,7 +921,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempThird = boost::none;
+                        tempThird = std::nullopt;
                     }
                 }
 
@@ -936,14 +932,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleDateTimeSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleDateTime") % _instanceId).str())))
+    if ((subscriptionId == _singleDateTimeSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleDateTime") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleDateTime signal");
         rapidjson::Document doc;
@@ -991,14 +987,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleOptionalDatetimeSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleOptionalDatetime") % _instanceId).str())))
+    if ((subscriptionId == _singleOptionalDatetimeSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleOptionalDatetime") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleOptionalDatetime signal");
         rapidjson::Document doc;
@@ -1019,7 +1015,7 @@ void TestableClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<std::chrono::time_point<std::chrono::system_clock>> tempValue;
+                std::optional<std::chrono::time_point<std::chrono::system_clock>> tempValue;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
@@ -1035,7 +1031,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempValue = boost::none;
+                        tempValue = std::nullopt;
                     }
                 }
 
@@ -1046,14 +1042,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _threeDateTimesSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/threeDateTimes") % _instanceId).str())))
+    if ((subscriptionId == _threeDateTimesSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/threeDateTimes") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling threeDateTimes signal");
         rapidjson::Document doc;
@@ -1114,7 +1110,7 @@ void TestableClient::_receiveMessage(
                     }
                 }
 
-                boost::optional<std::chrono::time_point<std::chrono::system_clock>> tempThird;
+                std::optional<std::chrono::time_point<std::chrono::system_clock>> tempThird;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
@@ -1130,7 +1126,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempThird = boost::none;
+                        tempThird = std::nullopt;
                     }
                 }
 
@@ -1141,14 +1137,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleDurationSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleDuration") % _instanceId).str())))
+    if ((subscriptionId == _singleDurationSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleDuration") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleDuration signal");
         rapidjson::Document doc;
@@ -1189,14 +1185,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleOptionalDurationSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleOptionalDuration") % _instanceId).str())))
+    if ((subscriptionId == _singleOptionalDurationSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleOptionalDuration") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleOptionalDuration signal");
         rapidjson::Document doc;
@@ -1217,7 +1213,7 @@ void TestableClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<std::chrono::duration<double>> tempValue;
+                std::optional<std::chrono::duration<double>> tempValue;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
@@ -1226,7 +1222,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempValue = boost::none;
+                        tempValue = std::nullopt;
                     }
                 }
 
@@ -1237,14 +1233,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _threeDurationsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/threeDurations") % _instanceId).str())))
+    if ((subscriptionId == _threeDurationsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/threeDurations") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling threeDurations signal");
         rapidjson::Document doc;
@@ -1291,7 +1287,7 @@ void TestableClient::_receiveMessage(
                     }
                 }
 
-                boost::optional<std::chrono::duration<double>> tempThird;
+                std::optional<std::chrono::duration<double>> tempThird;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
@@ -1300,7 +1296,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempThird = boost::none;
+                        tempThird = std::nullopt;
                     }
                 }
 
@@ -1311,14 +1307,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleBinarySignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleBinary") % _instanceId).str())))
+    if ((subscriptionId == _singleBinarySignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleBinary") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleBinary signal");
         rapidjson::Document doc;
@@ -1359,14 +1355,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleOptionalBinarySignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleOptionalBinary") % _instanceId).str())))
+    if ((subscriptionId == _singleOptionalBinarySignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleOptionalBinary") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleOptionalBinary signal");
         rapidjson::Document doc;
@@ -1387,7 +1383,7 @@ void TestableClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<std::vector<uint8_t>> tempValue;
+                std::optional<std::vector<uint8_t>> tempValue;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("value");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
@@ -1396,7 +1392,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempValue = boost::none;
+                        tempValue = std::nullopt;
                     }
                 }
 
@@ -1407,14 +1403,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _threeBinariesSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/threeBinaries") % _instanceId).str())))
+    if ((subscriptionId == _threeBinariesSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/threeBinaries") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling threeBinaries signal");
         rapidjson::Document doc;
@@ -1461,7 +1457,7 @@ void TestableClient::_receiveMessage(
                     }
                 }
 
-                boost::optional<std::vector<uint8_t>> tempThird;
+                std::optional<std::vector<uint8_t>> tempThird;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("third");
                     if (itr != doc.MemberEnd() && itr->value.IsString())
@@ -1470,7 +1466,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempThird = boost::none;
+                        tempThird = std::nullopt;
                     }
                 }
 
@@ -1481,14 +1477,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleArrayOfIntegersSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleArrayOfIntegers") % _instanceId).str())))
+    if ((subscriptionId == _singleArrayOfIntegersSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleArrayOfIntegers") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleArrayOfIntegers signal");
         rapidjson::Document doc;
@@ -1528,14 +1524,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _singleOptionalArrayOfStringsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/singleOptionalArrayOfStrings") % _instanceId).str())))
+    if ((subscriptionId == _singleOptionalArrayOfStringsSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/singleOptionalArrayOfStrings") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling singleOptionalArrayOfStrings signal");
         rapidjson::Document doc;
@@ -1556,7 +1552,7 @@ void TestableClient::_receiveMessage(
                     return;
                 }
 
-                boost::optional<std::vector<std::string>> tempValues;
+                std::optional<std::vector<std::string>> tempValues;
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("values");
                     if (itr != doc.MemberEnd() && itr->value.IsArray())
@@ -1564,7 +1560,7 @@ void TestableClient::_receiveMessage(
                     }
                     else
                     {
-                        tempValues = boost::none;
+                        tempValues = std::nullopt;
                     }
                 }
 
@@ -1575,14 +1571,14 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
-    if ((subscriptionId == _arrayOfEveryTypeSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (boost::format("testable/%1%/signal/arrayOfEveryType") % _instanceId).str())))
+    if ((subscriptionId == _arrayOfEveryTypeSignalSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/signal/arrayOfEveryType") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Handling arrayOfEveryType signal");
         rapidjson::Document doc;
@@ -1706,7 +1702,7 @@ void TestableClient::_receiveMessage(
                 }
             }
         }
-        catch (const boost::bad_lexical_cast&)
+        catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
@@ -1838,107 +1834,107 @@ void TestableClient::_receiveMessage(
         _broker->Log(LOG_DEBUG, "Matched topic for callTwoLists response");
         _handleCallTwoListsResponse(topic, payload, mqttProps);
     }
-    if ((subscriptionId == _readWriteIntegerPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteInteger/value") % _instanceId).str()))
+    if ((subscriptionId == _readWriteIntegerPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteInteger/value") % _instanceId).str()))
     {
         _receiveReadWriteIntegerPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readOnlyIntegerPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readOnlyInteger/value") % _instanceId).str()))
+    else if ((subscriptionId == _readOnlyIntegerPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readOnlyInteger/value") % _instanceId).str()))
     {
         _receiveReadOnlyIntegerPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteOptionalIntegerPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteOptionalInteger/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteOptionalIntegerPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteOptionalInteger/value") % _instanceId).str()))
     {
         _receiveReadWriteOptionalIntegerPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteTwoIntegersPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteTwoIntegers/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteTwoIntegersPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteTwoIntegers/value") % _instanceId).str()))
     {
         _receiveReadWriteTwoIntegersPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readOnlyStringPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readOnlyString/value") % _instanceId).str()))
+    else if ((subscriptionId == _readOnlyStringPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readOnlyString/value") % _instanceId).str()))
     {
         _receiveReadOnlyStringPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteStringPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteString/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteStringPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteString/value") % _instanceId).str()))
     {
         _receiveReadWriteStringPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteOptionalStringPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteOptionalString/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteOptionalStringPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteOptionalString/value") % _instanceId).str()))
     {
         _receiveReadWriteOptionalStringPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteTwoStringsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteTwoStrings/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteTwoStringsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteTwoStrings/value") % _instanceId).str()))
     {
         _receiveReadWriteTwoStringsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteStructPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteStruct/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteStructPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteStruct/value") % _instanceId).str()))
     {
         _receiveReadWriteStructPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteOptionalStructPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteOptionalStruct/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteOptionalStructPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteOptionalStruct/value") % _instanceId).str()))
     {
         _receiveReadWriteOptionalStructPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteTwoStructsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteTwoStructs/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteTwoStructsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteTwoStructs/value") % _instanceId).str()))
     {
         _receiveReadWriteTwoStructsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readOnlyEnumPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readOnlyEnum/value") % _instanceId).str()))
+    else if ((subscriptionId == _readOnlyEnumPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readOnlyEnum/value") % _instanceId).str()))
     {
         _receiveReadOnlyEnumPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteEnumPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteEnum/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteEnumPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteEnum/value") % _instanceId).str()))
     {
         _receiveReadWriteEnumPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteOptionalEnumPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteOptionalEnum/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteOptionalEnumPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteOptionalEnum/value") % _instanceId).str()))
     {
         _receiveReadWriteOptionalEnumPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteTwoEnumsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteTwoEnums/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteTwoEnumsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteTwoEnums/value") % _instanceId).str()))
     {
         _receiveReadWriteTwoEnumsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteDatetimePropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteDatetime/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteDatetimePropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteDatetime/value") % _instanceId).str()))
     {
         _receiveReadWriteDatetimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteOptionalDatetimePropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteOptionalDatetime/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteOptionalDatetimePropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteOptionalDatetime/value") % _instanceId).str()))
     {
         _receiveReadWriteOptionalDatetimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteTwoDatetimesPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteTwoDatetimes/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteTwoDatetimesPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteTwoDatetimes/value") % _instanceId).str()))
     {
         _receiveReadWriteTwoDatetimesPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteDurationPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteDuration/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteDurationPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteDuration/value") % _instanceId).str()))
     {
         _receiveReadWriteDurationPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteOptionalDurationPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteOptionalDuration/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteOptionalDurationPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteOptionalDuration/value") % _instanceId).str()))
     {
         _receiveReadWriteOptionalDurationPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteTwoDurationsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteTwoDurations/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteTwoDurationsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteTwoDurations/value") % _instanceId).str()))
     {
         _receiveReadWriteTwoDurationsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteBinaryPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteBinary/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteBinaryPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteBinary/value") % _instanceId).str()))
     {
         _receiveReadWriteBinaryPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteOptionalBinaryPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteOptionalBinary/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteOptionalBinaryPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteOptionalBinary/value") % _instanceId).str()))
     {
         _receiveReadWriteOptionalBinaryPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteTwoBinariesPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteTwoBinaries/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteTwoBinariesPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteTwoBinaries/value") % _instanceId).str()))
     {
         _receiveReadWriteTwoBinariesPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteListOfStringsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteListOfStrings/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteListOfStringsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteListOfStrings/value") % _instanceId).str()))
     {
         _receiveReadWriteListOfStringsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
-    else if ((subscriptionId == _readWriteListsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (boost::format("testable/%1%/property/readWriteLists/value") % _instanceId).str()))
+    else if ((subscriptionId == _readWriteListsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("testable/%1%/property/readWriteLists/value") % _instanceId).str()))
     {
         _receiveReadWriteListsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
@@ -1956,13 +1952,13 @@ void TestableClient::registerSingleIntCallback(const std::function<void(int)>& c
     _singleIntSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerSingleOptionalIntCallback(const std::function<void(boost::optional<int>)>& cb)
+void TestableClient::registerSingleOptionalIntCallback(const std::function<void(std::optional<int>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleOptionalIntSignalCallbacksMutex);
     _singleOptionalIntSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerThreeIntegersCallback(const std::function<void(int, int, boost::optional<int>)>& cb)
+void TestableClient::registerThreeIntegersCallback(const std::function<void(int, int, std::optional<int>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_threeIntegersSignalCallbacksMutex);
     _threeIntegersSignalCallbacks.push_back(cb);
@@ -1974,13 +1970,13 @@ void TestableClient::registerSingleStringCallback(const std::function<void(std::
     _singleStringSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerSingleOptionalStringCallback(const std::function<void(boost::optional<std::string>)>& cb)
+void TestableClient::registerSingleOptionalStringCallback(const std::function<void(std::optional<std::string>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleOptionalStringSignalCallbacksMutex);
     _singleOptionalStringSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerThreeStringsCallback(const std::function<void(std::string, std::string, boost::optional<std::string>)>& cb)
+void TestableClient::registerThreeStringsCallback(const std::function<void(std::string, std::string, std::optional<std::string>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_threeStringsSignalCallbacksMutex);
     _threeStringsSignalCallbacks.push_back(cb);
@@ -1992,13 +1988,13 @@ void TestableClient::registerSingleEnumCallback(const std::function<void(Numbers
     _singleEnumSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerSingleOptionalEnumCallback(const std::function<void(boost::optional<Numbers>)>& cb)
+void TestableClient::registerSingleOptionalEnumCallback(const std::function<void(std::optional<Numbers>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleOptionalEnumSignalCallbacksMutex);
     _singleOptionalEnumSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerThreeEnumsCallback(const std::function<void(Numbers, Numbers, boost::optional<Numbers>)>& cb)
+void TestableClient::registerThreeEnumsCallback(const std::function<void(Numbers, Numbers, std::optional<Numbers>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_threeEnumsSignalCallbacksMutex);
     _threeEnumsSignalCallbacks.push_back(cb);
@@ -2010,13 +2006,13 @@ void TestableClient::registerSingleStructCallback(const std::function<void(AllTy
     _singleStructSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerSingleOptionalStructCallback(const std::function<void(boost::optional<AllTypes>)>& cb)
+void TestableClient::registerSingleOptionalStructCallback(const std::function<void(std::optional<AllTypes>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleOptionalStructSignalCallbacksMutex);
     _singleOptionalStructSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerThreeStructsCallback(const std::function<void(AllTypes, AllTypes, boost::optional<AllTypes>)>& cb)
+void TestableClient::registerThreeStructsCallback(const std::function<void(AllTypes, AllTypes, std::optional<AllTypes>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_threeStructsSignalCallbacksMutex);
     _threeStructsSignalCallbacks.push_back(cb);
@@ -2028,13 +2024,13 @@ void TestableClient::registerSingleDateTimeCallback(const std::function<void(std
     _singleDateTimeSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerSingleOptionalDatetimeCallback(const std::function<void(boost::optional<std::chrono::time_point<std::chrono::system_clock>>)>& cb)
+void TestableClient::registerSingleOptionalDatetimeCallback(const std::function<void(std::optional<std::chrono::time_point<std::chrono::system_clock>>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleOptionalDatetimeSignalCallbacksMutex);
     _singleOptionalDatetimeSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerThreeDateTimesCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, boost::optional<std::chrono::time_point<std::chrono::system_clock>>)>& cb)
+void TestableClient::registerThreeDateTimesCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_threeDateTimesSignalCallbacksMutex);
     _threeDateTimesSignalCallbacks.push_back(cb);
@@ -2046,13 +2042,13 @@ void TestableClient::registerSingleDurationCallback(const std::function<void(std
     _singleDurationSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerSingleOptionalDurationCallback(const std::function<void(boost::optional<std::chrono::duration<double>>)>& cb)
+void TestableClient::registerSingleOptionalDurationCallback(const std::function<void(std::optional<std::chrono::duration<double>>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleOptionalDurationSignalCallbacksMutex);
     _singleOptionalDurationSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerThreeDurationsCallback(const std::function<void(std::chrono::duration<double>, std::chrono::duration<double>, boost::optional<std::chrono::duration<double>>)>& cb)
+void TestableClient::registerThreeDurationsCallback(const std::function<void(std::chrono::duration<double>, std::chrono::duration<double>, std::optional<std::chrono::duration<double>>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_threeDurationsSignalCallbacksMutex);
     _threeDurationsSignalCallbacks.push_back(cb);
@@ -2064,13 +2060,13 @@ void TestableClient::registerSingleBinaryCallback(const std::function<void(std::
     _singleBinarySignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerSingleOptionalBinaryCallback(const std::function<void(boost::optional<std::vector<uint8_t>>)>& cb)
+void TestableClient::registerSingleOptionalBinaryCallback(const std::function<void(std::optional<std::vector<uint8_t>>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleOptionalBinarySignalCallbacksMutex);
     _singleOptionalBinarySignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerThreeBinariesCallback(const std::function<void(std::vector<uint8_t>, std::vector<uint8_t>, boost::optional<std::vector<uint8_t>>)>& cb)
+void TestableClient::registerThreeBinariesCallback(const std::function<void(std::vector<uint8_t>, std::vector<uint8_t>, std::optional<std::vector<uint8_t>>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_threeBinariesSignalCallbacksMutex);
     _threeBinariesSignalCallbacks.push_back(cb);
@@ -2082,7 +2078,7 @@ void TestableClient::registerSingleArrayOfIntegersCallback(const std::function<v
     _singleArrayOfIntegersSignalCallbacks.push_back(cb);
 }
 
-void TestableClient::registerSingleOptionalArrayOfStringsCallback(const std::function<void(boost::optional<std::vector<std::string>>)>& cb)
+void TestableClient::registerSingleOptionalArrayOfStringsCallback(const std::function<void(std::optional<std::vector<std::string>>)>& cb)
 {
     std::lock_guard<std::mutex> lock(_singleOptionalArrayOfStringsSignalCallbacksMutex);
     _singleOptionalArrayOfStringsSignalCallbacks.push_back(cb);
@@ -2094,11 +2090,10 @@ void TestableClient::registerArrayOfEveryTypeCallback(const std::function<void(s
     _arrayOfEveryTypeSignalCallbacks.push_back(cb);
 }
 
-boost::future<void> TestableClient::callWithNothing()
+std::future<void> TestableClient::callWithNothing()
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallWithNothingMethodCalls[correlationId] = boost::promise<void>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallWithNothingMethodCalls[correlationId] = std::promise<void>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2107,12 +2102,12 @@ boost::future<void> TestableClient::callWithNothing()
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callWithNothing/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callWithNothing/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callWithNothing") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callWithNothing") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallWithNothingMethodCalls[correlationId].get_future();
 }
@@ -2125,8 +2120,8 @@ void TestableClient::_handleCallWithNothingResponse(
 {
     _broker->Log(LOG_DEBUG, "In response handler for callWithNothing");
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallWithNothingMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallWithNothingMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallWithNothingMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2145,11 +2140,10 @@ void TestableClient::_handleCallWithNothingResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callWithNothing");
 }
 
-boost::future<int> TestableClient::callOneInteger(int input1)
+std::future<int> TestableClient::callOneInteger(int input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOneIntegerMethodCalls[correlationId] = boost::promise<int>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOneIntegerMethodCalls[correlationId] = std::promise<int>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2160,12 +2154,12 @@ boost::future<int> TestableClient::callOneInteger(int input1)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneInteger/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOneInteger/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOneInteger") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOneInteger") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOneIntegerMethodCalls[correlationId].get_future();
 }
@@ -2190,8 +2184,8 @@ void TestableClient::_handleCallOneIntegerResponse(
         throw std::runtime_error("Received payload for 'callOneInteger' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOneIntegerMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOneIntegerMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOneIntegerMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2211,11 +2205,10 @@ void TestableClient::_handleCallOneIntegerResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneInteger");
 }
 
-boost::future<boost::optional<int>> TestableClient::callOptionalInteger(boost::optional<int> input1)
+std::future<std::optional<int>> TestableClient::callOptionalInteger(std::optional<int> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalIntegerMethodCalls[correlationId] = boost::promise<boost::optional<int>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOptionalIntegerMethodCalls[correlationId] = std::promise<std::optional<int>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2227,12 +2220,12 @@ boost::future<boost::optional<int>> TestableClient::callOptionalInteger(boost::o
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalInteger/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOptionalInteger/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOptionalInteger") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOptionalInteger") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOptionalIntegerMethodCalls[correlationId].get_future();
 }
@@ -2257,8 +2250,8 @@ void TestableClient::_handleCallOptionalIntegerResponse(
         throw std::runtime_error("Received payload for 'callOptionalInteger' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOptionalIntegerMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOptionalIntegerMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOptionalIntegerMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2278,11 +2271,10 @@ void TestableClient::_handleCallOptionalIntegerResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalInteger");
 }
 
-boost::future<CallThreeIntegersReturnValues> TestableClient::callThreeIntegers(int input1, int input2, boost::optional<int> input3)
+std::future<CallThreeIntegersReturnValues> TestableClient::callThreeIntegers(int input1, int input2, std::optional<int> input3)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeIntegersMethodCalls[correlationId] = boost::promise<CallThreeIntegersReturnValues>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallThreeIntegersMethodCalls[correlationId] = std::promise<CallThreeIntegersReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2298,12 +2290,12 @@ boost::future<CallThreeIntegersReturnValues> TestableClient::callThreeIntegers(i
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeIntegers/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callThreeIntegers/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callThreeIntegers") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callThreeIntegers") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallThreeIntegersMethodCalls[correlationId].get_future();
 }
@@ -2328,8 +2320,8 @@ void TestableClient::_handleCallThreeIntegersResponse(
         throw std::runtime_error("Received payload for 'callThreeIntegers' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallThreeIntegersMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallThreeIntegersMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallThreeIntegersMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2349,11 +2341,10 @@ void TestableClient::_handleCallThreeIntegersResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeIntegers");
 }
 
-boost::future<std::string> TestableClient::callOneString(std::string input1)
+std::future<std::string> TestableClient::callOneString(std::string input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOneStringMethodCalls[correlationId] = boost::promise<std::string>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOneStringMethodCalls[correlationId] = std::promise<std::string>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2368,12 +2359,12 @@ boost::future<std::string> TestableClient::callOneString(std::string input1)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneString/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOneString/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOneString") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOneString") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOneStringMethodCalls[correlationId].get_future();
 }
@@ -2398,8 +2389,8 @@ void TestableClient::_handleCallOneStringResponse(
         throw std::runtime_error("Received payload for 'callOneString' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOneStringMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOneStringMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOneStringMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2419,11 +2410,10 @@ void TestableClient::_handleCallOneStringResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneString");
 }
 
-boost::future<boost::optional<std::string>> TestableClient::callOptionalString(boost::optional<std::string> input1)
+std::future<std::optional<std::string>> TestableClient::callOptionalString(std::optional<std::string> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalStringMethodCalls[correlationId] = boost::promise<boost::optional<std::string>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOptionalStringMethodCalls[correlationId] = std::promise<std::optional<std::string>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2439,12 +2429,12 @@ boost::future<boost::optional<std::string>> TestableClient::callOptionalString(b
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalString/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOptionalString/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOptionalString") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOptionalString") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOptionalStringMethodCalls[correlationId].get_future();
 }
@@ -2469,8 +2459,8 @@ void TestableClient::_handleCallOptionalStringResponse(
         throw std::runtime_error("Received payload for 'callOptionalString' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOptionalStringMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOptionalStringMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOptionalStringMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2490,11 +2480,10 @@ void TestableClient::_handleCallOptionalStringResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalString");
 }
 
-boost::future<CallThreeStringsReturnValues> TestableClient::callThreeStrings(std::string input1, boost::optional<std::string> input2, std::string input3)
+std::future<CallThreeStringsReturnValues> TestableClient::callThreeStrings(std::string input1, std::optional<std::string> input2, std::string input3)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeStringsMethodCalls[correlationId] = boost::promise<CallThreeStringsReturnValues>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallThreeStringsMethodCalls[correlationId] = std::promise<CallThreeStringsReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2522,12 +2511,12 @@ boost::future<CallThreeStringsReturnValues> TestableClient::callThreeStrings(std
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeStrings/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callThreeStrings/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callThreeStrings") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callThreeStrings") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallThreeStringsMethodCalls[correlationId].get_future();
 }
@@ -2552,8 +2541,8 @@ void TestableClient::_handleCallThreeStringsResponse(
         throw std::runtime_error("Received payload for 'callThreeStrings' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallThreeStringsMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallThreeStringsMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallThreeStringsMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2573,11 +2562,10 @@ void TestableClient::_handleCallThreeStringsResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeStrings");
 }
 
-boost::future<Numbers> TestableClient::callOneEnum(Numbers input1)
+std::future<Numbers> TestableClient::callOneEnum(Numbers input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOneEnumMethodCalls[correlationId] = boost::promise<Numbers>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOneEnumMethodCalls[correlationId] = std::promise<Numbers>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2588,12 +2576,12 @@ boost::future<Numbers> TestableClient::callOneEnum(Numbers input1)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneEnum/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOneEnum/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOneEnum") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOneEnum") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOneEnumMethodCalls[correlationId].get_future();
 }
@@ -2618,8 +2606,8 @@ void TestableClient::_handleCallOneEnumResponse(
         throw std::runtime_error("Received payload for 'callOneEnum' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOneEnumMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOneEnumMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOneEnumMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2639,11 +2627,10 @@ void TestableClient::_handleCallOneEnumResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneEnum");
 }
 
-boost::future<boost::optional<Numbers>> TestableClient::callOptionalEnum(boost::optional<Numbers> input1)
+std::future<std::optional<Numbers>> TestableClient::callOptionalEnum(std::optional<Numbers> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalEnumMethodCalls[correlationId] = boost::promise<boost::optional<Numbers>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOptionalEnumMethodCalls[correlationId] = std::promise<std::optional<Numbers>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2654,12 +2641,12 @@ boost::future<boost::optional<Numbers>> TestableClient::callOptionalEnum(boost::
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalEnum/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOptionalEnum/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOptionalEnum") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOptionalEnum") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOptionalEnumMethodCalls[correlationId].get_future();
 }
@@ -2684,8 +2671,8 @@ void TestableClient::_handleCallOptionalEnumResponse(
         throw std::runtime_error("Received payload for 'callOptionalEnum' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOptionalEnumMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOptionalEnumMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOptionalEnumMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2705,11 +2692,10 @@ void TestableClient::_handleCallOptionalEnumResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalEnum");
 }
 
-boost::future<CallThreeEnumsReturnValues> TestableClient::callThreeEnums(Numbers input1, Numbers input2, boost::optional<Numbers> input3)
+std::future<CallThreeEnumsReturnValues> TestableClient::callThreeEnums(Numbers input1, Numbers input2, std::optional<Numbers> input3)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeEnumsMethodCalls[correlationId] = boost::promise<CallThreeEnumsReturnValues>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallThreeEnumsMethodCalls[correlationId] = std::promise<CallThreeEnumsReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2724,12 +2710,12 @@ boost::future<CallThreeEnumsReturnValues> TestableClient::callThreeEnums(Numbers
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeEnums/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callThreeEnums/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callThreeEnums") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callThreeEnums") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallThreeEnumsMethodCalls[correlationId].get_future();
 }
@@ -2754,8 +2740,8 @@ void TestableClient::_handleCallThreeEnumsResponse(
         throw std::runtime_error("Received payload for 'callThreeEnums' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallThreeEnumsMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallThreeEnumsMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallThreeEnumsMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2775,11 +2761,10 @@ void TestableClient::_handleCallThreeEnumsResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeEnums");
 }
 
-boost::future<AllTypes> TestableClient::callOneStruct(AllTypes input1)
+std::future<AllTypes> TestableClient::callOneStruct(AllTypes input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOneStructMethodCalls[correlationId] = boost::promise<AllTypes>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOneStructMethodCalls[correlationId] = std::promise<AllTypes>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2797,12 +2782,12 @@ boost::future<AllTypes> TestableClient::callOneStruct(AllTypes input1)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneStruct/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOneStruct/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOneStruct") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOneStruct") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOneStructMethodCalls[correlationId].get_future();
 }
@@ -2827,8 +2812,8 @@ void TestableClient::_handleCallOneStructResponse(
         throw std::runtime_error("Received payload for 'callOneStruct' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOneStructMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOneStructMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOneStructMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2848,11 +2833,10 @@ void TestableClient::_handleCallOneStructResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneStruct");
 }
 
-boost::future<boost::optional<AllTypes>> TestableClient::callOptionalStruct(boost::optional<AllTypes> input1)
+std::future<std::optional<AllTypes>> TestableClient::callOptionalStruct(std::optional<AllTypes> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalStructMethodCalls[correlationId] = boost::promise<boost::optional<AllTypes>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOptionalStructMethodCalls[correlationId] = std::promise<std::optional<AllTypes>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2875,12 +2859,12 @@ boost::future<boost::optional<AllTypes>> TestableClient::callOptionalStruct(boos
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalStruct/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOptionalStruct/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOptionalStruct") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOptionalStruct") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOptionalStructMethodCalls[correlationId].get_future();
 }
@@ -2905,8 +2889,8 @@ void TestableClient::_handleCallOptionalStructResponse(
         throw std::runtime_error("Received payload for 'callOptionalStruct' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOptionalStructMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOptionalStructMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOptionalStructMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -2926,11 +2910,10 @@ void TestableClient::_handleCallOptionalStructResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalStruct");
 }
 
-boost::future<CallThreeStructsReturnValues> TestableClient::callThreeStructs(boost::optional<AllTypes> input1, AllTypes input2, AllTypes input3)
+std::future<CallThreeStructsReturnValues> TestableClient::callThreeStructs(std::optional<AllTypes> input1, AllTypes input2, AllTypes input3)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeStructsMethodCalls[correlationId] = boost::promise<CallThreeStructsReturnValues>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallThreeStructsMethodCalls[correlationId] = std::promise<CallThreeStructsReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -2971,12 +2954,12 @@ boost::future<CallThreeStructsReturnValues> TestableClient::callThreeStructs(boo
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeStructs/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callThreeStructs/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callThreeStructs") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callThreeStructs") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallThreeStructsMethodCalls[correlationId].get_future();
 }
@@ -3001,8 +2984,8 @@ void TestableClient::_handleCallThreeStructsResponse(
         throw std::runtime_error("Received payload for 'callThreeStructs' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallThreeStructsMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallThreeStructsMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallThreeStructsMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3022,11 +3005,10 @@ void TestableClient::_handleCallThreeStructsResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeStructs");
 }
 
-boost::future<std::chrono::time_point<std::chrono::system_clock>> TestableClient::callOneDateTime(std::chrono::time_point<std::chrono::system_clock> input1)
+std::future<std::chrono::time_point<std::chrono::system_clock>> TestableClient::callOneDateTime(std::chrono::time_point<std::chrono::system_clock> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOneDateTimeMethodCalls[correlationId] = boost::promise<std::chrono::time_point<std::chrono::system_clock>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOneDateTimeMethodCalls[correlationId] = std::promise<std::chrono::time_point<std::chrono::system_clock>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3042,12 +3024,12 @@ boost::future<std::chrono::time_point<std::chrono::system_clock>> TestableClient
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneDateTime/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOneDateTime/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOneDateTime") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOneDateTime") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOneDateTimeMethodCalls[correlationId].get_future();
 }
@@ -3072,8 +3054,8 @@ void TestableClient::_handleCallOneDateTimeResponse(
         throw std::runtime_error("Received payload for 'callOneDateTime' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOneDateTimeMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOneDateTimeMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOneDateTimeMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3093,11 +3075,10 @@ void TestableClient::_handleCallOneDateTimeResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneDateTime");
 }
 
-boost::future<boost::optional<std::chrono::time_point<std::chrono::system_clock>>> TestableClient::callOptionalDateTime(boost::optional<std::chrono::time_point<std::chrono::system_clock>> input1)
+std::future<std::optional<std::chrono::time_point<std::chrono::system_clock>>> TestableClient::callOptionalDateTime(std::optional<std::chrono::time_point<std::chrono::system_clock>> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalDateTimeMethodCalls[correlationId] = boost::promise<boost::optional<std::chrono::time_point<std::chrono::system_clock>>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOptionalDateTimeMethodCalls[correlationId] = std::promise<std::optional<std::chrono::time_point<std::chrono::system_clock>>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3113,12 +3094,12 @@ boost::future<boost::optional<std::chrono::time_point<std::chrono::system_clock>
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalDateTime/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOptionalDateTime/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOptionalDateTime") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOptionalDateTime") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOptionalDateTimeMethodCalls[correlationId].get_future();
 }
@@ -3143,8 +3124,8 @@ void TestableClient::_handleCallOptionalDateTimeResponse(
         throw std::runtime_error("Received payload for 'callOptionalDateTime' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOptionalDateTimeMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOptionalDateTimeMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOptionalDateTimeMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3164,11 +3145,10 @@ void TestableClient::_handleCallOptionalDateTimeResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalDateTime");
 }
 
-boost::future<CallThreeDateTimesReturnValues> TestableClient::callThreeDateTimes(std::chrono::time_point<std::chrono::system_clock> input1, std::chrono::time_point<std::chrono::system_clock> input2, boost::optional<std::chrono::time_point<std::chrono::system_clock>> input3)
+std::future<CallThreeDateTimesReturnValues> TestableClient::callThreeDateTimes(std::chrono::time_point<std::chrono::system_clock> input1, std::chrono::time_point<std::chrono::system_clock> input2, std::optional<std::chrono::time_point<std::chrono::system_clock>> input3)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeDateTimesMethodCalls[correlationId] = boost::promise<CallThreeDateTimesReturnValues>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallThreeDateTimesMethodCalls[correlationId] = std::promise<CallThreeDateTimesReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3198,12 +3178,12 @@ boost::future<CallThreeDateTimesReturnValues> TestableClient::callThreeDateTimes
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeDateTimes/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callThreeDateTimes/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callThreeDateTimes") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callThreeDateTimes") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallThreeDateTimesMethodCalls[correlationId].get_future();
 }
@@ -3228,8 +3208,8 @@ void TestableClient::_handleCallThreeDateTimesResponse(
         throw std::runtime_error("Received payload for 'callThreeDateTimes' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallThreeDateTimesMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallThreeDateTimesMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallThreeDateTimesMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3249,11 +3229,10 @@ void TestableClient::_handleCallThreeDateTimesResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeDateTimes");
 }
 
-boost::future<std::chrono::duration<double>> TestableClient::callOneDuration(std::chrono::duration<double> input1)
+std::future<std::chrono::duration<double>> TestableClient::callOneDuration(std::chrono::duration<double> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOneDurationMethodCalls[correlationId] = boost::promise<std::chrono::duration<double>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOneDurationMethodCalls[correlationId] = std::promise<std::chrono::duration<double>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3269,12 +3248,12 @@ boost::future<std::chrono::duration<double>> TestableClient::callOneDuration(std
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneDuration/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOneDuration/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOneDuration") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOneDuration") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOneDurationMethodCalls[correlationId].get_future();
 }
@@ -3299,8 +3278,8 @@ void TestableClient::_handleCallOneDurationResponse(
         throw std::runtime_error("Received payload for 'callOneDuration' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOneDurationMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOneDurationMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOneDurationMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3320,11 +3299,10 @@ void TestableClient::_handleCallOneDurationResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneDuration");
 }
 
-boost::future<boost::optional<std::chrono::duration<double>>> TestableClient::callOptionalDuration(boost::optional<std::chrono::duration<double>> input1)
+std::future<std::optional<std::chrono::duration<double>>> TestableClient::callOptionalDuration(std::optional<std::chrono::duration<double>> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalDurationMethodCalls[correlationId] = boost::promise<boost::optional<std::chrono::duration<double>>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOptionalDurationMethodCalls[correlationId] = std::promise<std::optional<std::chrono::duration<double>>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3340,12 +3318,12 @@ boost::future<boost::optional<std::chrono::duration<double>>> TestableClient::ca
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalDuration/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOptionalDuration/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOptionalDuration") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOptionalDuration") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOptionalDurationMethodCalls[correlationId].get_future();
 }
@@ -3370,8 +3348,8 @@ void TestableClient::_handleCallOptionalDurationResponse(
         throw std::runtime_error("Received payload for 'callOptionalDuration' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOptionalDurationMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOptionalDurationMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOptionalDurationMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3391,11 +3369,10 @@ void TestableClient::_handleCallOptionalDurationResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalDuration");
 }
 
-boost::future<CallThreeDurationsReturnValues> TestableClient::callThreeDurations(std::chrono::duration<double> input1, std::chrono::duration<double> input2, boost::optional<std::chrono::duration<double>> input3)
+std::future<CallThreeDurationsReturnValues> TestableClient::callThreeDurations(std::chrono::duration<double> input1, std::chrono::duration<double> input2, std::optional<std::chrono::duration<double>> input3)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeDurationsMethodCalls[correlationId] = boost::promise<CallThreeDurationsReturnValues>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallThreeDurationsMethodCalls[correlationId] = std::promise<CallThreeDurationsReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3425,12 +3402,12 @@ boost::future<CallThreeDurationsReturnValues> TestableClient::callThreeDurations
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeDurations/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callThreeDurations/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callThreeDurations") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callThreeDurations") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallThreeDurationsMethodCalls[correlationId].get_future();
 }
@@ -3455,8 +3432,8 @@ void TestableClient::_handleCallThreeDurationsResponse(
         throw std::runtime_error("Received payload for 'callThreeDurations' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallThreeDurationsMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallThreeDurationsMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallThreeDurationsMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3476,11 +3453,10 @@ void TestableClient::_handleCallThreeDurationsResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeDurations");
 }
 
-boost::future<std::vector<uint8_t>> TestableClient::callOneBinary(std::vector<uint8_t> input1)
+std::future<std::vector<uint8_t>> TestableClient::callOneBinary(std::vector<uint8_t> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOneBinaryMethodCalls[correlationId] = boost::promise<std::vector<uint8_t>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOneBinaryMethodCalls[correlationId] = std::promise<std::vector<uint8_t>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3496,12 +3472,12 @@ boost::future<std::vector<uint8_t>> TestableClient::callOneBinary(std::vector<ui
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneBinary/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOneBinary/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOneBinary") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOneBinary") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOneBinaryMethodCalls[correlationId].get_future();
 }
@@ -3526,8 +3502,8 @@ void TestableClient::_handleCallOneBinaryResponse(
         throw std::runtime_error("Received payload for 'callOneBinary' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOneBinaryMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOneBinaryMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOneBinaryMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3547,11 +3523,10 @@ void TestableClient::_handleCallOneBinaryResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneBinary");
 }
 
-boost::future<boost::optional<std::vector<uint8_t>>> TestableClient::callOptionalBinary(boost::optional<std::vector<uint8_t>> input1)
+std::future<std::optional<std::vector<uint8_t>>> TestableClient::callOptionalBinary(std::optional<std::vector<uint8_t>> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalBinaryMethodCalls[correlationId] = boost::promise<boost::optional<std::vector<uint8_t>>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOptionalBinaryMethodCalls[correlationId] = std::promise<std::optional<std::vector<uint8_t>>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3567,12 +3542,12 @@ boost::future<boost::optional<std::vector<uint8_t>>> TestableClient::callOptiona
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalBinary/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOptionalBinary/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOptionalBinary") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOptionalBinary") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOptionalBinaryMethodCalls[correlationId].get_future();
 }
@@ -3597,8 +3572,8 @@ void TestableClient::_handleCallOptionalBinaryResponse(
         throw std::runtime_error("Received payload for 'callOptionalBinary' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOptionalBinaryMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOptionalBinaryMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOptionalBinaryMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3618,11 +3593,10 @@ void TestableClient::_handleCallOptionalBinaryResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalBinary");
 }
 
-boost::future<CallThreeBinariesReturnValues> TestableClient::callThreeBinaries(std::vector<uint8_t> input1, std::vector<uint8_t> input2, boost::optional<std::vector<uint8_t>> input3)
+std::future<CallThreeBinariesReturnValues> TestableClient::callThreeBinaries(std::vector<uint8_t> input1, std::vector<uint8_t> input2, std::optional<std::vector<uint8_t>> input3)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallThreeBinariesMethodCalls[correlationId] = boost::promise<CallThreeBinariesReturnValues>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallThreeBinariesMethodCalls[correlationId] = std::promise<CallThreeBinariesReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3652,12 +3626,12 @@ boost::future<CallThreeBinariesReturnValues> TestableClient::callThreeBinaries(s
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callThreeBinaries/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callThreeBinaries/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callThreeBinaries") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callThreeBinaries") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallThreeBinariesMethodCalls[correlationId].get_future();
 }
@@ -3682,8 +3656,8 @@ void TestableClient::_handleCallThreeBinariesResponse(
         throw std::runtime_error("Received payload for 'callThreeBinaries' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallThreeBinariesMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallThreeBinariesMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallThreeBinariesMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3703,11 +3677,10 @@ void TestableClient::_handleCallThreeBinariesResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callThreeBinaries");
 }
 
-boost::future<std::vector<int>> TestableClient::callOneListOfIntegers(std::vector<int> input1)
+std::future<std::vector<int>> TestableClient::callOneListOfIntegers(std::vector<int> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOneListOfIntegersMethodCalls[correlationId] = boost::promise<std::vector<int>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOneListOfIntegersMethodCalls[correlationId] = std::promise<std::vector<int>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3726,12 +3699,12 @@ boost::future<std::vector<int>> TestableClient::callOneListOfIntegers(std::vecto
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOneListOfIntegers/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOneListOfIntegers/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOneListOfIntegers") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOneListOfIntegers") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOneListOfIntegersMethodCalls[correlationId].get_future();
 }
@@ -3756,8 +3729,8 @@ void TestableClient::_handleCallOneListOfIntegersResponse(
         throw std::runtime_error("Received payload for 'callOneListOfIntegers' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOneListOfIntegersMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOneListOfIntegersMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOneListOfIntegersMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3777,11 +3750,10 @@ void TestableClient::_handleCallOneListOfIntegersResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOneListOfIntegers");
 }
 
-boost::future<boost::optional<std::vector<double>>> TestableClient::callOptionalListOfFloats(boost::optional<std::vector<double>> input1)
+std::future<std::optional<std::vector<double>>> TestableClient::callOptionalListOfFloats(std::optional<std::vector<double>> input1)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallOptionalListOfFloatsMethodCalls[correlationId] = boost::promise<boost::optional<std::vector<double>>>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallOptionalListOfFloatsMethodCalls[correlationId] = std::promise<std::optional<std::vector<double>>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3800,12 +3772,12 @@ boost::future<boost::optional<std::vector<double>>> TestableClient::callOptional
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callOptionalListOfFloats/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callOptionalListOfFloats/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callOptionalListOfFloats") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callOptionalListOfFloats") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallOptionalListOfFloatsMethodCalls[correlationId].get_future();
 }
@@ -3830,8 +3802,8 @@ void TestableClient::_handleCallOptionalListOfFloatsResponse(
         throw std::runtime_error("Received payload for 'callOptionalListOfFloats' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallOptionalListOfFloatsMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallOptionalListOfFloatsMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallOptionalListOfFloatsMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3851,11 +3823,10 @@ void TestableClient::_handleCallOptionalListOfFloatsResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callOptionalListOfFloats");
 }
 
-boost::future<CallTwoListsReturnValues> TestableClient::callTwoLists(std::vector<Numbers> input1, boost::optional<std::vector<std::string>> input2)
+std::future<CallTwoListsReturnValues> TestableClient::callTwoLists(std::vector<Numbers> input1, std::optional<std::vector<std::string>> input2)
 {
-    auto correlationId = boost::uuids::random_generator()();
-    const std::string correlationIdStr = boost::lexical_cast<std::string>(correlationId);
-    _pendingCallTwoListsMethodCalls[correlationId] = boost::promise<CallTwoListsReturnValues>();
+    auto correlationId = generate_uuid_string();
+    _pendingCallTwoListsMethodCalls[correlationId] = std::promise<CallTwoListsReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -3886,12 +3857,12 @@ boost::future<CallTwoListsReturnValues> TestableClient::callTwoLists(std::vector
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << boost::format("client/%1%/callTwoLists/methodResponse") % _broker->GetClientId();
+    responseTopicStringStream << format("client/%1%/callTwoLists/methodResponse") % _broker->GetClientId();
     MqttProperties mqttProps;
-    mqttProps.correlationId = correlationIdStr;
+    mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((boost::format("testable/%1%/method/callTwoLists") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("testable/%1%/method/callTwoLists") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pendingCallTwoListsMethodCalls[correlationId].get_future();
 }
@@ -3916,8 +3887,8 @@ void TestableClient::_handleCallTwoListsResponse(
         throw std::runtime_error("Received payload for 'callTwoLists' response is not an object");
     }
 
-    boost::uuids::uuid correlationIdUuid = boost::lexical_cast<boost::uuids::uuid>(mqttProps.correlationId.value_or("00000000-0000-0000-0000-000000000000"));
-    auto promiseItr = _pendingCallTwoListsMethodCalls.find(correlationIdUuid);
+    auto correlationId = mqttProps.correlationId.value_or(std::string());
+    auto promiseItr = _pendingCallTwoListsMethodCalls.find(correlationId);
     if (promiseItr != _pendingCallTwoListsMethodCalls.end())
     {
         if (mqttProps.returnCode && (*(mqttProps.returnCode) != MethodReturnCode::SUCCESS))
@@ -3937,7 +3908,7 @@ void TestableClient::_handleCallTwoListsResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for callTwoLists");
 }
 
-void TestableClient::_receiveReadWriteIntegerPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -3981,14 +3952,14 @@ void TestableClient::_receiveReadWriteIntegerPropertyUpdate(const std::string& t
     }
 }
 
-boost::optional<int> TestableClient::getReadWriteIntegerProperty() const
+std::optional<int> TestableClient::getReadWriteIntegerProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteIntegerPropertyMutex);
     if (_readWriteIntegerProperty)
     {
         return _readWriteIntegerProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadWriteIntegerPropertyCallback(const std::function<void(int value)>& cb)
@@ -3997,7 +3968,7 @@ void TestableClient::registerReadWriteIntegerPropertyCallback(const std::functio
     _readWriteIntegerPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteIntegerProperty(int value) const
+std::future<bool> TestableClient::updateReadWriteIntegerProperty(int value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4011,7 +3982,7 @@ boost::future<bool> TestableClient::updateReadWriteIntegerProperty(int value) co
     return _broker->Publish("testable/%1%/property/readWriteInteger/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadOnlyIntegerPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadOnlyIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4055,14 +4026,14 @@ void TestableClient::_receiveReadOnlyIntegerPropertyUpdate(const std::string& to
     }
 }
 
-boost::optional<int> TestableClient::getReadOnlyIntegerProperty() const
+std::optional<int> TestableClient::getReadOnlyIntegerProperty()
 {
     std::lock_guard<std::mutex> lock(_readOnlyIntegerPropertyMutex);
     if (_readOnlyIntegerProperty)
     {
         return _readOnlyIntegerProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadOnlyIntegerPropertyCallback(const std::function<void(int value)>& cb)
@@ -4071,7 +4042,7 @@ void TestableClient::registerReadOnlyIntegerPropertyCallback(const std::function
     _readOnlyIntegerPropertyCallbacks.push_back(cb);
 }
 
-void TestableClient::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4095,7 +4066,7 @@ void TestableClient::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
         }
         else
         {
-            tempValue.value = boost::none;
+            tempValue.value = std::nullopt;
         }
     }
 
@@ -4115,23 +4086,23 @@ void TestableClient::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
     }
 }
 
-boost::optional<int> TestableClient::getReadWriteOptionalIntegerProperty() const
+std::optional<int> TestableClient::getReadWriteOptionalIntegerProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyMutex);
     if (_readWriteOptionalIntegerProperty)
     {
         return _readWriteOptionalIntegerProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteOptionalIntegerPropertyCallback(const std::function<void(boost::optional<int> value)>& cb)
+void TestableClient::registerReadWriteOptionalIntegerPropertyCallback(const std::function<void(std::optional<int> value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyCallbacksMutex);
     _readWriteOptionalIntegerPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteOptionalIntegerProperty(boost::optional<int> value) const
+std::future<bool> TestableClient::updateReadWriteOptionalIntegerProperty(std::optional<int> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4146,7 +4117,7 @@ boost::future<bool> TestableClient::updateReadWriteOptionalIntegerProperty(boost
     return _broker->Publish("testable/%1%/property/readWriteOptionalInteger/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteTwoIntegersPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteTwoIntegersPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4181,7 +4152,7 @@ void TestableClient::_receiveReadWriteTwoIntegersPropertyUpdate(const std::strin
         }
         else
         {
-            tempValue.second = boost::none;
+            tempValue.second = std::nullopt;
         }
     }
 
@@ -4201,23 +4172,23 @@ void TestableClient::_receiveReadWriteTwoIntegersPropertyUpdate(const std::strin
     }
 }
 
-boost::optional<ReadWriteTwoIntegersProperty> TestableClient::getReadWriteTwoIntegersProperty() const
+std::optional<ReadWriteTwoIntegersProperty> TestableClient::getReadWriteTwoIntegersProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoIntegersPropertyMutex);
     if (_readWriteTwoIntegersProperty)
     {
         return *_readWriteTwoIntegersProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteTwoIntegersPropertyCallback(const std::function<void(int first, boost::optional<int> second)>& cb)
+void TestableClient::registerReadWriteTwoIntegersPropertyCallback(const std::function<void(int first, std::optional<int> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoIntegersPropertyCallbacksMutex);
     _readWriteTwoIntegersPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteTwoIntegersProperty(int first, boost::optional<int> second) const
+std::future<bool> TestableClient::updateReadWriteTwoIntegersProperty(int first, std::optional<int> second) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4234,7 +4205,7 @@ boost::future<bool> TestableClient::updateReadWriteTwoIntegersProperty(int first
     return _broker->Publish("testable/%1%/property/readWriteTwoIntegers/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadOnlyStringPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadOnlyStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4278,14 +4249,14 @@ void TestableClient::_receiveReadOnlyStringPropertyUpdate(const std::string& top
     }
 }
 
-boost::optional<const std::string&> TestableClient::getReadOnlyStringProperty() const
+std::optional<std::string&> TestableClient::getReadOnlyStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readOnlyStringPropertyMutex);
     if (_readOnlyStringProperty)
     {
         return _readOnlyStringProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadOnlyStringPropertyCallback(const std::function<void(std::string value)>& cb)
@@ -4294,7 +4265,7 @@ void TestableClient::registerReadOnlyStringPropertyCallback(const std::function<
     _readOnlyStringPropertyCallbacks.push_back(cb);
 }
 
-void TestableClient::_receiveReadWriteStringPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4338,14 +4309,14 @@ void TestableClient::_receiveReadWriteStringPropertyUpdate(const std::string& to
     }
 }
 
-boost::optional<const std::string&> TestableClient::getReadWriteStringProperty() const
+std::optional<std::string&> TestableClient::getReadWriteStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteStringPropertyMutex);
     if (_readWriteStringProperty)
     {
         return _readWriteStringProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadWriteStringPropertyCallback(const std::function<void(std::string value)>& cb)
@@ -4354,7 +4325,7 @@ void TestableClient::registerReadWriteStringPropertyCallback(const std::function
     _readWriteStringPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteStringProperty(std::string value) const
+std::future<bool> TestableClient::updateReadWriteStringProperty(std::string value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4372,7 +4343,7 @@ boost::future<bool> TestableClient::updateReadWriteStringProperty(std::string va
     return _broker->Publish("testable/%1%/property/readWriteString/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteOptionalStringPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteOptionalStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4396,7 +4367,7 @@ void TestableClient::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
         }
         else
         {
-            tempValue.value = boost::none;
+            tempValue.value = std::nullopt;
         }
     }
 
@@ -4416,23 +4387,23 @@ void TestableClient::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
     }
 }
 
-boost::optional<std::string> TestableClient::getReadWriteOptionalStringProperty() const
+std::optional<std::string> TestableClient::getReadWriteOptionalStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyMutex);
     if (_readWriteOptionalStringProperty)
     {
         return _readWriteOptionalStringProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteOptionalStringPropertyCallback(const std::function<void(boost::optional<std::string> value)>& cb)
+void TestableClient::registerReadWriteOptionalStringPropertyCallback(const std::function<void(std::optional<std::string> value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyCallbacksMutex);
     _readWriteOptionalStringPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteOptionalStringProperty(boost::optional<std::string> value) const
+std::future<bool> TestableClient::updateReadWriteOptionalStringProperty(std::optional<std::string> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4451,7 +4422,7 @@ boost::future<bool> TestableClient::updateReadWriteOptionalStringProperty(boost:
     return _broker->Publish("testable/%1%/property/readWriteOptionalString/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteTwoStringsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteTwoStringsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4486,7 +4457,7 @@ void TestableClient::_receiveReadWriteTwoStringsPropertyUpdate(const std::string
         }
         else
         {
-            tempValue.second = boost::none;
+            tempValue.second = std::nullopt;
         }
     }
 
@@ -4506,23 +4477,23 @@ void TestableClient::_receiveReadWriteTwoStringsPropertyUpdate(const std::string
     }
 }
 
-boost::optional<ReadWriteTwoStringsProperty> TestableClient::getReadWriteTwoStringsProperty() const
+std::optional<ReadWriteTwoStringsProperty> TestableClient::getReadWriteTwoStringsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyMutex);
     if (_readWriteTwoStringsProperty)
     {
         return *_readWriteTwoStringsProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteTwoStringsPropertyCallback(const std::function<void(std::string first, boost::optional<std::string> second)>& cb)
+void TestableClient::registerReadWriteTwoStringsPropertyCallback(const std::function<void(std::string first, std::optional<std::string> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyCallbacksMutex);
     _readWriteTwoStringsPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteTwoStringsProperty(std::string first, boost::optional<std::string> second) const
+std::future<bool> TestableClient::updateReadWriteTwoStringsProperty(std::string first, std::optional<std::string> second) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4547,7 +4518,7 @@ boost::future<bool> TestableClient::updateReadWriteTwoStringsProperty(std::strin
     return _broker->Publish("testable/%1%/property/readWriteTwoStrings/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteStructPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteStructPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4591,14 +4562,14 @@ void TestableClient::_receiveReadWriteStructPropertyUpdate(const std::string& to
     }
 }
 
-boost::optional<AllTypes> TestableClient::getReadWriteStructProperty() const
+std::optional<AllTypes> TestableClient::getReadWriteStructProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteStructPropertyMutex);
     if (_readWriteStructProperty)
     {
         return _readWriteStructProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadWriteStructPropertyCallback(const std::function<void(AllTypes value)>& cb)
@@ -4607,7 +4578,7 @@ void TestableClient::registerReadWriteStructPropertyCallback(const std::function
     _readWriteStructPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteStructProperty(AllTypes value) const
+std::future<bool> TestableClient::updateReadWriteStructProperty(AllTypes value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4628,7 +4599,7 @@ boost::future<bool> TestableClient::updateReadWriteStructProperty(AllTypes value
     return _broker->Publish("testable/%1%/property/readWriteStruct/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteOptionalStructPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteOptionalStructPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4652,7 +4623,7 @@ void TestableClient::_receiveReadWriteOptionalStructPropertyUpdate(const std::st
         }
         else
         {
-            tempValue.value = boost::none;
+            tempValue.value = std::nullopt;
         }
     }
 
@@ -4672,23 +4643,23 @@ void TestableClient::_receiveReadWriteOptionalStructPropertyUpdate(const std::st
     }
 }
 
-boost::optional<AllTypes> TestableClient::getReadWriteOptionalStructProperty() const
+std::optional<AllTypes> TestableClient::getReadWriteOptionalStructProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyMutex);
     if (_readWriteOptionalStructProperty)
     {
         return _readWriteOptionalStructProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteOptionalStructPropertyCallback(const std::function<void(boost::optional<AllTypes> value)>& cb)
+void TestableClient::registerReadWriteOptionalStructPropertyCallback(const std::function<void(std::optional<AllTypes> value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyCallbacksMutex);
     _readWriteOptionalStructPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteOptionalStructProperty(boost::optional<AllTypes> value) const
+std::future<bool> TestableClient::updateReadWriteOptionalStructProperty(std::optional<AllTypes> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4714,7 +4685,7 @@ boost::future<bool> TestableClient::updateReadWriteOptionalStructProperty(boost:
     return _broker->Publish("testable/%1%/property/readWriteOptionalStruct/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteTwoStructsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteTwoStructsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4749,7 +4720,7 @@ void TestableClient::_receiveReadWriteTwoStructsPropertyUpdate(const std::string
         }
         else
         {
-            tempValue.second = boost::none;
+            tempValue.second = std::nullopt;
         }
     }
 
@@ -4769,23 +4740,23 @@ void TestableClient::_receiveReadWriteTwoStructsPropertyUpdate(const std::string
     }
 }
 
-boost::optional<ReadWriteTwoStructsProperty> TestableClient::getReadWriteTwoStructsProperty() const
+std::optional<ReadWriteTwoStructsProperty> TestableClient::getReadWriteTwoStructsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyMutex);
     if (_readWriteTwoStructsProperty)
     {
         return *_readWriteTwoStructsProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteTwoStructsPropertyCallback(const std::function<void(AllTypes first, boost::optional<AllTypes> second)>& cb)
+void TestableClient::registerReadWriteTwoStructsPropertyCallback(const std::function<void(AllTypes first, std::optional<AllTypes> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyCallbacksMutex);
     _readWriteTwoStructsPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteTwoStructsProperty(AllTypes first, boost::optional<AllTypes> second) const
+std::future<bool> TestableClient::updateReadWriteTwoStructsProperty(AllTypes first, std::optional<AllTypes> second) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4820,7 +4791,7 @@ boost::future<bool> TestableClient::updateReadWriteTwoStructsProperty(AllTypes f
     return _broker->Publish("testable/%1%/property/readWriteTwoStructs/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4864,14 +4835,14 @@ void TestableClient::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic
     }
 }
 
-boost::optional<Numbers> TestableClient::getReadOnlyEnumProperty() const
+std::optional<Numbers> TestableClient::getReadOnlyEnumProperty()
 {
     std::lock_guard<std::mutex> lock(_readOnlyEnumPropertyMutex);
     if (_readOnlyEnumProperty)
     {
         return _readOnlyEnumProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadOnlyEnumPropertyCallback(const std::function<void(Numbers value)>& cb)
@@ -4880,7 +4851,7 @@ void TestableClient::registerReadOnlyEnumPropertyCallback(const std::function<vo
     _readOnlyEnumPropertyCallbacks.push_back(cb);
 }
 
-void TestableClient::_receiveReadWriteEnumPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4924,14 +4895,14 @@ void TestableClient::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
     }
 }
 
-boost::optional<Numbers> TestableClient::getReadWriteEnumProperty() const
+std::optional<Numbers> TestableClient::getReadWriteEnumProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteEnumPropertyMutex);
     if (_readWriteEnumProperty)
     {
         return _readWriteEnumProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadWriteEnumPropertyCallback(const std::function<void(Numbers value)>& cb)
@@ -4940,7 +4911,7 @@ void TestableClient::registerReadWriteEnumPropertyCallback(const std::function<v
     _readWriteEnumPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteEnumProperty(Numbers value) const
+std::future<bool> TestableClient::updateReadWriteEnumProperty(Numbers value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -4954,7 +4925,7 @@ boost::future<bool> TestableClient::updateReadWriteEnumProperty(Numbers value) c
     return _broker->Publish("testable/%1%/property/readWriteEnum/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteOptionalEnumPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteOptionalEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -4978,7 +4949,7 @@ void TestableClient::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
         }
         else
         {
-            tempValue.value = boost::none;
+            tempValue.value = std::nullopt;
         }
     }
 
@@ -4998,23 +4969,23 @@ void TestableClient::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
     }
 }
 
-boost::optional<Numbers> TestableClient::getReadWriteOptionalEnumProperty() const
+std::optional<Numbers> TestableClient::getReadWriteOptionalEnumProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyMutex);
     if (_readWriteOptionalEnumProperty)
     {
         return _readWriteOptionalEnumProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteOptionalEnumPropertyCallback(const std::function<void(boost::optional<Numbers> value)>& cb)
+void TestableClient::registerReadWriteOptionalEnumPropertyCallback(const std::function<void(std::optional<Numbers> value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyCallbacksMutex);
     _readWriteOptionalEnumPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteOptionalEnumProperty(boost::optional<Numbers> value) const
+std::future<bool> TestableClient::updateReadWriteOptionalEnumProperty(std::optional<Numbers> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5028,7 +4999,7 @@ boost::future<bool> TestableClient::updateReadWriteOptionalEnumProperty(boost::o
     return _broker->Publish("testable/%1%/property/readWriteOptionalEnum/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5063,7 +5034,7 @@ void TestableClient::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& 
         }
         else
         {
-            tempValue.second = boost::none;
+            tempValue.second = std::nullopt;
         }
     }
 
@@ -5083,23 +5054,23 @@ void TestableClient::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& 
     }
 }
 
-boost::optional<ReadWriteTwoEnumsProperty> TestableClient::getReadWriteTwoEnumsProperty() const
+std::optional<ReadWriteTwoEnumsProperty> TestableClient::getReadWriteTwoEnumsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoEnumsPropertyMutex);
     if (_readWriteTwoEnumsProperty)
     {
         return *_readWriteTwoEnumsProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteTwoEnumsPropertyCallback(const std::function<void(Numbers first, boost::optional<Numbers> second)>& cb)
+void TestableClient::registerReadWriteTwoEnumsPropertyCallback(const std::function<void(Numbers first, std::optional<Numbers> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoEnumsPropertyCallbacksMutex);
     _readWriteTwoEnumsPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteTwoEnumsProperty(Numbers first, boost::optional<Numbers> second) const
+std::future<bool> TestableClient::updateReadWriteTwoEnumsProperty(Numbers first, std::optional<Numbers> second) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5115,7 +5086,7 @@ boost::future<bool> TestableClient::updateReadWriteTwoEnumsProperty(Numbers firs
     return _broker->Publish("testable/%1%/property/readWriteTwoEnums/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteDatetimePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteDatetimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5160,14 +5131,14 @@ void TestableClient::_receiveReadWriteDatetimePropertyUpdate(const std::string& 
     }
 }
 
-boost::optional<std::chrono::time_point<std::chrono::system_clock>> TestableClient::getReadWriteDatetimeProperty() const
+std::optional<std::chrono::time_point<std::chrono::system_clock>> TestableClient::getReadWriteDatetimeProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteDatetimePropertyMutex);
     if (_readWriteDatetimeProperty)
     {
         return _readWriteDatetimeProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadWriteDatetimePropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> value)>& cb)
@@ -5176,7 +5147,7 @@ void TestableClient::registerReadWriteDatetimePropertyCallback(const std::functi
     _readWriteDatetimePropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteDatetimeProperty(std::chrono::time_point<std::chrono::system_clock> value) const
+std::future<bool> TestableClient::updateReadWriteDatetimeProperty(std::chrono::time_point<std::chrono::system_clock> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5195,7 +5166,7 @@ boost::future<bool> TestableClient::updateReadWriteDatetimeProperty(std::chrono:
     return _broker->Publish("testable/%1%/property/readWriteDatetime/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5220,7 +5191,7 @@ void TestableClient::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
         }
         else
         {
-            tempValue.value = boost::none;
+            tempValue.value = std::nullopt;
         }
     }
 
@@ -5240,23 +5211,23 @@ void TestableClient::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
     }
 }
 
-boost::optional<std::chrono::time_point<std::chrono::system_clock>> TestableClient::getReadWriteOptionalDatetimeProperty() const
+std::optional<std::chrono::time_point<std::chrono::system_clock>> TestableClient::getReadWriteOptionalDatetimeProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyMutex);
     if (_readWriteOptionalDatetimeProperty)
     {
         return _readWriteOptionalDatetimeProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteOptionalDatetimePropertyCallback(const std::function<void(boost::optional<std::chrono::time_point<std::chrono::system_clock>> value)>& cb)
+void TestableClient::registerReadWriteOptionalDatetimePropertyCallback(const std::function<void(std::optional<std::chrono::time_point<std::chrono::system_clock>> value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyCallbacksMutex);
     _readWriteOptionalDatetimePropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteOptionalDatetimeProperty(boost::optional<std::chrono::time_point<std::chrono::system_clock>> value) const
+std::future<bool> TestableClient::updateReadWriteOptionalDatetimeProperty(std::optional<std::chrono::time_point<std::chrono::system_clock>> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5275,7 +5246,7 @@ boost::future<bool> TestableClient::updateReadWriteOptionalDatetimeProperty(boos
     return _broker->Publish("testable/%1%/property/readWriteOptionalDatetime/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5312,7 +5283,7 @@ void TestableClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
         }
         else
         {
-            tempValue.second = boost::none;
+            tempValue.second = std::nullopt;
         }
     }
 
@@ -5332,23 +5303,23 @@ void TestableClient::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
     }
 }
 
-boost::optional<ReadWriteTwoDatetimesProperty> TestableClient::getReadWriteTwoDatetimesProperty() const
+std::optional<ReadWriteTwoDatetimesProperty> TestableClient::getReadWriteTwoDatetimesProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDatetimesPropertyMutex);
     if (_readWriteTwoDatetimesProperty)
     {
         return *_readWriteTwoDatetimesProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteTwoDatetimesPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> first, boost::optional<std::chrono::time_point<std::chrono::system_clock>> second)>& cb)
+void TestableClient::registerReadWriteTwoDatetimesPropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock> first, std::optional<std::chrono::time_point<std::chrono::system_clock>> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDatetimesPropertyCallbacksMutex);
     _readWriteTwoDatetimesPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteTwoDatetimesProperty(std::chrono::time_point<std::chrono::system_clock> first, boost::optional<std::chrono::time_point<std::chrono::system_clock>> second) const
+std::future<bool> TestableClient::updateReadWriteTwoDatetimesProperty(std::chrono::time_point<std::chrono::system_clock> first, std::optional<std::chrono::time_point<std::chrono::system_clock>> second) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5374,7 +5345,7 @@ boost::future<bool> TestableClient::updateReadWriteTwoDatetimesProperty(std::chr
     return _broker->Publish("testable/%1%/property/readWriteTwoDatetimes/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteDurationPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteDurationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5419,14 +5390,14 @@ void TestableClient::_receiveReadWriteDurationPropertyUpdate(const std::string& 
     }
 }
 
-boost::optional<std::chrono::duration<double>> TestableClient::getReadWriteDurationProperty() const
+std::optional<std::chrono::duration<double>> TestableClient::getReadWriteDurationProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteDurationPropertyMutex);
     if (_readWriteDurationProperty)
     {
         return _readWriteDurationProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadWriteDurationPropertyCallback(const std::function<void(std::chrono::duration<double> value)>& cb)
@@ -5435,7 +5406,7 @@ void TestableClient::registerReadWriteDurationPropertyCallback(const std::functi
     _readWriteDurationPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteDurationProperty(std::chrono::duration<double> value) const
+std::future<bool> TestableClient::updateReadWriteDurationProperty(std::chrono::duration<double> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5454,7 +5425,7 @@ boost::future<bool> TestableClient::updateReadWriteDurationProperty(std::chrono:
     return _broker->Publish("testable/%1%/property/readWriteDuration/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteOptionalDurationPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteOptionalDurationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5479,7 +5450,7 @@ void TestableClient::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
         }
         else
         {
-            tempValue.value = boost::none;
+            tempValue.value = std::nullopt;
         }
     }
 
@@ -5499,23 +5470,23 @@ void TestableClient::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
     }
 }
 
-boost::optional<std::chrono::duration<double>> TestableClient::getReadWriteOptionalDurationProperty() const
+std::optional<std::chrono::duration<double>> TestableClient::getReadWriteOptionalDurationProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyMutex);
     if (_readWriteOptionalDurationProperty)
     {
         return _readWriteOptionalDurationProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteOptionalDurationPropertyCallback(const std::function<void(boost::optional<std::chrono::duration<double>> value)>& cb)
+void TestableClient::registerReadWriteOptionalDurationPropertyCallback(const std::function<void(std::optional<std::chrono::duration<double>> value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyCallbacksMutex);
     _readWriteOptionalDurationPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteOptionalDurationProperty(boost::optional<std::chrono::duration<double>> value) const
+std::future<bool> TestableClient::updateReadWriteOptionalDurationProperty(std::optional<std::chrono::duration<double>> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5534,7 +5505,7 @@ boost::future<bool> TestableClient::updateReadWriteOptionalDurationProperty(boos
     return _broker->Publish("testable/%1%/property/readWriteOptionalDuration/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5571,7 +5542,7 @@ void TestableClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
         }
         else
         {
-            tempValue.second = boost::none;
+            tempValue.second = std::nullopt;
         }
     }
 
@@ -5591,23 +5562,23 @@ void TestableClient::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
     }
 }
 
-boost::optional<ReadWriteTwoDurationsProperty> TestableClient::getReadWriteTwoDurationsProperty() const
+std::optional<ReadWriteTwoDurationsProperty> TestableClient::getReadWriteTwoDurationsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDurationsPropertyMutex);
     if (_readWriteTwoDurationsProperty)
     {
         return *_readWriteTwoDurationsProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteTwoDurationsPropertyCallback(const std::function<void(std::chrono::duration<double> first, boost::optional<std::chrono::duration<double>> second)>& cb)
+void TestableClient::registerReadWriteTwoDurationsPropertyCallback(const std::function<void(std::chrono::duration<double> first, std::optional<std::chrono::duration<double>> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDurationsPropertyCallbacksMutex);
     _readWriteTwoDurationsPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteTwoDurationsProperty(std::chrono::duration<double> first, boost::optional<std::chrono::duration<double>> second) const
+std::future<bool> TestableClient::updateReadWriteTwoDurationsProperty(std::chrono::duration<double> first, std::optional<std::chrono::duration<double>> second) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5633,7 +5604,7 @@ boost::future<bool> TestableClient::updateReadWriteTwoDurationsProperty(std::chr
     return _broker->Publish("testable/%1%/property/readWriteTwoDurations/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteBinaryPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteBinaryPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5678,14 +5649,14 @@ void TestableClient::_receiveReadWriteBinaryPropertyUpdate(const std::string& to
     }
 }
 
-boost::optional<std::vector<uint8_t>> TestableClient::getReadWriteBinaryProperty() const
+std::optional<std::vector<uint8_t>> TestableClient::getReadWriteBinaryProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteBinaryPropertyMutex);
     if (_readWriteBinaryProperty)
     {
         return _readWriteBinaryProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadWriteBinaryPropertyCallback(const std::function<void(std::vector<uint8_t> value)>& cb)
@@ -5694,7 +5665,7 @@ void TestableClient::registerReadWriteBinaryPropertyCallback(const std::function
     _readWriteBinaryPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteBinaryProperty(std::vector<uint8_t> value) const
+std::future<bool> TestableClient::updateReadWriteBinaryProperty(std::vector<uint8_t> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5713,7 +5684,7 @@ boost::future<bool> TestableClient::updateReadWriteBinaryProperty(std::vector<ui
     return _broker->Publish("testable/%1%/property/readWriteBinary/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5738,7 +5709,7 @@ void TestableClient::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
         }
         else
         {
-            tempValue.value = boost::none;
+            tempValue.value = std::nullopt;
         }
     }
 
@@ -5758,23 +5729,23 @@ void TestableClient::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
     }
 }
 
-boost::optional<std::vector<uint8_t>> TestableClient::getReadWriteOptionalBinaryProperty() const
+std::optional<std::vector<uint8_t>> TestableClient::getReadWriteOptionalBinaryProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyMutex);
     if (_readWriteOptionalBinaryProperty)
     {
         return _readWriteOptionalBinaryProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteOptionalBinaryPropertyCallback(const std::function<void(boost::optional<std::vector<uint8_t>> value)>& cb)
+void TestableClient::registerReadWriteOptionalBinaryPropertyCallback(const std::function<void(std::optional<std::vector<uint8_t>> value)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyCallbacksMutex);
     _readWriteOptionalBinaryPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteOptionalBinaryProperty(boost::optional<std::vector<uint8_t>> value) const
+std::future<bool> TestableClient::updateReadWriteOptionalBinaryProperty(std::optional<std::vector<uint8_t>> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5793,7 +5764,7 @@ boost::future<bool> TestableClient::updateReadWriteOptionalBinaryProperty(boost:
     return _broker->Publish("testable/%1%/property/readWriteOptionalBinary/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5830,7 +5801,7 @@ void TestableClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
         }
         else
         {
-            tempValue.second = boost::none;
+            tempValue.second = std::nullopt;
         }
     }
 
@@ -5850,23 +5821,23 @@ void TestableClient::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
     }
 }
 
-boost::optional<ReadWriteTwoBinariesProperty> TestableClient::getReadWriteTwoBinariesProperty() const
+std::optional<ReadWriteTwoBinariesProperty> TestableClient::getReadWriteTwoBinariesProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoBinariesPropertyMutex);
     if (_readWriteTwoBinariesProperty)
     {
         return *_readWriteTwoBinariesProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteTwoBinariesPropertyCallback(const std::function<void(std::vector<uint8_t> first, boost::optional<std::vector<uint8_t>> second)>& cb)
+void TestableClient::registerReadWriteTwoBinariesPropertyCallback(const std::function<void(std::vector<uint8_t> first, std::optional<std::vector<uint8_t>> second)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoBinariesPropertyCallbacksMutex);
     _readWriteTwoBinariesPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteTwoBinariesProperty(std::vector<uint8_t> first, boost::optional<std::vector<uint8_t>> second) const
+std::future<bool> TestableClient::updateReadWriteTwoBinariesProperty(std::vector<uint8_t> first, std::optional<std::vector<uint8_t>> second) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5892,7 +5863,7 @@ boost::future<bool> TestableClient::updateReadWriteTwoBinariesProperty(std::vect
     return _broker->Publish("testable/%1%/property/readWriteTwoBinaries/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteListOfStringsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteListOfStringsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -5946,14 +5917,14 @@ void TestableClient::_receiveReadWriteListOfStringsPropertyUpdate(const std::str
     }
 }
 
-boost::optional<std::vector<std::string>> TestableClient::getReadWriteListOfStringsProperty() const
+std::optional<std::vector<std::string>> TestableClient::getReadWriteListOfStringsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyMutex);
     if (_readWriteListOfStringsProperty)
     {
         return _readWriteListOfStringsProperty->value;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void TestableClient::registerReadWriteListOfStringsPropertyCallback(const std::function<void(std::vector<std::string> value)>& cb)
@@ -5962,7 +5933,7 @@ void TestableClient::registerReadWriteListOfStringsPropertyCallback(const std::f
     _readWriteListOfStringsPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteListOfStringsProperty(std::vector<std::string> value) const
+std::future<bool> TestableClient::updateReadWriteListOfStringsProperty(std::vector<std::string> value) const
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -5986,7 +5957,7 @@ boost::future<bool> TestableClient::updateReadWriteListOfStringsProperty(std::ve
     return _broker->Publish("testable/%1%/property/readWriteListOfStrings/setValue", buf.GetString(), 1, false, mqttProps);
 }
 
-void TestableClient::_receiveReadWriteListsPropertyUpdate(const std::string& topic, const std::string& payload, boost::optional<int> optPropertyVersion)
+void TestableClient::_receiveReadWriteListsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
@@ -6044,7 +6015,7 @@ void TestableClient::_receiveReadWriteListsPropertyUpdate(const std::string& top
         }
         else
         {
-            tempValue.optionalList = boost::none;
+            tempValue.optionalList = std::nullopt;
         }
     }
 
@@ -6064,23 +6035,23 @@ void TestableClient::_receiveReadWriteListsPropertyUpdate(const std::string& top
     }
 }
 
-boost::optional<ReadWriteListsProperty> TestableClient::getReadWriteListsProperty() const
+std::optional<ReadWriteListsProperty> TestableClient::getReadWriteListsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteListsPropertyMutex);
     if (_readWriteListsProperty)
     {
         return *_readWriteListsProperty;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-void TestableClient::registerReadWriteListsPropertyCallback(const std::function<void(std::vector<Numbers> theList, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList)>& cb)
+void TestableClient::registerReadWriteListsPropertyCallback(const std::function<void(std::vector<Numbers> theList, std::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList)>& cb)
 {
     std::lock_guard<std::mutex> lock(_readWriteListsPropertyCallbacksMutex);
     _readWriteListsPropertyCallbacks.push_back(cb);
 }
 
-boost::future<bool> TestableClient::updateReadWriteListsProperty(std::vector<Numbers> theList, boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList) const
+std::future<bool> TestableClient::updateReadWriteListsProperty(std::vector<Numbers> theList, std::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalList) const
 {
     rapidjson::Document doc;
     doc.SetObject();

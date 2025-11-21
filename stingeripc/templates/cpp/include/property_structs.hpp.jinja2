@@ -24,7 +24,7 @@ struct {{prop.name | UpperCamelCase}}Property {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
 {%-for arg in prop.arg_list %}
     {%if arg.arg_type.name.lower() == "struct"-%}
-    {%if arg.optional%}boost::optional<{{arg.cpp_type}}>{%else%}{{arg.cpp_type}}{%endif%} {{arg.name|lowerCamelCase}};{%if arg.description %}  ///< {{arg.description}}{%endif%}
+    {%if arg.optional%}std::optional<{{arg.cpp_type}}>{%else%}{{arg.cpp_type}}{%endif%} {{arg.name|lowerCamelCase}};{%if arg.description %}  ///< {{arg.description}}{%endif%}
     {%-else-%}
     {{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}};{%if arg.description %}  ///< {{arg.description}}{%endif%}
     {%-endif-%}

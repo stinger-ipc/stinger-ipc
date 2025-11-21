@@ -1,9 +1,16 @@
+// TODO: move this into the stinger_utils_cpp project later.
+
 #include <sstream>
 #include <iomanip>
-#include <boost/archive/iterators/base64_from_binary.hpp>
-#include <boost/archive/iterators/transform_width.hpp>
-#include <boost/archive/iterators/binary_from_base64.hpp>
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
+#include <iterator>
+#include <string>
+#include <vector>
+#include <stdexcept>
+#include <cstdint>
+#include <cstring>
+#include <sstream>
+#include "utils.hpp"
 #include <algorithm>
 #include <iterator>
 #include "conversions.hpp"
@@ -75,69 +82,102 @@ std::chrono::duration<double> parseIsoDuration(const std::string& isoDuration)
     return std::chrono::duration<double>(seconds);
 }
 
-// Base64 encode binary data using Boost iterators
-std::string base64Encode(const std::vector<unsigned char>& data)
+// Simple base64 implementation
+static const std::string b64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+static inline bool is_base64(unsigned char c)
 {
-    if (data.empty())
-        return std::string();
-
-    const unsigned char* begin = data.data();
-    const unsigned char* end = begin + data.size();
-
-    using namespace boost::archive::iterators;
-    using It = transform_width<const unsigned char*, 6, 8>;
-    using Base64EncIt = base64_from_binary<It>;
-
-    std::string tmp;
-    try
-    {
-        tmp.assign(Base64EncIt(begin), Base64EncIt(end));
-    }
-    catch (...)
-    {
-        return std::string();
-    }
-
-    // padding
-    std::size_t padding = (3 - (data.size() % 3)) % 3;
-    tmp.append(padding, '=');
-    return tmp;
+    return (std::isalnum(c) || (c == '+') || (c == '/'));
 }
 
-// Decode base64 string into a vector of bytes using Boost iterators
-std::vector<unsigned char> base64Decode(const std::string& b64input)
+std::string base64Encode(const std::vector<unsigned char>& bytes_to_encode)
 {
-    using namespace boost::archive::iterators;
-    using Base64DecIt = transform_width<binary_from_base64<std::string::const_iterator>, 8, 6>;
+    std::string ret;
+    int i = 0;
+    unsigned char char_array_3[3];
+    unsigned char char_array_4[4];
 
-    std::string input = b64input;
-    // Remove padding characters
-    size_t padding = 0;
-    if (!input.empty())
+    size_t in_len = bytes_to_encode.size();
+    size_t pos = 0;
+
+    while (in_len--)
     {
-        if (input.back() == '=')
+        char_array_3[i++] = bytes_to_encode[pos++];
+        if (i == 3)
         {
-            padding = 1;
-            if (input.size() > 1 && input[input.size() - 2] == '=')
-                padding = 2;
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
+
+            for (i = 0; (i < 4); i++)
+                ret += b64_chars[char_array_4[i]];
+            i = 0;
         }
     }
 
-    try
+    if (i)
     {
-        // Create iterator range (binary_from_base64 will throw on invalid input)
-        auto first = Base64DecIt(input.begin());
-        auto last = Base64DecIt(input.end());
-        std::vector<unsigned char> result;
-        result.reserve((input.size() * 3) / 4 - padding);
-        std::copy(first, last, std::back_inserter(result));
-        // Remove extra bytes added by the transform for padding
-        if (padding)
-            result.resize(result.size() - padding);
-        return result;
+        for (int j = i; j < 3; j++)
+            char_array_3[j] = '\0';
+
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+        char_array_4[3] = char_array_3[2] & 0x3f;
+
+        for (int j = 0; (j < i + 1); j++)
+            ret += b64_chars[char_array_4[j]];
+
+        while ((i++ < 3))
+            ret += '=';
     }
-    catch (...)
+
+    return ret;
+}
+
+std::vector<unsigned char> base64Decode(const std::string& encoded_string)
+{
+    int in_len = encoded_string.size();
+    int i = 0;
+    int in_ = 0;
+    unsigned char char_array_4[4], char_array_3[3];
+    std::vector<unsigned char> ret;
+
+    while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
     {
-        return std::vector<unsigned char>();
+        char_array_4[i++] = encoded_string[in_];
+        in_++;
+        if (i == 4)
+        {
+            for (i = 0; i < 4; i++)
+                char_array_4[i] = b64_chars.find(char_array_4[i]);
+
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+            for (i = 0; (i < 3); i++)
+                ret.push_back(char_array_3[i]);
+            i = 0;
+        }
     }
+
+    if (i)
+    {
+        for (int j = i; j < 4; j++)
+            char_array_4[j] = 0;
+
+        for (int j = 0; j < 4; j++)
+            char_array_4[j] = b64_chars.find(char_array_4[j]);
+
+        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+        for (int j = 0; (j < i - 1); j++)
+            ret.push_back(char_array_3[j]);
+    }
+
+    return ret;
 }

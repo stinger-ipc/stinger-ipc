@@ -24,7 +24,7 @@ std::string durationToIsoString(const std::chrono::duration<double>& duration);
 
 std::chrono::duration<double> parseIsoDuration(const std::string& isoDuration);
 
-// Base64 encode binary data using Boost; takes a vector of unsigned bytes and returns std::string
+// Base64 encode binary data; takes a vector of unsigned bytes and returns std::string
 std::string base64Encode(const std::vector<unsigned char>& data);
 
 // Decode a base64 encoded string into a vector of bytes

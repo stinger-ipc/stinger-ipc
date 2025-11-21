@@ -13,7 +13,7 @@ TODO: Get license text from stinger file
 #include <cstddef>
 #include <chrono>
 #include <vector>
-#include <boost/optional.hpp>
+#include "utils.hpp"
 #include <rapidjson/document.h>
 #include "enums.hpp"
 #include "conversions.hpp"
@@ -39,25 +39,25 @@ struct AllTypes
     std::chrono::time_point<std::chrono::system_clock> dateAndTime;
     std::chrono::duration<double> timeDuration;
     std::vector<uint8_t> data;
-    boost::optional<int> optionalInteger;
-    boost::optional<std::string> optionalString;
-    boost::optional<Numbers> optionalEnum;
-    boost::optional<Entry> optionalEntryObject;
-    boost::optional<std::chrono::time_point<std::chrono::system_clock>> optionalDateTime;
-    boost::optional<std::chrono::duration<double>> optionalDuration;
-    boost::optional<std::vector<uint8_t>> optionalBinary;
+    std::optional<int> optionalInteger;
+    std::optional<std::string> optionalString;
+    std::optional<Numbers> optionalEnum;
+    std::optional<Entry> optionalEntryObject;
+    std::optional<std::chrono::time_point<std::chrono::system_clock>> optionalDateTime;
+    std::optional<std::chrono::duration<double>> optionalDuration;
+    std::optional<std::vector<uint8_t>> optionalBinary;
     std::vector<int> arrayOfIntegers;
-    boost::optional<std::vector<int>> optionalArrayOfIntegers;
+    std::optional<std::vector<int>> optionalArrayOfIntegers;
     std::vector<std::string> arrayOfStrings;
-    boost::optional<std::vector<std::string>> optionalArrayOfStrings;
+    std::optional<std::vector<std::string>> optionalArrayOfStrings;
     std::vector<Numbers> arrayOfEnums;
-    boost::optional<std::vector<Numbers>> optionalArrayOfEnums;
+    std::optional<std::vector<Numbers>> optionalArrayOfEnums;
     std::vector<std::chrono::time_point<std::chrono::system_clock>> arrayOfDatetimes;
-    boost::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalArrayOfDatetimes;
+    std::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>> optionalArrayOfDatetimes;
     std::vector<std::chrono::duration<double>> arrayOfDurations;
-    boost::optional<std::vector<std::chrono::duration<double>>> optionalArrayOfDurations;
+    std::optional<std::vector<std::chrono::duration<double>>> optionalArrayOfDurations;
     std::vector<std::vector<uint8_t>> arrayOfBinaries;
-    boost::optional<std::vector<std::vector<uint8_t>>> optionalArrayOfBinaries;
+    std::optional<std::vector<std::vector<uint8_t>>> optionalArrayOfBinaries;
     std::vector<Entry> arrayOfEntryObjects;
-    boost::optional<std::vector<Entry>> optionalArrayOfEntryObjects;
+    std::optional<std::vector<Entry>> optionalArrayOfEntryObjects;
 };

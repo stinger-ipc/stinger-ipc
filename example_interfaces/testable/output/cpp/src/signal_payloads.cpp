@@ -51,7 +51,7 @@ SingleOptionalIntPayload SingleOptionalIntPayload::FromRapidJsonObject(const rap
         }
         else
         {
-            singleOptionalIntPayload.value = boost::none;
+            singleOptionalIntPayload.value = std::nullopt;
         }
     }
 
@@ -99,7 +99,7 @@ ThreeIntegersPayload ThreeIntegersPayload::FromRapidJsonObject(const rapidjson::
         }
         else
         {
-            threeIntegersPayload.third = boost::none;
+            threeIntegersPayload.third = std::nullopt;
         }
     }
 
@@ -158,7 +158,7 @@ SingleOptionalStringPayload SingleOptionalStringPayload::FromRapidJsonObject(con
         }
         else
         {
-            singleOptionalStringPayload.value = boost::none;
+            singleOptionalStringPayload.value = std::nullopt;
         }
     }
 
@@ -210,7 +210,7 @@ ThreeStringsPayload ThreeStringsPayload::FromRapidJsonObject(const rapidjson::Va
         }
         else
         {
-            threeStringsPayload.third = boost::none;
+            threeStringsPayload.third = std::nullopt;
         }
     }
 
@@ -277,7 +277,7 @@ SingleOptionalEnumPayload SingleOptionalEnumPayload::FromRapidJsonObject(const r
         }
         else
         {
-            singleOptionalEnumPayload.value = boost::none;
+            singleOptionalEnumPayload.value = std::nullopt;
         }
     }
 
@@ -324,7 +324,7 @@ ThreeEnumsPayload ThreeEnumsPayload::FromRapidJsonObject(const rapidjson::Value&
         }
         else
         {
-            threeEnumsPayload.third = boost::none;
+            threeEnumsPayload.third = std::nullopt;
         }
     }
 
@@ -385,7 +385,7 @@ SingleOptionalStructPayload SingleOptionalStructPayload::FromRapidJsonObject(con
         }
         else
         {
-            singleOptionalStructPayload.value = boost::none;
+            singleOptionalStructPayload.value = std::nullopt;
         }
     }
 
@@ -444,7 +444,7 @@ ThreeStructsPayload ThreeStructsPayload::FromRapidJsonObject(const rapidjson::Va
         }
         else
         {
-            threeStructsPayload.third = boost::none;
+            threeStructsPayload.third = std::nullopt;
         }
     }
 
@@ -531,7 +531,7 @@ SingleOptionalDatetimePayload SingleOptionalDatetimePayload::FromRapidJsonObject
         }
         else
         {
-            singleOptionalDatetimePayload.value = boost::none;
+            singleOptionalDatetimePayload.value = std::nullopt;
         }
     }
 
@@ -586,7 +586,7 @@ ThreeDateTimesPayload ThreeDateTimesPayload::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            threeDateTimesPayload.third = boost::none;
+            threeDateTimesPayload.third = std::nullopt;
         }
     }
 
@@ -662,7 +662,7 @@ SingleOptionalDurationPayload SingleOptionalDurationPayload::FromRapidJsonObject
         }
         else
         {
-            singleOptionalDurationPayload.value = boost::none;
+            singleOptionalDurationPayload.value = std::nullopt;
         }
     }
 
@@ -717,7 +717,7 @@ ThreeDurationsPayload ThreeDurationsPayload::FromRapidJsonObject(const rapidjson
         }
         else
         {
-            threeDurationsPayload.third = boost::none;
+            threeDurationsPayload.third = std::nullopt;
         }
     }
 
@@ -793,7 +793,7 @@ SingleOptionalBinaryPayload SingleOptionalBinaryPayload::FromRapidJsonObject(con
         }
         else
         {
-            singleOptionalBinaryPayload.value = boost::none;
+            singleOptionalBinaryPayload.value = std::nullopt;
         }
     }
 
@@ -848,7 +848,7 @@ ThreeBinariesPayload ThreeBinariesPayload::FromRapidJsonObject(const rapidjson::
         }
         else
         {
-            threeBinariesPayload.third = boost::none;
+            threeBinariesPayload.third = std::nullopt;
         }
     }
 
@@ -945,7 +945,7 @@ SingleOptionalArrayOfStringsPayload SingleOptionalArrayOfStringsPayload::FromRap
         }
         else
         {
-            singleOptionalArrayOfStringsPayload.values = boost::none;
+            singleOptionalArrayOfStringsPayload.values = std::nullopt;
         }
     }
 

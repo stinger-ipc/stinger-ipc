@@ -60,7 +60,7 @@ auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
         {{deserialize_value(arg_target, arg) | indent(8)}}
     } else {
     {%-if arg.optional%}
-        {{arg_target}} = boost::none;
+        {{arg_target}} = std::nullopt;
     {%-else%}
         throw std::runtime_error("Received payload for the '{{arg.name}}' argument doesn't have required value/type");
     {%endif%}

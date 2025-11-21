@@ -10,6 +10,7 @@ Discovery service for finding available service instances.
 #include <functional>
 #include <mutex>
 #include "ibrokerconnection.hpp"
+#include "utils.hpp"
 
 class WeatherDiscovery
 {
@@ -24,7 +25,7 @@ public:
 
     // Get a singleton instance ID. Returns immediately if one is available,
     // otherwise waits until one is discovered.
-    boost::future<std::string> GetSingleton();
+    std::future<std::string> GetSingleton();
 
     // Get all discovered instance IDs
     std::vector<std::string> GetInstanceIds() const;
@@ -38,5 +39,5 @@ private:
     std::function<void(const std::string&)> _discovery_callback;
 
     mutable std::mutex _mutex;
-    std::vector<boost::promise<std::string>> _pending_promises;
+    std::vector<std::promise<std::string>> _pending_promises;
 };

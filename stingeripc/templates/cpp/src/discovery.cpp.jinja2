@@ -4,14 +4,13 @@
 #include <iostream>
 #include <algorithm>
 #include <sstream>
-#include <boost/format.hpp>
 
 {{stinger.name|UpperCamelCase}}Discovery::{{stinger.name|UpperCamelCase}}Discovery(std::shared_ptr<IBrokerConnection> broker)
     : _broker(broker)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;
-    topicStream << boost::format("{{stinger.interface_info_topic}}") % "+";
+    topicStream << format("{{stinger.interface_info_topic}}") % "+";
     _broker->Subscribe(topicStream.str(), 2);
 
     // Register message callback
@@ -38,14 +37,14 @@ void {{stinger.name|UpperCamelCase}}Discovery::SetDiscoveryCallback(const std::f
     _discovery_callback = cb;
 }
 
-boost::future<std::string> {{stinger.name|UpperCamelCase}}Discovery::GetSingleton()
+std::future<std::string> {{stinger.name|UpperCamelCase}}Discovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
     
     // If we already have at least one instance, return it immediately
     if (!_instance_ids.empty())
     {
-        boost::promise<std::string> promise;
+        std::promise<std::string> promise;
         promise.set_value(_instance_ids[0]);
         return promise.get_future();
     }
@@ -65,7 +64,7 @@ void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const std::string& top
 {
     // Check if this message is for our discovery topic
     std::stringstream topicPattern;
-    topicPattern << boost::format("{{stinger.interface_info_topic}}") % "+";
+    topicPattern << format("{{stinger.interface_info_topic}}") % "+";
     
     if (!_broker->TopicMatchesSubscription(topic, topicPattern.str()))
     {

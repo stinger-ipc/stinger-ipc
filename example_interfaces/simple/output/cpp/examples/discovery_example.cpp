@@ -23,9 +23,9 @@ int main(int argc, char** argv)
     auto future = discovery.GetSingleton();
 
     // Wait for the future to resolve (with a timeout)
-    auto status = future.wait_for(boost::chrono::seconds(10));
+    auto status = future.wait_for(std::chrono::seconds(10));
 
-    if (status == boost::future_status::ready)
+    if (status == std::future_status::ready)
     {
         std::string instance_id = future.get();
         std::cout << "Got singleton instance: " << instance_id << std::endl;

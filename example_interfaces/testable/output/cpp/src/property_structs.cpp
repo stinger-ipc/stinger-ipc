@@ -63,7 +63,7 @@ ReadWriteOptionalIntegerProperty ReadWriteOptionalIntegerProperty::FromRapidJson
         }
         else
         {
-            readWriteOptionalInteger.value = boost::none;
+            readWriteOptionalInteger.value = std::nullopt;
         }
     }
 
@@ -99,7 +99,7 @@ ReadWriteTwoIntegersProperty ReadWriteTwoIntegersProperty::FromRapidJsonObject(c
         }
         else
         {
-            readWriteTwoIntegers.second = boost::none;
+            readWriteTwoIntegers.second = std::nullopt;
         }
     }
 
@@ -182,7 +182,7 @@ ReadWriteOptionalStringProperty ReadWriteOptionalStringProperty::FromRapidJsonOb
         }
         else
         {
-            readWriteOptionalString.value = boost::none;
+            readWriteOptionalString.value = std::nullopt;
         }
     }
 
@@ -222,7 +222,7 @@ ReadWriteTwoStringsProperty ReadWriteTwoStringsProperty::FromRapidJsonObject(con
         }
         else
         {
-            readWriteTwoStrings.second = boost::none;
+            readWriteTwoStrings.second = std::nullopt;
         }
     }
 
@@ -288,7 +288,7 @@ ReadWriteOptionalStructProperty ReadWriteOptionalStructProperty::FromRapidJsonOb
         }
         else
         {
-            readWriteOptionalStruct.value = boost::none;
+            readWriteOptionalStruct.value = std::nullopt;
         }
     }
 
@@ -335,7 +335,7 @@ ReadWriteTwoStructsProperty ReadWriteTwoStructsProperty::FromRapidJsonObject(con
         }
         else
         {
-            readWriteTwoStructs.second = boost::none;
+            readWriteTwoStructs.second = std::nullopt;
         }
     }
 
@@ -428,7 +428,7 @@ ReadWriteOptionalEnumProperty ReadWriteOptionalEnumProperty::FromRapidJsonObject
         }
         else
         {
-            readWriteOptionalEnum.value = boost::none;
+            readWriteOptionalEnum.value = std::nullopt;
         }
     }
 
@@ -463,7 +463,7 @@ ReadWriteTwoEnumsProperty ReadWriteTwoEnumsProperty::FromRapidJsonObject(const r
         }
         else
         {
-            readWriteTwoEnums.second = boost::none;
+            readWriteTwoEnums.second = std::nullopt;
         }
     }
 
@@ -520,7 +520,7 @@ ReadWriteOptionalDatetimeProperty ReadWriteOptionalDatetimeProperty::FromRapidJs
         }
         else
         {
-            readWriteOptionalDatetime.value = boost::none;
+            readWriteOptionalDatetime.value = std::nullopt;
         }
     }
 
@@ -562,7 +562,7 @@ ReadWriteTwoDatetimesProperty ReadWriteTwoDatetimesProperty::FromRapidJsonObject
         }
         else
         {
-            readWriteTwoDatetimes.second = boost::none;
+            readWriteTwoDatetimes.second = std::nullopt;
         }
     }
 
@@ -629,7 +629,7 @@ ReadWriteOptionalDurationProperty ReadWriteOptionalDurationProperty::FromRapidJs
         }
         else
         {
-            readWriteOptionalDuration.value = boost::none;
+            readWriteOptionalDuration.value = std::nullopt;
         }
     }
 
@@ -671,7 +671,7 @@ ReadWriteTwoDurationsProperty ReadWriteTwoDurationsProperty::FromRapidJsonObject
         }
         else
         {
-            readWriteTwoDurations.second = boost::none;
+            readWriteTwoDurations.second = std::nullopt;
         }
     }
 
@@ -738,7 +738,7 @@ ReadWriteOptionalBinaryProperty ReadWriteOptionalBinaryProperty::FromRapidJsonOb
         }
         else
         {
-            readWriteOptionalBinary.value = boost::none;
+            readWriteOptionalBinary.value = std::nullopt;
         }
     }
 
@@ -780,7 +780,7 @@ ReadWriteTwoBinariesProperty ReadWriteTwoBinariesProperty::FromRapidJsonObject(c
         }
         else
         {
-            readWriteTwoBinaries.second = boost::none;
+            readWriteTwoBinaries.second = std::nullopt;
         }
     }
 
@@ -894,7 +894,7 @@ ReadWriteListsProperty ReadWriteListsProperty::FromRapidJsonObject(const rapidjs
         }
         else
         {
-            readWriteLists.optionalList = boost::none;
+            readWriteLists.optionalList = std::nullopt;
         }
     }
 

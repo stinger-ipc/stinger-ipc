@@ -14,7 +14,6 @@ set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(PkgConfig REQUIRED)
 find_package(RapidJSON REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS thread chrono)
 pkg_check_modules(mosquitto REQUIRED libmosquitto IMPORTED_TARGET)
 
 set(CLIENT_SOURCE_FILES
@@ -54,8 +53,6 @@ target_include_directories(signal-only-server
 target_link_libraries(signal-only-server
 	PUBLIC
 		PkgConfig::mosquitto
-		Boost::thread
-		Boost::chrono
 )
 
 # client lib
@@ -70,8 +67,6 @@ target_include_directories(signal-only-client
 target_link_libraries(signal-only-client
 	PUBLIC
 		PkgConfig::mosquitto
-		Boost::thread
-		Boost::chrono
 )
 
 # example client
