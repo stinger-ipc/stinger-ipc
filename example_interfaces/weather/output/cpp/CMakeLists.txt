@@ -55,6 +55,7 @@ target_link_libraries(weather-server
 	PUBLIC
 		PkgConfig::mosquitto
 		Boost::thread
+		Boost::chrono
 )
 
 # client lib
@@ -70,6 +71,7 @@ target_link_libraries(weather-client
 	PUBLIC
 		PkgConfig::mosquitto
 		Boost::thread
+		Boost::chrono
 )
 
 # example client

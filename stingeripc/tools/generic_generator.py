@@ -55,7 +55,8 @@ def main(
     # Collect all template directories
     template_dirs = []
     
-    templator = jj2.CodeTemplator(output_dir=outdir)
+    code_templator = jj2.CodeTemplator(output_dir=outdir)
+    web_templator = jj2.WebTemplator(output_dir=outdir)
 
     # Add template paths
     if template_path:
@@ -66,7 +67,7 @@ def main(
                 raise RuntimeError(f"Template path is not a directory: {path}")
             real_path = path.resolve()
             print(f"[bold cyan]TEMPLATES:[/bold cyan] {real_path}")
-            templator.add_template_dir(real_path)
+            code_templator.add_template_dir(real_path)
             template_dirs.append(real_path)
 
     # Add template packages
@@ -74,7 +75,7 @@ def main(
         for pkg_name in template_pkg:
             try:
                 print(f"[bold cyan]TEMPLATES:[/bold cyan] {pkg_name}")
-                templator.add_template_package(pkg_name)
+                code_templator.add_template_package(pkg_name)
                 pkg_path = importlib.resources.files(pkg_name)
                 template_dirs.append(Path(pkg_path))
             except ModuleNotFoundError as e:
@@ -88,7 +89,7 @@ def main(
         print(f"[bold cyan]TEMPLATES:[/bold cyan] {template_dir}")
         if not template_dir.exists():
             raise RuntimeError(f"Template directory does not exist: {template_dir}")
-        templator.add_template_dir(template_dir)
+        code_templator.add_template_dir(template_dir)
         template_dirs.append(template_dir)
 
     def recursive_render_templates(local_dir: str|Path, current_template_dir: Path):
@@ -96,7 +97,7 @@ def main(
         cur_template_dir = current_template_dir / local_dir
         for entry in os.listdir(cur_template_dir):
             if '{{' in entry and '}}' in entry:
-                entry = templator.render_template(str(entry), None, **params)
+                entry = code_templator.render_template(str(entry), None, **params)
             if entry == "target":
                 # Do not copy 'target' dir
                 continue
@@ -105,7 +106,10 @@ def main(
             if entry.endswith(".jinja2"):
                 destpath = str(entry_local_path)[:-len(".jinja2")]
                 print(f"✨  [green]GENER[/green]: {destpath}")
-                templator.render_template(entry_local_path, destpath, **params)
+                if destpath.endswith(".html") or destpath.endswith(".htm"):
+                    web_templator.render_template(entry_local_path, destpath, **params)
+                else:
+                    code_templator.render_template(entry_local_path, destpath, **params)
             elif entry_full_path.is_dir():
                 new_dir = outdir / entry_local_path
                 print(f"📁  [green]MKDIR[/green]: {new_dir.resolve()}")

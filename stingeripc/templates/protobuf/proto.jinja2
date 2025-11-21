@@ -5,7 +5,7 @@
 {{arg.rust_local_type}} {{arg.name}} = {{index}};
 {%-elif arg.arg_type.name.lower() == 'struct'%}
 {{arg.rust_local_type}} {{arg.name}} = {{index}};
-{%-elif arg.arg_type.name.lower() == 'list'%}
+{%-elif arg.arg_type.name.lower() == 'array'%}
 repeated {{arg.rust_local_type}} {{arg.name}} = {{index}};
 {%endif-%}
 {%endmacro%}
@@ -49,10 +49,8 @@ message {{method_name | UpperCamelCase}}Request {
 }
 
 message {{method_name | UpperCamelCase}}Response {
-    {%- if method.return_value %}
-    {{- field(method.return_value, 1) | indent(4) }}
-    {%- else %}
-    // Empty response
-    {%- endif %}
+    {%- for arg in method.return_arg_list %}
+    {{- field(arg, loop.index) | indent(4) }}
+    {%-endfor%}
 }
 {%endfor%}

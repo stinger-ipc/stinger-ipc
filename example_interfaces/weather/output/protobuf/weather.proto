@@ -14,7 +14,6 @@ enum WeatherCondition {
 
 message ForecastForHour {
     float temperature = 1;
-    string starttime = 2;
     WeatherCondition condition = 3;
 }
 
@@ -79,19 +78,16 @@ message RefreshDailyForecastRequest {
 }
 
 message RefreshDailyForecastResponse {
-    // Empty response
 }
 
 message RefreshHourlyForecastRequest {
 }
 
 message RefreshHourlyForecastResponse {
-    // Empty response
 }
 
 message RefreshCurrentConditionsRequest {
 }
 
 message RefreshCurrentConditionsResponse {
-    // Empty response
 }

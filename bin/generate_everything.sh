@@ -141,3 +141,18 @@ generate_web full
 generate_web weather
 generate_web signal_only
 generate_web testable
+
+#### Protobuf
+function generate_protobuf() {
+    echo
+    echo "----------- Creating Protobuf messages for ${IFACE_NAME}----------------"
+    IFACE_NAME=$1
+
+    mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/protobuf/
+    uv run stinger generate -l protobuf ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/${IFACE_NAME}.stinger.yaml ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output/protobuf/
+}
+
+generate_protobuf full
+generate_protobuf weather
+generate_protobuf signal_only
+generate_protobuf testable

@@ -28,6 +28,7 @@ def generate(
     language: Annotated[Optional[str], typer.Option("--language", "-l", help="Language to generate: rust, python, markdown, cpp, web, protobuf")] = None,
     template_pkg: Annotated[Optional[list[str]], typer.Option("--template-pkg", help="Python package(s) containing templates")] = None,
     template_path: Annotated[Optional[list[Path]], typer.Option("--template-path", help="Filesystem path(s) to template directories")] = None,
+    consumer: Annotated[Optional[str], typer.Option("--consumer", help="Consumer name/identifier")] = None,
     config: Annotated[Optional[Path], typer.Option("--config", help="TOML configuration file", exists=True, file_okay=True, dir_okay=False, readable=True)] = None,
 ):
     """Generate code for a Stinger interface.
@@ -37,6 +38,7 @@ def generate(
     
     At least one of --language, --template-pkg, or --template-path must be provided.
     """
+
     # Check if at least one template source is provided
     if not language and not template_pkg and not template_path:
         raise typer.BadParameter(
@@ -52,9 +54,8 @@ def generate(
         if lang == "python":
             # python_generator.main expects Path arguments via typer
             python_generator.main(input_file, output_dir)
-        elif lang == "markdown":
-            # markdown_generator.main expects Path arguments via typer
-            markdown_generator.main(input_file, output_dir)
+        elif lang in ["markdown", "rust", "html"]:
+            generic_generator.main(input_file, output_dir, lang, template_pkg, template_path)
         elif lang == "web":
             wt = jj2.WebTemplator(output_dir=output_dir)
             ct = jj2.CodeTemplator(output_dir=output_dir)
@@ -74,8 +75,6 @@ def generate(
             wt.render_template("index.html.jinja2", "index.html", stinger=stinger)
         elif lang == "cpp":
             cpp_generator.main(input_file, output_dir)
-        elif lang == "rust":
-            generic_generator.main(input_file, output_dir, lang, template_pkg, template_path)
         elif lang == "protobuf":
             ct = jj2.CodeTemplator(output_dir=output_dir)
             ct.add_template_dir(

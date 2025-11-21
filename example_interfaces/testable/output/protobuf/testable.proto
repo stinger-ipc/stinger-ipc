@@ -1,0 +1,485 @@
+
+
+
+enum Numbers {
+    ONE = 1,
+    TWO = 2,
+    THREE = 3
+};
+
+
+message Entry {
+    int32 key = 1;
+    string value = 2;
+}
+
+message AllTypes {
+    bool the_bool = 1;
+    int32 the_int = 2;
+    float the_number = 3;
+    string the_str = 4;
+    Numbers the_enum = 5;
+    Entry an_entry_object = 6;
+    int32 OptionalInteger = 10;
+    string OptionalString = 11;
+    Option<Numbers> OptionalEnum = 12;
+    Option<Entry> optionalEntryObject = 13;
+    repeated Vec<i32> array_of_integers = 17;
+
+    repeated Option<Vec<i32>> optional_array_of_integers = 18;
+
+    repeated Vec<String> array_of_strings = 19;
+
+    repeated Option<Vec<String>> optional_array_of_strings = 20;
+
+    repeated Vec<Numbers> array_of_enums = 21;
+
+    repeated Option<Vec<Numbers>> optional_array_of_enums = 22;
+
+    repeated Vec<chrono::DateTime<chrono::Utc>> array_of_datetimes = 23;
+
+    repeated Option<Vec<chrono::DateTime<chrono::Utc>>> optional_array_of_datetimes = 24;
+
+    repeated Vec<chrono::Duration> array_of_durations = 25;
+
+    repeated Option<Vec<chrono::Duration>> optional_array_of_durations = 26;
+
+    repeated Vec<Vec<u8>> array_of_binaries = 27;
+
+    repeated Option<Vec<Vec<u8>>> optional_array_of_binaries = 28;
+
+    repeated Vec<Entry> array_of_entry_objects = 29;
+
+    repeated Option<Vec<Entry>> optional_array_of_entry_objects = 30;
+
+}
+
+
+
+message EmptySignal {
+}
+
+message SingleIntSignal {
+    int32 value = 1;
+}
+
+message SingleOptionalIntSignal {
+    int32 value = 1;
+}
+
+message ThreeIntegersSignal {
+    int32 first = 1;
+    int32 second = 2;
+    int32 third = 3;
+}
+
+message SingleStringSignal {
+    string value = 1;
+}
+
+message SingleOptionalStringSignal {
+    string value = 1;
+}
+
+message ThreeStringsSignal {
+    string first = 1;
+    string second = 2;
+    string third = 3;
+}
+
+message SingleEnumSignal {
+    Numbers value = 1;
+}
+
+message SingleOptionalEnumSignal {
+    Option<Numbers> value = 1;
+}
+
+message ThreeEnumsSignal {
+    Numbers first = 1;
+    Numbers second = 2;
+    Option<Numbers> third = 3;
+}
+
+message SingleStructSignal {
+    AllTypes value = 1;
+}
+
+message SingleOptionalStructSignal {
+    Option<AllTypes> value = 1;
+}
+
+message ThreeStructsSignal {
+    AllTypes first = 1;
+    AllTypes second = 2;
+    Option<AllTypes> third = 3;
+}
+
+message SingleDateTimeSignal {
+}
+
+message SingleOptionalDatetimeSignal {
+}
+
+message ThreeDateTimesSignal {
+}
+
+message SingleDurationSignal {
+}
+
+message SingleOptionalDurationSignal {
+}
+
+message ThreeDurationsSignal {
+}
+
+message SingleBinarySignal {
+}
+
+message SingleOptionalBinarySignal {
+}
+
+message ThreeBinariesSignal {
+}
+
+message SingleArrayOfIntegersSignal {
+    repeated Vec<i32> values = 1;
+
+}
+
+message SingleOptionalArrayOfStringsSignal {
+    repeated Option<Vec<String>> values = 1;
+
+}
+
+message ArrayOfEveryTypeSignal {
+    repeated Vec<i32> first_of_integers = 1;
+
+    repeated Vec<f32> second_of_floats = 2;
+
+    repeated Vec<String> third_of_strings = 3;
+
+    repeated Vec<Numbers> fourth_of_enums = 4;
+
+    repeated Vec<Entry> fifth_of_structs = 5;
+
+    repeated Vec<chrono::DateTime<chrono::Utc>> sixth_of_datetimes = 6;
+
+    repeated Vec<chrono::Duration> seventh_of_durations = 7;
+
+    repeated Vec<Vec<u8>> eighth_of_binaries = 8;
+
+}
+
+
+
+message ReadWriteIntegerProperty {
+    int32 value = 1;
+}
+
+message ReadOnlyIntegerProperty {
+    int32 value = 1;
+}
+
+message ReadWriteOptionalIntegerProperty {
+    int32 value = 1;
+}
+
+message ReadWriteTwoIntegersProperty {
+    int32 first = 1;
+    int32 second = 2;
+}
+
+message ReadOnlyStringProperty {
+    string value = 1;
+}
+
+message ReadWriteStringProperty {
+    string value = 1;
+}
+
+message ReadWriteOptionalStringProperty {
+    string value = 1;
+}
+
+message ReadWriteTwoStringsProperty {
+    string first = 1;
+    string second = 2;
+}
+
+message ReadWriteStructProperty {
+    AllTypes value = 1;
+}
+
+message ReadWriteOptionalStructProperty {
+    Option<AllTypes> value = 1;
+}
+
+message ReadWriteTwoStructsProperty {
+    AllTypes first = 1;
+    Option<AllTypes> second = 2;
+}
+
+message ReadOnlyEnumProperty {
+    Numbers value = 1;
+}
+
+message ReadWriteEnumProperty {
+    Numbers value = 1;
+}
+
+message ReadWriteOptionalEnumProperty {
+    Option<Numbers> value = 1;
+}
+
+message ReadWriteTwoEnumsProperty {
+    Numbers first = 1;
+    Option<Numbers> second = 2;
+}
+
+message ReadWriteDatetimeProperty {
+}
+
+message ReadWriteOptionalDatetimeProperty {
+}
+
+message ReadWriteTwoDatetimesProperty {
+}
+
+message ReadWriteDurationProperty {
+}
+
+message ReadWriteOptionalDurationProperty {
+}
+
+message ReadWriteTwoDurationsProperty {
+}
+
+message ReadWriteBinaryProperty {
+}
+
+message ReadWriteOptionalBinaryProperty {
+}
+
+message ReadWriteTwoBinariesProperty {
+}
+
+message ReadWriteListOfStringsProperty {
+    repeated Vec<String> value = 1;
+
+}
+
+message ReadWriteListsProperty {
+    repeated Vec<Numbers> the_list = 1;
+
+    repeated Option<Vec<chrono::DateTime<chrono::Utc>>> optionalList = 2;
+
+}
+
+
+
+message CallWithNothingRequest {
+}
+
+message CallWithNothingResponse {
+}
+
+message CallOneIntegerRequest {
+    int32 input1 = 1;
+}
+
+message CallOneIntegerResponse {
+    int32 output1 = 1;
+}
+
+message CallOptionalIntegerRequest {
+    int32 input1 = 1;
+}
+
+message CallOptionalIntegerResponse {
+    int32 output1 = 1;
+}
+
+message CallThreeIntegersRequest {
+    int32 input1 = 1;
+    int32 input2 = 2;
+    int32 input3 = 3;
+}
+
+message CallThreeIntegersResponse {
+    int32 output1 = 1;
+    int32 output2 = 2;
+    int32 output3 = 3;
+}
+
+message CallOneStringRequest {
+    string input1 = 1;
+}
+
+message CallOneStringResponse {
+    string output1 = 1;
+}
+
+message CallOptionalStringRequest {
+    string input1 = 1;
+}
+
+message CallOptionalStringResponse {
+    string output1 = 1;
+}
+
+message CallThreeStringsRequest {
+    string input1 = 1;
+    string input2 = 2;
+    string input3 = 3;
+}
+
+message CallThreeStringsResponse {
+    string output1 = 1;
+    string output2 = 2;
+    string output3 = 3;
+}
+
+message CallOneEnumRequest {
+    Numbers input1 = 1;
+}
+
+message CallOneEnumResponse {
+    Numbers output1 = 1;
+}
+
+message CallOptionalEnumRequest {
+    Option<Numbers> input1 = 1;
+}
+
+message CallOptionalEnumResponse {
+    Option<Numbers> output1 = 1;
+}
+
+message CallThreeEnumsRequest {
+    Numbers input1 = 1;
+    Numbers input2 = 2;
+    Option<Numbers> input3 = 3;
+}
+
+message CallThreeEnumsResponse {
+    Numbers output1 = 1;
+    Numbers output2 = 2;
+    Option<Numbers> output3 = 3;
+}
+
+message CallOneStructRequest {
+    AllTypes input1 = 1;
+}
+
+message CallOneStructResponse {
+    AllTypes output1 = 1;
+}
+
+message CallOptionalStructRequest {
+    Option<AllTypes> input1 = 1;
+}
+
+message CallOptionalStructResponse {
+    Option<AllTypes> output1 = 1;
+}
+
+message CallThreeStructsRequest {
+    Option<AllTypes> input1 = 1;
+    AllTypes input2 = 2;
+    AllTypes input3 = 3;
+}
+
+message CallThreeStructsResponse {
+    Option<AllTypes> output1 = 1;
+    AllTypes output2 = 2;
+    AllTypes output3 = 3;
+}
+
+message CallOneDateTimeRequest {
+}
+
+message CallOneDateTimeResponse {
+}
+
+message CallOptionalDateTimeRequest {
+}
+
+message CallOptionalDateTimeResponse {
+}
+
+message CallThreeDateTimesRequest {
+}
+
+message CallThreeDateTimesResponse {
+}
+
+message CallOneDurationRequest {
+}
+
+message CallOneDurationResponse {
+}
+
+message CallOptionalDurationRequest {
+}
+
+message CallOptionalDurationResponse {
+}
+
+message CallThreeDurationsRequest {
+}
+
+message CallThreeDurationsResponse {
+}
+
+message CallOneBinaryRequest {
+}
+
+message CallOneBinaryResponse {
+}
+
+message CallOptionalBinaryRequest {
+}
+
+message CallOptionalBinaryResponse {
+}
+
+message CallThreeBinariesRequest {
+}
+
+message CallThreeBinariesResponse {
+}
+
+message CallOneListOfIntegersRequest {
+    repeated Vec<i32> input1 = 1;
+
+}
+
+message CallOneListOfIntegersResponse {
+    repeated Vec<i32> output1 = 1;
+
+}
+
+message CallOptionalListOfFloatsRequest {
+    repeated Option<Vec<f32>> input1 = 1;
+
+}
+
+message CallOptionalListOfFloatsResponse {
+    repeated Option<Vec<f32>> output1 = 1;
+
+}
+
+message CallTwoListsRequest {
+    repeated Vec<Numbers> input1 = 1;
+
+    repeated Option<Vec<String>> input2 = 2;
+
+}
+
+message CallTwoListsResponse {
+    repeated Vec<Numbers> output1 = 1;
+
+    repeated Option<Vec<String>> output2 = 2;
+
+}
