@@ -16,7 +16,8 @@
 
 using namespace std;
 
-MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, const std::string &clientId): _mosq(NULL), _host(host), _port(port), _clientId(clientId), _logLevel(LOG_NOTICE)
+MqttBrokerConnection::MqttBrokerConnection(const std::string &host, int port, const std::string &clientId):
+    _mosq(NULL), _host(host), _port(port), _clientId(clientId), _logLevel(LOG_NOTICE)
 {
     boost::mutex::scoped_lock lock(_mutex);
 

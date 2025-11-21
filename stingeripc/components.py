@@ -1417,10 +1417,13 @@ class StingerSpec(LanguageSymbolMixin):
     def all_methods_response_topic(self, client_id: str) -> str:
         for method in self.methods.values():
             return method.response_topic(self._name, client_id)
+        raise RuntimeError("No methods defined in stinger spec")
 
     def all_properties_response_topic(self, client_id: str) -> str:
         for prop in self.properties.values():
             return prop.response_topic(self._name, client_id)
+        raise RuntimeError("No properties defined in stinger spec")
+
     @classmethod
     def new_spec_from_stinger(
         cls, topic_creator, stinger: dict[str, Any]

@@ -51,9 +51,6 @@ stingeripc = [
 ]
 
 [project.scripts]
-pythongen = "stingeripc.tools.python_generator:run"
-rustgen = "stingeripc.tools.rust_generator:main"
-markdowngen = "stingeripc.tools.markdown_generator:run"
 stinger = "stingeripc.tools.cli:run"
 
 [project.entry-points."stinger_symbols"]

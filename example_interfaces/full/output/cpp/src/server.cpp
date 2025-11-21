@@ -20,7 +20,8 @@
 constexpr const char FullServer::NAME[];
 constexpr const char FullServer::INTERFACE_VERSION[];
 
-FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId): _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
+FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
+    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,

@@ -96,9 +96,11 @@ private:
     class MqttMessage: private boost::noncopyable
     {
     public:
-        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic, boost::optional<int> optMessageExpiryInterval): _topic(topic), _payload(payload), _qos(qos), _retain(retain), _optCorrelationId(optCorrelationId), _optResponseTopic(optResponseTopic), _optMessageExpiryInterval(optMessageExpiryInterval) { }
+        MqttMessage(const std::string& topic, const std::string& payload, int qos, bool retain, boost::optional<std::string> optCorrelationId, boost::optional<std::string> optResponseTopic, boost::optional<int> optMessageExpiryInterval):
+            _topic(topic), _payload(payload), _qos(qos), _retain(retain), _optCorrelationId(optCorrelationId), _optResponseTopic(optResponseTopic), _optMessageExpiryInterval(optMessageExpiryInterval) { }
 
-        MqttMessage(const MqttMessage& other): _topic(other._topic), _payload(other._payload), _qos(other._qos), _retain(other._retain), _pSentPromise(other._pSentPromise), _optCorrelationId(other._optCorrelationId), _optResponseTopic(other._optResponseTopic), _optMessageExpiryInterval(other._optMessageExpiryInterval) { }
+        MqttMessage(const MqttMessage& other):
+            _topic(other._topic), _payload(other._payload), _qos(other._qos), _retain(other._retain), _pSentPromise(other._pSentPromise), _optCorrelationId(other._optCorrelationId), _optResponseTopic(other._optResponseTopic), _optMessageExpiryInterval(other._optMessageExpiryInterval) { }
 
         virtual ~MqttMessage() = default;
 
@@ -116,7 +118,8 @@ private:
 
     struct MqttSubscription
     {
-        MqttSubscription(const std::string& topic, int qos, int subscriptionId): topic(topic), qos(qos), subscriptionId(subscriptionId) { }
+        MqttSubscription(const std::string& topic, int qos, int subscriptionId):
+            topic(topic), qos(qos), subscriptionId(subscriptionId) { }
 
         ~MqttSubscription() = default;
         std::string topic;

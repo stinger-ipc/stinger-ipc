@@ -7,7 +7,7 @@ find_dependency(Boost REQUIRED COMPONENTS thread chrono)
 find_dependency(PkgConfig REQUIRED)
 find_dependency(RapidJSON REQUIRED)
 
-pkg_check_modules(mosquitto REQUIRED libmosquitto)
+pkg_check_modules(mosquitto REQUIRED libmosquitto IMPORTED_TARGET)
 
 # Include targets exported during install
 include("${CMAKE_CURRENT_LIST_DIR}/Testable-targets.cmake")

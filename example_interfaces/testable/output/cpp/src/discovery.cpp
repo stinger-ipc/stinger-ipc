@@ -6,7 +6,8 @@
 #include <sstream>
 #include <boost/format.hpp>
 
-TestableDiscovery::TestableDiscovery(std::shared_ptr<IBrokerConnection> broker): _broker(broker)
+TestableDiscovery::TestableDiscovery(std::shared_ptr<IBrokerConnection> broker):
+    _broker(broker)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;

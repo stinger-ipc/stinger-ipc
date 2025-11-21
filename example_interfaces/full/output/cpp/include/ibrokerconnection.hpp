@@ -39,13 +39,14 @@ enum class MethodReturnCode
 
 struct MqttProperties
 {
-    MqttProperties(): correlationId(boost::none),
-                      responseTopic(boost::none),
-                      returnCode(boost::none),
-                      subscriptionId(boost::none),
-                      propertyVersion(boost::none),
-                      messageExpiryInterval(boost::none),
-                      debugInfo(boost::none)
+    MqttProperties():
+        correlationId(boost::none),
+        responseTopic(boost::none),
+        returnCode(boost::none),
+        subscriptionId(boost::none),
+        propertyVersion(boost::none),
+        messageExpiryInterval(boost::none),
+        debugInfo(boost::none)
     {
     }
 

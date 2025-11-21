@@ -6,7 +6,8 @@
 #include <sstream>
 #include <boost/format.hpp>
 
-FullDiscovery::FullDiscovery(std::shared_ptr<IBrokerConnection> broker): _broker(broker)
+FullDiscovery::FullDiscovery(std::shared_ptr<IBrokerConnection> broker):
+    _broker(broker)
 {
     // Subscribe to the discovery topic
     std::stringstream topicStream;
