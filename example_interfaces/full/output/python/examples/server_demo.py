@@ -35,7 +35,7 @@ if __name__ == "__main__":
         last_birthdays=LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
-            sister=datetime.now(UTC),
+            sister=None,
             brothers_age=42,
         ),
         last_birthdays_version=7,

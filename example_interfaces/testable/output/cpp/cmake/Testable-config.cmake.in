@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+
+# Ensure consumers get dependencies
+include(CMakeFindDependencyMacro)
+find_dependency(Boost REQUIRED COMPONENTS thread chrono)
+find_dependency(PkgConfig REQUIRED)
+find_dependency(RapidJSON REQUIRED)
+
+pkg_check_modules(mosquitto REQUIRED libmosquitto)
+
+# Include targets exported during install
+include("${CMAKE_CURRENT_LIST_DIR}/Testable-targets.cmake")

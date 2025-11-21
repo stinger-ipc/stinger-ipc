@@ -42,6 +42,9 @@ def main(
     examples_code_dir = outdir / "examples"
     examples_code_dir.mkdir(parents=True, exist_ok=True)
 
+    cmake_code_dir = outdir / "cmake"
+    cmake_code_dir.mkdir(parents=True, exist_ok=True)
+
     this_file = Path(__file__)
     # The templates live under the package `stingeripc/templates/cpp` next to `tools`.
     # compute that from the tools directory: tools -> parent (stingeripc) -> templates/cpp
@@ -86,8 +89,13 @@ def main(
             example_dest_path = str(example_code_path)[:-len(".jinja2")]
             t.render_template(example_code_path, example_dest_path, **params)
 
-    print(f"GENERATING CmakeLists")
+    print("GENERATING CmakeLists")
     t.render_template("CMakeLists.txt.jinja2", "CMakeLists.txt", **params)
+
+    env = t._get_jinja2_environment()
+    cmake_name = env.filters["PascalCase"](stinger.name)
+    print(f"Generating CMake configuration with name {cmake_name}")
+    t.render_template("cmake/config.cmake.in.jinja2", f"cmake/{cmake_name}-config.cmake.in", **params)
 
 
 def run():

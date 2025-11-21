@@ -1,58 +1,162 @@
 cmake_minimum_required(VERSION 3.16)
+cmake_policy(VERSION 3.16)
 
-project (simple-ipc)
-set(CMAKE_CXX_STANDARD 11) 
 
-include_directories(include)
- 
-set(CLIENT_SOURCE_FILES src/broker.cpp src/client.cpp src/conversions.cpp src/discovery.cpp src/interface_exceptions.cpp src/method_payloads.cpp src/property_structs.cpp src/signal_payloads.cpp src/structs.cpp )
-set(SERVER_SOURCE_FILES src/broker.cpp src/conversions.cpp src/discovery.cpp src/interface_exceptions.cpp src/method_payloads.cpp src/property_structs.cpp src/server.cpp src/signal_payloads.cpp src/structs.cpp )
+project (simple
+	LANGUAGES CXX
+	VERSION 0.0.1)
 
-add_library(lib-simple-ipc-server ${SERVER_SOURCE_FILES})
-add_library(lib-simple-ipc-client ${CLIENT_SOURCE_FILES})
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
+# more secure code
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_executable(simple-ipc-client-demo examples/client_main.cpp)
-target_link_libraries(simple-ipc-client-demo PUBLIC lib-simple-ipc-client)
-target_link_libraries(simple-ipc-client-demo PUBLIC mosquitto)
-target_link_libraries(simple-ipc-client-demo PUBLIC boost_thread)
-target_link_libraries(simple-ipc-client-demo PUBLIC boost_chrono)
-target_link_libraries(simple-ipc-client-demo PRIVATE Threads::Threads)
+find_package(PkgConfig REQUIRED)
+find_package(RapidJSON REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS thread chrono)
+pkg_check_modules(mosquitto REQUIRED libmosquitto IMPORTED_TARGET)
 
-add_executable(simple-ipc-server-demo examples/server_main.cpp)
-target_link_libraries(simple-ipc-server-demo PUBLIC lib-simple-ipc-server)
-target_link_libraries(simple-ipc-server-demo PUBLIC mosquitto)
-target_link_libraries(simple-ipc-server-demo PUBLIC boost_thread)
-target_link_libraries(simple-ipc-server-demo PRIVATE Threads::Threads)
+set(CLIENT_SOURCE_FILES
+	src/broker.cpp
+	src/client.cpp
+	src/conversions.cpp
+	src/discovery.cpp
+	src/interface_exceptions.cpp
+	src/method_payloads.cpp
+	src/property_structs.cpp
+	src/signal_payloads.cpp
+	src/structs.cpp
+	)
 
-add_executable(simple-ipc-discovery-example examples/discovery_example.cpp)
-target_link_libraries(simple-ipc-discovery-example PUBLIC lib-simple-ipc-client)
-target_link_libraries(simple-ipc-discovery-example PUBLIC mosquitto)
-target_link_libraries(simple-ipc-discovery-example PUBLIC boost_thread)
-target_link_libraries(simple-ipc-discovery-example PUBLIC boost_chrono)
-target_link_libraries(simple-ipc-discovery-example PRIVATE Threads::Threads)
+set(SERVER_SOURCE_FILES
+	src/broker.cpp
+	src/conversions.cpp
+	src/discovery.cpp
+	src/interface_exceptions.cpp
+	src/method_payloads.cpp
+	src/property_structs.cpp
+	src/server.cpp
+	src/signal_payloads.cpp
+	src/structs.cpp
+	)
 
-add_executable(simple-ipc-discovery-publisher examples/discovery_publisher.cpp)
-target_link_libraries(simple-ipc-discovery-publisher PUBLIC lib-simple-ipc-client)
-target_link_libraries(simple-ipc-discovery-publisher PUBLIC mosquitto)
-target_link_libraries(simple-ipc-discovery-publisher PUBLIC boost_thread)
-target_link_libraries(simple-ipc-discovery-publisher PUBLIC boost_chrono)
-target_link_libraries(simple-ipc-discovery-publisher PRIVATE Threads::Threads)
+# server lib
+add_library(simple-server ${SERVER_SOURCE_FILES})
+add_library(Simple::Server ALIAS simple-server)
+target_include_directories(simple-server
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${mosquitto_INCLUDE_DIRS}
+		${rapidJSON_INCLUDE_DIRS}
+)
+target_link_libraries(simple-server
+	PUBLIC
+		PkgConfig::mosquitto
+		Boost::thread
+)
 
-# Install rules
-install(TARGETS lib-simple-ipc-server lib-simple-ipc-client
-	ARCHIVE DESTINATION lib
-	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin)
-install(TARGETS simple-ipc-client-demo simple-ipc-server-demo
-	RUNTIME DESTINATION bin)
-install(DIRECTORY include/ DESTINATION include)
+# client lib
+add_library(simple-client ${CLIENT_SOURCE_FILES})
+add_library(Simple::Client ALIAS simple-client)
+target_include_directories(simple-client
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+		${rapidJSON_INCLUDE_DIRS}
+)
+target_link_libraries(simple-client
+	PUBLIC
+		PkgConfig::mosquitto
+		Boost::thread
+)
 
-# CPack configuration
-set(CPACK_PACKAGE_NAME "simple-ipc-${CMAKE_SYSTEM_PROCESSOR}")
-set(CPACK_PACKAGE_VERSION "0.0.1")
-set(CPACK_GENERATOR "TGZ")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Example StingerAPI interface which demonstrates just a bit.")
-include(CPack)
+# example client
+add_executable(simple-client-demo examples/client_main.cpp)
+target_link_libraries(simple-client-demo
+	PRIVATE
+		Simple::Client
+)
+
+add_executable(simple-server-demo examples/server_main.cpp)
+target_link_libraries(simple-server-demo
+	PRIVATE
+		Simple::Server
+)
+
+add_executable(simple-discovery-example examples/discovery_example.cpp)
+target_link_libraries(simple-discovery-example
+	PRIVATE
+		Simple::Client
+)
+
+add_executable(simple-discovery-publisher examples/discovery_publisher.cpp)
+target_link_libraries(simple-discovery-publisher
+	PRIVATE
+		Simple::Client
+)
+
+set_target_properties(
+	simple-client
+	simple-server
+	simple-client-demo
+	simple-server-demo
+	simple-discovery-publisher
+	simple-discovery-example
+	PROPERTIES
+		CXX_STANDARD 17 # use 17, if you can
+		CXX_STANDARD_REQUIRED ON # use 17, I insist
+		CXX_EXTENSIONS OFF # use c++17 not gnu++17
+)
+
+# help cmake find this
+configure_package_config_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/Simple-config.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/Simple-config.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/Simple
+	PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
+)
+
+# help cmake enforce version rules
+write_basic_package_version_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/Simple-config-version.cmake
+	VERSION 0.0.1
+	COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES
+	${CMAKE_CURRENT_BINARY_DIR}/Simple-config.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/Simple-config-version.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/Simple
+)
+
+install(DIRECTORY
+	${CMAKE_CURRENT_SOURCE_DIR}/include/Simple
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(TARGETS
+	simple-server
+	simple-client
+	simple-server-demo
+	simple-client-demo
+	simple-discovery-example
+	simple-discovery-publisher
+	EXPORT SimpleTargets
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # .a files
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so files
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # executables
+)
+
+install(EXPORT
+	SimpleTargets
+	FILE Simple-targets.cmake
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/Simple
+	NAMESPACE Simple::
+)
+
+export (EXPORT SimpleTargets
+	FILE ${CMAKE_CURRENT_BINARY_DIR}/Simple-targets.cmake
+	NAMESPACE Simple::
+)

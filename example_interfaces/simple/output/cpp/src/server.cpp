@@ -20,8 +20,7 @@
 constexpr const char SimpleServer::NAME[];
 constexpr const char SimpleServer::INTERFACE_VERSION[];
 
-SimpleServer::SimpleServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
-    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
+SimpleServer::SimpleServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId): _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,

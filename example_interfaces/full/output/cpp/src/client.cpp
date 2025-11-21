@@ -26,8 +26,7 @@
 constexpr const char FullClient::NAME[];
 constexpr const char FullClient::INTERFACE_VERSION[];
 
-FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
-    _broker(broker), _instanceId(instanceId)
+FullClient::FullClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId): _broker(broker), _instanceId(instanceId)
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,
