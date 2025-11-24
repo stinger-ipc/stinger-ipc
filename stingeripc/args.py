@@ -105,7 +105,7 @@ class ArgPrimitiveType(Enum):
             if optional:
                 return "std::optional<std::string>"
             else:
-                return "std::string&"
+                return "std::string"
         raise InvalidStingerStructure("Unhandled arg type")
 
     @classmethod

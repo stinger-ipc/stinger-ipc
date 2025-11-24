@@ -4249,7 +4249,7 @@ void TestableClient::_receiveReadOnlyStringPropertyUpdate(const std::string& top
     }
 }
 
-std::optional<std::string&> TestableClient::getReadOnlyStringProperty()
+std::optional<std::string> TestableClient::getReadOnlyStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readOnlyStringPropertyMutex);
     if (_readOnlyStringProperty)
@@ -4309,7 +4309,7 @@ void TestableClient::_receiveReadWriteStringPropertyUpdate(const std::string& to
     }
 }
 
-std::optional<std::string&> TestableClient::getReadWriteStringProperty()
+std::optional<std::string> TestableClient::getReadWriteStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteStringPropertyMutex);
     if (_readWriteStringProperty)

@@ -1097,7 +1097,7 @@ void FullClient::_receiveFamilyNamePropertyUpdate(const std::string& topic, cons
     }
 }
 
-std::optional<std::string&> FullClient::getFamilyNameProperty()
+std::optional<std::string> FullClient::getFamilyNameProperty()
 {
     std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
     if (_familyNameProperty)

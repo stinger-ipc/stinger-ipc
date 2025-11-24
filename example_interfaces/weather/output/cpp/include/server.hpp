@@ -40,7 +40,7 @@ public:
 
     virtual ~WeatherServer();
 
-    std::future<bool> emitCurrentTimeSignal(std::string&);
+    std::future<bool> emitCurrentTimeSignal(std::string);
 
     void registerRefreshDailyForecastHandler(std::function<void()> func);
 

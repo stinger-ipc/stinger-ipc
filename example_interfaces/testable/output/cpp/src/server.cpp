@@ -1159,7 +1159,7 @@ std::future<bool> TestableServer::emitThreeIntegersSignal(int first, int second,
     return _broker->Publish((format("testable/%1%/signal/threeIntegers") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-std::future<bool> TestableServer::emitSingleStringSignal(std::string& value)
+std::future<bool> TestableServer::emitSingleStringSignal(std::string value)
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -1195,7 +1195,7 @@ std::future<bool> TestableServer::emitSingleOptionalStringSignal(std::optional<s
     return _broker->Publish((format("testable/%1%/signal/singleOptionalString") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-std::future<bool> TestableServer::emitThreeStringsSignal(std::string& first, std::string& second, std::optional<std::string> third)
+std::future<bool> TestableServer::emitThreeStringsSignal(std::string first, std::string second, std::optional<std::string> third)
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -3126,7 +3126,7 @@ void TestableServer::_receiveReadWriteTwoIntegersPropertyUpdate(const std::strin
     republishReadWriteTwoIntegersProperty();
 }
 
-std::optional<std::string&> TestableServer::getReadOnlyStringProperty()
+std::optional<std::string> TestableServer::getReadOnlyStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readOnlyStringPropertyMutex);
     if (_readOnlyStringProperty)
@@ -3210,7 +3210,7 @@ void TestableServer::_receiveReadOnlyStringPropertyUpdate(const std::string& top
     republishReadOnlyStringProperty();
 }
 
-std::optional<std::string&> TestableServer::getReadWriteStringProperty()
+std::optional<std::string> TestableServer::getReadWriteStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteStringPropertyMutex);
     if (_readWriteStringProperty)

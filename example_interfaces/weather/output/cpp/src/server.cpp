@@ -231,7 +231,7 @@ void WeatherServer::_receiveMessage(
     }
 }
 
-std::future<bool> WeatherServer::emitCurrentTimeSignal(std::string& currentTime)
+std::future<bool> WeatherServer::emitCurrentTimeSignal(std::string currentTime)
 {
     rapidjson::Document doc;
     doc.SetObject();

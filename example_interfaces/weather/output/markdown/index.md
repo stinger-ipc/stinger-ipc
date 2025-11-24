@@ -21,7 +21,7 @@ The application code is responsible for creating and managing the connection obj
 ### Connection code Examples
 
 <details>
-  <summary>Python</summary>
+  <summary>Python MQTT Connection Example</summary>
 
 ```python
 from connection import MqttBrokerConnection, MqttTransportType, MqttTransport
@@ -35,7 +35,7 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust MQTT Connection Example</summary>
 
 Stinger-IPC instances only require an MQTT connection object that implements the [`stinger_mqtt_trait::Mqtt5PubSub` trait](https://docs.rs/stinger-mqtt-trait/latest/stinger_mqtt_trait/trait.Mqtt5PubSub.html). 
 
@@ -59,7 +59,7 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
-  <summary>C++</summary>
+  <summary>C++ MQTT Connection Example</summary>
 
 The C++ connection object is a wrapper around the [libmosquitto](https://mosquitto.org/api/files/mosquitto-h.html) C library.  This library only supports TCP and WebSocket connections.  Unix Domain Socket support may be added in the future.
 
@@ -82,7 +82,7 @@ find all the current property values for discovered interfaces in order to initi
 ### Discovery Code Examples
 
 <details>
-  <summary>Python</summary>
+  <summary>Python Discovery Example</summary>
 
 ```python
 from weatheripc.client import WeatherClientDiscoverer
@@ -99,7 +99,7 @@ clients = [discovery.get_client_for_instance(service_id) for service_id in disco
 </details>
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust Discovery Example</summary>
 
 ```rust
 use weather_ipc::discovery::WeatherDiscovery;
@@ -122,7 +122,7 @@ When constructing a server instance, a connection object and initial property va
 ### Server Code Examples
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server Object Construction</summary>
 
 ```python
 from weatheripc.server import WeatherServer, WeatherInitialPropertyValues
@@ -227,7 +227,7 @@ A more complete example, including use with the discovery mechanism, can be view
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server Struct Creation</summary>
 
 Service code for Rust is only available when using the `server` feature:
 
@@ -300,7 +300,7 @@ A full example can be viewed by looking at the generated `examples/server_demo.r
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server Object Construction</summary>
 
 ```c++
 // To be written
@@ -317,7 +317,7 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client Struct Creation</summary>
 
 The best way to create a client instance is to use the discovery class to find an instance of the service, and then create the client from the discovered instance information.
 An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance IDand initial property values, you can create a client directly:
@@ -381,7 +381,7 @@ A full example can be viewed by looking at the generated `client/examples/client
 </details>
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client Object Construction</summary>
 
 ```python
 from weatheripc.server import WeatherServer, WeatherInitialPropertyValues
@@ -467,7 +467,7 @@ Like the Python client, there is a `WeatherServerBuilder` class to help capture 
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client Object Construction</summary>
 
 A full example can be viewed by looking at the generated `examples/client_main.cpp` file.
 
@@ -492,7 +492,7 @@ C++ uses a user-provided logging function.  The function should take two paramet
 Log levels are re-used from the `syslog.h` header file, although no other syslog mechanisms are used.  Client and server classes use the logging provided by the `MqttBrokerConnection` object.
 
 <details>
-  <summary>Example C++ Code</summary>
+  <summary>Example C++ Log Setup</summary>
 
 ```c++
 #include <syslog.h>
@@ -535,7 +535,7 @@ and time will be published.  (Mostly for example purposes).
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'current_time' signal</summary>
 
 The `current_time` signal can be subscribed to by using the client's `receive_current_time` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -548,7 +548,7 @@ def on_current_time(current_time: str):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'current_time' signal</summary>
 
 A server can emit a `current_time` signal simply by calling the server's `emit_current_time` method.
 
@@ -559,7 +559,7 @@ server.emit_current_time("apples")
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'current_time' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -573,7 +573,7 @@ print("Got a 'current_time' signal: {:?}", current_time_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'current_time' signal</summary>
 
 A server can emit a `current_time` signal simply by calling the server's `emit_current_time` method.
 
@@ -586,12 +586,12 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'current_time' signal callback</summary>
 
 A client can register a callback function to be called when a `current_time` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerCurrentTimeCallback([](std::string& current_time) {
+client.registerCurrentTimeCallback([](std::string current_time) {
     std::cout << "current_time=" <<current_time <<  std::endl;
 });
 ```
@@ -599,7 +599,7 @@ client.registerCurrentTimeCallback([](std::string& current_time) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'current_time' signal</summary>
 
 A `current_time` signal can be emitted by calling the server's `emitCurrentTimeSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -643,7 +643,7 @@ There is no return value for this method call.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'refresh_daily_forecast' method</summary>
 
 The `refresh_daily_forecast` method can be called by calling the clients's `refresh_daily_forecast` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -661,7 +661,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'refresh_daily_forecast' method</summary>
 
 The server provides an implementation for the `refresh_daily_forecast` method by using the `@server.handle_refresh_daily_forecast` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -677,7 +677,7 @@ def refresh_daily_forecast() -> None:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'refresh_daily_forecast' method</summary>
 
 The `WeatherClient` provides an implementation for the `refresh_daily_forecast` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -709,7 +709,7 @@ There is no return value for this method call.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'refresh_hourly_forecast' method</summary>
 
 The `refresh_hourly_forecast` method can be called by calling the clients's `refresh_hourly_forecast` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -727,7 +727,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'refresh_hourly_forecast' method</summary>
 
 The server provides an implementation for the `refresh_hourly_forecast` method by using the `@server.handle_refresh_hourly_forecast` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -743,7 +743,7 @@ def refresh_hourly_forecast() -> None:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'refresh_hourly_forecast' method</summary>
 
 The `WeatherClient` provides an implementation for the `refresh_hourly_forecast` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -777,7 +777,7 @@ There is no return value for this method call.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'refresh_current_conditions' method</summary>
 
 The `refresh_current_conditions` method can be called by calling the clients's `refresh_current_conditions` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -795,7 +795,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'refresh_current_conditions' method</summary>
 
 The server provides an implementation for the `refresh_current_conditions` method by using the `@server.handle_refresh_current_conditions` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -811,7 +811,7 @@ def refresh_current_conditions() -> None:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'refresh_current_conditions' method</summary>
 
 The `WeatherClient` provides an implementation for the `refresh_current_conditions` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -847,7 +847,7 @@ Weather will be retrieved for the provided location.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'location' property</summary>
 
 A server hold the "source of truth" for the value of `location`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -887,7 +887,7 @@ if location_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'location' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -912,7 +912,7 @@ This property is **read-only**.  It can only be modified by the server.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'current_temperature' property</summary>
 
 A server hold the "source of truth" for the value of `current_temperature`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -948,7 +948,7 @@ if current_temperature_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading  the 'current_temperature' property</summary>
 
   A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
   
@@ -972,7 +972,7 @@ This property is **read-only**.  It can only be modified by the server.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'current_condition' property</summary>
 
 A server hold the "source of truth" for the value of `current_condition`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1012,7 +1012,7 @@ if current_condition_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading  the 'current_condition' property</summary>
 
   A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
   
@@ -1039,7 +1039,7 @@ This property is **read-only**.  It can only be modified by the server.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'daily_forecast' property</summary>
 
 A server hold the "source of truth" for the value of `daily_forecast`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1080,7 +1080,7 @@ if daily_forecast_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading  the 'daily_forecast' property</summary>
 
   A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
   
@@ -1107,7 +1107,7 @@ This property is **read-only**.  It can only be modified by the server.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'hourly_forecast' property</summary>
 
 A server hold the "source of truth" for the value of `hourly_forecast`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1149,7 +1149,7 @@ if hourly_forecast_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading  the 'hourly_forecast' property</summary>
 
   A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
   
@@ -1170,7 +1170,7 @@ station are retrieved.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'current_condition_refresh_interval' property</summary>
 
 A server hold the "source of truth" for the value of `current_condition_refresh_interval`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1206,7 +1206,7 @@ if current_condition_refresh_interval_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'current_condition_refresh_interval' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -1227,7 +1227,7 @@ This is the maximum interval, in seconds, that the hourly forecast data is retri
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'hourly_forecast_refresh_interval' property</summary>
 
 A server hold the "source of truth" for the value of `hourly_forecast_refresh_interval`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1263,7 +1263,7 @@ if hourly_forecast_refresh_interval_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'hourly_forecast_refresh_interval' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -1284,7 +1284,7 @@ This is the maximum interval, in seconds, that the daily forecast data is retrie
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'daily_forecast_refresh_interval' property</summary>
 
 A server hold the "source of truth" for the value of `daily_forecast_refresh_interval`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1320,7 +1320,7 @@ if daily_forecast_refresh_interval_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'daily_forecast_refresh_interval' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.

@@ -106,7 +106,7 @@ public:
     // Gets the latest value of the `family_name` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    std::optional<std::string&> getFamilyNameProperty();
+    std::optional<std::string> getFamilyNameProperty();
 
     // Add a callback that will be called whenever the `family_name` property is updated.
     // The provided method will be called whenever a new value for the `family_name` property is received.

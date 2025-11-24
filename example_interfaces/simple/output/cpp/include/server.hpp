@@ -49,7 +49,7 @@ public:
     // Gets the latest value of the `school` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    std::optional<std::string&> getSchoolProperty();
+    std::optional<std::string> getSchoolProperty();
 
     // Add a callback that will be called whenever the `school` property is updated.
     // The provided method will be called whenever a new value for the `school` property is received.

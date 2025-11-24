@@ -19,7 +19,7 @@ The application code is responsible for creating and managing the connection obj
 ### Connection code Examples
 
 <details>
-  <summary>Python</summary>
+  <summary>Python MQTT Connection Example</summary>
 
 ```python
 from connection import MqttBrokerConnection, MqttTransportType, MqttTransport
@@ -33,7 +33,7 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust MQTT Connection Example</summary>
 
 Stinger-IPC instances only require an MQTT connection object that implements the [`stinger_mqtt_trait::Mqtt5PubSub` trait](https://docs.rs/stinger-mqtt-trait/latest/stinger_mqtt_trait/trait.Mqtt5PubSub.html). 
 
@@ -57,7 +57,7 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
-  <summary>C++</summary>
+  <summary>C++ MQTT Connection Example</summary>
 
 The C++ connection object is a wrapper around the [libmosquitto](https://mosquitto.org/api/files/mosquitto-h.html) C library.  This library only supports TCP and WebSocket connections.  Unix Domain Socket support may be added in the future.
 
@@ -80,7 +80,7 @@ find all the current property values for discovered interfaces in order to initi
 ### Discovery Code Examples
 
 <details>
-  <summary>Python</summary>
+  <summary>Python Discovery Example</summary>
 
 ```python
 from signalonlyipc.client import SignalOnlyClientDiscoverer
@@ -97,7 +97,7 @@ clients = [discovery.get_client_for_instance(service_id) for service_id in disco
 </details>
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust Discovery Example</summary>
 
 ```rust
 use signal_only_ipc::discovery::SignalOnlyDiscovery;
@@ -120,7 +120,7 @@ When constructing a server instance, a connection object.
 ### Server Code Examples
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server Object Construction</summary>
 
 ```python
 from signalonlyipc.server import SignalOnlyServer, SignalOnlyInitialPropertyValues
@@ -159,7 +159,7 @@ A more complete example, including use with the discovery mechanism, can be view
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server Struct Creation</summary>
 
 Service code for Rust is only available when using the `server` feature:
 
@@ -188,7 +188,7 @@ A full example can be viewed by looking at the generated `examples/server_demo.r
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server Object Construction</summary>
 
 ```c++
 // To be written
@@ -205,7 +205,7 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client Struct Creation</summary>
 
 The best way to create a client instance is to use the discovery class to find an instance of the service, and then create the client from the discovered instance information.
 An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance ID, you can create a client directly:
@@ -226,7 +226,7 @@ A full example can be viewed by looking at the generated `client/examples/client
 </details>
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client Object Construction</summary>
 
 ```python
 from signalonlyipc.server import SignalOnlyServer
@@ -246,7 +246,7 @@ Like the Python client, there is a `SignalOnlyServerBuilder` class to help captu
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client Object Construction</summary>
 
 A full example can be viewed by looking at the generated `examples/client_main.cpp` file.
 
@@ -271,7 +271,7 @@ C++ uses a user-provided logging function.  The function should take two paramet
 Log levels are re-used from the `syslog.h` header file, although no other syslog mechanisms are used.  Client and server classes use the logging provided by the `MqttBrokerConnection` object.
 
 <details>
-  <summary>Example C++ Code</summary>
+  <summary>Example C++ Log Setup</summary>
 
 ```c++
 #include <syslog.h>
@@ -314,7 +314,7 @@ _No documentation for this signal_
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'anotherSignal' signal</summary>
 
 The `anotherSignal` signal can be subscribed to by using the client's `receive_another_signal` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -327,7 +327,7 @@ def on_another_signal(one: float, two: bool, three: str):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'anotherSignal' signal</summary>
 
 A server can emit a `anotherSignal` signal simply by calling the server's `emit_another_signal` method.
 
@@ -338,7 +338,7 @@ server.emit_another_signal(3.14, True, "apples")
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'anotherSignal' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -352,7 +352,7 @@ print("Got a 'anotherSignal' signal: {:?}", another_signal_signal_rx.recv().awai
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'anotherSignal' signal</summary>
 
 A server can emit a `anotherSignal` signal simply by calling the server's `emit_another_signal` method.
 
@@ -365,12 +365,12 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'anotherSignal' signal callback</summary>
 
 A client can register a callback function to be called when a `anotherSignal` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerAnotherSignalCallback([](double one, bool two, std::string& three) {
+client.registerAnotherSignalCallback([](double one, bool two, std::string three) {
     std::cout << "one=" <<one << " | " << "two=" <<two << " | " << "three=" <<three <<  std::endl;
 });
 ```
@@ -378,7 +378,7 @@ client.registerAnotherSignalCallback([](double one, bool two, std::string& three
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'anotherSignal' signal</summary>
 
 A `anotherSignal` signal can be emitted by calling the server's `emitAnotherSignalSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -403,7 +403,7 @@ Emitted when a dog barks.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'bark' signal</summary>
 
 The `bark` signal can be subscribed to by using the client's `receive_bark` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -416,7 +416,7 @@ def on_bark(word: str):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'bark' signal</summary>
 
 A server can emit a `bark` signal simply by calling the server's `emit_bark` method.
 
@@ -427,7 +427,7 @@ server.emit_bark("apples")
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'bark' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -441,7 +441,7 @@ print("Got a 'bark' signal: {:?}", bark_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'bark' signal</summary>
 
 A server can emit a `bark` signal simply by calling the server's `emit_bark` method.
 
@@ -454,12 +454,12 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'bark' signal callback</summary>
 
 A client can register a callback function to be called when a `bark` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerBarkCallback([](std::string& word) {
+client.registerBarkCallback([](std::string word) {
     std::cout << "word=" <<word <<  std::endl;
 });
 ```
@@ -467,7 +467,7 @@ client.registerBarkCallback([](std::string& word) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'bark' signal</summary>
 
 A `bark` signal can be emitted by calling the server's `emitBarkSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -492,7 +492,7 @@ A signal with optionally no payload.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'maybe_number' signal</summary>
 
 The `maybe_number` signal can be subscribed to by using the client's `receive_maybe_number` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -505,7 +505,7 @@ def on_maybe_number(number: Optional[int]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'maybe_number' signal</summary>
 
 A server can emit a `maybe_number` signal simply by calling the server's `emit_maybe_number` method.
 
@@ -516,7 +516,7 @@ server.emit_maybe_number(42)
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'maybe_number' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -530,7 +530,7 @@ print("Got a 'maybe_number' signal: {:?}", maybe_number_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'maybe_number' signal</summary>
 
 A server can emit a `maybe_number` signal simply by calling the server's `emit_maybe_number` method.
 
@@ -543,7 +543,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'maybe_number' signal callback</summary>
 
 A client can register a callback function to be called when a `maybe_number` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -556,7 +556,7 @@ client.registerMaybeNumberCallback([](std::optional<int> number) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'maybe_number' signal</summary>
 
 A `maybe_number` signal can be emitted by calling the server's `emitMaybeNumberSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -581,7 +581,7 @@ A signal with optionally no payload.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'maybe_name' signal</summary>
 
 The `maybe_name` signal can be subscribed to by using the client's `receive_maybe_name` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -594,7 +594,7 @@ def on_maybe_name(name: Optional[str]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'maybe_name' signal</summary>
 
 A server can emit a `maybe_name` signal simply by calling the server's `emit_maybe_name` method.
 
@@ -605,7 +605,7 @@ server.emit_maybe_name("apples")
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'maybe_name' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -619,7 +619,7 @@ print("Got a 'maybe_name' signal: {:?}", maybe_name_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'maybe_name' signal</summary>
 
 A server can emit a `maybe_name` signal simply by calling the server's `emit_maybe_name` method.
 
@@ -632,7 +632,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'maybe_name' signal callback</summary>
 
 A client can register a callback function to be called when a `maybe_name` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -645,7 +645,7 @@ client.registerMaybeNameCallback([](std::optional<std::string> name) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'maybe_name' signal</summary>
 
 A `maybe_name` signal can be emitted by calling the server's `emitMaybeNameSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -670,7 +670,7 @@ The current date and time.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'now' signal</summary>
 
 The `now` signal can be subscribed to by using the client's `receive_now` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -683,7 +683,7 @@ def on_now(timestamp: datetime):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'now' signal</summary>
 
 A server can emit a `now` signal simply by calling the server's `emit_now` method.
 
@@ -694,7 +694,7 @@ server.emit_now(datetime.now(UTC))
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'now' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -708,7 +708,7 @@ print("Got a 'now' signal: {:?}", now_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'now' signal</summary>
 
 A server can emit a `now` signal simply by calling the server's `emit_now` method.
 
@@ -721,7 +721,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'now' signal callback</summary>
 
 A client can register a callback function to be called when a `now` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -734,7 +734,7 @@ client.registerNowCallback([](std::chrono::time_point<std::chrono::system_clock>
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'now' signal</summary>
 
 A `now` signal can be emitted by calling the server's `emitNowSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 

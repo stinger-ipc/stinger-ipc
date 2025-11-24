@@ -48,11 +48,11 @@ public:
 
     std::future<bool> emitThreeIntegersSignal(int, int, std::optional<int>);
 
-    std::future<bool> emitSingleStringSignal(std::string&);
+    std::future<bool> emitSingleStringSignal(std::string);
 
     std::future<bool> emitSingleOptionalStringSignal(std::optional<std::string>);
 
-    std::future<bool> emitThreeStringsSignal(std::string&, std::string&, std::optional<std::string>);
+    std::future<bool> emitThreeStringsSignal(std::string, std::string, std::optional<std::string>);
 
     std::future<bool> emitSingleEnumSignal(Numbers);
 
@@ -205,7 +205,7 @@ public:
     // Gets the latest value of the `read_only_string` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    std::optional<std::string&> getReadOnlyStringProperty();
+    std::optional<std::string> getReadOnlyStringProperty();
 
     // Add a callback that will be called whenever the `read_only_string` property is updated.
     // The provided method will be called whenever a new value for the `read_only_string` property is received.
@@ -220,7 +220,7 @@ public:
     // Gets the latest value of the `read_write_string` property, if one has been received.
     // If no value has been received yet, an empty optional is returned.
 
-    std::optional<std::string&> getReadWriteStringProperty();
+    std::optional<std::string> getReadWriteStringProperty();
 
     // Add a callback that will be called whenever the `read_write_string` property is updated.
     // The provided method will be called whenever a new value for the `read_write_string` property is received.

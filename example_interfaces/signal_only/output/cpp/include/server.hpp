@@ -36,9 +36,9 @@ public:
 
     virtual ~SignalOnlyServer();
 
-    std::future<bool> emitAnotherSignalSignal(double, bool, std::string&);
+    std::future<bool> emitAnotherSignalSignal(double, bool, std::string);
 
-    std::future<bool> emitBarkSignal(std::string&);
+    std::future<bool> emitBarkSignal(std::string);
 
     std::future<bool> emitMaybeNumberSignal(std::optional<int>);
 

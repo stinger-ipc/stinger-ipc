@@ -21,7 +21,7 @@ The application code is responsible for creating and managing the connection obj
 ### Connection code Examples
 
 <details>
-  <summary>Python</summary>
+  <summary>Python MQTT Connection Example</summary>
 
 ```python
 from connection import MqttBrokerConnection, MqttTransportType, MqttTransport
@@ -35,7 +35,7 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust MQTT Connection Example</summary>
 
 Stinger-IPC instances only require an MQTT connection object that implements the [`stinger_mqtt_trait::Mqtt5PubSub` trait](https://docs.rs/stinger-mqtt-trait/latest/stinger_mqtt_trait/trait.Mqtt5PubSub.html). 
 
@@ -59,7 +59,7 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
-  <summary>C++</summary>
+  <summary>C++ MQTT Connection Example</summary>
 
 The C++ connection object is a wrapper around the [libmosquitto](https://mosquitto.org/api/files/mosquitto-h.html) C library.  This library only supports TCP and WebSocket connections.  Unix Domain Socket support may be added in the future.
 
@@ -82,7 +82,7 @@ find all the current property values for discovered interfaces in order to initi
 ### Discovery Code Examples
 
 <details>
-  <summary>Python</summary>
+  <summary>Python Discovery Example</summary>
 
 ```python
 from fullipc.client import FullClientDiscoverer
@@ -99,7 +99,7 @@ clients = [discovery.get_client_for_instance(service_id) for service_id in disco
 </details>
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust Discovery Example</summary>
 
 ```rust
 use full_ipc::discovery::FullDiscovery;
@@ -122,7 +122,7 @@ When constructing a server instance, a connection object and initial property va
 ### Server Code Examples
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server Object Construction</summary>
 
 ```python
 from fullipc.server import FullServer, FullInitialPropertyValues
@@ -176,7 +176,7 @@ initial_property_values = FullInitialPropertyValues(
             
             dad=datetime.now(UTC),
             
-            sister=datetime.now(UTC),
+            sister=None,
             
             brothers_age=42,
             
@@ -217,7 +217,7 @@ A more complete example, including use with the discovery mechanism, can be view
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server Struct Creation</summary>
 
 Service code for Rust is only available when using the `server` feature:
 
@@ -284,7 +284,7 @@ A full example can be viewed by looking at the generated `examples/server_demo.r
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server Object Construction</summary>
 
 ```c++
 // To be written
@@ -301,7 +301,7 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client Struct Creation</summary>
 
 The best way to create a client instance is to use the discovery class to find an instance of the service, and then create the client from the discovered instance information.
 An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance IDand initial property values, you can create a client directly:
@@ -359,7 +359,7 @@ A full example can be viewed by looking at the generated `client/examples/client
 </details>
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client Object Construction</summary>
 
 ```python
 from fullipc.server import FullServer, FullInitialPropertyValues
@@ -435,7 +435,7 @@ Like the Python client, there is a `FullServerBuilder` class to help capture dec
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client Object Construction</summary>
 
 A full example can be viewed by looking at the generated `examples/client_main.cpp` file.
 
@@ -460,7 +460,7 @@ C++ uses a user-provided logging function.  The function should take two paramet
 Log levels are re-used from the `syslog.h` header file, although no other syslog mechanisms are used.  Client and server classes use the logging provided by the `MqttBrokerConnection` object.
 
 <details>
-  <summary>Example C++ Code</summary>
+  <summary>Example C++ Log Setup</summary>
 
 ```c++
 #include <syslog.h>
@@ -505,7 +505,7 @@ _No documentation for this signal_
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'todayIs' signal</summary>
 
 The `todayIs` signal can be subscribed to by using the client's `receive_today_is` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -518,7 +518,7 @@ def on_today_is(dayOfMonth: int, dayOfWeek: Optional[DayOfTheWeek], timestamp: d
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'todayIs' signal</summary>
 
 A server can emit a `todayIs` signal simply by calling the server's `emit_today_is` method.
 
@@ -529,7 +529,7 @@ server.emit_today_is(42, DayOfTheWeek.SATURDAY, datetime.now(UTC), timedelta(sec
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'todayIs' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -543,7 +543,7 @@ print("Got a 'todayIs' signal: {:?}", today_is_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'todayIs' signal</summary>
 
 A server can emit a `todayIs` signal simply by calling the server's `emit_today_is` method.
 
@@ -556,7 +556,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'todayIs' signal callback</summary>
 
 A client can register a callback function to be called when a `todayIs` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -569,7 +569,7 @@ client.registerTodayIsCallback([](int dayOfMonth, std::optional<DayOfTheWeek> da
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'todayIs' signal</summary>
 
 A `todayIs` signal can be emitted by calling the server's `emitTodayIsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -610,7 +610,7 @@ The return value type is `integer`.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'addNumbers' method</summary>
 
 The `addNumbers` method can be called by calling the clients's `add_numbers` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -628,7 +628,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'addNumbers' method</summary>
 
 The server provides an implementation for the `addNumbers` method by using the `@server.handle_add_numbers` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -644,7 +644,7 @@ def add_numbers(first: int, second: int, third: Optional[int]) -> int:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'addNumbers' method</summary>
 
 The `FullClient` provides an implementation for the `addNumbers` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -671,7 +671,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'doSomething' method</summary>
 
 The `doSomething` method can be called by calling the clients's `do_something` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -689,7 +689,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'doSomething' method</summary>
 
 The server provides an implementation for the `doSomething` method by using the `@server.handle_do_something` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -705,7 +705,7 @@ def do_something(aString: str) -> DoSomethingMethodResponse:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'doSomething' method</summary>
 
 The `FullClient` provides an implementation for the `doSomething` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -732,7 +732,7 @@ The return value type is `string`.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'echo' method</summary>
 
 The `echo` method can be called by calling the clients's `echo` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -750,7 +750,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'echo' method</summary>
 
 The server provides an implementation for the `echo` method by using the `@server.handle_echo` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -766,7 +766,7 @@ def echo(message: str) -> str:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'echo' method</summary>
 
 The `FullClient` provides an implementation for the `echo` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -793,7 +793,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'what_time_is_it' method</summary>
 
 The `what_time_is_it` method can be called by calling the clients's `what_time_is_it` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -811,7 +811,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'what_time_is_it' method</summary>
 
 The server provides an implementation for the `what_time_is_it` method by using the `@server.handle_what_time_is_it` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -827,7 +827,7 @@ def what_time_is_it(the_first_time: datetime) -> datetime:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'what_time_is_it' method</summary>
 
 The `FullClient` provides an implementation for the `what_time_is_it` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -855,7 +855,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'set_the_time' method</summary>
 
 The `set_the_time` method can be called by calling the clients's `set_the_time` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -873,7 +873,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'set_the_time' method</summary>
 
 The server provides an implementation for the `set_the_time` method by using the `@server.handle_set_the_time` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -889,7 +889,7 @@ def set_the_time(the_first_time: datetime, the_second_time: datetime) -> SetTheT
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'set_the_time' method</summary>
 
 The `FullClient` provides an implementation for the `set_the_time` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -916,7 +916,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'forward_time' method</summary>
 
 The `forward_time` method can be called by calling the clients's `forward_time` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -934,7 +934,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'forward_time' method</summary>
 
 The server provides an implementation for the `forward_time` method by using the `@server.handle_forward_time` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -950,7 +950,7 @@ def forward_time(adjustment: timedelta) -> datetime:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'forward_time' method</summary>
 
 The `FullClient` provides an implementation for the `forward_time` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -977,7 +977,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'how_off_is_the_clock' method</summary>
 
 The `how_off_is_the_clock` method can be called by calling the clients's `how_off_is_the_clock` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -995,7 +995,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'how_off_is_the_clock' method</summary>
 
 The server provides an implementation for the `how_off_is_the_clock` method by using the `@server.handle_how_off_is_the_clock` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -1011,7 +1011,7 @@ def how_off_is_the_clock(actual_time: datetime) -> timedelta:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'how_off_is_the_clock' method</summary>
 
 The `FullClient` provides an implementation for the `how_off_is_the_clock` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -1046,7 +1046,7 @@ My favorite number
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'favorite_number' property</summary>
 
 A server hold the "source of truth" for the value of `favorite_number`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1082,7 +1082,7 @@ if favorite_number_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'favorite_number' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -1104,7 +1104,7 @@ _No documentation is available for this property_
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'favorite_foods' property</summary>
 
 A server hold the "source of truth" for the value of `favorite_foods`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1145,7 +1145,7 @@ if favorite_foods_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'favorite_foods' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -1166,7 +1166,7 @@ _No documentation is available for this property_
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'lunch_menu' property</summary>
 
 A server hold the "source of truth" for the value of `lunch_menu`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1206,7 +1206,7 @@ if lunch_menu_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'lunch_menu' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -1226,7 +1226,7 @@ This is to test a property with a single string value.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'family_name' property</summary>
 
 A server hold the "source of truth" for the value of `family_name`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1262,7 +1262,7 @@ if family_name_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'family_name' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -1282,7 +1282,7 @@ This is to test a property with a single datetime value.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'last_breakfast_time' property</summary>
 
 A server hold the "source of truth" for the value of `last_breakfast_time`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1318,7 +1318,7 @@ if last_breakfast_time_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'last_breakfast_time' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -1338,7 +1338,7 @@ This is to test a property with a single duration value.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'breakfast_length' property</summary>
 
 A server hold the "source of truth" for the value of `breakfast_length`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1374,7 +1374,7 @@ if breakfast_length_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'breakfast_length' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -1397,7 +1397,7 @@ This is to test a property with multiple datetime values.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'last_birthdays' property</summary>
 
 A server hold the "source of truth" for the value of `last_birthdays`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -1439,7 +1439,7 @@ if last_birthdays_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'last_birthdays' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.

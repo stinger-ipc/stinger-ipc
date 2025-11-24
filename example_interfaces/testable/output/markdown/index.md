@@ -21,7 +21,7 @@ The application code is responsible for creating and managing the connection obj
 ### Connection code Examples
 
 <details>
-  <summary>Python</summary>
+  <summary>Python MQTT Connection Example</summary>
 
 ```python
 from connection import MqttBrokerConnection, MqttTransportType, MqttTransport
@@ -35,7 +35,7 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust MQTT Connection Example</summary>
 
 Stinger-IPC instances only require an MQTT connection object that implements the [`stinger_mqtt_trait::Mqtt5PubSub` trait](https://docs.rs/stinger-mqtt-trait/latest/stinger_mqtt_trait/trait.Mqtt5PubSub.html). 
 
@@ -59,7 +59,7 @@ The `connection_object` will be passed to client and server constructors.
 </details>
 
 <details>
-  <summary>C++</summary>
+  <summary>C++ MQTT Connection Example</summary>
 
 The C++ connection object is a wrapper around the [libmosquitto](https://mosquitto.org/api/files/mosquitto-h.html) C library.  This library only supports TCP and WebSocket connections.  Unix Domain Socket support may be added in the future.
 
@@ -82,7 +82,7 @@ find all the current property values for discovered interfaces in order to initi
 ### Discovery Code Examples
 
 <details>
-  <summary>Python</summary>
+  <summary>Python Discovery Example</summary>
 
 ```python
 from testableipc.client import TestableClientDiscoverer
@@ -99,7 +99,7 @@ clients = [discovery.get_client_for_instance(service_id) for service_id in disco
 </details>
 
 <details>
-  <summary>Rust</summary>
+  <summary>Rust Discovery Example</summary>
 
 ```rust
 use testable_ipc::discovery::TestableDiscovery;
@@ -122,7 +122,7 @@ When constructing a server instance, a connection object and initial property va
 ### Server Code Examples
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server Object Construction</summary>
 
 ```python
 from testableipc.server import TestableServer, TestableInitialPropertyValues
@@ -186,7 +186,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_two_structs=
         ReadWriteTwoStructsProperty(
             
-            first=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+            first=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
             
             second=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
             
@@ -317,7 +317,7 @@ A more complete example, including use with the discovery mechanism, can be view
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server Struct Creation</summary>
 
 Service code for Rust is only available when using the `server` feature:
 
@@ -453,7 +453,7 @@ A full example can be viewed by looking at the generated `examples/server_demo.r
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server Object Construction</summary>
 
 ```c++
 // To be written
@@ -470,7 +470,7 @@ A full example can be viewed by looking at the generated `examples/server_main.c
 A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client Struct Creation</summary>
 
 The best way to create a client instance is to use the discovery class to find an instance of the service, and then create the client from the discovered instance information.
 An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance IDand initial property values, you can create a client directly:
@@ -597,7 +597,7 @@ A full example can be viewed by looking at the generated `client/examples/client
 </details>
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client Object Construction</summary>
 
 ```python
 from testableipc.server import TestableServer, TestableInitialPropertyValues
@@ -653,7 +653,7 @@ initial_property_values = TestableInitialPropertyValues(
         
     read_write_struct_version=9,
 
-    read_write_optional_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
+    read_write_optional_struct=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
         
     read_write_optional_struct_version=10,
 
@@ -693,7 +693,7 @@ initial_property_values = TestableInitialPropertyValues(
         
     read_write_datetime_version=16,
 
-    read_write_optional_datetime=datetime.now(UTC),
+    read_write_optional_datetime=None,
         
     read_write_optional_datetime_version=17,
 
@@ -773,7 +773,7 @@ Like the Python client, there is a `TestableServerBuilder` class to help capture
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client Object Construction</summary>
 
 A full example can be viewed by looking at the generated `examples/client_main.cpp` file.
 
@@ -798,7 +798,7 @@ C++ uses a user-provided logging function.  The function should take two paramet
 Log levels are re-used from the `syslog.h` header file, although no other syslog mechanisms are used.  Client and server classes use the logging provided by the `MqttBrokerConnection` object.
 
 <details>
-  <summary>Example C++ Code</summary>
+  <summary>Example C++ Log Setup</summary>
 
 ```c++
 #include <syslog.h>
@@ -838,7 +838,7 @@ A signal with no parameters.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'empty' signal</summary>
 
 The `empty` signal can be subscribed to by using the client's `receive_empty` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -851,7 +851,7 @@ def on_empty():
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'empty' signal</summary>
 
 A server can emit a `empty` signal simply by calling the server's `emit_empty` method.
 
@@ -862,7 +862,7 @@ server.emit_empty()
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'empty' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -876,7 +876,7 @@ print("Got a 'empty' signal: {:?}", empty_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'empty' signal</summary>
 
 A server can emit a `empty` signal simply by calling the server's `emit_empty` method.
 
@@ -889,7 +889,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'empty' signal callback</summary>
 
 A client can register a callback function to be called when a `empty` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -902,7 +902,7 @@ client.registerEmptyCallback([]() {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'empty' signal</summary>
 
 A `empty` signal can be emitted by calling the server's `emitEmptySignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -927,7 +927,7 @@ A signal with a single integer parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleInt' signal</summary>
 
 The `singleInt` signal can be subscribed to by using the client's `receive_single_int` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -940,7 +940,7 @@ def on_single_int(value: int):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleInt' signal</summary>
 
 A server can emit a `singleInt` signal simply by calling the server's `emit_single_int` method.
 
@@ -951,7 +951,7 @@ server.emit_single_int(42)
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleInt' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -965,7 +965,7 @@ print("Got a 'singleInt' signal: {:?}", single_int_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleInt' signal</summary>
 
 A server can emit a `singleInt` signal simply by calling the server's `emit_single_int` method.
 
@@ -978,7 +978,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleInt' signal callback</summary>
 
 A client can register a callback function to be called when a `singleInt` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -991,7 +991,7 @@ client.registerSingleIntCallback([](int value) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleInt' signal</summary>
 
 A `singleInt` signal can be emitted by calling the server's `emitSingleIntSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1016,7 +1016,7 @@ A signal with a single optional integer parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleOptionalInt' signal</summary>
 
 The `singleOptionalInt` signal can be subscribed to by using the client's `receive_single_optional_int` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1029,7 +1029,7 @@ def on_single_optional_int(value: Optional[int]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleOptionalInt' signal</summary>
 
 A server can emit a `singleOptionalInt` signal simply by calling the server's `emit_single_optional_int` method.
 
@@ -1040,7 +1040,7 @@ server.emit_single_optional_int(42)
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleOptionalInt' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1054,7 +1054,7 @@ print("Got a 'singleOptionalInt' signal: {:?}", single_optional_int_signal_rx.re
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleOptionalInt' signal</summary>
 
 A server can emit a `singleOptionalInt` signal simply by calling the server's `emit_single_optional_int` method.
 
@@ -1067,7 +1067,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleOptionalInt' signal callback</summary>
 
 A client can register a callback function to be called when a `singleOptionalInt` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -1080,7 +1080,7 @@ client.registerSingleOptionalIntCallback([](std::optional<int> value) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleOptionalInt' signal</summary>
 
 A `singleOptionalInt` signal can be emitted by calling the server's `emitSingleOptionalIntSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1107,7 +1107,7 @@ A signal with three integer parameters, the third is optional.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'threeIntegers' signal</summary>
 
 The `threeIntegers` signal can be subscribed to by using the client's `receive_three_integers` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1120,7 +1120,7 @@ def on_three_integers(first: int, second: int, third: Optional[int]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'threeIntegers' signal</summary>
 
 A server can emit a `threeIntegers` signal simply by calling the server's `emit_three_integers` method.
 
@@ -1131,7 +1131,7 @@ server.emit_three_integers(42, 42, 42)
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'threeIntegers' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1145,7 +1145,7 @@ print("Got a 'threeIntegers' signal: {:?}", three_integers_signal_rx.recv().awai
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'threeIntegers' signal</summary>
 
 A server can emit a `threeIntegers` signal simply by calling the server's `emit_three_integers` method.
 
@@ -1158,7 +1158,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'threeIntegers' signal callback</summary>
 
 A client can register a callback function to be called when a `threeIntegers` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -1171,7 +1171,7 @@ client.registerThreeIntegersCallback([](int first, int second, std::optional<int
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'threeIntegers' signal</summary>
 
 A `threeIntegers` signal can be emitted by calling the server's `emitThreeIntegersSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1196,7 +1196,7 @@ A signal with a single string parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleString' signal</summary>
 
 The `singleString` signal can be subscribed to by using the client's `receive_single_string` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1209,7 +1209,7 @@ def on_single_string(value: str):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleString' signal</summary>
 
 A server can emit a `singleString` signal simply by calling the server's `emit_single_string` method.
 
@@ -1220,7 +1220,7 @@ server.emit_single_string("apples")
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleString' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1234,7 +1234,7 @@ print("Got a 'singleString' signal: {:?}", single_string_signal_rx.recv().await)
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleString' signal</summary>
 
 A server can emit a `singleString` signal simply by calling the server's `emit_single_string` method.
 
@@ -1247,12 +1247,12 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleString' signal callback</summary>
 
 A client can register a callback function to be called when a `singleString` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleStringCallback([](std::string& value) {
+client.registerSingleStringCallback([](std::string value) {
     std::cout << "value=" <<value <<  std::endl;
 });
 ```
@@ -1260,7 +1260,7 @@ client.registerSingleStringCallback([](std::string& value) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleString' signal</summary>
 
 A `singleString` signal can be emitted by calling the server's `emitSingleStringSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1285,7 +1285,7 @@ A signal with a single optional string parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleOptionalString' signal</summary>
 
 The `singleOptionalString` signal can be subscribed to by using the client's `receive_single_optional_string` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1298,7 +1298,7 @@ def on_single_optional_string(value: Optional[str]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleOptionalString' signal</summary>
 
 A server can emit a `singleOptionalString` signal simply by calling the server's `emit_single_optional_string` method.
 
@@ -1309,7 +1309,7 @@ server.emit_single_optional_string("apples")
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleOptionalString' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1323,7 +1323,7 @@ print("Got a 'singleOptionalString' signal: {:?}", single_optional_string_signal
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleOptionalString' signal</summary>
 
 A server can emit a `singleOptionalString` signal simply by calling the server's `emit_single_optional_string` method.
 
@@ -1336,7 +1336,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleOptionalString' signal callback</summary>
 
 A client can register a callback function to be called when a `singleOptionalString` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -1349,7 +1349,7 @@ client.registerSingleOptionalStringCallback([](std::optional<std::string> value)
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleOptionalString' signal</summary>
 
 A `singleOptionalString` signal can be emitted by calling the server's `emitSingleOptionalStringSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1376,7 +1376,7 @@ A signal with three string parameters, the third is optional.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'threeStrings' signal</summary>
 
 The `threeStrings` signal can be subscribed to by using the client's `receive_three_strings` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1389,7 +1389,7 @@ def on_three_strings(first: str, second: str, third: Optional[str]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'threeStrings' signal</summary>
 
 A server can emit a `threeStrings` signal simply by calling the server's `emit_three_strings` method.
 
@@ -1400,7 +1400,7 @@ server.emit_three_strings("apples", "apples", "apples")
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'threeStrings' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1414,7 +1414,7 @@ print("Got a 'threeStrings' signal: {:?}", three_strings_signal_rx.recv().await)
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'threeStrings' signal</summary>
 
 A server can emit a `threeStrings` signal simply by calling the server's `emit_three_strings` method.
 
@@ -1427,12 +1427,12 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'threeStrings' signal callback</summary>
 
 A client can register a callback function to be called when a `threeStrings` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerThreeStringsCallback([](std::string& first, std::string& second, std::optional<std::string> third) {
+client.registerThreeStringsCallback([](std::string first, std::string second, std::optional<std::string> third) {
     std::cout << "first=" <<first << " | " << "second=" <<second << " | " << "third=" << "None" <<  std::endl;
 });
 ```
@@ -1440,7 +1440,7 @@ client.registerThreeStringsCallback([](std::string& first, std::string& second, 
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'threeStrings' signal</summary>
 
 A `threeStrings` signal can be emitted by calling the server's `emitThreeStringsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1465,7 +1465,7 @@ A signal with a single enum parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleEnum' signal</summary>
 
 The `singleEnum` signal can be subscribed to by using the client's `receive_single_enum` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1478,7 +1478,7 @@ def on_single_enum(value: Numbers):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleEnum' signal</summary>
 
 A server can emit a `singleEnum` signal simply by calling the server's `emit_single_enum` method.
 
@@ -1489,7 +1489,7 @@ server.emit_single_enum(Numbers.ONE)
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleEnum' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1503,7 +1503,7 @@ print("Got a 'singleEnum' signal: {:?}", single_enum_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleEnum' signal</summary>
 
 A server can emit a `singleEnum` signal simply by calling the server's `emit_single_enum` method.
 
@@ -1516,7 +1516,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleEnum' signal callback</summary>
 
 A client can register a callback function to be called when a `singleEnum` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -1529,7 +1529,7 @@ client.registerSingleEnumCallback([](Numbers value) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleEnum' signal</summary>
 
 A `singleEnum` signal can be emitted by calling the server's `emitSingleEnumSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1554,7 +1554,7 @@ A signal with a single optional enum parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleOptionalEnum' signal</summary>
 
 The `singleOptionalEnum` signal can be subscribed to by using the client's `receive_single_optional_enum` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1567,7 +1567,7 @@ def on_single_optional_enum(value: Optional[Numbers]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleOptionalEnum' signal</summary>
 
 A server can emit a `singleOptionalEnum` signal simply by calling the server's `emit_single_optional_enum` method.
 
@@ -1578,7 +1578,7 @@ server.emit_single_optional_enum(Numbers.ONE)
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleOptionalEnum' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1592,7 +1592,7 @@ print("Got a 'singleOptionalEnum' signal: {:?}", single_optional_enum_signal_rx.
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleOptionalEnum' signal</summary>
 
 A server can emit a `singleOptionalEnum` signal simply by calling the server's `emit_single_optional_enum` method.
 
@@ -1605,7 +1605,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleOptionalEnum' signal callback</summary>
 
 A client can register a callback function to be called when a `singleOptionalEnum` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -1618,7 +1618,7 @@ client.registerSingleOptionalEnumCallback([](std::optional<Numbers> value) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleOptionalEnum' signal</summary>
 
 A `singleOptionalEnum` signal can be emitted by calling the server's `emitSingleOptionalEnumSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1645,7 +1645,7 @@ A signal with three enum parameters, the third is optional.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'threeEnums' signal</summary>
 
 The `threeEnums` signal can be subscribed to by using the client's `receive_three_enums` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1658,7 +1658,7 @@ def on_three_enums(first: Numbers, second: Numbers, third: Optional[Numbers]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'threeEnums' signal</summary>
 
 A server can emit a `threeEnums` signal simply by calling the server's `emit_three_enums` method.
 
@@ -1669,7 +1669,7 @@ server.emit_three_enums(Numbers.ONE, Numbers.ONE, Numbers.ONE)
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'threeEnums' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1683,7 +1683,7 @@ print("Got a 'threeEnums' signal: {:?}", three_enums_signal_rx.recv().await);
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'threeEnums' signal</summary>
 
 A server can emit a `threeEnums` signal simply by calling the server's `emit_three_enums` method.
 
@@ -1696,7 +1696,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'threeEnums' signal callback</summary>
 
 A client can register a callback function to be called when a `threeEnums` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -1709,7 +1709,7 @@ client.registerThreeEnumsCallback([](Numbers first, Numbers second, std::optiona
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'threeEnums' signal</summary>
 
 A `threeEnums` signal can be emitted by calling the server's `emitThreeEnumsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1734,7 +1734,7 @@ A signal with a single struct parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleStruct' signal</summary>
 
 The `singleStruct` signal can be subscribed to by using the client's `receive_single_struct` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1747,7 +1747,7 @@ def on_single_struct(value: AllTypes):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleStruct' signal</summary>
 
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
@@ -1758,7 +1758,7 @@ server.emit_single_struct(AllTypes(the_bool=True, the_int=42, the_number=3.14, t
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleStruct' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1772,7 +1772,7 @@ print("Got a 'singleStruct' signal: {:?}", single_struct_signal_rx.recv().await)
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleStruct' signal</summary>
 
 A server can emit a `singleStruct` signal simply by calling the server's `emit_single_struct` method.
 
@@ -1785,7 +1785,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleStruct' signal callback</summary>
 
 A client can register a callback function to be called when a `singleStruct` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -1798,7 +1798,7 @@ client.registerSingleStructCallback([](AllTypes value) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleStruct' signal</summary>
 
 A `singleStruct` signal can be emitted by calling the server's `emitSingleStructSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1823,7 +1823,7 @@ A signal with a single optional struct parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleOptionalStruct' signal</summary>
 
 The `singleOptionalStruct` signal can be subscribed to by using the client's `receive_single_optional_struct` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1836,18 +1836,18 @@ def on_single_optional_struct(value: AllTypes):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleOptionalStruct' signal</summary>
 
 A server can emit a `singleOptionalStruct` signal simply by calling the server's `emit_single_optional_struct` method.
 
 ```python
-server.emit_single_optional_struct(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+server.emit_single_optional_struct(AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 ```
 
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleOptionalStruct' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1861,7 +1861,7 @@ print("Got a 'singleOptionalStruct' signal: {:?}", single_optional_struct_signal
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleOptionalStruct' signal</summary>
 
 A server can emit a `singleOptionalStruct` signal simply by calling the server's `emit_single_optional_struct` method.
 
@@ -1874,7 +1874,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleOptionalStruct' signal callback</summary>
 
 A client can register a callback function to be called when a `singleOptionalStruct` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -1887,7 +1887,7 @@ client.registerSingleOptionalStructCallback([](AllTypes value) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleOptionalStruct' signal</summary>
 
 A `singleOptionalStruct` signal can be emitted by calling the server's `emitSingleOptionalStructSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -1914,7 +1914,7 @@ A signal with three struct parameters, the third is optional.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'threeStructs' signal</summary>
 
 The `threeStructs` signal can be subscribed to by using the client's `receive_three_structs` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -1927,7 +1927,7 @@ def on_three_structs(first: AllTypes, second: AllTypes, third: AllTypes):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'threeStructs' signal</summary>
 
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
@@ -1938,7 +1938,7 @@ server.emit_three_structs(AllTypes(the_bool=True, the_int=42, the_number=3.14, t
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'threeStructs' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -1952,7 +1952,7 @@ print("Got a 'threeStructs' signal: {:?}", three_structs_signal_rx.recv().await)
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'threeStructs' signal</summary>
 
 A server can emit a `threeStructs` signal simply by calling the server's `emit_three_structs` method.
 
@@ -1965,7 +1965,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'threeStructs' signal callback</summary>
 
 A client can register a callback function to be called when a `threeStructs` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -1978,7 +1978,7 @@ client.registerThreeStructsCallback([](AllTypes first, AllTypes second, AllTypes
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'threeStructs' signal</summary>
 
 A `threeStructs` signal can be emitted by calling the server's `emitThreeStructsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2003,7 +2003,7 @@ A signal with a single date and time parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleDateTime' signal</summary>
 
 The `singleDateTime` signal can be subscribed to by using the client's `receive_single_date_time` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2016,7 +2016,7 @@ def on_single_date_time(value: datetime):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleDateTime' signal</summary>
 
 A server can emit a `singleDateTime` signal simply by calling the server's `emit_single_date_time` method.
 
@@ -2027,7 +2027,7 @@ server.emit_single_date_time(datetime.now(UTC))
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleDateTime' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2041,7 +2041,7 @@ print("Got a 'singleDateTime' signal: {:?}", single_date_time_signal_rx.recv().a
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleDateTime' signal</summary>
 
 A server can emit a `singleDateTime` signal simply by calling the server's `emit_single_date_time` method.
 
@@ -2054,7 +2054,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleDateTime' signal callback</summary>
 
 A client can register a callback function to be called when a `singleDateTime` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2067,7 +2067,7 @@ client.registerSingleDateTimeCallback([](std::chrono::time_point<std::chrono::sy
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleDateTime' signal</summary>
 
 A `singleDateTime` signal can be emitted by calling the server's `emitSingleDateTimeSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2092,7 +2092,7 @@ A signal with a single optional date and time parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleOptionalDatetime' signal</summary>
 
 The `singleOptionalDatetime` signal can be subscribed to by using the client's `receive_single_optional_datetime` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2105,18 +2105,18 @@ def on_single_optional_datetime(value: Optional[datetime]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleOptionalDatetime' signal</summary>
 
 A server can emit a `singleOptionalDatetime` signal simply by calling the server's `emit_single_optional_datetime` method.
 
 ```python
-server.emit_single_optional_datetime(None)
+server.emit_single_optional_datetime(datetime.now(UTC))
 ```
 
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleOptionalDatetime' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2130,7 +2130,7 @@ print("Got a 'singleOptionalDatetime' signal: {:?}", single_optional_datetime_si
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleOptionalDatetime' signal</summary>
 
 A server can emit a `singleOptionalDatetime` signal simply by calling the server's `emit_single_optional_datetime` method.
 
@@ -2143,7 +2143,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleOptionalDatetime' signal callback</summary>
 
 A client can register a callback function to be called when a `singleOptionalDatetime` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2156,7 +2156,7 @@ client.registerSingleOptionalDatetimeCallback([](std::optional<std::chrono::time
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleOptionalDatetime' signal</summary>
 
 A `singleOptionalDatetime` signal can be emitted by calling the server's `emitSingleOptionalDatetimeSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2183,7 +2183,7 @@ A signal with three date and time parameters, the third is optional.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'threeDateTimes' signal</summary>
 
 The `threeDateTimes` signal can be subscribed to by using the client's `receive_three_date_times` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2196,7 +2196,7 @@ def on_three_date_times(first: datetime, second: datetime, third: Optional[datet
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'threeDateTimes' signal</summary>
 
 A server can emit a `threeDateTimes` signal simply by calling the server's `emit_three_date_times` method.
 
@@ -2207,7 +2207,7 @@ server.emit_three_date_times(datetime.now(UTC), datetime.now(UTC), datetime.now(
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'threeDateTimes' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2221,7 +2221,7 @@ print("Got a 'threeDateTimes' signal: {:?}", three_date_times_signal_rx.recv().a
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'threeDateTimes' signal</summary>
 
 A server can emit a `threeDateTimes` signal simply by calling the server's `emit_three_date_times` method.
 
@@ -2234,7 +2234,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'threeDateTimes' signal callback</summary>
 
 A client can register a callback function to be called when a `threeDateTimes` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2247,7 +2247,7 @@ client.registerThreeDateTimesCallback([](std::chrono::time_point<std::chrono::sy
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'threeDateTimes' signal</summary>
 
 A `threeDateTimes` signal can be emitted by calling the server's `emitThreeDateTimesSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2272,7 +2272,7 @@ A signal with a single duration parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleDuration' signal</summary>
 
 The `singleDuration` signal can be subscribed to by using the client's `receive_single_duration` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2285,7 +2285,7 @@ def on_single_duration(value: timedelta):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleDuration' signal</summary>
 
 A server can emit a `singleDuration` signal simply by calling the server's `emit_single_duration` method.
 
@@ -2296,7 +2296,7 @@ server.emit_single_duration(timedelta(seconds=3536))
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleDuration' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2310,7 +2310,7 @@ print("Got a 'singleDuration' signal: {:?}", single_duration_signal_rx.recv().aw
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleDuration' signal</summary>
 
 A server can emit a `singleDuration` signal simply by calling the server's `emit_single_duration` method.
 
@@ -2323,7 +2323,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleDuration' signal callback</summary>
 
 A client can register a callback function to be called when a `singleDuration` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2336,7 +2336,7 @@ client.registerSingleDurationCallback([](std::chrono::duration<double> value) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleDuration' signal</summary>
 
 A `singleDuration` signal can be emitted by calling the server's `emitSingleDurationSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2361,7 +2361,7 @@ A signal with a single optional duration parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleOptionalDuration' signal</summary>
 
 The `singleOptionalDuration` signal can be subscribed to by using the client's `receive_single_optional_duration` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2374,7 +2374,7 @@ def on_single_optional_duration(value: Optional[timedelta]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleOptionalDuration' signal</summary>
 
 A server can emit a `singleOptionalDuration` signal simply by calling the server's `emit_single_optional_duration` method.
 
@@ -2385,7 +2385,7 @@ server.emit_single_optional_duration(None)
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleOptionalDuration' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2399,7 +2399,7 @@ print("Got a 'singleOptionalDuration' signal: {:?}", single_optional_duration_si
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleOptionalDuration' signal</summary>
 
 A server can emit a `singleOptionalDuration` signal simply by calling the server's `emit_single_optional_duration` method.
 
@@ -2412,7 +2412,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleOptionalDuration' signal callback</summary>
 
 A client can register a callback function to be called when a `singleOptionalDuration` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2425,7 +2425,7 @@ client.registerSingleOptionalDurationCallback([](std::optional<std::chrono::dura
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleOptionalDuration' signal</summary>
 
 A `singleOptionalDuration` signal can be emitted by calling the server's `emitSingleOptionalDurationSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2452,7 +2452,7 @@ A signal with three duration parameters, the third is optional.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'threeDurations' signal</summary>
 
 The `threeDurations` signal can be subscribed to by using the client's `receive_three_durations` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2465,7 +2465,7 @@ def on_three_durations(first: timedelta, second: timedelta, third: Optional[time
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'threeDurations' signal</summary>
 
 A server can emit a `threeDurations` signal simply by calling the server's `emit_three_durations` method.
 
@@ -2476,7 +2476,7 @@ server.emit_three_durations(timedelta(seconds=3536), timedelta(seconds=3536), No
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'threeDurations' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2490,7 +2490,7 @@ print("Got a 'threeDurations' signal: {:?}", three_durations_signal_rx.recv().aw
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'threeDurations' signal</summary>
 
 A server can emit a `threeDurations` signal simply by calling the server's `emit_three_durations` method.
 
@@ -2503,7 +2503,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'threeDurations' signal callback</summary>
 
 A client can register a callback function to be called when a `threeDurations` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2516,7 +2516,7 @@ client.registerThreeDurationsCallback([](std::chrono::duration<double> first, st
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'threeDurations' signal</summary>
 
 A `threeDurations` signal can be emitted by calling the server's `emitThreeDurationsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2541,7 +2541,7 @@ A signal with a single binary parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleBinary' signal</summary>
 
 The `singleBinary` signal can be subscribed to by using the client's `receive_single_binary` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2554,7 +2554,7 @@ def on_single_binary(value: bytes):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleBinary' signal</summary>
 
 A server can emit a `singleBinary` signal simply by calling the server's `emit_single_binary` method.
 
@@ -2565,7 +2565,7 @@ server.emit_single_binary(b"example binary data")
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleBinary' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2579,7 +2579,7 @@ print("Got a 'singleBinary' signal: {:?}", single_binary_signal_rx.recv().await)
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleBinary' signal</summary>
 
 A server can emit a `singleBinary` signal simply by calling the server's `emit_single_binary` method.
 
@@ -2592,7 +2592,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleBinary' signal callback</summary>
 
 A client can register a callback function to be called when a `singleBinary` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2605,7 +2605,7 @@ client.registerSingleBinaryCallback([](std::vector<uint8_t> value) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleBinary' signal</summary>
 
 A `singleBinary` signal can be emitted by calling the server's `emitSingleBinarySignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2630,7 +2630,7 @@ A signal with a single optional binary parameter.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleOptionalBinary' signal</summary>
 
 The `singleOptionalBinary` signal can be subscribed to by using the client's `receive_single_optional_binary` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2643,7 +2643,7 @@ def on_single_optional_binary(value: bytes):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleOptionalBinary' signal</summary>
 
 A server can emit a `singleOptionalBinary` signal simply by calling the server's `emit_single_optional_binary` method.
 
@@ -2654,7 +2654,7 @@ server.emit_single_optional_binary(b"example binary data")
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleOptionalBinary' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2668,7 +2668,7 @@ print("Got a 'singleOptionalBinary' signal: {:?}", single_optional_binary_signal
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleOptionalBinary' signal</summary>
 
 A server can emit a `singleOptionalBinary` signal simply by calling the server's `emit_single_optional_binary` method.
 
@@ -2681,7 +2681,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleOptionalBinary' signal callback</summary>
 
 A client can register a callback function to be called when a `singleOptionalBinary` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2694,7 +2694,7 @@ client.registerSingleOptionalBinaryCallback([](std::optional<std::vector<uint8_t
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleOptionalBinary' signal</summary>
 
 A `singleOptionalBinary` signal can be emitted by calling the server's `emitSingleOptionalBinarySignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2721,7 +2721,7 @@ A signal with three binary parameters, the third is optional.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'threeBinaries' signal</summary>
 
 The `threeBinaries` signal can be subscribed to by using the client's `receive_three_binaries` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2734,7 +2734,7 @@ def on_three_binaries(first: bytes, second: bytes, third: bytes):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'threeBinaries' signal</summary>
 
 A server can emit a `threeBinaries` signal simply by calling the server's `emit_three_binaries` method.
 
@@ -2745,7 +2745,7 @@ server.emit_three_binaries(b"example binary data", b"example binary data", b"exa
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'threeBinaries' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2759,7 +2759,7 @@ print("Got a 'threeBinaries' signal: {:?}", three_binaries_signal_rx.recv().awai
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'threeBinaries' signal</summary>
 
 A server can emit a `threeBinaries` signal simply by calling the server's `emit_three_binaries` method.
 
@@ -2772,7 +2772,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'threeBinaries' signal callback</summary>
 
 A client can register a callback function to be called when a `threeBinaries` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2785,7 +2785,7 @@ client.registerThreeBinariesCallback([](std::vector<uint8_t> first, std::vector<
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'threeBinaries' signal</summary>
 
 A `threeBinaries` signal can be emitted by calling the server's `emitThreeBinariesSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2810,7 +2810,7 @@ A signal with an array of integers.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleArrayOfIntegers' signal</summary>
 
 The `singleArrayOfIntegers` signal can be subscribed to by using the client's `receive_single_array_of_integers` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2823,7 +2823,7 @@ def on_single_array_of_integers(values: List[int]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleArrayOfIntegers' signal</summary>
 
 A server can emit a `singleArrayOfIntegers` signal simply by calling the server's `emit_single_array_of_integers` method.
 
@@ -2834,7 +2834,7 @@ server.emit_single_array_of_integers([42, 2022])
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleArrayOfIntegers' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2848,7 +2848,7 @@ print("Got a 'singleArrayOfIntegers' signal: {:?}", single_array_of_integers_sig
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleArrayOfIntegers' signal</summary>
 
 A server can emit a `singleArrayOfIntegers` signal simply by calling the server's `emit_single_array_of_integers` method.
 
@@ -2861,7 +2861,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleArrayOfIntegers' signal callback</summary>
 
 A client can register a callback function to be called when a `singleArrayOfIntegers` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2874,7 +2874,7 @@ client.registerSingleArrayOfIntegersCallback([](std::vector<int> values) {
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleArrayOfIntegers' signal</summary>
 
 A `singleArrayOfIntegers` signal can be emitted by calling the server's `emitSingleArrayOfIntegersSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2899,7 +2899,7 @@ A signal with an optional array of strings.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'singleOptionalArrayOfStrings' signal</summary>
 
 The `singleOptionalArrayOfStrings` signal can be subscribed to by using the client's `receive_single_optional_array_of_strings` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -2912,7 +2912,7 @@ def on_single_optional_array_of_strings(values: List[str]):
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'singleOptionalArrayOfStrings' signal</summary>
 
 A server can emit a `singleOptionalArrayOfStrings` signal simply by calling the server's `emit_single_optional_array_of_strings` method.
 
@@ -2923,7 +2923,7 @@ server.emit_single_optional_array_of_strings(["apples", "foo"])
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'singleOptionalArrayOfStrings' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -2937,7 +2937,7 @@ print("Got a 'singleOptionalArrayOfStrings' signal: {:?}", single_optional_array
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'singleOptionalArrayOfStrings' signal</summary>
 
 A server can emit a `singleOptionalArrayOfStrings` signal simply by calling the server's `emit_single_optional_array_of_strings` method.
 
@@ -2950,7 +2950,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'singleOptionalArrayOfStrings' signal callback</summary>
 
 A client can register a callback function to be called when a `singleOptionalArrayOfStrings` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -2963,7 +2963,7 @@ client.registerSingleOptionalArrayOfStringsCallback([](std::optional<std::vector
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'singleOptionalArrayOfStrings' signal</summary>
 
 A `singleOptionalArrayOfStrings` signal can be emitted by calling the server's `emitSingleOptionalArrayOfStringsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -2995,7 +2995,7 @@ _No documentation for this signal_
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for receiving 'arrayOfEveryType' signal</summary>
 
 The `arrayOfEveryType` signal can be subscribed to by using the client's `receive_array_of_every_type` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
 
@@ -3008,7 +3008,7 @@ def on_array_of_every_type(first_of_integers: List[int], second_of_floats: List[
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for emitting 'arrayOfEveryType' signal</summary>
 
 A server can emit a `arrayOfEveryType` signal simply by calling the server's `emit_array_of_every_type` method.
 
@@ -3019,7 +3019,7 @@ server.emit_array_of_every_type([42, 2022], [3.14, 1.0], ["apples", "foo"], [Num
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for receiving 'arrayOfEveryType' signal</summary>
 
 A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
 
@@ -3033,7 +3033,7 @@ print("Got a 'arrayOfEveryType' signal: {:?}", array_of_every_type_signal_rx.rec
 </details>
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for emitting 'arrayOfEveryType' signal</summary>
 
 A server can emit a `arrayOfEveryType` signal simply by calling the server's `emit_array_of_every_type` method.
 
@@ -3046,7 +3046,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 </details>
 
 <details>
-  <summary>C++ Client</summary>
+  <summary>C++ Client code for registering a 'arrayOfEveryType' signal callback</summary>
 
 A client can register a callback function to be called when a `arrayOfEveryType` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
@@ -3059,7 +3059,7 @@ client.registerArrayOfEveryTypeCallback([](std::vector<int> first_of_integers, s
 </details>
 
 <details>
-  <summary>C++ Server</summary>
+  <summary>C++ Server code for emitting a 'arrayOfEveryType' signal</summary>
 
 A `arrayOfEveryType` signal can be emitted by calling the server's `emitArrayOfEveryTypeSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
@@ -3097,7 +3097,7 @@ There is no return value for this method call.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callWithNothing' method</summary>
 
 The `callWithNothing` method can be called by calling the clients's `call_with_nothing` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3115,7 +3115,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callWithNothing' method</summary>
 
 The server provides an implementation for the `callWithNothing` method by using the `@server.handle_call_with_nothing` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3131,7 +3131,7 @@ def call_with_nothing() -> None:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callWithNothing' method</summary>
 
 The `TestableClient` provides an implementation for the `callWithNothing` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3158,7 +3158,7 @@ The return value type is `integer`.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOneInteger' method</summary>
 
 The `callOneInteger` method can be called by calling the clients's `call_one_integer` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3176,7 +3176,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOneInteger' method</summary>
 
 The server provides an implementation for the `callOneInteger` method by using the `@server.handle_call_one_integer` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3192,7 +3192,7 @@ def call_one_integer(input1: int) -> int:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOneInteger' method</summary>
 
 The `TestableClient` provides an implementation for the `callOneInteger` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3219,7 +3219,7 @@ The return value type is `integer`.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOptionalInteger' method</summary>
 
 The `callOptionalInteger` method can be called by calling the clients's `call_optional_integer` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3237,7 +3237,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOptionalInteger' method</summary>
 
 The server provides an implementation for the `callOptionalInteger` method by using the `@server.handle_call_optional_integer` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3253,7 +3253,7 @@ def call_optional_integer(input1: Optional[int]) -> Optional[int]:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOptionalInteger' method</summary>
 
 The `TestableClient` provides an implementation for the `callOptionalInteger` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3282,7 +3282,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callThreeIntegers' method</summary>
 
 The `callThreeIntegers` method can be called by calling the clients's `call_three_integers` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3300,7 +3300,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callThreeIntegers' method</summary>
 
 The server provides an implementation for the `callThreeIntegers` method by using the `@server.handle_call_three_integers` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3316,7 +3316,7 @@ def call_three_integers(input1: int, input2: int, input3: Optional[int]) -> Call
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callThreeIntegers' method</summary>
 
 The `TestableClient` provides an implementation for the `callThreeIntegers` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3343,7 +3343,7 @@ The return value type is `string`.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOneString' method</summary>
 
 The `callOneString` method can be called by calling the clients's `call_one_string` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3361,7 +3361,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOneString' method</summary>
 
 The server provides an implementation for the `callOneString` method by using the `@server.handle_call_one_string` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3377,7 +3377,7 @@ def call_one_string(input1: str) -> str:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOneString' method</summary>
 
 The `TestableClient` provides an implementation for the `callOneString` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3404,7 +3404,7 @@ The return value type is `string`.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOptionalString' method</summary>
 
 The `callOptionalString` method can be called by calling the clients's `call_optional_string` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3422,7 +3422,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOptionalString' method</summary>
 
 The server provides an implementation for the `callOptionalString` method by using the `@server.handle_call_optional_string` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3438,7 +3438,7 @@ def call_optional_string(input1: Optional[str]) -> Optional[str]:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOptionalString' method</summary>
 
 The `TestableClient` provides an implementation for the `callOptionalString` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3467,7 +3467,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callThreeStrings' method</summary>
 
 The `callThreeStrings` method can be called by calling the clients's `call_three_strings` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3485,7 +3485,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callThreeStrings' method</summary>
 
 The server provides an implementation for the `callThreeStrings` method by using the `@server.handle_call_three_strings` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3501,7 +3501,7 @@ def call_three_strings(input1: str, input2: Optional[str], input3: str) -> CallT
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callThreeStrings' method</summary>
 
 The `TestableClient` provides an implementation for the `callThreeStrings` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3528,7 +3528,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOneEnum' method</summary>
 
 The `callOneEnum` method can be called by calling the clients's `call_one_enum` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3546,7 +3546,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOneEnum' method</summary>
 
 The server provides an implementation for the `callOneEnum` method by using the `@server.handle_call_one_enum` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3562,7 +3562,7 @@ def call_one_enum(input1: Numbers) -> Numbers:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOneEnum' method</summary>
 
 The `TestableClient` provides an implementation for the `callOneEnum` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3589,7 +3589,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOptionalEnum' method</summary>
 
 The `callOptionalEnum` method can be called by calling the clients's `call_optional_enum` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3607,7 +3607,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOptionalEnum' method</summary>
 
 The server provides an implementation for the `callOptionalEnum` method by using the `@server.handle_call_optional_enum` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3623,7 +3623,7 @@ def call_optional_enum(input1: Optional[Numbers]) -> Optional[Numbers]:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOptionalEnum' method</summary>
 
 The `TestableClient` provides an implementation for the `callOptionalEnum` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3652,7 +3652,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callThreeEnums' method</summary>
 
 The `callThreeEnums` method can be called by calling the clients's `call_three_enums` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3670,7 +3670,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callThreeEnums' method</summary>
 
 The server provides an implementation for the `callThreeEnums` method by using the `@server.handle_call_three_enums` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3686,7 +3686,7 @@ def call_three_enums(input1: Numbers, input2: Numbers, input3: Optional[Numbers]
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callThreeEnums' method</summary>
 
 The `TestableClient` provides an implementation for the `callThreeEnums` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3716,7 +3716,7 @@ Method that takes one struct argument and returns one struct value.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOneStruct' method</summary>
 
 The `callOneStruct` method can be called by calling the clients's `call_one_struct` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3734,7 +3734,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOneStruct' method</summary>
 
 The server provides an implementation for the `callOneStruct` method by using the `@server.handle_call_one_struct` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3750,7 +3750,7 @@ def call_one_struct(input1: AllTypes) -> AllTypes:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOneStruct' method</summary>
 
 The `TestableClient` provides an implementation for the `callOneStruct` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3780,7 +3780,7 @@ Method that takes one optional struct argument and returns one optional struct v
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOptionalStruct' method</summary>
 
 The `callOptionalStruct` method can be called by calling the clients's `call_optional_struct` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3798,7 +3798,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOptionalStruct' method</summary>
 
 The server provides an implementation for the `callOptionalStruct` method by using the `@server.handle_call_optional_struct` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3814,7 +3814,7 @@ def call_optional_struct(input1: AllTypes) -> AllTypes:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOptionalStruct' method</summary>
 
 The `TestableClient` provides an implementation for the `callOptionalStruct` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3843,7 +3843,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callThreeStructs' method</summary>
 
 The `callThreeStructs` method can be called by calling the clients's `call_three_structs` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3851,7 +3851,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_structs(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
+future = client.call_three_structs(input1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), input3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=datetime.now(UTC), optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3861,7 +3861,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callThreeStructs' method</summary>
 
 The server provides an implementation for the `callThreeStructs` method by using the `@server.handle_call_three_structs` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3877,7 +3877,7 @@ def call_three_structs(input1: AllTypes, input2: AllTypes, input3: AllTypes) -> 
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callThreeStructs' method</summary>
 
 The `TestableClient` provides an implementation for the `callThreeStructs` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3904,7 +3904,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOneDateTime' method</summary>
 
 The `callOneDateTime` method can be called by calling the clients's `call_one_date_time` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3922,7 +3922,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOneDateTime' method</summary>
 
 The server provides an implementation for the `callOneDateTime` method by using the `@server.handle_call_one_date_time` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3938,7 +3938,7 @@ def call_one_date_time(input1: datetime) -> datetime:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOneDateTime' method</summary>
 
 The `TestableClient` provides an implementation for the `callOneDateTime` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -3965,7 +3965,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOptionalDateTime' method</summary>
 
 The `callOptionalDateTime` method can be called by calling the clients's `call_optional_date_time` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -3973,7 +3973,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_optional_date_time(input1=None)
+future = client.call_optional_date_time(input1=datetime.now(UTC))
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -3983,7 +3983,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOptionalDateTime' method</summary>
 
 The server provides an implementation for the `callOptionalDateTime` method by using the `@server.handle_call_optional_date_time` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -3993,13 +3993,13 @@ The decorated method is called everytime the a request for the method is receive
 def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
     """ This is an example handler for the 'callOptionalDateTime' method.  """
     print(f"Running call_optional_date_time'({input1})'")
-    return datetime.now(UTC)
+    return None
 ```
 
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOptionalDateTime' method</summary>
 
 The `TestableClient` provides an implementation for the `callOptionalDateTime` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4028,7 +4028,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callThreeDateTimes' method</summary>
 
 The `callThreeDateTimes` method can be called by calling the clients's `call_three_date_times` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4036,7 +4036,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
+future = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=None)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -4046,7 +4046,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callThreeDateTimes' method</summary>
 
 The server provides an implementation for the `callThreeDateTimes` method by using the `@server.handle_call_three_date_times` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4062,7 +4062,7 @@ def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[d
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callThreeDateTimes' method</summary>
 
 The `TestableClient` provides an implementation for the `callThreeDateTimes` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4089,7 +4089,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOneDuration' method</summary>
 
 The `callOneDuration` method can be called by calling the clients's `call_one_duration` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4107,7 +4107,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOneDuration' method</summary>
 
 The server provides an implementation for the `callOneDuration` method by using the `@server.handle_call_one_duration` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4123,7 +4123,7 @@ def call_one_duration(input1: timedelta) -> timedelta:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOneDuration' method</summary>
 
 The `TestableClient` provides an implementation for the `callOneDuration` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4150,7 +4150,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOptionalDuration' method</summary>
 
 The `callOptionalDuration` method can be called by calling the clients's `call_optional_duration` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4168,7 +4168,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOptionalDuration' method</summary>
 
 The server provides an implementation for the `callOptionalDuration` method by using the `@server.handle_call_optional_duration` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4184,7 +4184,7 @@ def call_optional_duration(input1: Optional[timedelta]) -> Optional[timedelta]:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOptionalDuration' method</summary>
 
 The `TestableClient` provides an implementation for the `callOptionalDuration` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4213,7 +4213,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callThreeDurations' method</summary>
 
 The `callThreeDurations` method can be called by calling the clients's `call_three_durations` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4231,7 +4231,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callThreeDurations' method</summary>
 
 The server provides an implementation for the `callThreeDurations` method by using the `@server.handle_call_three_durations` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4247,7 +4247,7 @@ def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callThreeDurations' method</summary>
 
 The `TestableClient` provides an implementation for the `callThreeDurations` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4274,7 +4274,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOneBinary' method</summary>
 
 The `callOneBinary` method can be called by calling the clients's `call_one_binary` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4292,7 +4292,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOneBinary' method</summary>
 
 The server provides an implementation for the `callOneBinary` method by using the `@server.handle_call_one_binary` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4308,7 +4308,7 @@ def call_one_binary(input1: bytes) -> bytes:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOneBinary' method</summary>
 
 The `TestableClient` provides an implementation for the `callOneBinary` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4335,7 +4335,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOptionalBinary' method</summary>
 
 The `callOptionalBinary` method can be called by calling the clients's `call_optional_binary` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4353,7 +4353,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOptionalBinary' method</summary>
 
 The server provides an implementation for the `callOptionalBinary` method by using the `@server.handle_call_optional_binary` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4369,7 +4369,7 @@ def call_optional_binary(input1: bytes) -> bytes:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOptionalBinary' method</summary>
 
 The `TestableClient` provides an implementation for the `callOptionalBinary` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4398,7 +4398,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callThreeBinaries' method</summary>
 
 The `callThreeBinaries` method can be called by calling the clients's `call_three_binaries` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4416,7 +4416,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callThreeBinaries' method</summary>
 
 The server provides an implementation for the `callThreeBinaries` method by using the `@server.handle_call_three_binaries` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4432,7 +4432,7 @@ def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> CallThre
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callThreeBinaries' method</summary>
 
 The `TestableClient` provides an implementation for the `callThreeBinaries` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4459,7 +4459,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOneListOfIntegers' method</summary>
 
 The `callOneListOfIntegers` method can be called by calling the clients's `call_one_list_of_integers` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4477,7 +4477,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOneListOfIntegers' method</summary>
 
 The server provides an implementation for the `callOneListOfIntegers` method by using the `@server.handle_call_one_list_of_integers` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4493,7 +4493,7 @@ def call_one_list_of_integers(input1: List[int]) -> List[int]:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOneListOfIntegers' method</summary>
 
 The `TestableClient` provides an implementation for the `callOneListOfIntegers` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4520,7 +4520,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callOptionalListOfFloats' method</summary>
 
 The `callOptionalListOfFloats` method can be called by calling the clients's `call_optional_list_of_floats` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4538,7 +4538,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callOptionalListOfFloats' method</summary>
 
 The server provides an implementation for the `callOptionalListOfFloats` method by using the `@server.handle_call_optional_list_of_floats` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4554,7 +4554,7 @@ def call_optional_list_of_floats(input1: List[float]) -> List[float]:
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callOptionalListOfFloats' method</summary>
 
 The `TestableClient` provides an implementation for the `callOptionalListOfFloats` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4582,7 +4582,7 @@ The return value type is ``.
 #### Code Examples
 
 <details>
-  <summary>Python Client</summary>
+  <summary>Python Client code for calling the 'callTwoLists' method</summary>
 
 The `callTwoLists` method can be called by calling the clients's `call_two_lists` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
@@ -4600,7 +4600,7 @@ except futures.TimeoutError:
 </details>
 
 <details>
-  <summary>Python Server</summary>
+  <summary>Python Server code for handling the 'callTwoLists' method</summary>
 
 The server provides an implementation for the `callTwoLists` method by using the `@server.handle_call_two_lists` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
@@ -4616,7 +4616,7 @@ def call_two_lists(input1: List[Numbers], input2: List[str]) -> CallTwoListsMeth
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for calling the 'callTwoLists' method</summary>
 
 The `TestableClient` provides an implementation for the `callTwoLists` method.  It will block and return a Result object of either the return payload value, or an error.
 
@@ -4650,7 +4650,7 @@ A read-write integer property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_integer' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_integer`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -4686,7 +4686,7 @@ if read_write_integer_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_integer' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -4708,7 +4708,7 @@ This property is **read-only**.  It can only be modified by the server.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_only_integer' property</summary>
 
 A server hold the "source of truth" for the value of `read_only_integer`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -4744,7 +4744,7 @@ if read_only_integer_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading  the 'read_only_integer' property</summary>
 
   A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
   
@@ -4763,7 +4763,7 @@ A read-write optional integer property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_optional_integer' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_optional_integer`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -4799,7 +4799,7 @@ if read_write_optional_integer_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_optional_integer' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -4820,7 +4820,7 @@ A read-write property with two integer values. The second is optional.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_two_integers' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_two_integers`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -4860,7 +4860,7 @@ if read_write_two_integers_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_two_integers' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -4882,7 +4882,7 @@ This property is **read-only**.  It can only be modified by the server.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_only_string' property</summary>
 
 A server hold the "source of truth" for the value of `read_only_string`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -4918,7 +4918,7 @@ if read_only_string_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading  the 'read_only_string' property</summary>
 
   A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
   
@@ -4937,7 +4937,7 @@ A read-write string property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_string' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_string`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -4973,7 +4973,7 @@ if read_write_string_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_string' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -4993,7 +4993,7 @@ A read-write optional string property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_optional_string' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_optional_string`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5029,7 +5029,7 @@ if read_write_optional_string_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_optional_string' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5050,7 +5050,7 @@ A read-write property with two string values. The second is optional.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_two_strings' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_two_strings`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5090,7 +5090,7 @@ if read_write_two_strings_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_two_strings' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5110,7 +5110,7 @@ A read-write struct property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_struct' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_struct`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5146,7 +5146,7 @@ if read_write_struct_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_struct' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5166,7 +5166,7 @@ A read-write optional struct property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_optional_struct' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_optional_struct`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5202,7 +5202,7 @@ if read_write_optional_struct_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_optional_struct' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5223,7 +5223,7 @@ A read-write property with two struct values. The second is optional.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_two_structs' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_two_structs`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5263,7 +5263,7 @@ if read_write_two_structs_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_two_structs' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5285,7 +5285,7 @@ This property is **read-only**.  It can only be modified by the server.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_only_enum' property</summary>
 
 A server hold the "source of truth" for the value of `read_only_enum`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5321,7 +5321,7 @@ if read_only_enum_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading  the 'read_only_enum' property</summary>
 
   A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
   
@@ -5340,7 +5340,7 @@ A read-write enum property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_enum' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_enum`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5376,7 +5376,7 @@ if read_write_enum_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_enum' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5396,7 +5396,7 @@ A read-write optional enum property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_optional_enum' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_optional_enum`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5432,7 +5432,7 @@ if read_write_optional_enum_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_optional_enum' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5453,7 +5453,7 @@ A read-write property with two enum values. The second is optional.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_two_enums' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_two_enums`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5493,7 +5493,7 @@ if read_write_two_enums_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_two_enums' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5513,7 +5513,7 @@ A read-write datetime property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_datetime' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_datetime`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5549,7 +5549,7 @@ if read_write_datetime_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_datetime' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5569,7 +5569,7 @@ A read-write optional datetime property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_optional_datetime' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_optional_datetime`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5605,7 +5605,7 @@ if read_write_optional_datetime_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_optional_datetime' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5626,7 +5626,7 @@ A read-write property with two datetime values. The second is optional.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_two_datetimes' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_two_datetimes`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5666,7 +5666,7 @@ if read_write_two_datetimes_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_two_datetimes' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5686,7 +5686,7 @@ A read-write duration property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_duration' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_duration`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5722,7 +5722,7 @@ if read_write_duration_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_duration' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5742,7 +5742,7 @@ A read-write optional duration property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_optional_duration' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_optional_duration`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5778,7 +5778,7 @@ if read_write_optional_duration_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_optional_duration' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5799,7 +5799,7 @@ A read-write property with two duration values. The second is optional.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_two_durations' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_two_durations`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5839,7 +5839,7 @@ if read_write_two_durations_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_two_durations' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5859,7 +5859,7 @@ A read-write binary property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_binary' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_binary`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5895,7 +5895,7 @@ if read_write_binary_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_binary' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5915,7 +5915,7 @@ A read-write optional binary property.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_optional_binary' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_optional_binary`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -5951,7 +5951,7 @@ if read_write_optional_binary_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_optional_binary' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -5972,7 +5972,7 @@ A read-write property with two binary values.  The second is optional.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_two_binaries' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_two_binaries`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -6012,7 +6012,7 @@ if read_write_two_binaries_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_two_binaries' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -6032,7 +6032,7 @@ A read-write property that is a list of strings.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_list_of_strings' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_list_of_strings`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -6068,7 +6068,7 @@ if read_write_list_of_strings_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_list_of_strings' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
@@ -6089,7 +6089,7 @@ A read-write property containing two lists.  The second list is optional.
 ### Code Examples
 
 <details>
-  <summary>Rust Server</summary>
+  <summary>Rust Server code for reading and writing the 'read_write_lists' property</summary>
 
 A server hold the "source of truth" for the value of `read_write_lists`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
 
@@ -6129,7 +6129,7 @@ if read_write_lists_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client</summary>
+  <summary>Rust Client code for reading and writing  the 'read_write_lists' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.

@@ -233,7 +233,7 @@ void SimpleClient::_receiveSchoolPropertyUpdate(const std::string& topic, const 
     }
 }
 
-std::optional<std::string&> SimpleClient::getSchoolProperty()
+std::optional<std::string> SimpleClient::getSchoolProperty()
 {
     std::lock_guard<std::mutex> lock(_schoolPropertyMutex);
     if (_schoolProperty)

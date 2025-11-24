@@ -943,7 +943,7 @@ void FullServer::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
     republishLunchMenuProperty();
 }
 
-std::optional<std::string&> FullServer::getFamilyNameProperty()
+std::optional<std::string> FullServer::getFamilyNameProperty()
 {
     std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
     if (_familyNameProperty)

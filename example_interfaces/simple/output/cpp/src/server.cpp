@@ -173,7 +173,7 @@ void SimpleServer::_callTradeNumbersHandler(
     }
 }
 
-std::optional<std::string&> SimpleServer::getSchoolProperty()
+std::optional<std::string> SimpleServer::getSchoolProperty()
 {
     std::lock_guard<std::mutex> lock(_schoolPropertyMutex);
     if (_schoolProperty)

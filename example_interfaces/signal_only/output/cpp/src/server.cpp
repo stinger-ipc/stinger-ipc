@@ -64,7 +64,7 @@ void SignalOnlyServer::_receiveMessage(
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
 }
 
-std::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, std::string& three)
+std::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, std::string three)
 {
     rapidjson::Document doc;
     doc.SetObject();
@@ -86,7 +86,7 @@ std::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two
     return _broker->Publish((format("signalOnly/%1%/signal/anotherSignal") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
-std::future<bool> SignalOnlyServer::emitBarkSignal(std::string& word)
+std::future<bool> SignalOnlyServer::emitBarkSignal(std::string word)
 {
     rapidjson::Document doc;
     doc.SetObject();
