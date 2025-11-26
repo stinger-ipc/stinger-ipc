@@ -51,28 +51,8 @@ def generate(
         if lang not in ("rust", "python", "markdown", "cpp", "web", "protobuf"):
             raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf")
 
-        if lang == "python":
-            # python_generator.main expects Path arguments via typer
-            python_generator.main(input_file, output_dir)
-        elif lang in ["markdown", "rust", "html"]:
+        if lang in ["markdown", "rust", "html", "protobuf", "python"]:
             generic_generator.main(input_file, output_dir, lang, template_pkg, template_path)
-        elif lang == "web":
-            wt = jj2.WebTemplator(output_dir=output_dir)
-            ct = jj2.CodeTemplator(output_dir=output_dir)
-            wt.add_template_dir(
-                os.path.join(os.path.dirname(__file__), "../templates", "html")
-            )
-            ct.add_template_dir(
-                os.path.join(os.path.dirname(__file__), "../templates", "html")
-            )
-            with open(input_file, "r") as f:
-                stinger = StingerInterface.from_yaml(f, placeholder="+")
-            for output_file in [
-                "app.js",
-                "styles.css",
-            ]:
-                ct.render_template(f"{output_file}.jinja2", output_file, stinger=stinger)
-            wt.render_template("index.html.jinja2", "index.html", stinger=stinger)
         elif lang == "cpp":
             cpp_generator.main(input_file, output_dir)
         elif lang == "protobuf":

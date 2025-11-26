@@ -1,7 +1,6 @@
 from __future__ import annotations
 from enum import Enum
 import random
-import stringcase
 from abc import abstractmethod
 from typing import Any, Optional, Mapping
 from .topic import (
@@ -316,9 +315,9 @@ class ArgEnum(Arg, LanguageSymbolMixin):
         random.seed(seed)
         value = random.choice(self._enum.values)
         if lang == "python":
-            retval = f"{self._enum.class_name}.{stringcase.constcase(value) }"
+            retval = f"{self._enum.class_name}.{stringmanip.const_case(value) }"
         elif lang == "c++":
-            retval = f"{self._enum.class_name}::{stringcase.constcase(value)}"
+            retval = f"{self._enum.class_name}::{stringmanip.const_case(value)}"
         elif lang == "rust":
             if self.optional:
                 retval = f"Some({self._enum.class_name}::{stringmanip.upper_camel_case(value)})"
@@ -490,7 +489,7 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         example_list: dict[str, str]
         if lang in ["rust", "python"]:
             example_list = {
-                stringcase.snakecase(a.name): str(a.get_random_example_value(lang, seed=seed))
+                stringmanip.snake_case(a.name): str(a.get_random_example_value(lang, seed=seed))
                 for a in self.members
             }
         else:

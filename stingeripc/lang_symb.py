@@ -1,6 +1,5 @@
 
 from jacobsjinjatoo import stringmanip
-import stringcase
 
 class ISymbolsProvider:
 
@@ -114,7 +113,7 @@ class RustInterfaceSymbols(RustSymbols):
     @property
     def package_name(self) -> str:
         """ Name of the rust package for the interface client."""
-        s = f"{stringcase.snakecase(self._iface.name)}_ipc"
+        s = f"{stringmanip.snake_case(self._iface.name)}_ipc"
         return s.replace('__', '_')
 
     @property

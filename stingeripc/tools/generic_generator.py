@@ -92,37 +92,38 @@ def main(
         code_templator.add_template_dir(template_dir)
         template_dirs.append(template_dir)
 
-    def recursive_render_templates(local_dir: str|Path, current_template_dir: Path):
-        local_dir = Path(local_dir)
-        cur_template_dir = current_template_dir / local_dir
-        for entry in os.listdir(cur_template_dir):
+    def recursive_render_templates(template_dir, src_walker: Path, dest_walker: Path):
+        print(f"🚶   [green]WALK[/green]: {src_walker}")
+        for entry in os.listdir(src_walker):
+            src_entry = src_walker / entry
+            dest_entry = dest_walker / entry
+            print(f"🚶   [white]ENTRY[/white]: {entry}")
             if '{{' in entry and '}}' in entry:
-                entry = code_templator.render_template(str(entry), None, **params)
-            if entry == "target":
-                # Do not copy 'target' dir
-                continue
-            entry_full_path = (cur_template_dir / entry).resolve()
-            entry_local_path = (local_dir / entry)
+                rendered_entry_name = code_templator.render_string(entry, **params)
+                dest_entry = dest_walker / rendered_entry_name
+                print(f"👓   [grey]NAME[/grey]: {entry} -> {rendered_entry_name}")
             if entry.endswith(".jinja2"):
-                destpath = str(entry_local_path)[:-len(".jinja2")]
-                print(f"✨  [green]GENER[/green]: {destpath}")
-                if destpath.endswith(".html") or destpath.endswith(".htm"):
-                    web_templator.render_template(entry_local_path, destpath, **params)
+                dest_path_str = str(dest_entry)[:-len(".jinja2")]
+                print(f"✨  [green]GENER[/green]: {dest_path_str}")
+                if dest_path_str.endswith(".html") or dest_path_str.endswith(".htm"):
+                    web_templator.render_template(src_entry.relative_to(template_dir), dest_path_str, **params)
                 else:
-                    code_templator.render_template(entry_local_path, destpath, **params)
-            elif entry_full_path.is_dir():
-                new_dir = outdir / entry_local_path
-                print(f"📁  [green]MKDIR[/green]: {new_dir.resolve()}")
-                if not new_dir.exists():
-                    new_dir.mkdir(parents=True)
-                recursive_render_templates(entry_local_path, current_template_dir)
-            elif entry_full_path.is_file():
-                shutil.copyfile(entry_full_path, outdir / entry_local_path)
-                print(f"📄   [green]COPY[/green]: {entry_full_path}")
+                    code_templator.render_template(src_entry.relative_to(template_dir), dest_path_str, **params)
+            elif src_entry.is_dir():
+                print(f"📁  [green]MKDIR[/green]: {dest_entry.resolve()}")
+                if not dest_entry.exists():
+                    dest_entry.mkdir(parents=True)
+                recursive_render_templates(template_dir, src_entry, dest_entry)
+            elif src_entry.is_file():
+                shutil.copyfile(src_entry, dest_entry)
+                print(f"📄   [green]COPY[/green]: {src_entry}")
+            else:
+                print(f"⚠️    [red]SKIP[/red]: {src_entry} (unknown type)")
 
     # Process templates from all template directories
     for template_dir in template_dirs:
-        recursive_render_templates(".", template_dir)
+        src = Path(template_dir)
+        recursive_render_templates(template_dir, src, Path(outdir))
 
 def run():
     typer.run(main)
