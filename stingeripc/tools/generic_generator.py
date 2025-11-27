@@ -3,7 +3,7 @@ import os
 import shutil
 import typer
 from typing_extensions import Annotated
-from typing import Optional
+from typing import Optional, Any
 from pathlib import Path
 from rich import print
 import importlib.resources
@@ -41,7 +41,7 @@ def main(
     with inname.open(mode="r") as f:
         stinger = StingerInterface.from_yaml(f)
 
-    params = {"stinger": stinger, "config": config_obj}
+    params: dict[str, Any] = {"stinger": stinger, "config": config_obj}
 
     if outdir.is_file():
         raise RuntimeError("Output directory is a file!")
@@ -91,6 +91,30 @@ def main(
             raise RuntimeError(f"Template directory does not exist: {template_dir}")
         code_templator.add_template_dir(template_dir)
         template_dirs.append(template_dir)
+
+    def recursive_find_output_files(src_walker: Path, dest_walker: Path) -> list[str]:
+        found_files = []
+        for entry in os.listdir(src_walker):
+            src_entry = src_walker / entry
+            dest_entry = dest_walker / entry
+            if '{{' in entry and '}}' in entry:
+                rendered_entry_name = code_templator.render_string(entry, **params)
+                dest_entry = dest_walker / rendered_entry_name
+            if entry.endswith(".jinja2"):
+                dest_path_str = str(dest_entry)[:-len(".jinja2")]
+                dest_path = Path(dest_path_str).relative_to(outdir)
+                found_files.append(str(dest_path))
+            elif src_entry.is_dir():
+                found_files.extend(recursive_find_output_files(src_entry, dest_entry))
+            elif src_entry.is_file():
+                dest_path = Path(dest_entry).relative_to(outdir)
+                found_files.append(str(dest_path))
+        return found_files
+    
+    output_file_list = set()
+    for template_dir in template_dirs:
+        output_file_list.update(recursive_find_output_files(Path(template_dir), Path(outdir)))
+    params["output_files"] = list(output_file_list)
 
     def recursive_render_templates(template_dir, src_walker: Path, dest_walker: Path):
         print(f"🚶   [green]WALK[/green]: {src_walker}")
