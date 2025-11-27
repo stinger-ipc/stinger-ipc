@@ -55,14 +55,6 @@ def generate(
             generic_generator.main(input_file, output_dir, lang, template_pkg, template_path)
         elif lang == "cpp":
             cpp_generator.main(input_file, output_dir)
-        elif lang == "protobuf":
-            ct = jj2.CodeTemplator(output_dir=output_dir)
-            ct.add_template_dir(
-                os.path.join(os.path.dirname(__file__), "../templates", "protobuf")
-            )
-            with open(input_file, "r") as f:
-                stinger = StingerInterface.from_yaml(f)
-            ct.render_template("proto.jinja2", f"{stinger.name}.proto", stinger=stinger)
         
         print(f"Generation for '{lang}' completed.")
     

@@ -10,7 +10,9 @@ import importlib.resources
 
 from stingeripc import StingerInterface
 import tomllib
+import logging
 
+#logging.basicConfig(level=logging.INFO)
 
 def main(
     inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir_okay=False, readable=True)],
@@ -49,8 +51,6 @@ def main(
     if not outdir.is_dir():
         print(f"📁  [green]MKDIR[/green]: {outdir}")
         os.makedirs(outdir)
-
-    
 
     # Collect all template directories
     template_dirs = []
@@ -97,18 +97,20 @@ def main(
         for entry in os.listdir(src_walker):
             src_entry = src_walker / entry
             dest_entry = dest_walker / entry
-            print(f"🚶   [white]ENTRY[/white]: {entry}")
+            print(f"🚶  [white]ENTRY[/white]: {src_entry.relative_to(template_dir)}")
             if '{{' in entry and '}}' in entry:
                 rendered_entry_name = code_templator.render_string(entry, **params)
                 dest_entry = dest_walker / rendered_entry_name
                 print(f"👓   [grey]NAME[/grey]: {entry} -> {rendered_entry_name}")
             if entry.endswith(".jinja2"):
                 dest_path_str = str(dest_entry)[:-len(".jinja2")]
-                print(f"✨  [green]GENER[/green]: {dest_path_str}")
+                template = src_entry.relative_to(template_dir)
+                dest_path = Path(dest_path_str).relative_to(outdir)
+                print(f"✨  [green]GENER[/green]: {dest_path}")
                 if dest_path_str.endswith(".html") or dest_path_str.endswith(".htm"):
-                    web_templator.render_template(src_entry.relative_to(template_dir), dest_path_str, **params)
+                    web_templator.render_template(template, dest_path, **params)
                 else:
-                    code_templator.render_template(src_entry.relative_to(template_dir), dest_path_str, **params)
+                    code_templator.render_template(template, dest_path, **params)
             elif src_entry.is_dir():
                 print(f"📁  [green]MKDIR[/green]: {dest_entry.resolve()}")
                 if not dest_entry.exists():
