@@ -1,8 +1,0 @@
-Metadata-Version: 2.4
-Name: test-able-ipc
-Version: 0.0.1
-Summary: Interface for testing
-Requires-Python: >=3.9
-Requires-Dist: pydantic>=2.11.7
-Requires-Dist: paho-mqtt>=2.0.1
-Requires-Dist: isodate>=0.7.2

@@ -33,15 +33,14 @@ class LanguageSymbolMixin:
             invoke_on_load=True,
         )
         for ext in mgr:
-            domain = ext.obj.get_domain()
+            domain = ext.name
             symbols = ext.obj.for_model(self.__class__.__name__, self)
             if symbols is not None:
                 setattr(self, domain, symbols)
 
-class Arg(LanguageSymbolMixin):
+class Arg:
 
     def __init__(self, name: str, description: Optional[str] = None):
-        LanguageSymbolMixin.__init__(self)
         self._name = name
         self._description = description.strip() if description else None
         self._default_value = None
@@ -443,6 +442,10 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         ), f"Passed {iface_struct=} is type {type(iface_struct)} which is not InterfaceStruct"
         self._interface_struct: InterfaceStruct = iface_struct
         self._type = ArgType.STRUCT
+
+    @property
+    def struct(self) -> InterfaceStruct:
+        return self._interface_struct
 
     @property
     def members(self) -> list[Arg]:

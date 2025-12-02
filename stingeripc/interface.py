@@ -40,3 +40,8 @@ class StingerInterface(StingerSpec):
         yaml_obj = yaml.load(yaml_input, Loader=yamlloader.ordereddict.Loader)
         itc = cls._create_topic_creator(yaml_obj, placeholder)
         return cls.new_spec_from_stinger(itc, yaml_obj)
+
+    @classmethod
+    def from_dict(cls, stinger_dict: Dict[str, Any], placeholder:str='{}') -> StingerSpec:
+        itc = cls._create_topic_creator(stinger_dict, placeholder)
+        return cls.new_spec_from_stinger(itc, stinger_dict)

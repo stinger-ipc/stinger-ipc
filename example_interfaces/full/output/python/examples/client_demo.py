@@ -20,7 +20,7 @@ def request_loop(client: FullClient):
         except futures.TimeoutError:
             print(f"Timed out waiting for response to 'add_numbers' call")
         sleep(5)
-
+        
         print("Making call to 'do_something'")
         future_resp = client.do_something(a_string="apples")
         try:
@@ -28,7 +28,7 @@ def request_loop(client: FullClient):
         except futures.TimeoutError:
             print(f"Timed out waiting for response to 'do_something' call")
         sleep(5)
-
+        
         print("Making call to 'echo'")
         future_resp = client.echo(message="apples")
         try:
@@ -36,7 +36,7 @@ def request_loop(client: FullClient):
         except futures.TimeoutError:
             print(f"Timed out waiting for response to 'echo' call")
         sleep(5)
-
+        
         print("Making call to 'what_time_is_it'")
         future_resp = client.what_time_is_it(the_first_time=datetime.now(UTC))
         try:
@@ -44,7 +44,7 @@ def request_loop(client: FullClient):
         except futures.TimeoutError:
             print(f"Timed out waiting for response to 'what_time_is_it' call")
         sleep(5)
-
+        
         print("Making call to 'set_the_time'")
         future_resp = client.set_the_time(the_first_time=datetime.now(UTC), the_second_time=datetime.now(UTC))
         try:
@@ -52,7 +52,7 @@ def request_loop(client: FullClient):
         except futures.TimeoutError:
             print(f"Timed out waiting for response to 'set_the_time' call")
         sleep(5)
-
+        
         print("Making call to 'forward_time'")
         future_resp = client.forward_time(adjustment=timedelta(seconds=3536))
         try:
@@ -60,7 +60,7 @@ def request_loop(client: FullClient):
         except futures.TimeoutError:
             print(f"Timed out waiting for response to 'forward_time' call")
         sleep(5)
-
+        
         print("Making call to 'how_off_is_the_clock'")
         future_resp = client.how_off_is_the_clock(actual_time=datetime.now(UTC))
         try:
@@ -68,88 +68,112 @@ def request_loop(client: FullClient):
         except futures.TimeoutError:
             print(f"Timed out waiting for response to 'how_off_is_the_clock' call")
         sleep(5)
-
+        
+        
+        
         client.favorite_number = 42
-
+         
+        
+        
         client.favorite_foods = FavoriteFoodsProperty(
             drink="apples",
             slices_of_pizza=42,
             breakfast="apples",
         )
-
+         
+        
+        
         client.lunch_menu = LunchMenuProperty(
             monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
             tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
         )
-
+         
+        
+        
         client.family_name = "apples"
-
+         
+        
+        
         client.last_breakfast_time = datetime.now(UTC)
-
+         
+        
+        
         client.breakfast_length = timedelta(seconds=3536)
-
+         
+        
+        
         client.last_birthdays = LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
-            sister=None,
+            sister=datetime.now(UTC),
             brothers_age=42,
         )
-
+         
+         
         sleep(10)
+ 
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = MqttBrokerConnection(transport)
 
     client_builder = FullClientBuilder()
-
+    
     @client_builder.receive_today_is
     def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: Optional[DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
         """
-        @param dayOfMonth int
-        @param dayOfWeek Optional[DayOfTheWeek]
-        @param timestamp datetime
-        @param process_time timedelta
-        @param memory_segment bytes
+        @param dayOfMonth int 
+        @param dayOfWeek Optional[DayOfTheWeek] 
+        @param timestamp datetime 
+        @param process_time timedelta 
+        @param memory_segment bytes 
         """
         print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } timestamp={ timestamp } process_time={ process_time } memory_segment={ memory_segment } ")
-
+    
+    
     @client_builder.favorite_number_updated
     def print_new_favorite_number_value(value: int):
-        """ """
+        """
+        """
         print(f"Property 'favorite_number' has been updated to: {value}")
-
+    
     @client_builder.favorite_foods_updated
     def print_new_favorite_foods_value(value: FavoriteFoodsProperty):
-        """ """
+        """
+        """
         print(f"Property 'favorite_foods' has been updated to: {value}")
-
+    
     @client_builder.lunch_menu_updated
     def print_new_lunch_menu_value(value: LunchMenuProperty):
-        """ """
+        """
+        """
         print(f"Property 'lunch_menu' has been updated to: {value}")
-
+    
     @client_builder.family_name_updated
     def print_new_family_name_value(value: str):
-        """ """
+        """
+        """
         print(f"Property 'family_name' has been updated to: {value}")
-
+    
     @client_builder.last_breakfast_time_updated
     def print_new_last_breakfast_time_value(value: datetime):
-        """ """
+        """
+        """
         print(f"Property 'last_breakfast_time' has been updated to: {value}")
-
+    
     @client_builder.breakfast_length_updated
     def print_new_breakfast_length_value(value: timedelta):
-        """ """
+        """
+        """
         print(f"Property 'breakfast_length' has been updated to: {value}")
-
+    
     @client_builder.last_birthdays_updated
     def print_new_last_birthdays_value(value: LastBirthdaysProperty):
-        """ """
+        """
+        """
         print(f"Property 'last_birthdays' has been updated to: {value}")
+    
 
     discovery = FullClientDiscoverer(conn, client_builder)
     fut_client = discovery.get_singleton_client()

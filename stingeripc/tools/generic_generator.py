@@ -8,9 +8,14 @@ from pathlib import Path
 from rich import print
 import importlib.resources
 
+import yaml
+
 from stingeripc import StingerInterface
+from stingeripc.filtering import filter_by_consumer
 import tomllib
 import logging
+import yaml
+import yamlloader
 
 #logging.basicConfig(level=logging.INFO)
 
@@ -20,6 +25,7 @@ def main(
     language: Annotated[Optional[str], typer.Argument(help="Shortcut for internally provided templates")] = None,
     template_pkg: Annotated[Optional[list[str]], typer.Option(help="Python package(s) containing templates")] = None,
     template_path: Annotated[Optional[list[Path]], typer.Option(help="Filesystem path(s) to template directories")] = None,
+    consumer: Annotated[Optional[str], typer.Option("--consumer", help="Consumer name/identifier")] = None,
     config: Annotated[Optional[Path], typer.Option("--config", help="TOML configuration file", exists=True, file_okay=True, dir_okay=False, readable=True)] = None,
 ):
     """Generate output for a Stinger interface.
@@ -38,8 +44,15 @@ def main(
         with config.open("rb") as f:
             config_obj = tomllib.load(f)
 
-    with inname.open(mode="r") as f:
-        stinger = StingerInterface.from_yaml(f)
+    if consumer:
+        print(f"💠 CONSUMER {consumer}")
+        with inname.open(mode="r") as f:
+            yaml_obj = yaml.load(f, Loader=yamlloader.ordereddict.Loader)
+            stinger_yaml = filter_by_consumer(yaml_obj, consumer)
+            stinger = StingerInterface.from_dict(stinger_yaml)
+    else:
+        with inname.open(mode="r") as f:
+            stinger = StingerInterface.from_yaml(f)
 
     params: dict[str, Any] = {"stinger": stinger, "config": config_obj}
 

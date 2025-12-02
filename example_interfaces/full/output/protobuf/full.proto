@@ -1,15 +1,20 @@
+syntax = "proto3";
+
+package full;
+
 
 
 
 enum DayOfTheWeek {
-    SUNDAY = 1,
-    MONDAY = 2,
-    TUESDAY = 3,
-    WEDNESDAY = 4,
-    THURSDAY = 5,
-    FRIDAY = 6,
-    SATURDAY = 7
-};
+    DAY_OF_THE_WEEK_UNSPECIFIED = 0;
+    SUNDAY = 1;
+    MONDAY = 2;
+    TUESDAY = 3;
+    WEDNESDAY = 4;
+    THURSDAY = 5;
+    FRIDAY = 6;
+    SATURDAY = 7;
+}
 
 
 message Lunch {
@@ -17,14 +22,19 @@ message Lunch {
     string sandwich = 2;
     float crackers = 3;
     DayOfTheWeek day = 4;
-    int32 order_number = 5;
+    optional int32 order_number = 5;
+    string time_of_lunch = 6;  // ISO 8601 format
+    string duration_of_lunch = 7;  // ISO 8601 duration format
 }
 
 
 
 message TodayIsSignal {
     int32 dayOfMonth = 1;
-    Option<DayOfTheWeek> dayOfWeek = 2;
+    optional DayOfTheWeek dayOfWeek = 2;
+    string timestamp = 3;  // ISO 8601 format
+    string process_time = 4;  // ISO 8601 duration format
+    string memory_segment = 5;  // base64 encoded binary
 }
 
 
@@ -36,7 +46,7 @@ message FavoriteNumberProperty {
 message FavoriteFoodsProperty {
     string drink = 1;
     int32 slices_of_pizza = 2;
-    string breakfast = 3;
+    optional string breakfast = 3;
 }
 
 message LunchMenuProperty {
@@ -49,13 +59,18 @@ message FamilyNameProperty {
 }
 
 message LastBreakfastTimeProperty {
+    string timestamp = 1;  // ISO 8601 format
 }
 
 message BreakfastLengthProperty {
+    string length = 1;  // ISO 8601 duration format
 }
 
 message LastBirthdaysProperty {
-    int32 brothers_age = 4;
+    string mom = 1;  // ISO 8601 format
+    string dad = 2;  // ISO 8601 format
+    optional string sister = 3;  // ISO 8601 format
+    optional int32 brothers_age = 4;
 }
 
 
@@ -63,7 +78,7 @@ message LastBirthdaysProperty {
 message AddNumbersRequest {
     int32 first = 1;
     int32 second = 2;
-    int32 third = 3;
+    optional int32 third = 3;
 }
 
 message AddNumbersResponse {
@@ -89,26 +104,35 @@ message EchoResponse {
 }
 
 message WhatTimeIsItRequest {
+    string the_first_time = 1;  // ISO 8601 format
 }
 
 message WhatTimeIsItResponse {
+    string timestamp = 1;  // ISO 8601 format
 }
 
 message SetTheTimeRequest {
+    string the_first_time = 1;  // ISO 8601 format
+    string the_second_time = 2;  // ISO 8601 format
 }
 
 message SetTheTimeResponse {
+    string timestamp = 1;  // ISO 8601 format
     string confirmation_message = 2;
 }
 
 message ForwardTimeRequest {
+    string adjustment = 1;  // ISO 8601 duration format
 }
 
 message ForwardTimeResponse {
+    string new_time = 1;  // ISO 8601 format
 }
 
 message HowOffIsTheClockRequest {
+    string actual_time = 1;  // ISO 8601 format
 }
 
 message HowOffIsTheClockResponse {
+    string difference = 1;  // ISO 8601 duration format
 }

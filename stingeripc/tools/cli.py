@@ -13,8 +13,6 @@ import yaml
 import yamlloader
 from stingeripc.interface import StingerInterface
 
-from . import markdown_generator
-from . import python_generator
 from . import cpp_generator
 from . import generic_generator
 
@@ -52,7 +50,7 @@ def generate(
             raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf")
 
         if lang in ["markdown", "rust", "html", "protobuf", "python"]:
-            generic_generator.main(input_file, output_dir, lang, template_pkg, template_path)
+            generic_generator.main(input_file, output_dir, lang, template_pkg, template_path, consumer, config)
         elif lang == "cpp":
             cpp_generator.main(input_file, output_dir)
         
@@ -60,7 +58,7 @@ def generate(
     
     # Use generic generator if template-pkg or template-path is provided
     if template_pkg or template_path:
-        generic_generator.main(input_file, output_dir, language, template_pkg, template_path)
+        generic_generator.main(input_file, output_dir, language, template_pkg, template_path, consumer, config)
         print(f"Generation from custom templates completed.")
 
 @app.command()

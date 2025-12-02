@@ -1,24 +1,37 @@
+syntax = "proto3";
+
+package {{stinger.name | snake_case}};
+
 {%macro field(arg, index)%}
 {%-if arg.arg_type.name.lower() == 'primitive'%}
-{{arg.protobuf_type}} {{arg.name}} = {{index}};
+{%if arg.optional%}optional {%endif%}{{arg.pb.data_type}} {{arg.name}} = {{index}};
 {%-elif arg.arg_type.name.lower() == 'enum'%}
-{{arg.rust_local_type}} {{arg.name}} = {{index}};
+{%if arg.optional%}optional {%endif%}{{arg.pb.data_type}} {{arg.name}} = {{index}};
 {%-elif arg.arg_type.name.lower() == 'struct'%}
-{{arg.rust_local_type}} {{arg.name}} = {{index}};
+{%if arg.optional%}optional {%endif%}{{arg.pb.data_type}} {{arg.name}} = {{index}};
 {%-elif arg.arg_type.name.lower() == 'array'%}
-repeated {{arg.rust_local_type}} {{arg.name}} = {{index}};
-{%endif-%}
+{%if arg.optional%}optional {%endif%}repeated {{arg.pb.item_type}} {{arg.name}} = {{index}};
+{%-elif arg.arg_type.name.lower() == 'datetime'%}
+{%if arg.optional%}optional {%endif%}string {{arg.name}} = {{index}};  // ISO 8601 format
+{%-elif arg.arg_type.name.lower() == 'duration'%}
+{%if arg.optional%}optional {%endif%}string {{arg.name}} = {{index}};  // ISO 8601 duration format
+{%-elif arg.arg_type.name.lower() == 'binary'%}
+{%if arg.optional%}optional {%endif%}string {{arg.name}} = {{index}};  // base64 encoded binary
+{%- else %}
+// Unknown type for {{arg.name}}: {{arg.arg_type.name}}
+{%-endif-%}
 {%endmacro%}
 
 {%for i_enum_name, i_enum in stinger.enums.items()%}
-enum {{i_enum_name | UpperCamelCase}} {
+enum {{i_enum.pb.message_name}} {
+    {{i_enum_name | CONST_CASE}}_UNSPECIFIED = 0; 
     {%-for value in i_enum.values %}
-    {{value | CONST_CASE}} = {{loop.index}}{%if not loop.last%},{%endif%}
+    {{value | CONST_CASE}} = {{loop.index}};
     {%-endfor%}
-};
+}
 {%endfor%}
 {%for struct_name, struct in stinger.structs.items() %}
-message {{struct_name | UpperCamelCase}} {
+message {{struct.pb.message_name}} {
     {%-for arg in struct.members%}
     {{- field(arg, loop.index) | indent(4) }}
     {%-endfor%}

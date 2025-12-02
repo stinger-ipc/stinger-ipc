@@ -1,28 +1,27 @@
 
 from jacobsjinjatoo import stringmanip
 
-class ISymbolsProvider:
+from stingeripc.args import ArgPrimitiveType
+from stingeripc.exceptions import InvalidStingerStructure
 
-    def get_domain(self) -> str:
-        return "example"
+class ISymbolsProvider:
 
     def for_model(self, model_class_name:str, model) -> object|None:
         return None
 
+class ModelSymbols:
+    
+    def __init__(self, model):
+        self._model = model
 class RustSymbolsProvider(ISymbolsProvider):
-
-    def get_domain(self) -> str:
-        return "rust"
 
     def for_model(self, model_class_name:str, model) -> object|None:
         if model_class_name == "StingerSpec":
             return RustInterfaceSymbols(model)
         return None
 
-class PythonSymbolsProvider(ISymbolsProvider):
 
-    def get_domain(self) -> str:
-        return "python"
+class PythonSymbolsProvider(ISymbolsProvider):
 
     def for_model(self, model_class_name:str, model) -> object|None:
         if model_class_name == "StingerSpec":
@@ -34,9 +33,6 @@ class PythonSymbolsProvider(ISymbolsProvider):
         return None
 
 class CppSymbolsProvider(ISymbolsProvider):
-
-    def get_domain(self) -> str:
-        return "cpp"
 
     def for_model(self, model_class_name:str, model) -> object|None:
         if model_class_name == "StingerSpec":

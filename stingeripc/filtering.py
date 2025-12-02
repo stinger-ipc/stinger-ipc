@@ -5,7 +5,7 @@ For both functions, the interface provided is the raw dictionary parsed from the
 import semantic_version
 from typing import Dict, Any, Set
 from copy import deepcopy
-
+from stingeripc.components import StingerSpec
 
 def _collect_used_types(args: list[Dict[str, Any]], used_enums: Set[str], used_structs: Set[str]) -> None:
     """Recursively collect enum and struct names used in argument lists."""
@@ -40,7 +40,7 @@ def _collect_struct_dependencies(struct_spec: Dict[str, Any], used_enums: Set[st
                 _collect_used_types([item_type], used_enums, used_structs)
 
 
-def filter_by_consumer(interface: Dict[str, Any], consumer_name: str) -> Dict[str, Any]:
+def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, Any]:
     """
     Filter a StingerInterface to only include methods, properties, signals, and events that specify the given consumer.
 
