@@ -184,6 +184,8 @@ signals:
       - name: value
         type: integer
         description: The integer value.
+    consumers:
+      - integers
   
   singleOptionalInt:
     documentation: A signal with a single optional integer parameter.
@@ -192,6 +194,8 @@ signals:
         type: integer
         optional: true
         description: The integer value.
+    consumers:
+      - integers
 
   threeIntegers:
     documentation: A signal with three integer parameters, the third is optional.
@@ -206,6 +210,8 @@ signals:
         type: integer
         description: The third integer value.
         optional: true
+    consumers:
+      - integers
 
   singleString:
     documentation: A signal with a single string parameter.
@@ -781,6 +787,8 @@ methods:
         type: array
         itemType:
           type: integer
+    consumers:
+      - integers
 
   callOptionalListOfFloats:
     documentation: Method that takes one optional list of floats argument and returns one optional list of floats value.
@@ -831,6 +839,8 @@ properties:
     values:
       - name: value
         type: integer
+    consumers:
+      - integers
 
   read_only_integer:
     documentation: A read-only integer property.
@@ -838,6 +848,8 @@ properties:
     values:
       - name: value
         type: integer
+    consumers:
+      - integers
 
   read_write_optional_integer:
     documentation: A read-write optional integer property.
@@ -845,6 +857,8 @@ properties:
       - name: value
         type: integer
         optional: true
+    consumers:
+      - integers
 
   read_write_two_integers:
     documentation: A read-write property with two integer values. The second is optional.
@@ -855,7 +869,9 @@ properties:
       - name: second
         type: integer
         optional: true
-
+    consumers:
+      - integers
+  
   read_only_string:
     documentation: A read-only string property.
     readOnly: true

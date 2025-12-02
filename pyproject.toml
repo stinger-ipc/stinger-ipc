@@ -9,7 +9,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "jacobs-jinja-too>=0.2.5",
+    "jacobs-jinja-too>=0.2.10",
     "jsonschema-rs>=0.34.0",
     "packaging>=25.0",
     "pydantic>=2.11.7",
@@ -18,7 +18,6 @@ dependencies = [
     "ruamel-yaml>=0.18.14",
     "semantic-version>=2.10.0",
     "stevedore>=5.5.0",
-    "stringcase>=1.2.0",
     "typer>=0.16.1",
     "yamlloader>=1.5.1",
 ]
@@ -52,8 +51,10 @@ stingeripc = [
 
 [project.scripts]
 stinger = "stingeripc.tools.cli:run"
+stinger-ipc = "stingeripc.tools.cli:run"
 
 [project.entry-points."stinger_symbols"]
 python = 'stingeripc.lang_symb:PythonSymbolsProvider'
 rust = 'stingeripc.lang_symb:RustSymbolsProvider'
 cpp = 'stingeripc.lang_symb:CppSymbolsProvider'
+pb = 'stingeripc.symbols.protobuf:ProtocolBufferSymbolsProvider'

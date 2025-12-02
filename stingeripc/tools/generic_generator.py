@@ -3,14 +3,21 @@ import os
 import shutil
 import typer
 from typing_extensions import Annotated
-from typing import Optional
+from typing import Optional, Any
 from pathlib import Path
 from rich import print
 import importlib.resources
 
-from stingeripc import StingerInterface
-import tomllib
+import yaml
 
+from stingeripc import StingerInterface
+from stingeripc.filtering import filter_by_consumer
+import tomllib
+import logging
+import yaml
+import yamlloader
+
+#logging.basicConfig(level=logging.INFO)
 
 def main(
     inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir_okay=False, readable=True)],
@@ -18,6 +25,7 @@ def main(
     language: Annotated[Optional[str], typer.Argument(help="Shortcut for internally provided templates")] = None,
     template_pkg: Annotated[Optional[list[str]], typer.Option(help="Python package(s) containing templates")] = None,
     template_path: Annotated[Optional[list[Path]], typer.Option(help="Filesystem path(s) to template directories")] = None,
+    consumer: Annotated[Optional[str], typer.Option("--consumer", help="Consumer name/identifier")] = None,
     config: Annotated[Optional[Path], typer.Option("--config", help="TOML configuration file", exists=True, file_okay=True, dir_okay=False, readable=True)] = None,
 ):
     """Generate output for a Stinger interface.
@@ -36,10 +44,17 @@ def main(
         with config.open("rb") as f:
             config_obj = tomllib.load(f)
 
-    with inname.open(mode="r") as f:
-        stinger = StingerInterface.from_yaml(f)
+    if consumer:
+        print(f"💠 CONSUMER {consumer}")
+        with inname.open(mode="r") as f:
+            yaml_obj = yaml.load(f, Loader=yamlloader.ordereddict.Loader)
+            stinger_yaml = filter_by_consumer(yaml_obj, consumer)
+            stinger = StingerInterface.from_dict(stinger_yaml)
+    else:
+        with inname.open(mode="r") as f:
+            stinger = StingerInterface.from_yaml(f)
 
-    params = {"stinger": stinger, "config": config_obj}
+    params: dict[str, Any] = {"stinger": stinger, "config": config_obj}
 
     if outdir.is_file():
         raise RuntimeError("Output directory is a file!")
@@ -49,8 +64,6 @@ def main(
     if not outdir.is_dir():
         print(f"📁  [green]MKDIR[/green]: {outdir}")
         os.makedirs(outdir)
-
-    
 
     # Collect all template directories
     template_dirs = []
@@ -92,37 +105,64 @@ def main(
         code_templator.add_template_dir(template_dir)
         template_dirs.append(template_dir)
 
-    def recursive_render_templates(local_dir: str|Path, current_template_dir: Path):
-        local_dir = Path(local_dir)
-        cur_template_dir = current_template_dir / local_dir
-        for entry in os.listdir(cur_template_dir):
+    def recursive_find_output_files(src_walker: Path, dest_walker: Path) -> list[str]:
+        found_files = []
+        for entry in os.listdir(src_walker):
+            src_entry = src_walker / entry
+            dest_entry = dest_walker / entry
             if '{{' in entry and '}}' in entry:
-                entry = code_templator.render_template(str(entry), None, **params)
-            if entry == "target":
-                # Do not copy 'target' dir
-                continue
-            entry_full_path = (cur_template_dir / entry).resolve()
-            entry_local_path = (local_dir / entry)
+                rendered_entry_name = code_templator.render_string(entry, **params)
+                dest_entry = dest_walker / rendered_entry_name
             if entry.endswith(".jinja2"):
-                destpath = str(entry_local_path)[:-len(".jinja2")]
-                print(f"✨  [green]GENER[/green]: {destpath}")
-                if destpath.endswith(".html") or destpath.endswith(".htm"):
-                    web_templator.render_template(entry_local_path, destpath, **params)
+                dest_path_str = str(dest_entry)[:-len(".jinja2")]
+                dest_path = Path(dest_path_str).relative_to(outdir)
+                found_files.append(str(dest_path))
+            elif src_entry.is_dir():
+                found_files.extend(recursive_find_output_files(src_entry, dest_entry))
+            elif src_entry.is_file():
+                dest_path = Path(dest_entry).relative_to(outdir)
+                found_files.append(str(dest_path))
+        return found_files
+    
+    output_file_list = set()
+    for template_dir in template_dirs:
+        output_file_list.update(recursive_find_output_files(Path(template_dir), Path(outdir)))
+    params["output_files"] = list(output_file_list)
+
+    def recursive_render_templates(template_dir, src_walker: Path, dest_walker: Path):
+        print(f"🚶   [green]WALK[/green]: {src_walker}")
+        for entry in os.listdir(src_walker):
+            src_entry = src_walker / entry
+            dest_entry = dest_walker / entry
+            print(f"🚶  [white]ENTRY[/white]: {src_entry.relative_to(template_dir)}")
+            if '{{' in entry and '}}' in entry:
+                rendered_entry_name = code_templator.render_string(entry, **params)
+                dest_entry = dest_walker / rendered_entry_name
+                print(f"👓   [grey]NAME[/grey]: {entry} -> {rendered_entry_name}")
+            if entry.endswith(".jinja2"):
+                dest_path_str = str(dest_entry)[:-len(".jinja2")]
+                template = src_entry.relative_to(template_dir)
+                dest_path = Path(dest_path_str).relative_to(outdir)
+                print(f"✨  [green]GENER[/green]: {dest_path}")
+                if dest_path_str.endswith(".html") or dest_path_str.endswith(".htm"):
+                    web_templator.render_template(template, dest_path, **params)
                 else:
-                    code_templator.render_template(entry_local_path, destpath, **params)
-            elif entry_full_path.is_dir():
-                new_dir = outdir / entry_local_path
-                print(f"📁  [green]MKDIR[/green]: {new_dir.resolve()}")
-                if not new_dir.exists():
-                    new_dir.mkdir(parents=True)
-                recursive_render_templates(entry_local_path, current_template_dir)
-            elif entry_full_path.is_file():
-                shutil.copyfile(entry_full_path, outdir / entry_local_path)
-                print(f"📄   [green]COPY[/green]: {entry_full_path}")
+                    code_templator.render_template(template, dest_path, **params)
+            elif src_entry.is_dir():
+                print(f"📁  [green]MKDIR[/green]: {dest_entry.resolve()}")
+                if not dest_entry.exists():
+                    dest_entry.mkdir(parents=True)
+                recursive_render_templates(template_dir, src_entry, dest_entry)
+            elif src_entry.is_file():
+                shutil.copyfile(src_entry, dest_entry)
+                print(f"📄   [green]COPY[/green]: {src_entry}")
+            else:
+                print(f"⚠️    [red]SKIP[/red]: {src_entry} (unknown type)")
 
     # Process templates from all template directories
     for template_dir in template_dirs:
-        recursive_render_templates(".", template_dir)
+        src = Path(template_dir)
+        recursive_render_templates(template_dir, src, Path(outdir))
 
 def run():
     typer.run(main)

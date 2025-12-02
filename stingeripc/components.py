@@ -1,7 +1,6 @@
 from __future__ import annotations
 from enum import Enum
 import random
-import stringcase
 from abc import abstractmethod
 from typing import Any, Optional, Mapping
 from .topic import (
@@ -34,15 +33,14 @@ class LanguageSymbolMixin:
             invoke_on_load=True,
         )
         for ext in mgr:
-            domain = ext.obj.get_domain()
+            domain = ext.name
             symbols = ext.obj.for_model(self.__class__.__name__, self)
             if symbols is not None:
                 setattr(self, domain, symbols)
 
-class Arg(LanguageSymbolMixin):
+class Arg:
 
     def __init__(self, name: str, description: Optional[str] = None):
-        LanguageSymbolMixin.__init__(self)
         self._name = name
         self._description = description.strip() if description else None
         self._default_value = None
@@ -316,9 +314,9 @@ class ArgEnum(Arg, LanguageSymbolMixin):
         random.seed(seed)
         value = random.choice(self._enum.values)
         if lang == "python":
-            retval = f"{self._enum.class_name}.{stringcase.constcase(value) }"
+            retval = f"{self._enum.class_name}.{stringmanip.const_case(value) }"
         elif lang == "c++":
-            retval = f"{self._enum.class_name}::{stringcase.constcase(value)}"
+            retval = f"{self._enum.class_name}::{stringmanip.const_case(value)}"
         elif lang == "rust":
             if self.optional:
                 retval = f"Some({self._enum.class_name}::{stringmanip.upper_camel_case(value)})"
@@ -446,6 +444,10 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         self._type = ArgType.STRUCT
 
     @property
+    def struct(self) -> InterfaceStruct:
+        return self._interface_struct
+
+    @property
     def members(self) -> list[Arg]:
         return self._interface_struct.members
 
@@ -490,7 +492,7 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         example_list: dict[str, str]
         if lang in ["rust", "python"]:
             example_list = {
-                stringcase.snakecase(a.name): str(a.get_random_example_value(lang, seed=seed))
+                stringmanip.snake_case(a.name): str(a.get_random_example_value(lang, seed=seed))
                 for a in self.members
             }
         else:

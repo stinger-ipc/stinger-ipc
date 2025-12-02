@@ -1,11 +1,16 @@
+syntax = "proto3";
+
+package testable;
+
 
 
 
 enum Numbers {
-    ONE = 1,
-    TWO = 2,
-    THREE = 3
-};
+    NUMBERS_UNSPECIFIED = 0;
+    ONE = 1;
+    TWO = 2;
+    THREE = 3;
+}
 
 
 message Entry {
@@ -20,38 +25,30 @@ message AllTypes {
     string the_str = 4;
     Numbers the_enum = 5;
     Entry an_entry_object = 6;
-    int32 OptionalInteger = 10;
-    string OptionalString = 11;
-    Option<Numbers> OptionalEnum = 12;
-    Option<Entry> optionalEntryObject = 13;
-    repeated Vec<i32> array_of_integers = 17;
-
-    repeated Option<Vec<i32>> optional_array_of_integers = 18;
-
-    repeated Vec<String> array_of_strings = 19;
-
-    repeated Option<Vec<String>> optional_array_of_strings = 20;
-
-    repeated Vec<Numbers> array_of_enums = 21;
-
-    repeated Option<Vec<Numbers>> optional_array_of_enums = 22;
-
-    repeated Vec<chrono::DateTime<chrono::Utc>> array_of_datetimes = 23;
-
-    repeated Option<Vec<chrono::DateTime<chrono::Utc>>> optional_array_of_datetimes = 24;
-
-    repeated Vec<chrono::Duration> array_of_durations = 25;
-
-    repeated Option<Vec<chrono::Duration>> optional_array_of_durations = 26;
-
-    repeated Vec<Vec<u8>> array_of_binaries = 27;
-
-    repeated Option<Vec<Vec<u8>>> optional_array_of_binaries = 28;
-
-    repeated Vec<Entry> array_of_entry_objects = 29;
-
-    repeated Option<Vec<Entry>> optional_array_of_entry_objects = 30;
-
+    string date_and_time = 7;  // ISO 8601 format
+    string time_duration = 8;  // ISO 8601 duration format
+    string data = 9;  // base64 encoded binary
+    optional int32 OptionalInteger = 10;
+    optional string OptionalString = 11;
+    optional Numbers OptionalEnum = 12;
+    optional Entry optionalEntryObject = 13;
+    optional string OptionalDateTime = 14;  // ISO 8601 format
+    optional string OptionalDuration = 15;  // ISO 8601 duration format
+    optional string OptionalBinary = 16;  // base64 encoded binary
+    repeated int32 array_of_integers = 17;
+    optional repeated int32 optional_array_of_integers = 18;
+    repeated string array_of_strings = 19;
+    optional repeated string optional_array_of_strings = 20;
+    repeated Numbers array_of_enums = 21;
+    optional repeated Numbers optional_array_of_enums = 22;
+    repeated  array_of_datetimes = 23;
+    optional repeated  optional_array_of_datetimes = 24;
+    repeated  array_of_durations = 25;
+    optional repeated  optional_array_of_durations = 26;
+    repeated  array_of_binaries = 27;
+    optional repeated  optional_array_of_binaries = 28;
+    repeated Entry array_of_entry_objects = 29;
+    optional repeated Entry optional_array_of_entry_objects = 30;
 }
 
 
@@ -64,13 +61,13 @@ message SingleIntSignal {
 }
 
 message SingleOptionalIntSignal {
-    int32 value = 1;
+    optional int32 value = 1;
 }
 
 message ThreeIntegersSignal {
     int32 first = 1;
     int32 second = 2;
-    int32 third = 3;
+    optional int32 third = 3;
 }
 
 message SingleStringSignal {
@@ -78,13 +75,13 @@ message SingleStringSignal {
 }
 
 message SingleOptionalStringSignal {
-    string value = 1;
+    optional string value = 1;
 }
 
 message ThreeStringsSignal {
     string first = 1;
     string second = 2;
-    string third = 3;
+    optional string third = 3;
 }
 
 message SingleEnumSignal {
@@ -92,13 +89,13 @@ message SingleEnumSignal {
 }
 
 message SingleOptionalEnumSignal {
-    Option<Numbers> value = 1;
+    optional Numbers value = 1;
 }
 
 message ThreeEnumsSignal {
     Numbers first = 1;
     Numbers second = 2;
-    Option<Numbers> third = 3;
+    optional Numbers third = 3;
 }
 
 message SingleStructSignal {
@@ -106,69 +103,74 @@ message SingleStructSignal {
 }
 
 message SingleOptionalStructSignal {
-    Option<AllTypes> value = 1;
+    optional AllTypes value = 1;
 }
 
 message ThreeStructsSignal {
     AllTypes first = 1;
     AllTypes second = 2;
-    Option<AllTypes> third = 3;
+    optional AllTypes third = 3;
 }
 
 message SingleDateTimeSignal {
+    string value = 1;  // ISO 8601 format
 }
 
 message SingleOptionalDatetimeSignal {
+    optional string value = 1;  // ISO 8601 format
 }
 
 message ThreeDateTimesSignal {
+    string first = 1;  // ISO 8601 format
+    string second = 2;  // ISO 8601 format
+    optional string third = 3;  // ISO 8601 format
 }
 
 message SingleDurationSignal {
+    string value = 1;  // ISO 8601 duration format
 }
 
 message SingleOptionalDurationSignal {
+    optional string value = 1;  // ISO 8601 duration format
 }
 
 message ThreeDurationsSignal {
+    string first = 1;  // ISO 8601 duration format
+    string second = 2;  // ISO 8601 duration format
+    optional string third = 3;  // ISO 8601 duration format
 }
 
 message SingleBinarySignal {
+    string value = 1;  // base64 encoded binary
 }
 
 message SingleOptionalBinarySignal {
+    optional string value = 1;  // base64 encoded binary
 }
 
 message ThreeBinariesSignal {
+    string first = 1;  // base64 encoded binary
+    string second = 2;  // base64 encoded binary
+    optional string third = 3;  // base64 encoded binary
 }
 
 message SingleArrayOfIntegersSignal {
-    repeated Vec<i32> values = 1;
-
+    repeated int32 values = 1;
 }
 
 message SingleOptionalArrayOfStringsSignal {
-    repeated Option<Vec<String>> values = 1;
-
+    optional repeated string values = 1;
 }
 
 message ArrayOfEveryTypeSignal {
-    repeated Vec<i32> first_of_integers = 1;
-
-    repeated Vec<f32> second_of_floats = 2;
-
-    repeated Vec<String> third_of_strings = 3;
-
-    repeated Vec<Numbers> fourth_of_enums = 4;
-
-    repeated Vec<Entry> fifth_of_structs = 5;
-
-    repeated Vec<chrono::DateTime<chrono::Utc>> sixth_of_datetimes = 6;
-
-    repeated Vec<chrono::Duration> seventh_of_durations = 7;
-
-    repeated Vec<Vec<u8>> eighth_of_binaries = 8;
-
+    repeated int32 first_of_integers = 1;
+    repeated float second_of_floats = 2;
+    repeated string third_of_strings = 3;
+    repeated Numbers fourth_of_enums = 4;
+    repeated Entry fifth_of_structs = 5;
+    repeated  sixth_of_datetimes = 6;
+    repeated  seventh_of_durations = 7;
+    repeated  eighth_of_binaries = 8;
 }
 
 
@@ -182,12 +184,12 @@ message ReadOnlyIntegerProperty {
 }
 
 message ReadWriteOptionalIntegerProperty {
-    int32 value = 1;
+    optional int32 value = 1;
 }
 
 message ReadWriteTwoIntegersProperty {
     int32 first = 1;
-    int32 second = 2;
+    optional int32 second = 2;
 }
 
 message ReadOnlyStringProperty {
@@ -199,12 +201,12 @@ message ReadWriteStringProperty {
 }
 
 message ReadWriteOptionalStringProperty {
-    string value = 1;
+    optional string value = 1;
 }
 
 message ReadWriteTwoStringsProperty {
     string first = 1;
-    string second = 2;
+    optional string second = 2;
 }
 
 message ReadWriteStructProperty {
@@ -212,12 +214,12 @@ message ReadWriteStructProperty {
 }
 
 message ReadWriteOptionalStructProperty {
-    Option<AllTypes> value = 1;
+    optional AllTypes value = 1;
 }
 
 message ReadWriteTwoStructsProperty {
     AllTypes first = 1;
-    Option<AllTypes> second = 2;
+    optional AllTypes second = 2;
 }
 
 message ReadOnlyEnumProperty {
@@ -229,51 +231,60 @@ message ReadWriteEnumProperty {
 }
 
 message ReadWriteOptionalEnumProperty {
-    Option<Numbers> value = 1;
+    optional Numbers value = 1;
 }
 
 message ReadWriteTwoEnumsProperty {
     Numbers first = 1;
-    Option<Numbers> second = 2;
+    optional Numbers second = 2;
 }
 
 message ReadWriteDatetimeProperty {
+    string value = 1;  // ISO 8601 format
 }
 
 message ReadWriteOptionalDatetimeProperty {
+    optional string value = 1;  // ISO 8601 format
 }
 
 message ReadWriteTwoDatetimesProperty {
+    string first = 1;  // ISO 8601 format
+    optional string second = 2;  // ISO 8601 format
 }
 
 message ReadWriteDurationProperty {
+    string value = 1;  // ISO 8601 duration format
 }
 
 message ReadWriteOptionalDurationProperty {
+    optional string value = 1;  // ISO 8601 duration format
 }
 
 message ReadWriteTwoDurationsProperty {
+    string first = 1;  // ISO 8601 duration format
+    optional string second = 2;  // ISO 8601 duration format
 }
 
 message ReadWriteBinaryProperty {
+    string value = 1;  // base64 encoded binary
 }
 
 message ReadWriteOptionalBinaryProperty {
+    optional string value = 1;  // base64 encoded binary
 }
 
 message ReadWriteTwoBinariesProperty {
+    string first = 1;  // base64 encoded binary
+    optional string second = 2;  // base64 encoded binary
 }
 
 message ReadWriteListOfStringsProperty {
-    repeated Vec<String> value = 1;
-
+    repeated string value = 1;
 }
 
 message ReadWriteListsProperty {
-    repeated Vec<Numbers> the_list = 1;
-
-    repeated Option<Vec<chrono::DateTime<chrono::Utc>>> optionalList = 2;
-
+    repeated Numbers the_list = 1;
+    optional repeated  optionalList = 2;
 }
 
 
@@ -293,23 +304,23 @@ message CallOneIntegerResponse {
 }
 
 message CallOptionalIntegerRequest {
-    int32 input1 = 1;
+    optional int32 input1 = 1;
 }
 
 message CallOptionalIntegerResponse {
-    int32 output1 = 1;
+    optional int32 output1 = 1;
 }
 
 message CallThreeIntegersRequest {
     int32 input1 = 1;
     int32 input2 = 2;
-    int32 input3 = 3;
+    optional int32 input3 = 3;
 }
 
 message CallThreeIntegersResponse {
     int32 output1 = 1;
     int32 output2 = 2;
-    int32 output3 = 3;
+    optional int32 output3 = 3;
 }
 
 message CallOneStringRequest {
@@ -321,22 +332,22 @@ message CallOneStringResponse {
 }
 
 message CallOptionalStringRequest {
-    string input1 = 1;
+    optional string input1 = 1;
 }
 
 message CallOptionalStringResponse {
-    string output1 = 1;
+    optional string output1 = 1;
 }
 
 message CallThreeStringsRequest {
     string input1 = 1;
-    string input2 = 2;
+    optional string input2 = 2;
     string input3 = 3;
 }
 
 message CallThreeStringsResponse {
     string output1 = 1;
-    string output2 = 2;
+    optional string output2 = 2;
     string output3 = 3;
 }
 
@@ -349,23 +360,23 @@ message CallOneEnumResponse {
 }
 
 message CallOptionalEnumRequest {
-    Option<Numbers> input1 = 1;
+    optional Numbers input1 = 1;
 }
 
 message CallOptionalEnumResponse {
-    Option<Numbers> output1 = 1;
+    optional Numbers output1 = 1;
 }
 
 message CallThreeEnumsRequest {
     Numbers input1 = 1;
     Numbers input2 = 2;
-    Option<Numbers> input3 = 3;
+    optional Numbers input3 = 3;
 }
 
 message CallThreeEnumsResponse {
     Numbers output1 = 1;
     Numbers output2 = 2;
-    Option<Numbers> output3 = 3;
+    optional Numbers output3 = 3;
 }
 
 message CallOneStructRequest {
@@ -377,109 +388,131 @@ message CallOneStructResponse {
 }
 
 message CallOptionalStructRequest {
-    Option<AllTypes> input1 = 1;
+    optional AllTypes input1 = 1;
 }
 
 message CallOptionalStructResponse {
-    Option<AllTypes> output1 = 1;
+    optional AllTypes output1 = 1;
 }
 
 message CallThreeStructsRequest {
-    Option<AllTypes> input1 = 1;
+    optional AllTypes input1 = 1;
     AllTypes input2 = 2;
     AllTypes input3 = 3;
 }
 
 message CallThreeStructsResponse {
-    Option<AllTypes> output1 = 1;
+    optional AllTypes output1 = 1;
     AllTypes output2 = 2;
     AllTypes output3 = 3;
 }
 
 message CallOneDateTimeRequest {
+    string input1 = 1;  // ISO 8601 format
 }
 
 message CallOneDateTimeResponse {
+    string output1 = 1;  // ISO 8601 format
 }
 
 message CallOptionalDateTimeRequest {
+    optional string input1 = 1;  // ISO 8601 format
 }
 
 message CallOptionalDateTimeResponse {
+    optional string output1 = 1;  // ISO 8601 format
 }
 
 message CallThreeDateTimesRequest {
+    string input1 = 1;  // ISO 8601 format
+    string input2 = 2;  // ISO 8601 format
+    optional string input3 = 3;  // ISO 8601 format
 }
 
 message CallThreeDateTimesResponse {
+    string output1 = 1;  // ISO 8601 format
+    string output2 = 2;  // ISO 8601 format
+    optional string output3 = 3;  // ISO 8601 format
 }
 
 message CallOneDurationRequest {
+    string input1 = 1;  // ISO 8601 duration format
 }
 
 message CallOneDurationResponse {
+    string output1 = 1;  // ISO 8601 duration format
 }
 
 message CallOptionalDurationRequest {
+    optional string input1 = 1;  // ISO 8601 duration format
 }
 
 message CallOptionalDurationResponse {
+    optional string output1 = 1;  // ISO 8601 duration format
 }
 
 message CallThreeDurationsRequest {
+    string input1 = 1;  // ISO 8601 duration format
+    string input2 = 2;  // ISO 8601 duration format
+    optional string input3 = 3;  // ISO 8601 duration format
 }
 
 message CallThreeDurationsResponse {
+    string output1 = 1;  // ISO 8601 duration format
+    string output2 = 2;  // ISO 8601 duration format
+    optional string output3 = 3;  // ISO 8601 duration format
 }
 
 message CallOneBinaryRequest {
+    string input1 = 1;  // base64 encoded binary
 }
 
 message CallOneBinaryResponse {
+    string output1 = 1;  // base64 encoded binary
 }
 
 message CallOptionalBinaryRequest {
+    optional string input1 = 1;  // base64 encoded binary
 }
 
 message CallOptionalBinaryResponse {
+    optional string output1 = 1;  // base64 encoded binary
 }
 
 message CallThreeBinariesRequest {
+    string input1 = 1;  // base64 encoded binary
+    string input2 = 2;  // base64 encoded binary
+    optional string input3 = 3;  // base64 encoded binary
 }
 
 message CallThreeBinariesResponse {
+    string output1 = 1;  // base64 encoded binary
+    string output2 = 2;  // base64 encoded binary
+    optional string output3 = 3;  // base64 encoded binary
 }
 
 message CallOneListOfIntegersRequest {
-    repeated Vec<i32> input1 = 1;
-
+    repeated int32 input1 = 1;
 }
 
 message CallOneListOfIntegersResponse {
-    repeated Vec<i32> output1 = 1;
-
+    repeated int32 output1 = 1;
 }
 
 message CallOptionalListOfFloatsRequest {
-    repeated Option<Vec<f32>> input1 = 1;
-
+    optional repeated float input1 = 1;
 }
 
 message CallOptionalListOfFloatsResponse {
-    repeated Option<Vec<f32>> output1 = 1;
-
+    optional repeated float output1 = 1;
 }
 
 message CallTwoListsRequest {
-    repeated Vec<Numbers> input1 = 1;
-
-    repeated Option<Vec<String>> input2 = 2;
-
+    repeated Numbers input1 = 1;
+    optional repeated string input2 = 2;
 }
 
 message CallTwoListsResponse {
-    repeated Vec<Numbers> output1 = 1;
-
-    repeated Option<Vec<String>> output2 = 2;
-
+    repeated Numbers output1 = 1;
+    optional repeated string output2 = 2;
 }

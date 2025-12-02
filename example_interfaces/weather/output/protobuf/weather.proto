@@ -1,19 +1,25 @@
+syntax = "proto3";
+
+package weather;
+
 
 
 
 enum WeatherCondition {
-    RAINY = 1,
-    SUNNY = 2,
-    PARTLY_CLOUDY = 3,
-    MOSTLY_CLOUDY = 4,
-    OVERCAST = 5,
-    WINDY = 6,
-    SNOWY = 7
-};
+    WEATHER_CONDITION_UNSPECIFIED = 0;
+    RAINY = 1;
+    SUNNY = 2;
+    PARTLY_CLOUDY = 3;
+    MOSTLY_CLOUDY = 4;
+    OVERCAST = 5;
+    WINDY = 6;
+    SNOWY = 7;
+}
 
 
 message ForecastForHour {
     float temperature = 1;
+    string starttime = 2;  // ISO 8601 format
     WeatherCondition condition = 3;
 }
 
