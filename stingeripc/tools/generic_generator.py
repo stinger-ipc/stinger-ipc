@@ -9,7 +9,7 @@ from rich import print
 import importlib.resources
 
 import yaml
-
+from stevedore import ExtensionManager
 from stingeripc import StingerInterface
 from stingeripc.filtering import filter_by_consumer
 import tomllib
@@ -44,6 +44,7 @@ def main(
         with config.open("rb") as f:
             config_obj = tomllib.load(f)
 
+    print(f"🟢   [bold cyan]LOAD:[/bold cyan] {inname}")
     if consumer:
         print(f"💠 CONSUMER {consumer}")
         with inname.open(mode="r") as f:
@@ -54,13 +55,25 @@ def main(
         with inname.open(mode="r") as f:
             stinger = StingerInterface.from_yaml(f)
 
-    params: dict[str, Any] = {"stinger": stinger, "config": config_obj}
+    params: dict[str, Any] = {
+        "stinger": stinger, 
+        "config": config_obj,
+        "consumer": consumer,
+    }
 
     if outdir.is_file():
         raise RuntimeError("Output directory is a file!")
     
     print(f"📁 [bold cyan]OUTPUT:[/bold cyan] {outdir}")
     
+    mgr = ExtensionManager(
+        namespace="stinger_symbols",
+        invoke_on_load=False,
+        on_load_failure_callback=lambda mgr, ext, exc: print(f"❌[bold red]EXTFAIL:[/bold red] {ext.name} : {exc}"),
+    )
+    for ext in mgr:
+        print(f"🔌    EXT: {ext.name:7} : {ext.entry_point_target}")
+
     if not outdir.is_dir():
         print(f"📁  [green]MKDIR[/green]: {outdir}")
         os.makedirs(outdir)
