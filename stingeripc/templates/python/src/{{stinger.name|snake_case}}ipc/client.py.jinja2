@@ -351,6 +351,8 @@ class {{stinger.python.client_class_name}}Discoverer:
         """ Adds a callback to be called when a new service is discovered.
         """
         with self._mutex:
+            for instance in self._discovered_services.values():
+                callback(instance)
             self._discovered_service_callbacks.append(callback)
 
     def add_removed_service_callback(self, callback: Callable[[str], None]):
@@ -365,8 +367,8 @@ class {{stinger.python.client_class_name}}Discoverer:
         with self._mutex:
             return list(self._discovered_services.keys())
 
-    def get_discovery_info(self, instance_id: str) -> Optional[InterfaceInfo]:
-        """ Returns the InterfaceInfo for a discovered service instance ID, or None if not found.
+    def get_discovery_info(self, instance_id: str) -> Optional[DiscoveredInstance]:
+        """ Returns the DiscoveredInstance for a discovered service instance ID, or None if not found.
         """
         with self._mutex:
             return self._discovered_services.get(instance_id, None)
