@@ -8,3 +8,10 @@ dependencies = [
     "paho-mqtt>=2.0.1",
     "isodate>=0.7.2",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+packages = ["simpleipc"]

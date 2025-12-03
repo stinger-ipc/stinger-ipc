@@ -815,6 +815,8 @@ class WeatherClientDiscoverer:
     def add_discovered_service_callback(self, callback: Callable[[DiscoveredInstance], None]):
         """Adds a callback to be called when a new service is discovered."""
         with self._mutex:
+            for instance in self._discovered_services.values():
+                callback(instance)
             self._discovered_service_callbacks.append(callback)
 
     def add_removed_service_callback(self, callback: Callable[[str], None]):
@@ -827,8 +829,8 @@ class WeatherClientDiscoverer:
         with self._mutex:
             return list(self._discovered_services.keys())
 
-    def get_discovery_info(self, instance_id: str) -> Optional[InterfaceInfo]:
-        """Returns the InterfaceInfo for a discovered service instance ID, or None if not found."""
+    def get_discovery_info(self, instance_id: str) -> Optional[DiscoveredInstance]:
+        """Returns the DiscoveredInstance for a discovered service instance ID, or None if not found."""
         with self._mutex:
             return self._discovered_services.get(instance_id, None)
 
@@ -855,17 +857,19 @@ class WeatherClientDiscoverer:
             if instance_id in self._discovered_properties and len(self._discovered_properties[instance_id]) == 16 and instance_id in self._discovered_interface_infos:
 
                 entry = DiscoveredInstance(instance_id=instance_id, initial_property_values=WeatherInitialPropertyValues(**self._discovered_properties[instance_id]))
+                is_new_entry = not instance_id in self._discovered_services
 
                 self._discovered_services[instance_id] = entry
                 while self._pending_futures:
+                    self._logger.info("Creating a client object id=%s and returning as future result", instance_id)
                     fut = self._pending_futures.pop(0)
                     if not fut.done():
                         if self._builder is not None:
                             fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
                         else:
                             fut.set_result(WeatherClient(self._conn, entry))
-                if not instance_id in self._discovered_services:
-                    self._logger.info("Discovered service: %s.instance", instance_id)
+                if is_new_entry:
+                    self._logger.info("Discovered service: %s", instance_id)
                     for cb in self._discovered_service_callbacks:
                         cb(entry)
                 else:

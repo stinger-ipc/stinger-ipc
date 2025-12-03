@@ -1,4 +1,3 @@
-
 import logging
 import uuid
 from typing import Callable, Optional, Tuple, Any, Union, List
@@ -16,16 +15,25 @@ logging.basicConfig(level=logging.DEBUG)
 
 MessageCallback = Callable[[str, str, dict[str, Any]], None]
 
+
 class IBrokerConnection(ABC):
-    
+
     @abstractmethod
-    def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
-            correlation_id: Union[str, bytes, None] = None, response_topic: Optional[str] = None,
-            return_value: Optional[MethodReturnCode] = None, debug_info: Optional[str] = None):
+    def publish(
+        self,
+        topic: str,
+        msg: str,
+        qos: int = 1,
+        retain: bool = False,
+        correlation_id: Union[str, bytes, None] = None,
+        response_topic: Optional[str] = None,
+        return_value: Optional[MethodReturnCode] = None,
+        debug_info: Optional[str] = None,
+    ):
         pass
 
     @abstractmethod
-    def subscribe(self, topic: str, callback: Optional[MessageCallback]=None) -> int:
+    def subscribe(self, topic: str, callback: Optional[MessageCallback] = None) -> int:
         pass
 
     @abstractmethod
@@ -40,20 +48,29 @@ class IBrokerConnection(ABC):
     def is_connected(self) -> bool:
         pass
 
+
 class MqttTransportType(StrEnum):
-    """ Defines all the ways to connect to an MQTT broker."""
+    """Defines all the ways to connect to an MQTT broker."""
+
     TCP = "tcp"
     WEBSOCKET = "websockets"
     UNIX = "unix"
 
 
 class MqttTransport:
-    """ Defines the transport parameters for connecting to an MQTT broker."""
+    """Defines the transport parameters for connecting to an MQTT broker."""
 
-    def __init__(self, transport_type: MqttTransportType, host: str|None=None, port: int|None=None, socket_path: str|None=None,):
+    def __init__(
+        self,
+        transport_type: MqttTransportType,
+        host: str | None = None,
+        port: int | None = None,
+        socket_path: str | None = None,
+    ):
         self.transport = transport_type
         self.host_or_path = socket_path if transport_type == MqttTransportType.UNIX else host
         self.port = 0 if transport_type == MqttTransportType.UNIX else (port or 1883)
+
 
 class MqttBrokerConnection(IBrokerConnection):
 
@@ -62,24 +79,18 @@ class MqttBrokerConnection(IBrokerConnection):
             self.topic = topic
             self.subscription_id = subscription_id
 
-    def __init__(self, transport: MqttTransport, client_id: str|None=None):
-        self._logger = logging.getLogger('Connection')
+    def __init__(self, transport: MqttTransport, client_id: str | None = None):
+        self._logger = logging.getLogger("Connection")
         self._logger.setLevel(logging.DEBUG)
         self._transport = transport
         self._client_id = client_id or str(uuid.uuid4())
-        self._queued_messages = Queue() # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
-        self._queued_subscriptions = Queue() # type: Queue[BrokerConnection.PendingSubscription]
+        self._queued_messages = Queue()  # type: Queue[Tuple[str, str, int, bool, MqttProperties]]
+        self._queued_subscriptions = Queue()  # type: Queue[BrokerConnection.PendingSubscription]
         self._connected: bool = False
         lwt_properties = MqttProperties(PacketTypes.PUBLISH)
         lwt_properties.ContentType = "application/json"
-        lwt_properties.MessageExpiryInterval = 60*60*24  # 1 day
-        self._lwt = {
-            "topic": self.online_topic,
-            "payload": '{"online":false}',
-            "qos": 1,
-            "retain": True,
-            "properties": lwt_properties
-        }
+        lwt_properties.MessageExpiryInterval = 60 * 60 * 24  # 1 day
+        self._lwt = {"topic": self.online_topic, "payload": '{"online":false}', "qos": 1, "retain": True, "properties": lwt_properties}
         self._client = MqttClient(CallbackAPIVersion.VERSION2, protocol=MQTTProtocolVersion.MQTTv5, transport=transport.transport.value, client_id=self._client_id, reconnect_on_failure=True)
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
@@ -117,7 +128,7 @@ class MqttBrokerConnection(IBrokerConnection):
 
     def _on_message(self, client, userdata, msg):
         self._logger.debug("Got a message to %s", msg.topic)
-        properties = msg.properties.__dict__ if hasattr(msg, 'properties') else {}
+        properties = msg.properties.__dict__ if hasattr(msg, "properties") else {}
         if "UserProperty" in properties:
             properties["UserProperty"] = dict(properties["UserProperty"])
         if "SubscriptionIdentifier" in properties:
@@ -135,7 +146,7 @@ class MqttBrokerConnection(IBrokerConnection):
                 callback(msg.topic, msg.payload.decode(), properties)
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
-        if reason_code == 0:  # Connection successful 
+        if reason_code == 0:  # Connection successful
             self._connected = True
             self._logger.info("Connected to %s:%d", self._transport.host_or_path, self._transport.port)
             while not self._queued_subscriptions.empty():
@@ -162,18 +173,24 @@ class MqttBrokerConnection(IBrokerConnection):
         else:
             self._logger.error("Connection failed with reason code %s", str(reason_code))
             self._connected = False
-        
-    
-    def publish(self, topic: str, msg: str, qos: int=1, retain: bool=False,
-            correlation_id: Union[str, bytes, None] = None, response_topic: Optional[str] = None,
-            content_type: str = "application/json", expiry_seconds: int|None=None,
-            user_properties: dict[str, str]|None=None):
-        """ Publish a message to mqtt.
-        """
+
+    def publish(
+        self,
+        topic: str,
+        msg: str,
+        qos: int = 1,
+        retain: bool = False,
+        correlation_id: Union[str, bytes, None] = None,
+        response_topic: Optional[str] = None,
+        content_type: str = "application/json",
+        expiry_seconds: int | None = None,
+        user_properties: dict[str, str] | None = None,
+    ):
+        """Publish a message to mqtt."""
         properties = MqttProperties(PacketTypes.PUBLISH)
         properties.ContentType = content_type
         if isinstance(correlation_id, str):
-            properties.CorrelationData = correlation_id.encode('utf-8')
+            properties.CorrelationData = correlation_id.encode("utf-8")
         elif isinstance(correlation_id, bytes):
             properties.CorrelationData = correlation_id
         if expiry_seconds is not None:
@@ -198,27 +215,25 @@ class MqttBrokerConnection(IBrokerConnection):
         user_props["ReturnCode"] = str(return_code.value)
         if debug_info is not None:
             user_props["DebugInfo"] = debug_info
-        self.publish(topic, "{}", qos=1, retain=False,
-                     correlation_id=correlation_id,
-                     user_properties=user_props)
+        self.publish(topic, "{}", qos=1, retain=False, correlation_id=correlation_id, user_properties=user_props)
 
     def publish_response(self, response_topic: str, response_obj: BaseModel, correlation_id: Union[str, bytes]):
-        self.publish(response_topic, response_obj.model_dump_json(by_alias=True), qos=1, retain=False,
-                     correlation_id=correlation_id, user_properties={"ReturnCode": str(MethodReturnCode.SUCCESS.value)})
+        self.publish(
+            response_topic, response_obj.model_dump_json(by_alias=True), qos=1, retain=False, correlation_id=correlation_id, user_properties={"ReturnCode": str(MethodReturnCode.SUCCESS.value)}
+        )
 
-    def publish_property_state(self, topic: str, state_obj: BaseModel, state_version: int|None=None):
+    def publish_property_state(self, topic: str, state_obj: BaseModel, state_version: int | None = None):
         props = dict()
         if state_version is not None:
             props["PropertyVersion"] = str(state_version)
         self.publish(topic, state_obj.model_dump_json(by_alias=True), qos=1, retain=True, user_properties=props)
 
-    def publish_property_update_request(self, topic: str, property_obj: BaseModel, version: str, response_topic: str, correlation_id: Union[str, bytes, None]=None):
+    def publish_property_update_request(self, topic: str, property_obj: BaseModel, version: str, response_topic: str, correlation_id: Union[str, bytes, None] = None):
         if correlation_id is None:
             correlation_id = str(uuid.uuid4())
-        self.publish(topic, property_obj.model_dump_json(by_alias=True), qos=1, retain=False,
-                     correlation_id=correlation_id,
-                     response_topic=response_topic,
-                     user_properties={"PropertyVersion": str(version)})
+        self.publish(
+            topic, property_obj.model_dump_json(by_alias=True), qos=1, retain=False, correlation_id=correlation_id, response_topic=response_topic, user_properties={"PropertyVersion": str(version)}
+        )
         return correlation_id
 
     def publish_property_response(self, response_topic: str, property_obj: BaseModel, version: str, return_code: MethodReturnCode, correlation_id: Union[str, bytes], debug_info: Optional[str] = None):
@@ -229,19 +244,17 @@ class MqttBrokerConnection(IBrokerConnection):
             user_props["DebugInfo"] = str(debug_info)
         self.publish(response_topic, property_obj.model_dump_json(by_alias=True), qos=1, retain=False, correlation_id=correlation_id, user_properties=user_props)
 
-    def publish_request(self, topic: str, request_obj: BaseModel, response_topic: str, correlation_id: Union[str, bytes, None]=None) -> Union[str, bytes]:
+    def publish_request(self, topic: str, request_obj: BaseModel, response_topic: str, correlation_id: Union[str, bytes, None] = None) -> Union[str, bytes]:
         if correlation_id is None:
             correlation_id = str(uuid.uuid4())
-        self.publish(topic, request_obj.model_dump_json(by_alias=True), qos=1, retain=False,
-                     correlation_id=correlation_id,
-                     response_topic=response_topic)
+        self.publish(topic, request_obj.model_dump_json(by_alias=True), qos=1, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return correlation_id
 
     def unpublish_retained(self, topic):
         self.publish(topic, None, qos=1, retain=True)
 
-    def subscribe(self, topic: str, callback: Optional[MessageCallback]=None) -> int:
-        """ Subscribes to a topic. If the connection is not established, the subscription is queued.
+    def subscribe(self, topic: str, callback: Optional[MessageCallback] = None) -> int:
+        """Subscribes to a topic. If the connection is not established, the subscription is queued.
         Returns the subscription ID.
         """
         sub_id = self.get_next_subscription_id()
@@ -256,6 +269,6 @@ class MqttBrokerConnection(IBrokerConnection):
         if callback is not None:
             self._subscription_callbacks[sub_id] = callback
         return sub_id
-    
+
     def is_topic_sub(self, topic: str, sub: str) -> bool:
         return topic_matches_sub(sub, topic)

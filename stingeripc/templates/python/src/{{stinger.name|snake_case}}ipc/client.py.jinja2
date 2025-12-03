@@ -402,17 +402,19 @@ class {{stinger.python.client_class_name}}Discoverer:
                     instance_id=instance_id,
                     {%if stinger.properties | length > 0 %}initial_property_values={{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id]){%endif%}
                 )
+                is_new_entry = not instance_id in self._discovered_services
 
                 self._discovered_services[instance_id] = entry
                 while self._pending_futures:
+                    self._logger.info("Creating a client object id=%s and returning as future result", instance_id)
                     fut = self._pending_futures.pop(0)
                     if not fut.done():
                         if self._builder is not None:
                             fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
                         else:
                             fut.set_result({{stinger.python.client_class_name}}(self._conn, entry))
-                if not instance_id in self._discovered_services:
-                    self._logger.info("Discovered service: %s.instance", instance_id)
+                if is_new_entry:
+                    self._logger.info("Discovered service: %s", instance_id)
                     for cb in self._discovered_service_callbacks:
                         cb(entry)
                 else:

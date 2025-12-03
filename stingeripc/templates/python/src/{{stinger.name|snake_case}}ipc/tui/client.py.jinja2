@@ -7,8 +7,16 @@ from textual.app import ComposeResult
 from textual.screen import Screen, ModalScreen
 from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label
 from textual.containers import Horizontal, VerticalScroll, Vertical
-from {{stinger.name|snake_case}}ipc.interface_types import Numbers, AllTypes, Entry
-
+{%if (stinger.structs|length + stinger.enums|length) > 0%}
+from {{stinger.name|snake_case}}ipc.interface_types import (
+    {%- for struct_name, struct in stinger.structs.items() %}
+    {{struct_name|UpperCamelCase}},
+    {%- endfor %}
+    {%- for enum_name, enum in stinger.enums.items() %}
+    {{enum_name|UpperCamelCase}},
+    {%- endfor %}
+)
+{%endif%}
 
 class PropertyEditModal(ModalScreen[bool]):
     """Modal screen for editing a property value."""
@@ -370,7 +378,7 @@ class ClientScreen(Screen):
         # Define all methods with their parameters
         methods = {
         {%-for method_name, method in stinger.methods.items()%}
-            "{{method_name|snake_case}}": { {%for arg_name, arg in method.arg_list.items()% }"input{{loop.index}}": {{arg.python_annotation}}, {%endfor%} },
+            "{{method_name|snake_case}}": { {% for arg in method.arg_list %}"{{arg.name|snake_case}}": {{arg.python_annotation}}, {%endfor%} },
         {%endfor%}
         }
         
@@ -456,7 +464,7 @@ class ClientScreen(Screen):
         
         # Register all properties
         {%-for property_name, property in stinger.properties.items()%}
-        register_property("{{property_name|snake_case}}", "{{property_name|snake_case}}_changed", is_writable={{not property.read_only|Upper}})
+        register_property("{{property_name|snake_case}}", "{{property_name|snake_case}}_changed", is_writable={{(not property.read_only) and 'True' or 'False'}})
         {%-endfor%}
     
     def on_click(self, event) -> None:
