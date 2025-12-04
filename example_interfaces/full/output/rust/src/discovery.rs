@@ -267,7 +267,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
     ) {
         // Check if this completes the discovery
 
-        if service_in_discovery.property_count >= 7 {
+        if service_in_discovery.property_count >= 6 {
             if let Some(discovered) = service_in_discovery.to_discovered_service() {
                 service_in_discovery
                     .fully_discovered
@@ -456,32 +456,6 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> FullDiscovery<C> {
                                 }
                                 Err(e) => {
                                     error!("Failed to deserialize property 'last_breakfast_time' for instance '{}': {}", instance_id, e);
-                                }
-                            }
-                        }
-
-                        "breakfastLength" => {
-                            let deserialized_property =
-                                serde_json::from_slice::<BreakfastLengthProperty>(&message.payload);
-
-                            let version = message
-                                .user_properties
-                                .get("PropertyVersion")
-                                .and_then(|v| v.parse::<u32>().ok())
-                                .unwrap_or(0);
-                            match deserialized_property {
-                                Ok(prop_value) => {
-                                    service_in_discovery
-                                        .property_builder
-                                        .breakfast_length(prop_value.length);
-
-                                    service_in_discovery
-                                        .property_builder
-                                        .breakfast_length_version(version);
-                                    service_in_discovery.property_count += 1;
-                                }
-                                Err(e) => {
-                                    error!("Failed to deserialize property 'breakfast_length' for instance '{}': {}", instance_id, e);
                                 }
                             }
                         }

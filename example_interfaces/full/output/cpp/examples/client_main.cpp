@@ -40,16 +40,19 @@ int main(int argc, char** argv)
     FullClient client(conn, serviceId);
 
     // Register callbacks for signals.
-    client.registerTodayIsCallback([](int dayOfMonth, std::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> processTime, std::vector<uint8_t> memorySegment)
+    client.registerTodayIsCallback([](int dayOfMonth, DayOfTheWeek dayOfWeek)
                                    {
-                                       std::string timestampStr = timePointToIsoString(timestamp);
-
-                                       std::string processTimeStr = durationToIsoString(processTime);
-                                       std::string memorySegmentStr = "[Binary Data]";
-
                                        std::cout << "Received TODAY_IS signal: "
-                                                 << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << dayOfTheWeekStrings[static_cast<int>(*dayOfWeek)] << " | " << "timestamp=" << timestampStr << " | " << "process_time=" << processTimeStr << " | " << "memory_segment=" << memorySegmentStr << std::endl;
+                                                 << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << dayOfTheWeekStrings[static_cast<int>(dayOfWeek)] << std::endl;
                                    });
+
+    client.registerRandomWordCallback([](std::string word, std::chrono::time_point<std::chrono::system_clock> time)
+                                      {
+                                          std::string timeStr = timePointToIsoString(time);
+
+                                          std::cout << "Received RANDOM_WORD signal: "
+                                                    << "word=" << word << " | " << "time=" << timeStr << std::endl;
+                                      });
 
     // Register callbacks for property updates.
     client.registerFavoriteNumberPropertyCallback([](int number)
@@ -81,14 +84,6 @@ int main(int argc, char** argv)
                                                          std::cout << "Received update for last_breakfast_time property: " << "timestamp=" << timestampStr
                                                                    << std::endl;
                                                      });
-
-    client.registerBreakfastLengthPropertyCallback([](std::chrono::duration<double> length)
-                                                   {
-                                                       std::string lengthStr = durationToIsoString(length);
-
-                                                       std::cout << "Received update for breakfast_length property: " << "length=" << lengthStr
-                                                                 << std::endl;
-                                                   });
 
     client.registerLastBirthdaysPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> mom, std::chrono::time_point<std::chrono::system_clock> dad, std::optional<std::chrono::time_point<std::chrono::system_clock>> sister, std::optional<int> brothersAge)
                                                  {
@@ -164,37 +159,7 @@ int main(int argc, char** argv)
             if (success)
             {
                 std::cout << "DO_SOMETHING Response: "
-                          << " label=" << returnValue.label << " identifier=" << returnValue.identifier << " day=" << dayOfTheWeekStrings[static_cast<int>(returnValue.day)] << std::endl;
-            }
-        }
-    }
-
-    // ----------------------METHOD ECHO-----------------------------------------
-    { // Restrict scope for the `echo` method call.
-        std::cout << "CALLING ECHO" << std::endl;
-        auto echoResultFuture = client.echo("apples");
-        auto echoStatus = echoResultFuture.wait_for(std::chrono::seconds(5));
-        if (echoStatus == std::future_status::timeout)
-        {
-            std::cout << "TIMEOUT after 5 seconds waiting for ECHO response." << std::endl;
-        }
-        else
-        {
-            std::string returnValue;
-            bool success = false;
-            try
-            {
-                returnValue = echoResultFuture.get();
-                success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
-                std::cout << "ECHO Exception: " << ex.what() << std::endl;
-            }
-            if (success)
-            {
-                std::cout << "ECHO Response: "
-                          << " message=" << returnValue << std::endl;
+                          << " label=" << returnValue.label << " identifier=" << returnValue.identifier << std::endl;
             }
         }
     }
@@ -202,7 +167,7 @@ int main(int argc, char** argv)
     // ----------------------METHOD WHAT_TIME_IS_IT-----------------------------------------
     { // Restrict scope for the `what_time_is_it` method call.
         std::cout << "CALLING WHAT_TIME_IS_IT" << std::endl;
-        auto whatTimeIsItResultFuture = client.whatTimeIsIt(std::chrono::system_clock::now());
+        auto whatTimeIsItResultFuture = client.whatTimeIsIt();
         auto whatTimeIsItStatus = whatTimeIsItResultFuture.wait_for(std::chrono::seconds(5));
         if (whatTimeIsItStatus == std::future_status::timeout)
         {
@@ -229,92 +194,32 @@ int main(int argc, char** argv)
         }
     }
 
-    // ----------------------METHOD SET_THE_TIME-----------------------------------------
-    { // Restrict scope for the `set_the_time` method call.
-        std::cout << "CALLING SET_THE_TIME" << std::endl;
-        auto setTheTimeResultFuture = client.setTheTime(std::chrono::system_clock::now(), std::chrono::system_clock::now());
-        auto setTheTimeStatus = setTheTimeResultFuture.wait_for(std::chrono::seconds(5));
-        if (setTheTimeStatus == std::future_status::timeout)
+    // ----------------------METHOD HOLD_TEMPERATURE-----------------------------------------
+    { // Restrict scope for the `hold_temperature` method call.
+        std::cout << "CALLING HOLD_TEMPERATURE" << std::endl;
+        auto holdTemperatureResultFuture = client.holdTemperature(3.14);
+        auto holdTemperatureStatus = holdTemperatureResultFuture.wait_for(std::chrono::seconds(5));
+        if (holdTemperatureStatus == std::future_status::timeout)
         {
-            std::cout << "TIMEOUT after 5 seconds waiting for SET_THE_TIME response." << std::endl;
+            std::cout << "TIMEOUT after 5 seconds waiting for HOLD_TEMPERATURE response." << std::endl;
         }
         else
         {
-            SetTheTimeReturnValues returnValue;
+            bool returnValue;
             bool success = false;
             try
             {
-                returnValue = setTheTimeResultFuture.get();
+                returnValue = holdTemperatureResultFuture.get();
                 success = true;
             }
             catch (const StingerMethodException& ex)
             {
-                std::cout << "SET_THE_TIME Exception: " << ex.what() << std::endl;
+                std::cout << "HOLD_TEMPERATURE Exception: " << ex.what() << std::endl;
             }
             if (success)
             {
-                std::cout << "SET_THE_TIME Response: "
-                          << " timestamp=" << timePointToIsoString(returnValue.timestamp) << " confirmation_message=" << returnValue.confirmationMessage << std::endl;
-            }
-        }
-    }
-
-    // ----------------------METHOD FORWARD_TIME-----------------------------------------
-    { // Restrict scope for the `forward_time` method call.
-        std::cout << "CALLING FORWARD_TIME" << std::endl;
-        auto forwardTimeResultFuture = client.forwardTime(std::chrono::duration<double>(3536));
-        auto forwardTimeStatus = forwardTimeResultFuture.wait_for(std::chrono::seconds(5));
-        if (forwardTimeStatus == std::future_status::timeout)
-        {
-            std::cout << "TIMEOUT after 5 seconds waiting for FORWARD_TIME response." << std::endl;
-        }
-        else
-        {
-            std::chrono::time_point<std::chrono::system_clock> returnValue;
-            bool success = false;
-            try
-            {
-                returnValue = forwardTimeResultFuture.get();
-                success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
-                std::cout << "FORWARD_TIME Exception: " << ex.what() << std::endl;
-            }
-            if (success)
-            {
-                std::cout << "FORWARD_TIME Response: "
-                          << " new_time=" << timePointToIsoString(returnValue) << std::endl;
-            }
-        }
-    }
-
-    // ----------------------METHOD HOW_OFF_IS_THE_CLOCK-----------------------------------------
-    { // Restrict scope for the `how_off_is_the_clock` method call.
-        std::cout << "CALLING HOW_OFF_IS_THE_CLOCK" << std::endl;
-        auto howOffIsTheClockResultFuture = client.howOffIsTheClock(std::chrono::system_clock::now());
-        auto howOffIsTheClockStatus = howOffIsTheClockResultFuture.wait_for(std::chrono::seconds(5));
-        if (howOffIsTheClockStatus == std::future_status::timeout)
-        {
-            std::cout << "TIMEOUT after 5 seconds waiting for HOW_OFF_IS_THE_CLOCK response." << std::endl;
-        }
-        else
-        {
-            std::chrono::duration<double> returnValue;
-            bool success = false;
-            try
-            {
-                returnValue = howOffIsTheClockResultFuture.get();
-                success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
-                std::cout << "HOW_OFF_IS_THE_CLOCK Exception: " << ex.what() << std::endl;
-            }
-            if (success)
-            {
-                std::cout << "HOW_OFF_IS_THE_CLOCK Response: "
-                          << " difference=" << durationToIsoString(returnValue) << std::endl;
+                std::cout << "HOLD_TEMPERATURE Response: "
+                          << " success=" << returnValue << std::endl;
             }
         }
     }

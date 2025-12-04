@@ -545,8 +545,7 @@ pub struct AddNumbersReturnValues {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `doSomething` method.
 pub struct DoSomethingRequestObject {
-    #[serde(rename = "aString")]
-    pub a_string: String,
+    pub task_to_do: String,
 }
 
 #[allow(dead_code)]
@@ -555,23 +554,6 @@ pub struct DoSomethingRequestObject {
 pub struct DoSomethingReturnValues {
     pub label: String,
     pub identifier: i32,
-    pub day: DayOfTheWeek,
-}
-
-// Structures for `echo` method
-
-#[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-/// Request Object for `echo` method.
-pub struct EchoRequestObject {
-    pub message: String,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-/// Return Object for `echo` method.
-pub struct EchoReturnValues {
-    pub message: String,
 }
 
 // Structures for `what_time_is_it` method
@@ -579,10 +561,7 @@ pub struct EchoReturnValues {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `what_time_is_it` method.
-pub struct WhatTimeIsItRequestObject {
-    #[serde(with = "datetime_iso_format")]
-    pub the_first_time: chrono::DateTime<chrono::Utc>,
-}
+pub struct WhatTimeIsItRequestObject {}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -592,61 +571,20 @@ pub struct WhatTimeIsItReturnValues {
     pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
-// Structures for `set_the_time` method
+// Structures for `hold_temperature` method
 
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-/// Request Object for `set_the_time` method.
-pub struct SetTheTimeRequestObject {
-    #[serde(with = "datetime_iso_format")]
-    pub the_first_time: chrono::DateTime<chrono::Utc>,
-    #[serde(with = "datetime_iso_format")]
-    pub the_second_time: chrono::DateTime<chrono::Utc>,
+/// Request Object for `hold_temperature` method.
+pub struct HoldTemperatureRequestObject {
+    pub temperature_celsius: f32,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-/// Return Object for `set_the_time` method.
-pub struct SetTheTimeReturnValues {
-    #[serde(with = "datetime_iso_format")]
-    pub timestamp: chrono::DateTime<chrono::Utc>,
-    pub confirmation_message: String,
-}
-
-// Structures for `forward_time` method
-
-#[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-/// Request Object for `forward_time` method.
-pub struct ForwardTimeRequestObject {
-    #[serde(with = "duration_iso_format")]
-    pub adjustment: chrono::Duration,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-/// Return Object for `forward_time` method.
-pub struct ForwardTimeReturnValues {
-    #[serde(with = "datetime_iso_format")]
-    pub new_time: chrono::DateTime<chrono::Utc>,
-}
-
-// Structures for `how_off_is_the_clock` method
-
-#[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-/// Request Object for `how_off_is_the_clock` method.
-pub struct HowOffIsTheClockRequestObject {
-    #[serde(with = "datetime_iso_format")]
-    pub actual_time: chrono::DateTime<chrono::Utc>,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-/// Return Object for `how_off_is_the_clock` method.
-pub struct HowOffIsTheClockReturnValues {
-    #[serde(with = "duration_iso_format")]
-    pub difference: chrono::Duration,
+/// Return Object for `hold_temperature` method.
+pub struct HoldTemperatureReturnValues {
+    pub success: bool,
 }
 
 // ---- SIGNALS ----
@@ -658,14 +596,16 @@ pub struct TodayIsSignalPayload {
     #[serde(rename = "dayOfMonth")]
     pub day_of_month: i32,
     #[serde(rename = "dayOfWeek")]
-    pub day_of_week: Option<DayOfTheWeek>,
+    pub day_of_week: DayOfTheWeek,
+}
 
+// Structures for `randomWord` signal
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RandomWordSignalPayload {
+    pub word: String,
     #[serde(with = "datetime_iso_format")]
-    pub timestamp: chrono::DateTime<chrono::Utc>,
-    #[serde(with = "duration_iso_format")]
-    pub process_time: chrono::Duration,
-    #[serde(with = "base64_binary_format")]
-    pub memory_segment: Vec<u8>,
+    pub time: chrono::DateTime<chrono::Utc>,
 }
 
 // `favorite_number` property structure.
@@ -707,14 +647,6 @@ pub struct FamilyNameProperty {
 pub struct LastBreakfastTimeProperty {
     #[serde(with = "datetime_iso_format")]
     pub timestamp: chrono::DateTime<chrono::Utc>,
-}
-
-// `breakfast_length` property structure.
-#[allow(dead_code, non_snake_case)]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct BreakfastLengthProperty {
-    #[serde(with = "duration_iso_format")]
-    pub length: chrono::Duration,
 }
 
 // `last_birthdays` property structure.
@@ -793,16 +725,6 @@ mod tests {
         }"#;
 
         let parsed: LastBreakfastTimeProperty = serde_json::from_str(json_str).unwrap();
-    }
-
-    #[test]
-    fn test_breakfast_length_property_json_format() {
-        // Test deserializing from a known JSON string
-        let json_str = r#"{
-            "length": None 
-        }"#;
-
-        let parsed: BreakfastLengthProperty = serde_json::from_str(json_str).unwrap();
     }
 
     #[test]

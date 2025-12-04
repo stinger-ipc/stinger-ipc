@@ -55,57 +55,29 @@ impl FullMethodHandlers<MqttierClient> for FullMethodImpl {
 
     async fn handle_do_something(
         &self,
-        _a_string: String,
+        _task_to_do: String,
     ) -> Result<DoSomethingReturnValues, MethodReturnCode> {
         println!("Handling doSomething");
         let rv = DoSomethingReturnValues {
             label: "apples".to_string(),
             identifier: 42,
-            day: DayOfTheWeek::Saturday,
         };
         Ok(rv)
     }
 
-    async fn handle_echo(&self, _message: String) -> Result<String, MethodReturnCode> {
-        println!("Handling echo");
-        Ok("apples".to_string())
-    }
-
     async fn handle_what_time_is_it(
         &self,
-        _the_first_time: chrono::DateTime<chrono::Utc>,
     ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
         println!("Handling what_time_is_it");
         Ok(chrono::Utc::now())
     }
 
-    async fn handle_set_the_time(
+    async fn handle_hold_temperature(
         &self,
-        _the_first_time: chrono::DateTime<chrono::Utc>,
-        _the_second_time: chrono::DateTime<chrono::Utc>,
-    ) -> Result<SetTheTimeReturnValues, MethodReturnCode> {
-        println!("Handling set_the_time");
-        let rv = SetTheTimeReturnValues {
-            timestamp: chrono::Utc::now(),
-            confirmation_message: "apples".to_string(),
-        };
-        Ok(rv)
-    }
-
-    async fn handle_forward_time(
-        &self,
-        _adjustment: chrono::Duration,
-    ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
-        println!("Handling forward_time");
-        Ok(chrono::Utc::now())
-    }
-
-    async fn handle_how_off_is_the_clock(
-        &self,
-        _actual_time: chrono::DateTime<chrono::Utc>,
-    ) -> Result<chrono::Duration, MethodReturnCode> {
-        println!("Handling how_off_is_the_clock");
-        Ok(chrono::Duration::seconds(3536))
+        _temperature_celsius: f32,
+    ) -> Result<bool, MethodReturnCode> {
+        println!("Handling hold_temperature");
+        Ok(true)
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -171,9 +143,6 @@ async fn main() {
         last_breakfast_time: chrono::Utc::now(),
         last_breakfast_time_version: 1,
 
-        breakfast_length: chrono::Duration::seconds(3536),
-        breakfast_length_version: 1,
-
         last_birthdays: LastBirthdaysProperty {
             mom: chrono::Utc::now(),
             dad: chrono::Utc::now(),
@@ -209,16 +178,18 @@ async fn main() {
             sleep(Duration::from_secs(1)).await;
             println!("Emitting signal 'todayIs'");
             let signal_result_future = server_clone1
-                .emit_today_is(
-                    42,
-                    Some(DayOfTheWeek::Saturday),
-                    chrono::Utc::now(),
-                    chrono::Duration::seconds(3536),
-                    vec![101, 120, 97, 109, 112, 108, 101],
-                )
+                .emit_today_is(42, DayOfTheWeek::Saturday)
                 .await;
             let signal_result = signal_result_future.await;
             println!("Signal 'todayIs' was sent: {:?}", signal_result);
+
+            sleep(Duration::from_secs(1)).await;
+            println!("Emitting signal 'randomWord'");
+            let signal_result_future = server_clone1
+                .emit_random_word("apples".to_string(), chrono::Utc::now())
+                .await;
+            let signal_result = signal_result_future.await;
+            println!("Signal 'randomWord' was sent: {:?}", signal_result);
 
             sleep(Duration::from_secs(67)).await;
         }
@@ -235,8 +206,6 @@ async fn main() {
     let family_name_property = server.get_family_name_handle();
 
     let last_breakfast_time_property = server.get_last_breakfast_time_handle();
-
-    let breakfast_length_property = server.get_breakfast_length_handle();
 
     let last_birthdays_property = server.get_last_birthdays_handle();
     let property_publish_task = tokio::spawn(async move {
@@ -306,14 +275,6 @@ async fn main() {
                 let mut last_breakfast_time_guard = last_breakfast_time_property.write().await;
                 *last_breakfast_time_guard = chrono::Utc::now();
                 // Value is changed and published when last_breakfast_time_guard goes out of scope and is dropped.
-            }
-
-            sleep(Duration::from_secs(1)).await;
-            {
-                println!("Changing property 'breakfast_length'");
-                let mut breakfast_length_guard = breakfast_length_property.write().await;
-                *breakfast_length_guard = chrono::Duration::seconds(975);
-                // Value is changed and published when breakfast_length_guard goes out of scope and is dropped.
             }
 
             sleep(Duration::from_secs(1)).await;

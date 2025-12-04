@@ -1,11 +1,11 @@
-# _Fully Featured Example Interface_ API Overview 
+# _Example Interface_ API Overview 
 
 <!--
 This is automatically generated documentation.
 LICENSE: This generated content is not subject to any license restrictions.
 TODO: Get license text from stinger file
 --> 
-_Example StingerAPI interface which demonstrates most features._
+_Example StingerAPI interface which demonstrates many features._
 
 
 [[_TOC_]]
@@ -165,10 +165,6 @@ initial_property_values = FullInitialPropertyValues(
         
     last_breakfast_time_version=5,
 
-    breakfast_length=timedelta(seconds=3536),
-        
-    breakfast_length_version=6,
-
     last_birthdays=
         LastBirthdaysProperty(
             
@@ -181,7 +177,7 @@ initial_property_values = FullInitialPropertyValues(
             brothers_age=42,
             
         ),
-    last_birthdays_version=7,
+    last_birthdays_version=6,
 
 )
 
@@ -256,9 +252,6 @@ let initial_property_values = FullInitialPropertyValues {
     
     last_breakfast_time:chrono::Utc::now(),
     last_breakfast_time_version: 1,
-    
-    breakfast_length:chrono::Duration::seconds(3536),
-    breakfast_length_version: 1,
     
     last_birthdays:LastBirthdaysProperty {
             mom: chrono::Utc::now(),
@@ -336,9 +329,6 @@ let instance_info = DiscoveredInstance {
         last_breakfast_time:chrono::Utc::now(),
         last_breakfast_time_version: 1,
         
-        breakfast_length:chrono::Duration::seconds(3536),
-        breakfast_length_version: 1,
-        
         last_birthdays:LastBirthdaysProperty {
                 mom: chrono::Utc::now(),
                 dad: chrono::Utc::now(),
@@ -401,10 +391,6 @@ initial_property_values = FullInitialPropertyValues(
         
     last_breakfast_time_version=5,
 
-    breakfast_length=timedelta(seconds=3536),
-        
-    breakfast_length_version=6,
-
     last_birthdays=
         LastBirthdaysProperty(
             
@@ -412,12 +398,12 @@ initial_property_values = FullInitialPropertyValues(
             
             dad=datetime.now(UTC),
             
-            sister=None,
+            sister=datetime.now(UTC),
             
             brothers_age=42,
             
         ),
-    last_birthdays_version=7,
+    last_birthdays_version=6,
 
 )
 
@@ -497,10 +483,7 @@ _No documentation for this signal_
 | Name          | Type     |Description|
 |---------------|----------|-----------|
 |   dayOfMonth  | integer  ||
-|   dayOfWeek   |[Enum DayOfTheWeek](#enum-DayOfTheWeek) (optional)||
-|   timestamp   |          ||
-|  process_time |          ||
-| memory_segment|          ||
+|   dayOfWeek   |[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
 
 #### Code Examples
 
@@ -511,8 +494,8 @@ The `todayIs` signal can be subscribed to by using the client's `receive_today_i
 
 ```python
 @client.receive_today_is
-def on_today_is(dayOfMonth: int, dayOfWeek: Optional[DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
-    print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } timestamp={ timestamp } process_time={ process_time } memory_segment={ memory_segment } ")
+def on_today_is(dayOfMonth: int, dayOfWeek: DayOfTheWeek):
+    print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
 ```
 
 </details>
@@ -523,7 +506,7 @@ def on_today_is(dayOfMonth: int, dayOfWeek: Optional[DayOfTheWeek], timestamp: d
 A server can emit a `todayIs` signal simply by calling the server's `emit_today_is` method.
 
 ```python
-server.emit_today_is(42, DayOfTheWeek.SATURDAY, datetime.now(UTC), timedelta(seconds=3536), b"example binary data")
+server.emit_today_is(42, DayOfTheWeek.SATURDAY)
 ```
 
 </details>
@@ -548,7 +531,7 @@ print("Got a 'todayIs' signal: {:?}", today_is_signal_rx.recv().await);
 A server can emit a `todayIs` signal simply by calling the server's `emit_today_is` method.
 
 ```rust
-let publish_result = server.emit_today_is(42, Some(DayOfTheWeek::Saturday), chrono::Utc::now(), chrono::Duration::seconds(3536), vec![101, 120, 97, 109, 112, 108, 101]).await;
+let publish_result = server.emit_today_is(42, DayOfTheWeek::Saturday).await;
 ```
 
 The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
@@ -561,8 +544,8 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `todayIs` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerTodayIsCallback([](int dayOfMonth, std::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> process_time, std::vector<uint8_t> memory_segment) {
-    std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" << "None" << " | " << "timestamp=" <<timestamp << " | " << "process_time=" <<process_time << " | " << "memory_segment=" <<memory_segment <<  std::endl;
+client.registerTodayIsCallback([](int dayOfMonth, DayOfTheWeek dayOfWeek) {
+    std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" <<dayOfTheWeekStrings[static_cast<int>(dayOfWeek)] <<  std::endl;
 });
 ```
 
@@ -574,8 +557,98 @@ client.registerTodayIsCallback([](int dayOfMonth, std::optional<DayOfTheWeek> da
 A `todayIs` signal can be emitted by calling the server's `emitTodayIsSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
 
 ```cpp
-auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101});
+auto todayIsFuture = server.emitTodayIsSignal(42, DayOfTheWeek::SATURDAY);
 todayIsFuture.wait(); // Optional, to block until signal is sent.
+```
+
+</details>
+
+
+### Signal `randomWord`
+
+_No documentation for this signal_
+
+#### Signal Parameters for `randomWord`
+
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+|      word     |  string  ||
+|      time     |          ||
+
+#### Code Examples
+
+<details>
+  <summary>Python Client code for receiving 'randomWord' signal</summary>
+
+The `randomWord` signal can be subscribed to by using the client's `receive_random_word` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
+
+```python
+@client.receive_random_word
+def on_random_word(word: str, time: datetime):
+    print(f"Got a 'randomWord' signal: word={ word } time={ time } ")
+```
+
+</details>
+
+<details>
+  <summary>Python Server code for emitting 'randomWord' signal</summary>
+
+A server can emit a `randomWord` signal simply by calling the server's `emit_random_word` method.
+
+```python
+server.emit_random_word("apples", datetime.now(UTC))
+```
+
+</details>
+
+<details>
+  <summary>Rust Client code for receiving 'randomWord' signal</summary>
+
+A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
+
+Since receiving a message through the channel blocks, it may be best to put this into a separate async task.
+
+```rust
+let mut random_word_signal_rx = client.get_random_word_receiver();
+print("Got a 'randomWord' signal: {:?}", random_word_signal_rx.recv().await);
+```
+
+</details>
+
+<details>
+  <summary>Rust Server code for emitting 'randomWord' signal</summary>
+
+A server can emit a `randomWord` signal simply by calling the server's `emit_random_word` method.
+
+```rust
+let publish_result = server.emit_random_word("apples".to_string(), chrono::Utc::now()).await;
+```
+
+The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
+
+</details>
+
+<details>
+  <summary>C++ Client code for registering a 'randomWord' signal callback</summary>
+
+A client can register a callback function to be called when a `randomWord` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
+
+```cpp
+client.registerRandomWordCallback([](std::string word, std::chrono::time_point<std::chrono::system_clock> time) {
+    std::cout << "word=" <<word << " | " << "time=" <<time <<  std::endl;
+});
+```
+
+</details>
+
+<details>
+  <summary>C++ Server code for emitting a 'randomWord' signal</summary>
+
+A `randomWord` signal can be emitted by calling the server's `emitRandomWordSignal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
+
+```cpp
+auto randomWordFuture = server.emitRandomWordSignal("apples", std::chrono::system_clock::now());
+randomWordFuture.wait(); // Optional, to block until signal is sent.
 ```
 
 </details>
@@ -663,7 +736,7 @@ _No documentation for this method_
 #### Request Parameters
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|    aString    |  string  ||
+|   task_to_do  |  string  ||
 
 #### Return Parameters
 
@@ -679,7 +752,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.do_something(aString="apples")
+future = client.do_something(task_to_do="apples")
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -696,10 +769,10 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_do_something 
-def do_something(aString: str) -> DoSomethingMethodResponse:
+def do_something(task_to_do: str) -> DoSomethingMethodResponse:
     """ This is an example handler for the 'doSomething' method.  """
-    print(f"Running do_something'({aString})'")
-    return DoSomethingMethodResponse(label="apples", identifier=42, day=DayOfTheWeek.SATURDAY)
+    print(f"Running do_something'({task_to_do})'")
+    return DoSomethingMethodResponse(label="apples", identifier=42)
 ```
 
 </details>
@@ -717,75 +790,13 @@ println!("doSomething response: {:?}", result);
 </details>
 
 
-### Method `echo`
-
-Echo back the received message.
-
-#### Request Parameters
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-|    message    |  string  ||
-
-#### Return Parameters
-
-The return value type is `string`.
-#### Code Examples
-
-<details>
-  <summary>Python Client code for calling the 'echo' method</summary>
-
-The `echo` method can be called by calling the clients's `echo` method.
-This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
-
-```python
-from futures import Future
-
-future = client.echo(message="apples")
-try:
-    print(f"RESULT:  {future.result(5)}")
-except futures.TimeoutError:
-    print(f"Timed out waiting for response to 'echo' call")
-```
-
-</details>
-
-<details>
-  <summary>Python Server code for handling the 'echo' method</summary>
-
-The server provides an implementation for the `echo` method by using the `@server.handle_echo` decorator on a function.  The name of the function does not matter. 
-The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
-
-```python
-@server.handle_echo 
-def echo(message: str) -> str:
-    """ This is an example handler for the 'echo' method.  """
-    print(f"Running echo'({message})'")
-    return "apples"
-```
-
-</details>
-
-<details>
-  <summary>Rust Client code for calling the 'echo' method</summary>
-
-The `FullClient` provides an implementation for the `echo` method.  It will block and return a Result object of either the return payload value, or an error.
-
-```rust
-let result = api_client.echo("apples".to_string()).await.expect("Failed to call echo");
-println!("echo response: {:?}", result);
-```
-
-</details>
-
-
 ### Method `what_time_is_it`
 
 Get the current date and time.
 
 #### Request Parameters
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-| the_first_time|          ||
+
+There are no arguments for this request.
 
 #### Return Parameters
 
@@ -801,7 +812,7 @@ This returns a `Future` object.  In this example, we wait up to 5 seconds for th
 ```python
 from futures import Future
 
-future = client.what_time_is_it(the_first_time=datetime.now(UTC))
+future = client.what_time_is_it()
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
@@ -818,9 +829,9 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_what_time_is_it 
-def what_time_is_it(the_first_time: datetime) -> datetime:
+def what_time_is_it() -> datetime:
     """ This is an example handler for the 'what_time_is_it' method.  """
-    print(f"Running what_time_is_it'({the_first_time})'")
+    print(f"Running what_time_is_it'()'")
     return datetime.now(UTC)
 ```
 
@@ -832,192 +843,69 @@ def what_time_is_it(the_first_time: datetime) -> datetime:
 The `FullClient` provides an implementation for the `what_time_is_it` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.what_time_is_it(chrono::Utc::now()).await.expect("Failed to call what_time_is_it");
+let result = api_client.what_time_is_it().await.expect("Failed to call what_time_is_it");
 println!("what_time_is_it response: {:?}", result);
 ```
 
 </details>
 
 
-### Method `set_the_time`
+### Method `hold_temperature`
 
-_No documentation for this method_
+Hold a temperature for a specified duration.
 
 #### Request Parameters
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-| the_first_time|          ||
-|the_second_time|          ||
+|temperature_celsius|  number  ||
 
 #### Return Parameters
 
-The return value type is ``.
+The return value type is `boolean`.
 #### Code Examples
 
 <details>
-  <summary>Python Client code for calling the 'set_the_time' method</summary>
+  <summary>Python Client code for calling the 'hold_temperature' method</summary>
 
-The `set_the_time` method can be called by calling the clients's `set_the_time` method.
+The `hold_temperature` method can be called by calling the clients's `hold_temperature` method.
 This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
 
 ```python
 from futures import Future
 
-future = client.set_the_time(the_first_time=datetime.now(UTC), the_second_time=datetime.now(UTC))
+future = client.hold_temperature(temperature_celsius=3.14)
 try:
     print(f"RESULT:  {future.result(5)}")
 except futures.TimeoutError:
-    print(f"Timed out waiting for response to 'set_the_time' call")
+    print(f"Timed out waiting for response to 'hold_temperature' call")
 ```
 
 </details>
 
 <details>
-  <summary>Python Server code for handling the 'set_the_time' method</summary>
+  <summary>Python Server code for handling the 'hold_temperature' method</summary>
 
-The server provides an implementation for the `set_the_time` method by using the `@server.handle_set_the_time` decorator on a function.  The name of the function does not matter. 
+The server provides an implementation for the `hold_temperature` method by using the `@server.handle_hold_temperature` decorator on a function.  The name of the function does not matter. 
 The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
 
 ```python
-@server.handle_set_the_time 
-def set_the_time(the_first_time: datetime, the_second_time: datetime) -> SetTheTimeMethodResponse:
-    """ This is an example handler for the 'set_the_time' method.  """
-    print(f"Running set_the_time'({the_first_time}, {the_second_time})'")
-    return SetTheTimeMethodResponse(timestamp=datetime.now(UTC), confirmation_message="apples")
+@server.handle_hold_temperature 
+def hold_temperature(temperature_celsius: float) -> bool:
+    """ This is an example handler for the 'hold_temperature' method.  """
+    print(f"Running hold_temperature'({temperature_celsius})'")
+    return True
 ```
 
 </details>
 
 <details>
-  <summary>Rust Client code for calling the 'set_the_time' method</summary>
+  <summary>Rust Client code for calling the 'hold_temperature' method</summary>
 
-The `FullClient` provides an implementation for the `set_the_time` method.  It will block and return a Result object of either the return payload value, or an error.
+The `FullClient` provides an implementation for the `hold_temperature` method.  It will block and return a Result object of either the return payload value, or an error.
 
 ```rust
-let result = api_client.set_the_time(chrono::Utc::now(), chrono::Utc::now()).await.expect("Failed to call set_the_time");
-println!("set_the_time response: {:?}", result);
-```
-
-</details>
-
-
-### Method `forward_time`
-
-This method takes a time and a duration, and returns the time plus the duration.
-
-#### Request Parameters
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-|   adjustment  |          ||
-
-#### Return Parameters
-
-The return value type is ``.
-#### Code Examples
-
-<details>
-  <summary>Python Client code for calling the 'forward_time' method</summary>
-
-The `forward_time` method can be called by calling the clients's `forward_time` method.
-This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
-
-```python
-from futures import Future
-
-future = client.forward_time(adjustment=timedelta(seconds=3536))
-try:
-    print(f"RESULT:  {future.result(5)}")
-except futures.TimeoutError:
-    print(f"Timed out waiting for response to 'forward_time' call")
-```
-
-</details>
-
-<details>
-  <summary>Python Server code for handling the 'forward_time' method</summary>
-
-The server provides an implementation for the `forward_time` method by using the `@server.handle_forward_time` decorator on a function.  The name of the function does not matter. 
-The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
-
-```python
-@server.handle_forward_time 
-def forward_time(adjustment: timedelta) -> datetime:
-    """ This is an example handler for the 'forward_time' method.  """
-    print(f"Running forward_time'({adjustment})'")
-    return datetime.now(UTC)
-```
-
-</details>
-
-<details>
-  <summary>Rust Client code for calling the 'forward_time' method</summary>
-
-The `FullClient` provides an implementation for the `forward_time` method.  It will block and return a Result object of either the return payload value, or an error.
-
-```rust
-let result = api_client.forward_time(chrono::Duration::seconds(3536)).await.expect("Failed to call forward_time");
-println!("forward_time response: {:?}", result);
-```
-
-</details>
-
-
-### Method `how_off_is_the_clock`
-
-Returns how far off the clock is from the actual time.
-
-#### Request Parameters
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-|  actual_time  |          ||
-
-#### Return Parameters
-
-The return value type is ``.
-#### Code Examples
-
-<details>
-  <summary>Python Client code for calling the 'how_off_is_the_clock' method</summary>
-
-The `how_off_is_the_clock` method can be called by calling the clients's `how_off_is_the_clock` method.
-This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
-
-```python
-from futures import Future
-
-future = client.how_off_is_the_clock(actual_time=datetime.now(UTC))
-try:
-    print(f"RESULT:  {future.result(5)}")
-except futures.TimeoutError:
-    print(f"Timed out waiting for response to 'how_off_is_the_clock' call")
-```
-
-</details>
-
-<details>
-  <summary>Python Server code for handling the 'how_off_is_the_clock' method</summary>
-
-The server provides an implementation for the `how_off_is_the_clock` method by using the `@server.handle_how_off_is_the_clock` decorator on a function.  The name of the function does not matter. 
-The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
-
-```python
-@server.handle_how_off_is_the_clock 
-def how_off_is_the_clock(actual_time: datetime) -> timedelta:
-    """ This is an example handler for the 'how_off_is_the_clock' method.  """
-    print(f"Running how_off_is_the_clock'({actual_time})'")
-    return timedelta(seconds=3536)
-```
-
-</details>
-
-<details>
-  <summary>Rust Client code for calling the 'how_off_is_the_clock' method</summary>
-
-The `FullClient` provides an implementation for the `how_off_is_the_clock` method.  It will block and return a Result object of either the return payload value, or an error.
-
-```rust
-let result = api_client.how_off_is_the_clock(chrono::Utc::now()).await.expect("Failed to call how_off_is_the_clock");
-println!("how_off_is_the_clock response: {:?}", result);
+let result = api_client.hold_temperature(3.14).await.expect("Failed to call hold_temperature");
+println!("hold_temperature response: {:?}", result);
 ```
 
 </details>
@@ -1158,6 +1046,8 @@ if favorite_foods_watch_rx.changed().await.is_ok() {
 
 _No documentation is available for this property_
 
+This property is **read-only**.  It can only be modified by the server.
+
 | Name          | Type     |Description|
 |---------------|----------|-----------|
 |     monday    |[Struct Lunch](#enum-Lunch)||
@@ -1206,10 +1096,9 @@ if lunch_menu_watch_rx.changed().await.is_ok() {
 </details>
 
 <details>
-  <summary>Rust Client code for reading and writing  the 'lunch_menu' property</summary>
+  <summary>Rust Client code for reading  the 'lunch_menu' property</summary>
 
-  A Rust client works with properties the same was as the server.  
-  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
+  A Rust client works with properties the same was as the server.  However, since this property is read-only, the client cannot get a write handle to modify the value.
   
 
 </details>
@@ -1319,62 +1208,6 @@ if last_breakfast_time_watch_rx.changed().await.is_ok() {
 
 <details>
   <summary>Rust Client code for reading and writing  the 'last_breakfast_time' property</summary>
-
-  A Rust client works with properties the same was as the server.  
-  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
-  
-
-</details>
-
-
-### Property `breakfast_length`
-
-This is to test a property with a single duration value.
-
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-|     length    |          ||
-
-### Code Examples
-
-<details>
-  <summary>Rust Server code for reading and writing the 'breakfast_length' property</summary>
-
-A server hold the "source of truth" for the value of `breakfast_length`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
-
-```rust
-let breakfast_length_handle = server.get_breakfast_length_handle();
-{
-    let mut breakfast_length_guard = breakfast_length_handle.write().await;
-    *breakfast_length_guard = chrono::Duration::seconds(967);
-    // Optional, block until the property is published to the MQTT broker:
-    breakfast_length_guard.commit(std::time::Duration::from_secs(2)).await;
-
-    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
-}
-
-```
-
-If only reading the value, a read guard can be used:
-
-```rust
-let breakfast_length_guard = breakfast_length_handle.read().await;
-```
-
-Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
-
-```rust
-let breakfast_length_watch_rx = client.watch_breakfast_length();
-
-if breakfast_length_watch_rx.changed().await.is_ok() {
-    let latest = breakfast_length_watch_rx.borrow().clone();
-    println!("Property updated: {:?}", latest);
-}
-```
-</details>
-
-<details>
-  <summary>Rust Client code for reading and writing  the 'breakfast_length' property</summary>
 
   A Rust client works with properties the same was as the server.  
   When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.

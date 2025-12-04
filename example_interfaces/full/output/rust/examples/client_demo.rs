@@ -89,6 +89,26 @@ async fn main() {
         }
     });
 
+    let mut sig_rx = full_client.get_random_word_receiver();
+    println!("Got signal receiver for randomWord");
+
+    sleep(Duration::from_secs(5)).await;
+
+    let sig_rx_task2 = tokio::spawn(async move {
+        println!("Looping for signal reception...");
+        loop {
+            match sig_rx.recv().await {
+                Ok(payload) => {
+                    println!("*** Received randomWord signal with payload: {:?}", payload);
+                }
+                Err(e) => {
+                    eprintln!("Error receiving randomWord signal: {:?}", e);
+                    break;
+                }
+            }
+        }
+    });
+
     // This task subscribes to a watch chanel for each property to get notified of changes.
     let client_for_prop_change = full_client.clone();
     let _prop_change_rx_task = tokio::spawn(async move {
@@ -97,7 +117,6 @@ async fn main() {
         let mut lunch_menu_change_rx = client_for_prop_change.watch_lunch_menu();
         let mut family_name_change_rx = client_for_prop_change.watch_family_name();
         let mut last_breakfast_time_change_rx = client_for_prop_change.watch_last_breakfast_time();
-        let mut breakfast_length_change_rx = client_for_prop_change.watch_breakfast_length();
         let mut last_birthdays_change_rx = client_for_prop_change.watch_last_birthdays();
 
         loop {
@@ -116,9 +135,6 @@ async fn main() {
                 }
                 _ = last_breakfast_time_change_rx.changed() => {
                     println!("Property 'last_breakfast_time' changed to: {:?}", *last_breakfast_time_change_rx.borrow());
-                }
-                _ = breakfast_length_change_rx.changed() => {
-                    println!("Property 'breakfast_length' changed to: {:?}", *breakfast_length_change_rx.borrow());
                 }
                 _ = last_birthdays_change_rx.changed() => {
                     println!("Property 'last_birthdays' changed to: {:?}", *last_birthdays_change_rx.borrow());
@@ -145,37 +161,14 @@ async fn main() {
             println!("<<< doSomething response: {:?}", result);
             sleep(Duration::from_secs(19)).await;
 
-            println!(">>> Calling echo with example values...");
-            let result = client_for_method_calling.echo("apples".to_string()).await;
-            println!("<<< echo response: {:?}", result);
-            sleep(Duration::from_secs(19)).await;
-
             println!(">>> Calling what_time_is_it with example values...");
-            let result = client_for_method_calling
-                .what_time_is_it(chrono::Utc::now())
-                .await;
+            let result = client_for_method_calling.what_time_is_it().await;
             println!("<<< what_time_is_it response: {:?}", result);
             sleep(Duration::from_secs(19)).await;
 
-            println!(">>> Calling set_the_time with example values...");
-            let result = client_for_method_calling
-                .set_the_time(chrono::Utc::now(), chrono::Utc::now())
-                .await;
-            println!("<<< set_the_time response: {:?}", result);
-            sleep(Duration::from_secs(19)).await;
-
-            println!(">>> Calling forward_time with example values...");
-            let result = client_for_method_calling
-                .forward_time(chrono::Duration::seconds(3536))
-                .await;
-            println!("<<< forward_time response: {:?}", result);
-            sleep(Duration::from_secs(19)).await;
-
-            println!(">>> Calling how_off_is_the_clock with example values...");
-            let result = client_for_method_calling
-                .how_off_is_the_clock(chrono::Utc::now())
-                .await;
-            println!("<<< how_off_is_the_clock response: {:?}", result);
+            println!(">>> Calling hold_temperature with example values...");
+            let result = client_for_method_calling.hold_temperature(3.14).await;
+            println!("<<< hold_temperature response: {:?}", result);
             sleep(Duration::from_secs(19)).await;
 
             sleep(Duration::from_secs(29)).await;
@@ -193,8 +186,6 @@ async fn main() {
     let family_name_handle = full_client.get_family_name_handle();
 
     let last_breakfast_time_handle = full_client.get_last_breakfast_time_handle();
-
-    let breakfast_length_handle = full_client.get_breakfast_length_handle();
 
     let last_birthdays_handle = full_client.get_last_birthdays_handle();
 
@@ -260,37 +251,7 @@ async fn main() {
                 );
             }
 
-            sleep(Duration::from_secs(2)).await;
-            {
-                // Scoping for 'lunch_menu' property.  Demonstrates creating a request to set the value.
-                let lunch_menu_new_value = LunchMenuProperty {
-                    monday: Lunch {
-                        drink: true,
-                        sandwich: "apples".to_string(),
-                        crackers: 3.14,
-                        day: DayOfTheWeek::Saturday,
-                        order_number: Some(42),
-                        time_of_lunch: chrono::Utc::now(),
-                        duration_of_lunch: chrono::Duration::seconds(3536),
-                    },
-                    tuesday: Lunch {
-                        drink: true,
-                        sandwich: "apples".to_string(),
-                        crackers: 3.14,
-                        day: DayOfTheWeek::Saturday,
-                        order_number: Some(42),
-                        time_of_lunch: chrono::Utc::now(),
-                        duration_of_lunch: chrono::Duration::seconds(3536),
-                    },
-                };
-                let mut write_lock = lunch_menu_handle.write().await;
-                *write_lock = lunch_menu_new_value;
-                println!(
-                    "<~~ Sending request to update property 'lunch_menu' to new value: {:?}",
-                    *write_lock
-                );
-            }
-            sleep(Duration::from_secs(10)).await;
+            // We can't do `lunch_menu_handle.write()` here because it is a read-only lock.
 
             {
                 // Scoping for 'family_name' property.  Demonstrates reading the value.
@@ -334,28 +295,6 @@ async fn main() {
             sleep(Duration::from_secs(10)).await;
 
             {
-                // Scoping for 'breakfast_length' property.  Demonstrates reading the value.
-                let current_value_ref = breakfast_length_handle.read().await;
-                println!(
-                    "=== Current value of property 'breakfast_length': {:?}",
-                    *current_value_ref
-                );
-            }
-
-            sleep(Duration::from_secs(2)).await;
-            {
-                // Scoping for 'breakfast_length' property.  Demonstrates creating a request to set the value.
-                let breakfast_length_new_value = chrono::Duration::seconds(3536);
-                let mut write_lock = breakfast_length_handle.write().await;
-                *write_lock = breakfast_length_new_value;
-                println!(
-                    "<~~ Sending request to update property 'breakfast_length' to new value: {:?}",
-                    *write_lock
-                );
-            }
-            sleep(Duration::from_secs(10)).await;
-
-            {
                 // Scoping for 'last_birthdays' property.  Demonstrates reading the value.
                 let current_value_ref = last_birthdays_handle.read().await;
                 println!(
@@ -394,12 +333,19 @@ async fn main() {
 
     sig_rx_task1.abort();
 
+    sig_rx_task2.abort();
+
     property_update_task.abort();
 
     method_calling_task.abort();
 
     // Join on all the signal emitting tasks.
-    let _ = join!(property_update_task, sig_rx_task1, method_calling_task,);
+    let _ = join!(
+        property_update_task,
+        sig_rx_task1,
+        sig_rx_task2,
+        method_calling_task,
+    );
 
     // Ctrl-C to stop
 }

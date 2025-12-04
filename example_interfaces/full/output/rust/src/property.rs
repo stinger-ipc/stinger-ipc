@@ -19,9 +19,6 @@ pub struct FullInitialPropertyValues {
     pub last_breakfast_time: chrono::DateTime<chrono::Utc>,
     pub last_breakfast_time_version: u32,
 
-    pub breakfast_length: chrono::Duration,
-    pub breakfast_length_version: u32,
-
     pub last_birthdays: LastBirthdaysProperty,
     pub last_birthdays_version: u32,
 }

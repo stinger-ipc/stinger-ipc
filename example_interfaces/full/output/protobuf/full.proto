@@ -31,10 +31,12 @@ message Lunch {
 
 message TodayIsSignal {
     int32 dayOfMonth = 1;
-    optional DayOfTheWeek dayOfWeek = 2;
-    string timestamp = 3;  // ISO 8601 format
-    string process_time = 4;  // ISO 8601 duration format
-    string memory_segment = 5;  // base64 encoded binary
+    DayOfTheWeek dayOfWeek = 2;
+}
+
+message RandomWordSignal {
+    string word = 1;
+    string time = 2;  // ISO 8601 format
 }
 
 
@@ -62,10 +64,6 @@ message LastBreakfastTimeProperty {
     string timestamp = 1;  // ISO 8601 format
 }
 
-message BreakfastLengthProperty {
-    string length = 1;  // ISO 8601 duration format
-}
-
 message LastBirthdaysProperty {
     string mom = 1;  // ISO 8601 format
     string dad = 2;  // ISO 8601 format
@@ -86,53 +84,25 @@ message AddNumbersResponse {
 }
 
 message DoSomethingRequest {
-    string aString = 1;
+    string task_to_do = 1;
 }
 
 message DoSomethingResponse {
     string label = 1;
     int32 identifier = 2;
-    DayOfTheWeek day = 3;
-}
-
-message EchoRequest {
-    string message = 1;
-}
-
-message EchoResponse {
-    string message = 1;
 }
 
 message WhatTimeIsItRequest {
-    string the_first_time = 1;  // ISO 8601 format
 }
 
 message WhatTimeIsItResponse {
     string timestamp = 1;  // ISO 8601 format
 }
 
-message SetTheTimeRequest {
-    string the_first_time = 1;  // ISO 8601 format
-    string the_second_time = 2;  // ISO 8601 format
+message HoldTemperatureRequest {
+    float temperature_celsius = 1;
 }
 
-message SetTheTimeResponse {
-    string timestamp = 1;  // ISO 8601 format
-    string confirmation_message = 2;
-}
-
-message ForwardTimeRequest {
-    string adjustment = 1;  // ISO 8601 duration format
-}
-
-message ForwardTimeResponse {
-    string new_time = 1;  // ISO 8601 format
-}
-
-message HowOffIsTheClockRequest {
-    string actual_time = 1;  // ISO 8601 format
-}
-
-message HowOffIsTheClockResponse {
-    string difference = 1;  // ISO 8601 duration format
+message HoldTemperatureResponse {
+    bool success = 1;
 }

@@ -31,15 +31,13 @@ if __name__ == "__main__":
         family_name_version=4,
         last_breakfast_time=datetime.now(UTC),
         last_breakfast_time_version=5,
-        breakfast_length=timedelta(seconds=3536),
-        breakfast_length_version=6,
         last_birthdays=LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
             sister=datetime.now(UTC),
             brothers_age=42,
         ),
-        last_birthdays_version=7,
+        last_birthdays_version=6,
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
@@ -53,40 +51,22 @@ if __name__ == "__main__":
         return 42
 
     @server.handle_do_something
-    def do_something(aString: str) -> DoSomethingMethodResponse:
+    def do_something(task_to_do: str) -> DoSomethingMethodResponse:
         """This is an example handler for the 'doSomething' method."""
-        print(f"--> Running do_something({aString})'")
-        return DoSomethingMethodResponse(label="apples", identifier=42, day=DayOfTheWeek.SATURDAY)
-
-    @server.handle_echo
-    def echo(message: str) -> str:
-        """This is an example handler for the 'echo' method."""
-        print(f"--> Running echo({message})'")
-        return "apples"
+        print(f"--> Running do_something({task_to_do})'")
+        return DoSomethingMethodResponse(label="apples", identifier=42)
 
     @server.handle_what_time_is_it
-    def what_time_is_it(the_first_time: datetime) -> datetime:
+    def what_time_is_it() -> datetime:
         """This is an example handler for the 'what_time_is_it' method."""
-        print(f"--> Running what_time_is_it({the_first_time})'")
+        print(f"--> Running what_time_is_it()'")
         return datetime.now(UTC)
 
-    @server.handle_set_the_time
-    def set_the_time(the_first_time: datetime, the_second_time: datetime) -> SetTheTimeMethodResponse:
-        """This is an example handler for the 'set_the_time' method."""
-        print(f"--> Running set_the_time({the_first_time}, {the_second_time})'")
-        return SetTheTimeMethodResponse(timestamp=datetime.now(UTC), confirmation_message="apples")
-
-    @server.handle_forward_time
-    def forward_time(adjustment: timedelta) -> datetime:
-        """This is an example handler for the 'forward_time' method."""
-        print(f"--> Running forward_time({adjustment})'")
-        return datetime.now(UTC)
-
-    @server.handle_how_off_is_the_clock
-    def how_off_is_the_clock(actual_time: datetime) -> timedelta:
-        """This is an example handler for the 'how_off_is_the_clock' method."""
-        print(f"--> Running how_off_is_the_clock({actual_time})'")
-        return timedelta(seconds=3536)
+    @server.handle_hold_temperature
+    def hold_temperature(temperature_celsius: float) -> bool:
+        """This is an example handler for the 'hold_temperature' method."""
+        print(f"--> Running hold_temperature({temperature_celsius})'")
+        return True
 
     @server.on_favorite_number_updates
     def on_favorite_number_update(number: int):
@@ -113,11 +93,6 @@ if __name__ == "__main__":
         """Example callback for when the 'last_breakfast_time' property is updated."""
         print(f"~~> Received update for 'last_breakfast_time' property: { timestamp= }")
 
-    @server.on_breakfast_length_updates
-    def on_breakfast_length_update(length: timedelta):
-        """Example callback for when the 'breakfast_length' property is updated."""
-        print(f"~~> Received update for 'breakfast_length' property: { length= }")
-
     @server.on_last_birthdays_updates
     def on_last_birthdays_update(mom: datetime, dad: datetime, sister: Optional[datetime], brothers_age: Optional[int]):
         """Example callback for when the 'last_birthdays' property is updated."""
@@ -127,10 +102,12 @@ if __name__ == "__main__":
 
     while True:
         try:
-            server.emit_today_is(42, DayOfTheWeek.SATURDAY, datetime.now(UTC), timedelta(seconds=3536), b"example binary data")
+            server.emit_today_is(42, DayOfTheWeek.SATURDAY)
+            server.emit_random_word("apples", datetime.now(UTC))
 
             sleep(4)
-            server.emit_today_is(day_of_month=42, day_of_week=DayOfTheWeek.SATURDAY, timestamp=datetime.now(UTC), process_time=timedelta(seconds=3536), memory_segment=b"example binary data")
+            server.emit_today_is(day_of_month=42, day_of_week=DayOfTheWeek.SATURDAY)
+            server.emit_random_word(word="apples", time=datetime.now(UTC))
 
             sleep(42)
         except KeyboardInterrupt:

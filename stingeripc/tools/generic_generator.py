@@ -94,6 +94,7 @@ def main(
             real_path = path.resolve()
             print(f"[bold cyan]TEMPLATES:[/bold cyan] {real_path}")
             code_templator.add_template_dir(real_path)
+            web_templator.add_template_dir(real_path)
             template_dirs.append(real_path)
 
     # Add template packages
@@ -102,6 +103,7 @@ def main(
             try:
                 print(f"[bold cyan]TEMPLATES:[/bold cyan] {pkg_name}")
                 code_templator.add_template_package(pkg_name)
+                web_templator.add_template_package(pkg_name)
                 pkg_path = importlib.resources.files(pkg_name)
                 template_dirs.append(Path(pkg_path))
             except ModuleNotFoundError as e:
@@ -116,6 +118,7 @@ def main(
         if not template_dir.exists():
             raise RuntimeError(f"Template directory does not exist: {template_dir}")
         code_templator.add_template_dir(template_dir)
+        web_templator.add_template_dir(template_dir)
         template_dirs.append(template_dir)
 
     def recursive_find_output_files(src_walker: Path, dest_walker: Path) -> list[str]:

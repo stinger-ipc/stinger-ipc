@@ -3,9 +3,9 @@ stingeripc:
 
 interface:
   name: Full
-  version: 0.0.1
-  title: Fully Featured Example Interface
-  summary: Example StingerAPI interface which demonstrates most features.
+  version: 0.0.2
+  title: Example Interface
+  summary: Example StingerAPI interface which demonstrates many features.
 
 structures:
 
@@ -39,7 +39,7 @@ enums:
     description: The days of the week.
     values:
       - name: Sunday
-        description: First day of the week.  The sabbath.
+        description: First day of the week.
       - name: Monday
       - name: Tuesday
       - name: Wednesday
@@ -57,16 +57,13 @@ signals:
       - name: dayOfWeek
         type: enum
         enumName: dayOfTheWeek
-        optional: true
-      - name: timestamp
+
+  randomWord:
+    payload:
+      - name: word
+        type: string
+      - name: time
         type: datetime
-        documentation: The date and time when this signal was emitted.
-      - name: process_time
-        type: duration
-        documentation: The amount of time it took to process this signal.
-      - name: memory_segment
-        type: binary
-        documentation: A binary blob of data.
 
 methods:
 
@@ -85,64 +82,30 @@ methods:
 
   doSomething:
     arguments:
-      - name: aString
+      - name: task_to_do
         type: string
     returnValues:
       - name: label
         type: string
       - name: identifier
         type: integer
-      - name: day
-        type: enum
-        enumName: dayOfTheWeek
-
-  echo:
-    documentation: Echo back the received message.
-    arguments:
-      - name: message
-        type: string
-    returnValues:
-      - name: message
-        type: string
 
   what_time_is_it:
     documentation: Get the current date and time.
-    arguments:
-      - name: the_first_time
-        type: datetime
+    arguments: []
     returnValues:
       - name: timestamp
         type: datetime
 
-  set_the_time:
+  hold_temperature:
+    documentation: Hold a temperature for a specified duration.
     arguments:
-      - name: the_first_time
-        type: datetime
-      - name: the_second_time
-        type: datetime
+      - name: temperature_celsius
+        type: float
+        documentation: The temperature to hold in degrees Celsius.
     returnValues:
-      - name: timestamp
-        type: datetime
-      - name: confirmation_message
-        type: string
-
-  forward_time:
-    documentation: This method takes a time and a duration, and returns the time plus the duration.
-    arguments:
-      - name: adjustment
-        type: duration
-    returnValues:
-      - name: new_time
-        type: datetime
-
-  how_off_is_the_clock:
-    documentation: Returns how far off the clock is from the actual time.
-    arguments:
-      - name: actual_time
-        type: datetime
-    returnValues:
-      - name: difference
-        type: duration
+      - name: success
+        type: boolean
 
 properties:
 
@@ -172,6 +135,7 @@ properties:
         type: struct
         structName: lunch
         description: Tuesday's lunch menu.
+    readOnly: true
   
   family_name:
     documentation: This is to test a property with a single string value.
@@ -184,12 +148,6 @@ properties:
     values:
       - name: timestamp
         type: datetime
-  
-  breakfast_length:
-    documentation: This is to test a property with a single duration value.
-    values:
-      - name: length
-        type: duration
 
   last_birthdays:
     documentation: This is to test a property with multiple datetime values.

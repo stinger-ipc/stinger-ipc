@@ -30,21 +30,18 @@ from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
-TodayIsSignalCallbackType = Callable[[int, Optional[DayOfTheWeek], datetime, timedelta, bytes], None]
+TodayIsSignalCallbackType = Callable[[int, DayOfTheWeek], None]
+RandomWordSignalCallbackType = Callable[[str, datetime], None]
 AddNumbersMethodResponseCallbackType = Callable[[int], None]
 DoSomethingMethodResponseCallbackType = Callable[[DoSomethingMethodResponse], None]
-EchoMethodResponseCallbackType = Callable[[str], None]
 WhatTimeIsItMethodResponseCallbackType = Callable[[datetime], None]
-SetTheTimeMethodResponseCallbackType = Callable[[SetTheTimeMethodResponse], None]
-ForwardTimeMethodResponseCallbackType = Callable[[datetime], None]
-HowOffIsTheClockMethodResponseCallbackType = Callable[[timedelta], None]
+HoldTemperatureMethodResponseCallbackType = Callable[[bool], None]
 
 FavoriteNumberPropertyUpdatedCallbackType = Callable[[int], None]
 FavoriteFoodsPropertyUpdatedCallbackType = Callable[[FavoriteFoodsProperty], None]
 LunchMenuPropertyUpdatedCallbackType = Callable[[LunchMenuProperty], None]
 FamilyNamePropertyUpdatedCallbackType = Callable[[str], None]
 LastBreakfastTimePropertyUpdatedCallbackType = Callable[[datetime], None]
-BreakfastLengthPropertyUpdatedCallbackType = Callable[[timedelta], None]
 LastBirthdaysPropertyUpdatedCallbackType = Callable[[LastBirthdaysProperty], None]
 
 
@@ -91,17 +88,13 @@ class FullClient:
         self._property_last_breakfast_time_version = instance_info.initial_property_values.last_breakfast_time_version
         self._conn.subscribe("full/{}/property/lastBreakfastTime/value".format(self._service_id), self._receive_last_breakfast_time_property_update_message)
         self._changed_value_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
-        self._property_breakfast_length = instance_info.initial_property_values.breakfast_length  # type: timedelta
-        self._property_breakfast_length_mutex = threading.Lock()
-        self._property_breakfast_length_version = instance_info.initial_property_values.breakfast_length_version
-        self._conn.subscribe("full/{}/property/breakfastLength/value".format(self._service_id), self._receive_breakfast_length_property_update_message)
-        self._changed_value_callbacks_for_breakfast_length: list[BreakfastLengthPropertyUpdatedCallbackType] = []
         self._property_last_birthdays = instance_info.initial_property_values.last_birthdays  # type: LastBirthdaysProperty
         self._property_last_birthdays_mutex = threading.Lock()
         self._property_last_birthdays_version = instance_info.initial_property_values.last_birthdays_version
         self._conn.subscribe("full/{}/property/lastBirthdays/value".format(self._service_id), self._receive_last_birthdays_property_update_message)
         self._changed_value_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
+        self._signal_recv_callbacks_for_random_word: list[RandomWordSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/Full/methodResponse", self._receive_any_method_response_message)
 
         self._property_response_topic = f"client/{self._conn.client_id}/Full/propertyUpdateResponse"
@@ -168,18 +161,6 @@ class FullClient:
         """Property 'lunch_menu' getter."""
         with self._property_lunch_menu_mutex:
             return self._property_lunch_menu
-
-    @lunch_menu.setter
-    def lunch_menu(self, value: LunchMenuProperty):
-        """Serializes and publishes the 'lunch_menu' property."""
-        if not isinstance(value, LunchMenuProperty):
-            raise ValueError("The 'lunch_menu' property must be a LunchMenuProperty")
-        property_obj = value
-        self._logger.debug("Setting 'lunch_menu' property to %s", property_obj)
-        with self._property_lunch_menu_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/lunchMenu/setValue".format(self._service_id), property_obj, str(self._property_lunch_menu_version), self._property_response_topic
-            )
 
     def lunch_menu_changed(self, handler: LunchMenuPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'lunch_menu' property changes.
@@ -248,34 +229,6 @@ class FullClient:
         return handler
 
     @property
-    def breakfast_length(self) -> timedelta:
-        """Property 'breakfast_length' getter."""
-        with self._property_breakfast_length_mutex:
-            return self._property_breakfast_length
-
-    @breakfast_length.setter
-    def breakfast_length(self, value: timedelta):
-        """Serializes and publishes the 'breakfast_length' property."""
-        if not isinstance(value, timedelta):
-            raise ValueError("The 'breakfast_length' property must be a timedelta")
-        property_obj = BreakfastLengthProperty(length=value)
-        self._logger.debug("Setting 'breakfast_length' property to %s", property_obj)
-        with self._property_breakfast_length_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/breakfastLength/setValue".format(self._service_id), property_obj, str(self._property_breakfast_length_version), self._property_response_topic
-            )
-
-    def breakfast_length_changed(self, handler: BreakfastLengthPropertyUpdatedCallbackType, call_immediately: bool = False):
-        """Sets a callback to be called when the 'breakfast_length' property changes.
-        Can be used as a decorator.
-        """
-        with self._property_breakfast_length_mutex:
-            self._changed_value_callbacks_for_breakfast_length.append(handler)
-            if call_immediately and self._property_breakfast_length is not None:
-                handler(self._property_breakfast_length)
-        return handler
-
-    @property
     def last_birthdays(self) -> LastBirthdaysProperty:
         """Property 'last_birthdays' getter."""
         with self._property_last_birthdays_mutex:
@@ -326,6 +279,16 @@ class FullClient:
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_today_is, **kwargs)
+
+    def _receive_random_word_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+            self._logger.warning("Received 'randomWord' signal with non-JSON content type")
+            return
+
+        model = RandomWordSignalPayload.model_validate_json(payload)
+        kwargs = model.model_dump()
+
+        self._do_callbacks_for(self._signal_recv_callbacks_for_random_word, **kwargs)
 
     def _receive_any_method_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle '' method response.
@@ -446,24 +409,6 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'last_breakfast_time' property change: %s", exc_info=e)
 
-    def _receive_breakfast_length_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        # Handle 'breakfast_length' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
-            self._logger.warning("Received 'breakfast_length' property change with non-JSON content type")
-            return
-        try:
-            prop_obj = BreakfastLengthProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
-            property_version = int(user_properties.get("PropertyVersion", -1))
-            with self._property_breakfast_length_mutex:
-                self._property_breakfast_length = prop_obj.length
-                self._property_breakfast_length_version = property_version
-
-                self._do_callbacks_for(self._changed_value_callbacks_for_breakfast_length, value=prop_obj.length)
-
-        except Exception as e:
-            self._logger.exception("Error processing 'breakfast_length' property change: %s", exc_info=e)
-
     def _receive_last_birthdays_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         # Handle 'last_birthdays' property change.
         if "ContentType" not in properties or properties["ContentType"] != "application/json":
@@ -493,6 +438,13 @@ class FullClient:
         self._signal_recv_callbacks_for_today_is.append(handler)
         if len(self._signal_recv_callbacks_for_today_is) == 1:
             self._conn.subscribe("full/{}/signal/todayIs".format(self._service_id), self._receive_today_is_signal_message)
+        return handler
+
+    def receive_random_word(self, handler: RandomWordSignalCallbackType):
+        """Used as a decorator for methods which handle particular signals."""
+        self._signal_recv_callbacks_for_random_word.append(handler)
+        if len(self._signal_recv_callbacks_for_random_word) == 1:
+            self._conn.subscribe("full/{}/signal/randomWord".format(self._service_id), self._receive_random_word_signal_message)
         return handler
 
     def add_numbers(self, first: int, second: int, third: Optional[int]) -> futures.Future:
@@ -530,13 +482,13 @@ class FullClient:
         else:
             self._logger.warning("Future for 'addNumbers' method was already done!")
 
-    def do_something(self, a_string: str) -> futures.Future:
+    def do_something(self, task_to_do: str) -> futures.Future:
         """Calling this initiates a `doSomething` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_do_something_response, fut)
         payload = DoSomethingMethodRequest(
-            aString=a_string,
+            task_to_do=task_to_do,
         )
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'doSomething' method with payload %s", json_payload)
@@ -563,47 +515,14 @@ class FullClient:
         else:
             self._logger.warning("Future for 'doSomething' method was already done!")
 
-    def echo(self, message: str) -> futures.Future:
-        """Calling this initiates a `echo` IPC method call."""
-        fut = futures.Future()  # type: futures.Future
-        correlation_id = str(uuid4())
-        self._pending_method_responses[correlation_id] = partial(self._handle_echo_response, fut)
-        payload = EchoMethodRequest(
-            message=message,
-        )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'echo' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/echo".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
-        return fut
-
-    def _handle_echo_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
-        """This called with the response to a `echo` IPC method call."""
-        self._logger.debug("Handling echo response message %s", fut)
-
-        if return_value != MethodReturnCode.SUCCESS.value:
-            self._logger.warning("Received error return value %s from 'echo' method: %s", return_value, debug_message)
-            fut.set_exception(stinger_exception_factory(return_value, debug_message))
-            return
-
-        try:
-            resp_model = EchoMethodResponse.model_validate_json(response_json_text)
-        except Exception as e:
-            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'echo' method: {e}"))
-
-        if not fut.done():
-            fut.set_result(resp_model.message)
-        else:
-            self._logger.warning("Future for 'echo' method was already done!")
-
-    def what_time_is_it(self, the_first_time: datetime) -> futures.Future:
+    def what_time_is_it(
+        self,
+    ) -> futures.Future:
         """Calling this initiates a `what_time_is_it` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_what_time_is_it_response, fut)
-        payload = WhatTimeIsItMethodRequest(
-            the_first_time=the_first_time,
-        )
+        payload = WhatTimeIsItMethodRequest()
         json_payload = payload.model_dump_json(by_alias=True)
         self._logger.debug("Calling 'what_time_is_it' method with payload %s", json_payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
@@ -629,105 +548,38 @@ class FullClient:
         else:
             self._logger.warning("Future for 'what_time_is_it' method was already done!")
 
-    def set_the_time(self, the_first_time: datetime, the_second_time: datetime) -> futures.Future:
-        """Calling this initiates a `set_the_time` IPC method call."""
+    def hold_temperature(self, temperature_celsius: float) -> futures.Future:
+        """Calling this initiates a `hold_temperature` IPC method call."""
         fut = futures.Future()  # type: futures.Future
         correlation_id = str(uuid4())
-        self._pending_method_responses[correlation_id] = partial(self._handle_set_the_time_response, fut)
-        payload = SetTheTimeMethodRequest(
-            the_first_time=the_first_time,
-            the_second_time=the_second_time,
+        self._pending_method_responses[correlation_id] = partial(self._handle_hold_temperature_response, fut)
+        payload = HoldTemperatureMethodRequest(
+            temperature_celsius=temperature_celsius,
         )
         json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'set_the_time' method with payload %s", json_payload)
+        self._logger.debug("Calling 'hold_temperature' method with payload %s", json_payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/setTheTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        self._conn.publish("full/{}/method/holdTemperature".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
         return fut
 
-    def _handle_set_the_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
-        """This called with the response to a `set_the_time` IPC method call."""
-        self._logger.debug("Handling set_the_time response message %s", fut)
+    def _handle_hold_temperature_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
+        """This called with the response to a `hold_temperature` IPC method call."""
+        self._logger.debug("Handling hold_temperature response message %s", fut)
 
         if return_value != MethodReturnCode.SUCCESS.value:
-            self._logger.warning("Received error return value %s from 'set_the_time' method: %s", return_value, debug_message)
+            self._logger.warning("Received error return value %s from 'hold_temperature' method: %s", return_value, debug_message)
             fut.set_exception(stinger_exception_factory(return_value, debug_message))
             return
 
         try:
-            resp_model = SetTheTimeMethodResponse.model_validate_json(response_json_text)
+            resp_model = HoldTemperatureMethodResponse.model_validate_json(response_json_text)
         except Exception as e:
-            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'set_the_time' method: {e}"))
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'hold_temperature' method: {e}"))
 
         if not fut.done():
-            fut.set_result(resp_model)
+            fut.set_result(resp_model.success)
         else:
-            self._logger.warning("Future for 'set_the_time' method was already done!")
-
-    def forward_time(self, adjustment: timedelta) -> futures.Future:
-        """Calling this initiates a `forward_time` IPC method call."""
-        fut = futures.Future()  # type: futures.Future
-        correlation_id = str(uuid4())
-        self._pending_method_responses[correlation_id] = partial(self._handle_forward_time_response, fut)
-        payload = ForwardTimeMethodRequest(
-            adjustment=adjustment,
-        )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'forward_time' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/forwardTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
-        return fut
-
-    def _handle_forward_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
-        """This called with the response to a `forward_time` IPC method call."""
-        self._logger.debug("Handling forward_time response message %s", fut)
-
-        if return_value != MethodReturnCode.SUCCESS.value:
-            self._logger.warning("Received error return value %s from 'forward_time' method: %s", return_value, debug_message)
-            fut.set_exception(stinger_exception_factory(return_value, debug_message))
-            return
-
-        try:
-            resp_model = ForwardTimeMethodResponse.model_validate_json(response_json_text)
-        except Exception as e:
-            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'forward_time' method: {e}"))
-
-        if not fut.done():
-            fut.set_result(resp_model.new_time)
-        else:
-            self._logger.warning("Future for 'forward_time' method was already done!")
-
-    def how_off_is_the_clock(self, actual_time: datetime) -> futures.Future:
-        """Calling this initiates a `how_off_is_the_clock` IPC method call."""
-        fut = futures.Future()  # type: futures.Future
-        correlation_id = str(uuid4())
-        self._pending_method_responses[correlation_id] = partial(self._handle_how_off_is_the_clock_response, fut)
-        payload = HowOffIsTheClockMethodRequest(
-            actual_time=actual_time,
-        )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'how_off_is_the_clock' method with payload %s", json_payload)
-        response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/howOffIsTheClock".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
-        return fut
-
-    def _handle_how_off_is_the_clock_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
-        """This called with the response to a `how_off_is_the_clock` IPC method call."""
-        self._logger.debug("Handling how_off_is_the_clock response message %s", fut)
-
-        if return_value != MethodReturnCode.SUCCESS.value:
-            self._logger.warning("Received error return value %s from 'how_off_is_the_clock' method: %s", return_value, debug_message)
-            fut.set_exception(stinger_exception_factory(return_value, debug_message))
-            return
-
-        try:
-            resp_model = HowOffIsTheClockMethodResponse.model_validate_json(response_json_text)
-        except Exception as e:
-            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to 'how_off_is_the_clock' method: {e}"))
-
-        if not fut.done():
-            fut.set_result(resp_model.difference)
-        else:
-            self._logger.warning("Future for 'how_off_is_the_clock' method was already done!")
+            self._logger.warning("Future for 'hold_temperature' method was already done!")
 
 
 class FullClientBuilder:
@@ -741,12 +593,12 @@ class FullClientBuilder:
         """Creates a new FullClientBuilder."""
         self._logger = logging.getLogger("FullClientBuilder")
         self._signal_recv_callbacks_for_today_is = []  # type: List[TodayIsSignalCallbackType]
+        self._signal_recv_callbacks_for_random_word = []  # type: List[RandomWordSignalCallbackType]
         self._property_updated_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_breakfast_length: list[BreakfastLengthPropertyUpdatedCallbackType] = []
         self._property_updated_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
 
     def receive_today_is(self, handler):
@@ -757,6 +609,16 @@ class FullClientBuilder:
             return handler(*args, **kwargs)
 
         self._signal_recv_callbacks_for_today_is.append(wrapper)
+        return wrapper
+
+    def receive_random_word(self, handler):
+        """Used as a decorator for methods which handle particular signals."""
+
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+
+        self._signal_recv_callbacks_for_random_word.append(wrapper)
         return wrapper
 
     def favorite_number_updated(self, handler: FavoriteNumberPropertyUpdatedCallbackType):
@@ -809,16 +671,6 @@ class FullClientBuilder:
         self._property_updated_callbacks_for_last_breakfast_time.append(wrapper)
         return wrapper
 
-    def breakfast_length_updated(self, handler: BreakfastLengthPropertyUpdatedCallbackType):
-        """Used as a decorator for methods which handle updates to properties."""
-
-        @wraps(handler)
-        def wrapper(*args, **kwargs):
-            return handler(*args, **kwargs)
-
-        self._property_updated_callbacks_for_breakfast_length.append(wrapper)
-        return wrapper
-
     def last_birthdays_updated(self, handler: LastBirthdaysPropertyUpdatedCallbackType):
         """Used as a decorator for methods which handle updates to properties."""
 
@@ -840,6 +692,13 @@ class FullClientBuilder:
                 client.receive_today_is(bound_cb)
             else:
                 client.receive_today_is(cb)
+
+        for cb in self._signal_recv_callbacks_for_random_word:
+            if binding:
+                bound_cb = cb.__get__(binding, binding.__class__)
+                client.receive_random_word(bound_cb)
+            else:
+                client.receive_random_word(cb)
 
         for cb in self._property_updated_callbacks_for_favorite_number:
             if binding:
@@ -875,13 +734,6 @@ class FullClientBuilder:
                 client.last_breakfast_time_changed(bound_cb)
             else:
                 client.last_breakfast_time_changed(cb)
-
-        for cb in self._property_updated_callbacks_for_breakfast_length:
-            if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.breakfast_length_changed(bound_cb)
-            else:
-                client.breakfast_length_changed(cb)
 
         for cb in self._property_updated_callbacks_for_last_birthdays:
             if binding:
@@ -959,7 +811,7 @@ class FullClientDiscoverer:
     def _check_for_fully_discovered(self, instance_id: str):
         """Checks if all properties have been discovered for the given instance ID."""
         with self._mutex:
-            if instance_id in self._discovered_properties and len(self._discovered_properties[instance_id]) == 14 and instance_id in self._discovered_interface_infos:
+            if instance_id in self._discovered_properties and len(self._discovered_properties[instance_id]) == 12 and instance_id in self._discovered_interface_infos:
 
                 entry = DiscoveredInstance(instance_id=instance_id, initial_property_values=FullInitialPropertyValues(**self._discovered_properties[instance_id]))
                 is_new_entry = not instance_id in self._discovered_services
@@ -1048,12 +900,6 @@ class FullClientDiscoverer:
                     self._discovered_properties[instance_id]["last_breakfast_time"] = prop_obj.get("timestamp")
 
                     self._discovered_properties[instance_id]["last_breakfast_time_version"] = prop_version
-
-                elif property_name == "breakfastLength":
-
-                    self._discovered_properties[instance_id]["breakfast_length"] = prop_obj.get("length")
-
-                    self._discovered_properties[instance_id]["breakfast_length_version"] = prop_version
 
                 elif property_name == "lastBirthdays":
 

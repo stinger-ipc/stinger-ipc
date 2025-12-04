@@ -63,16 +63,6 @@ struct LastBreakfastTimeProperty
 };
 
 /**
- * This is to test a property with a single duration value.
- */
-struct BreakfastLengthProperty
-{
-    static BreakfastLengthProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
-    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    std::chrono::duration<double> length;
-};
-
-/**
  * This is to test a property with multiple datetime values.
  */
 struct LastBirthdaysProperty

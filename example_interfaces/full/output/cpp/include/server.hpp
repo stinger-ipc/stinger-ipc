@@ -34,27 +34,23 @@ class FullServer
 {
 public:
     static constexpr const char NAME[] = "Full";
-    static constexpr const char INTERFACE_VERSION[] = "0.0.1";
+    static constexpr const char INTERFACE_VERSION[] = "0.0.2";
 
     FullServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
 
     virtual ~FullServer();
 
-    std::future<bool> emitTodayIsSignal(int, std::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>);
+    std::future<bool> emitTodayIsSignal(int, DayOfTheWeek);
+
+    std::future<bool> emitRandomWordSignal(std::string, std::chrono::time_point<std::chrono::system_clock>);
 
     void registerAddNumbersHandler(std::function<int(int, int, std::optional<int>)> func);
 
     void registerDoSomethingHandler(std::function<DoSomethingReturnValues(std::string)> func);
 
-    void registerEchoHandler(std::function<std::string(std::string)> func);
+    void registerWhatTimeIsItHandler(std::function<std::chrono::time_point<std::chrono::system_clock>()> func);
 
-    void registerWhatTimeIsItHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> func);
-
-    void registerSetTheTimeHandler(std::function<SetTheTimeReturnValues(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>)> func);
-
-    void registerForwardTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::duration<double>)> func);
-
-    void registerHowOffIsTheClockHandler(std::function<std::chrono::duration<double>(std::chrono::time_point<std::chrono::system_clock>)> func);
+    void registerHoldTemperatureHandler(std::function<bool(double)> func);
 
     // ---favorite_number Property---
 
@@ -131,21 +127,6 @@ public:
 
     void republishLastBreakfastTimeProperty() const;
 
-    // ---breakfast_length Property---
-
-    // Gets the latest value of the `breakfast_length` property, if one has been received.
-    // If no value has been received yet, an empty optional is returned.
-
-    std::optional<std::chrono::duration<double>> getBreakfastLengthProperty();
-
-    // Add a callback that will be called whenever the `breakfast_length` property is updated.
-    // The provided method will be called whenever a new value for the `breakfast_length` property is received.
-    void registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::duration<double>)>& cb);
-
-    void updateBreakfastLengthProperty(std::chrono::duration<double>);
-
-    void republishBreakfastLengthProperty() const;
-
     // ---last_birthdays Property---
 
     // Gets the latest value of the `last_birthdays` property, if one has been received.
@@ -179,25 +160,13 @@ private:
     std::function<DoSomethingReturnValues(std::string)> _doSomethingHandler;
     int _doSomethingMethodSubscriptionId;
 
-    void _callEchoHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
-    std::function<std::string(std::string)> _echoHandler;
-    int _echoMethodSubscriptionId;
-
     void _callWhatTimeIsItHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
-    std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> _whatTimeIsItHandler;
+    std::function<std::chrono::time_point<std::chrono::system_clock>()> _whatTimeIsItHandler;
     int _whatTimeIsItMethodSubscriptionId;
 
-    void _callSetTheTimeHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
-    std::function<SetTheTimeReturnValues(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>)> _setTheTimeHandler;
-    int _setTheTimeMethodSubscriptionId;
-
-    void _callForwardTimeHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
-    std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::duration<double>)> _forwardTimeHandler;
-    int _forwardTimeMethodSubscriptionId;
-
-    void _callHowOffIsTheClockHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
-    std::function<std::chrono::duration<double>(std::chrono::time_point<std::chrono::system_clock>)> _howOffIsTheClockHandler;
-    int _howOffIsTheClockMethodSubscriptionId;
+    void _callHoldTemperatureHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    std::function<bool(double)> _holdTemperatureHandler;
+    int _holdTemperatureMethodSubscriptionId;
 
     // ---------------- PROPERTIES ------------------
 
@@ -305,27 +274,6 @@ private:
     // Callbacks registered for changes to the `last_breakfast_time` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _lastBreakfastTimePropertyCallbacks;
     std::mutex _lastBreakfastTimePropertyCallbacksMutex;
-
-    // ---breakfast_length Property---
-
-    // Current value for the `breakfast_length` property.
-    std::optional<BreakfastLengthProperty> _breakfastLengthProperty;
-
-    // This is the property version  of `breakfast_length`.
-    int _lastBreakfastLengthPropertyVersion = -1;
-
-    // Mutex for protecting access to the `breakfast_length` property and its version.
-    mutable std::mutex _breakfastLengthPropertyMutex;
-
-    // MQTT Subscription ID for `breakfast_length` property update requests.
-    int _breakfastLengthPropertySubscriptionId;
-
-    // Method for parsing a JSON payload that updates the `breakfast_length` property.
-    void _receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
-
-    // Callbacks registered for changes to the `breakfast_length` property.
-    std::vector<std::function<void(std::chrono::duration<double>)>> _breakfastLengthPropertyCallbacks;
-    std::mutex _breakfastLengthPropertyCallbacksMutex;
 
     // ---last_birthdays Property---
 

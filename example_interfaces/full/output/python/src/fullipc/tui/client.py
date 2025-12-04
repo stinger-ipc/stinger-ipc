@@ -104,9 +104,6 @@ class PropertyEditModal(ModalScreen[bool]):
             if self.property_name == "last_breakfast_time":
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
-            if self.property_name == "breakfast_length":
-                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
-
             if self.property_name == "last_birthdays":
                 yield Label(f"mom", classes="property_input_value_label")
                 yield Input(placeholder=f"mom value", value=str(self.current_value.mom), classes="property_input_value", id="property_input_mom")
@@ -150,19 +147,6 @@ class PropertyEditModal(ModalScreen[bool]):
                     )
 
                     self.client.favorite_foods = new_favorite_foods_value
-                elif self.property_name == "lunch_menu":
-                    input_widget_monday = self.query_one("#property_input_monday", Input)
-                    new_value_monday = Lunch.model_validate_json(input_widget_monday.value)
-
-                    input_widget_tuesday = self.query_one("#property_input_tuesday", Input)
-                    new_value_tuesday = Lunch.model_validate_json(input_widget_tuesday.value)
-
-                    new_lunch_menu_value = LunchMenuProperty(
-                        monday=new_value_monday,
-                        tuesday=new_value_tuesday,
-                    )
-
-                    self.client.lunch_menu = new_lunch_menu_value
                 elif self.property_name == "family_name":
                     input_widget = self.query_one("#property_input", Input)
                     new_family_name_value = str(input_widget.value)
@@ -173,11 +157,6 @@ class PropertyEditModal(ModalScreen[bool]):
                     new_last_breakfast_time_value = datetime.fromisoformat(input_widget.value)
 
                     self.client.last_breakfast_time = new_last_breakfast_time_value
-                elif self.property_name == "breakfast_length":
-                    input_widget = self.query_one("#property_input", Input)
-                    new_breakfast_length_value = isodate.parse_duration(input_widget.value)
-
-                    self.client.breakfast_length = new_breakfast_length_value
                 elif self.property_name == "last_birthdays":
                     input_widget_mom = self.query_one("#property_input_mom", Input)
                     new_value_mom = datetime.fromisoformat(input_widget_mom.value)
@@ -483,23 +462,11 @@ class ClientScreen(Screen):
                 "third": Optional[int],
             },
             "do_something": {
-                "a_string": str,
+                "task_to_do": str,
             },
-            "echo": {
-                "message": str,
-            },
-            "what_time_is_it": {
-                "the_first_time": datetime,
-            },
-            "set_the_time": {
-                "the_first_time": datetime,
-                "the_second_time": datetime,
-            },
-            "forward_time": {
-                "adjustment": timedelta,
-            },
-            "how_off_is_the_clock": {
-                "actual_time": datetime,
+            "what_time_is_it": {},
+            "hold_temperature": {
+                "temperature_celsius": float,
             },
         }
 
@@ -542,6 +509,7 @@ class ClientScreen(Screen):
 
         # Register all signal handlers
         self.client.receive_today_is(make_handler("today_is"))
+        self.client.receive_random_word(make_handler("random_word"))
 
     def _register_property_handlers(self) -> None:
         """Register callbacks for all *_changed methods and create property displays."""
@@ -681,23 +649,6 @@ class ClientScreen(Screen):
                 # Register the handler with call_immediately=True
                 self.client.last_breakfast_time_changed(on_last_breakfast_time_updated, call_immediately=True)
 
-            elif prop_name == "breakfast_length":
-
-                def on_breakfast_length_updated(value: timedelta):
-                    prop_widget.current_value = value
-
-                    values = []
-
-                    values.append(f"{value}")  # DURATION
-
-                    value_str = "\n".join(values)
-
-                    # Update the widget
-                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
-
-                # Register the handler with call_immediately=True
-                self.client.breakfast_length_changed(on_breakfast_length_updated, call_immediately=True)
-
             elif prop_name == "last_birthdays":
 
                 def on_last_birthdays_updated(value: LastBirthdaysProperty):
@@ -728,10 +679,9 @@ class ClientScreen(Screen):
         # Register all properties
         register_property("favorite_number", "favorite_number_changed", is_writable=True)
         register_property("favorite_foods", "favorite_foods_changed", is_writable=True)
-        register_property("lunch_menu", "lunch_menu_changed", is_writable=True)
+        register_property("lunch_menu", "lunch_menu_changed", is_writable=False)
         register_property("family_name", "family_name_changed", is_writable=True)
         register_property("last_breakfast_time", "last_breakfast_time_changed", is_writable=True)
-        register_property("breakfast_length", "breakfast_length_changed", is_writable=True)
         register_property("last_birthdays", "last_birthdays_changed", is_writable=True)
 
     def on_click(self, event) -> None:

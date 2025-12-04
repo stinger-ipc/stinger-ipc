@@ -19,8 +19,5 @@ class FullInitialPropertyValues(BaseModel):
     last_breakfast_time: datetime
     last_breakfast_time_version: int = 0
 
-    breakfast_length: timedelta
-    breakfast_length_version: int = 0
-
     last_birthdays: LastBirthdaysProperty
     last_birthdays_version: int = 0

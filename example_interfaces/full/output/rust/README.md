@@ -1,6 +1,6 @@
 # Full IPC Library
 
-A Rust library providing client, server, and payload functionality for the Full IPC system: Example StingerAPI interface which demonstrates most features.
+A Rust library providing client, server, and payload functionality for the Full IPC system: Example StingerAPI interface which demonstrates many features.
 
 ## Features
 

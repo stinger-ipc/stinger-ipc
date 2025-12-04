@@ -22,8 +22,14 @@ struct TodayIsPayload
     static TodayIsPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     int dayOfMonth;
-    std::optional<DayOfTheWeek> dayOfWeek;
-    std::chrono::time_point<std::chrono::system_clock> timestamp;
-    std::chrono::duration<double> processTime;
-    std::vector<uint8_t> memorySegment;
+    DayOfTheWeek dayOfWeek;
+};
+
+struct RandomWordPayload
+{
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static RandomWordPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Values...
+    std::string word;
+    std::chrono::time_point<std::chrono::system_clock> time;
 };

@@ -31,18 +31,14 @@ FullServer::FullServer(std::shared_ptr<IBrokerConnection> broker, const std::str
 
     _addNumbersMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/addNumbers") % _instanceId).str(), 2);
     _doSomethingMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/doSomething") % _instanceId).str(), 2);
-    _echoMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/echo") % _instanceId).str(), 2);
     _whatTimeIsItMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/whatTimeIsIt") % _instanceId).str(), 2);
-    _setTheTimeMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/setTheTime") % _instanceId).str(), 2);
-    _forwardTimeMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/forwardTime") % _instanceId).str(), 2);
-    _howOffIsTheClockMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/howOffIsTheClock") % _instanceId).str(), 2);
+    _holdTemperatureMethodSubscriptionId = _broker->Subscribe((format("full/%1%/method/holdTemperature") % _instanceId).str(), 2);
 
     _favoriteNumberPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/favoriteNumber/setValue") % _instanceId).str(), 1);
     _favoriteFoodsPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/favoriteFoods/setValue") % _instanceId).str(), 1);
     _lunchMenuPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/lunchMenu/setValue") % _instanceId).str(), 1);
     _familyNamePropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/familyName/setValue") % _instanceId).str(), 1);
     _lastBreakfastTimePropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/lastBreakfastTime/setValue") % _instanceId).str(), 1);
-    _breakfastLengthPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/breakfastLength/setValue") % _instanceId).str(), 1);
     _lastBirthdaysPropertySubscriptionId = _broker->Subscribe((format("full/%1%/property/lastBirthdays/setValue") % _instanceId).str(), 1);
 
     // Start the service advertisement thread
@@ -71,18 +67,14 @@ FullServer::~FullServer()
 
     _broker->Unsubscribe((format("full/%1%/method/addNumbers") % _instanceId).str());
     _broker->Unsubscribe((format("full/%1%/method/doSomething") % _instanceId).str());
-    _broker->Unsubscribe((format("full/%1%/method/echo") % _instanceId).str());
     _broker->Unsubscribe((format("full/%1%/method/whatTimeIsIt") % _instanceId).str());
-    _broker->Unsubscribe((format("full/%1%/method/setTheTime") % _instanceId).str());
-    _broker->Unsubscribe((format("full/%1%/method/forwardTime") % _instanceId).str());
-    _broker->Unsubscribe((format("full/%1%/method/howOffIsTheClock") % _instanceId).str());
+    _broker->Unsubscribe((format("full/%1%/method/holdTemperature") % _instanceId).str());
 
     _broker->Unsubscribe((format("full/%1%/property/favoriteNumber/setValue") % _instanceId).str());
     _broker->Unsubscribe((format("full/%1%/property/favoriteFoods/setValue") % _instanceId).str());
     _broker->Unsubscribe((format("full/%1%/property/lunchMenu/setValue") % _instanceId).str());
     _broker->Unsubscribe((format("full/%1%/property/familyName/setValue") % _instanceId).str());
     _broker->Unsubscribe((format("full/%1%/property/lastBreakfastTime/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("full/%1%/property/breakfastLength/setValue") % _instanceId).str());
     _broker->Unsubscribe((format("full/%1%/property/lastBirthdays/setValue") % _instanceId).str());
 }
 
@@ -157,37 +149,6 @@ void FullServer::_receiveMessage(
         }
     }
 
-    else if ((subscriptionId == _echoMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/echo") % _instanceId).str())))
-    {
-        _broker->Log(LOG_INFO, "Message to `%s` matched as echo method request.", topic.c_str());
-        rapidjson::Document doc;
-        try
-        {
-            if (_echoHandler)
-            {
-                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
-                    //Log("Could not JSON parse  signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-                }
-
-                if (!doc.IsObject())
-                {
-                    throw std::runtime_error("Received payload is not an object");
-                }
-
-                _callEchoHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
-            }
-        }
-        catch (const std::exception&)
-        {
-            // We couldn't find an integer out of the string in the topic name,
-            // so we are dropping the message completely.
-            // TODO: Log this failure
-        }
-    }
-
     else if ((subscriptionId == _whatTimeIsItMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/whatTimeIsIt") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as what_time_is_it method request.", topic.c_str());
@@ -219,13 +180,13 @@ void FullServer::_receiveMessage(
         }
     }
 
-    else if ((subscriptionId == _setTheTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/setTheTime") % _instanceId).str())))
+    else if ((subscriptionId == _holdTemperatureMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/holdTemperature") % _instanceId).str())))
     {
-        _broker->Log(LOG_INFO, "Message to `%s` matched as set_the_time method request.", topic.c_str());
+        _broker->Log(LOG_INFO, "Message to `%s` matched as hold_temperature method request.", topic.c_str());
         rapidjson::Document doc;
         try
         {
-            if (_setTheTimeHandler)
+            if (_holdTemperatureHandler)
             {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
                 if (!ok)
@@ -239,69 +200,7 @@ void FullServer::_receiveMessage(
                     throw std::runtime_error("Received payload is not an object");
                 }
 
-                _callSetTheTimeHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
-            }
-        }
-        catch (const std::exception&)
-        {
-            // We couldn't find an integer out of the string in the topic name,
-            // so we are dropping the message completely.
-            // TODO: Log this failure
-        }
-    }
-
-    else if ((subscriptionId == _forwardTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/forwardTime") % _instanceId).str())))
-    {
-        _broker->Log(LOG_INFO, "Message to `%s` matched as forward_time method request.", topic.c_str());
-        rapidjson::Document doc;
-        try
-        {
-            if (_forwardTimeHandler)
-            {
-                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
-                    //Log("Could not JSON parse  signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-                }
-
-                if (!doc.IsObject())
-                {
-                    throw std::runtime_error("Received payload is not an object");
-                }
-
-                _callForwardTimeHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
-            }
-        }
-        catch (const std::exception&)
-        {
-            // We couldn't find an integer out of the string in the topic name,
-            // so we are dropping the message completely.
-            // TODO: Log this failure
-        }
-    }
-
-    else if ((subscriptionId == _howOffIsTheClockMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/method/howOffIsTheClock") % _instanceId).str())))
-    {
-        _broker->Log(LOG_INFO, "Message to `%s` matched as how_off_is_the_clock method request.", topic.c_str());
-        rapidjson::Document doc;
-        try
-        {
-            if (_howOffIsTheClockHandler)
-            {
-                rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
-                    //Log("Could not JSON parse  signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-                }
-
-                if (!doc.IsObject())
-                {
-                    throw std::runtime_error("Received payload is not an object");
-                }
-
-                _callHowOffIsTheClockHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
+                _callHoldTemperatureHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
         }
         catch (const std::exception&)
@@ -342,12 +241,6 @@ void FullServer::_receiveMessage(
         _receiveLastBreakfastTimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _breakfastLengthPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/property/breakfastLength/setValue") % _instanceId).str())))
-    {
-        _broker->Log(LOG_INFO, "Message to `%s` matched as breakfast_length property update.", topic.c_str());
-        _receiveBreakfastLengthPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    }
-
     else if (subscriptionId == _lastBirthdaysPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("full/%1%/property/lastBirthdays/setValue") % _instanceId).str())))
     {
         _broker->Log(LOG_INFO, "Message to `%s` matched as last_birthdays property update.", topic.c_str());
@@ -355,41 +248,45 @@ void FullServer::_receiveMessage(
     }
 }
 
-std::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, std::optional<DayOfTheWeek> dayOfWeek, std::chrono::time_point<std::chrono::system_clock> timestamp, std::chrono::duration<double> processTime, std::vector<uint8_t> memorySegment)
+std::future<bool> FullServer::emitTodayIsSignal(int dayOfMonth, DayOfTheWeek dayOfWeek)
 {
     rapidjson::Document doc;
     doc.SetObject();
 
     doc.AddMember("dayOfMonth", dayOfMonth, doc.GetAllocator());
 
-    doc.AddMember("dayOfWeek", static_cast<int>(*dayOfWeek), doc.GetAllocator());
-
-    { // Restrict Scope for datetime ISO string conversion
-        rapidjson::Value tempTimestampStringValue;
-        std::string timestampIsoString = timePointToIsoString(timestamp);
-        tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), doc.GetAllocator());
-        doc.AddMember("timestamp", tempTimestampStringValue, doc.GetAllocator());
-    }
-
-    { // Restrict Scope for duration ISO string conversion
-        rapidjson::Value tempProcessTimeStringValue;
-        std::string processTimeIsoString = durationToIsoString(processTime);
-        tempProcessTimeStringValue.SetString(processTimeIsoString.c_str(), processTimeIsoString.size(), doc.GetAllocator());
-        doc.AddMember("process_time", tempProcessTimeStringValue, doc.GetAllocator());
-    }
-
-    { // Restrict Scope for binary base64 encoding
-        rapidjson::Value tempMemorySegmentStringValue;
-        std::string memorySegmentB64String = base64Encode(memorySegment);
-        tempMemorySegmentStringValue.SetString(memorySegmentB64String.c_str(), memorySegmentB64String.size(), doc.GetAllocator());
-        doc.AddMember("memory_segment", tempMemorySegmentStringValue, doc.GetAllocator());
-    }
+    doc.AddMember("dayOfWeek", static_cast<int>(dayOfWeek), doc.GetAllocator());
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     MqttProperties mqttProps;
     return _broker->Publish((format("full/%1%/signal/todayIs") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+}
+
+std::future<bool> FullServer::emitRandomWordSignal(std::string word, std::chrono::time_point<std::chrono::system_clock> time)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(word.c_str(), word.size(), doc.GetAllocator());
+        doc.AddMember("word", tempStringValue, doc.GetAllocator());
+    }
+
+    { // Restrict Scope for datetime ISO string conversion
+        rapidjson::Value tempTimeStringValue;
+        std::string timeIsoString = timePointToIsoString(time);
+        tempTimeStringValue.SetString(timeIsoString.c_str(), timeIsoString.size(), doc.GetAllocator());
+        doc.AddMember("time", tempTimeStringValue, doc.GetAllocator());
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    MqttProperties mqttProps;
+    return _broker->Publish((format("full/%1%/signal/randomWord") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void FullServer::registerAddNumbersHandler(std::function<int(int, int, std::optional<int>)> func)
@@ -404,34 +301,16 @@ void FullServer::registerDoSomethingHandler(std::function<DoSomethingReturnValue
     _doSomethingHandler = func;
 }
 
-void FullServer::registerEchoHandler(std::function<std::string(std::string)> func)
-{
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle full/+/method/echo method requests.");
-    _echoHandler = func;
-}
-
-void FullServer::registerWhatTimeIsItHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> func)
+void FullServer::registerWhatTimeIsItHandler(std::function<std::chrono::time_point<std::chrono::system_clock>()> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle full/+/method/whatTimeIsIt method requests.");
     _whatTimeIsItHandler = func;
 }
 
-void FullServer::registerSetTheTimeHandler(std::function<SetTheTimeReturnValues(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>)> func)
+void FullServer::registerHoldTemperatureHandler(std::function<bool(double)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle full/+/method/setTheTime method requests.");
-    _setTheTimeHandler = func;
-}
-
-void FullServer::registerForwardTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::duration<double>)> func)
-{
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle full/+/method/forwardTime method requests.");
-    _forwardTimeHandler = func;
-}
-
-void FullServer::registerHowOffIsTheClockHandler(std::function<std::chrono::duration<double>(std::chrono::time_point<std::chrono::system_clock>)> func)
-{
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle full/+/method/howOffIsTheClock method requests.");
-    _howOffIsTheClockHandler = func;
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle full/+/method/holdTemperature method requests.");
+    _holdTemperatureHandler = func;
 }
 
 void FullServer::_callAddNumbersHandler(
@@ -488,44 +367,7 @@ void FullServer::_callDoSomethingHandler(
     auto requestArgs = DoSomethingRequestArguments::FromRapidJsonObject(doc);
 
     // Method has multiple return values.
-    auto returnValues = _doSomethingHandler(requestArgs.aString);
-
-    if (optResponseTopic)
-    {
-        rapidjson::Document responseJson;
-        responseJson.SetObject();
-
-        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
-
-        rapidjson::StringBuffer buf;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-        responseJson.Accept(writer);
-        MqttProperties mqttProps;
-        mqttProps.correlationId = optCorrelationId;
-        mqttProps.returnCode = MethodReturnCode::SUCCESS;
-        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-    }
-}
-
-void FullServer::_callEchoHandler(
-        const std::string& topic,
-        const rapidjson::Document& doc,
-        const std::optional<std::string> optCorrelationId,
-        const std::optional<std::string> optResponseTopic
-) const
-{
-    _broker->Log(LOG_INFO, "Handling call to echo");
-    if (!_echoHandler)
-    {
-        // TODO: publish an error response because we don't have a method handler.
-        return;
-    }
-
-    auto requestArgs = EchoRequestArguments::FromRapidJsonObject(doc);
-
-    // Method has a single return value.
-    auto returnValue = _echoHandler(requestArgs.message);
-    EchoReturnValues returnValues = { returnValue };
+    auto returnValues = _doSomethingHandler(requestArgs.taskToDo);
 
     if (optResponseTopic)
     {
@@ -558,10 +400,8 @@ void FullServer::_callWhatTimeIsItHandler(
         return;
     }
 
-    auto requestArgs = WhatTimeIsItRequestArguments::FromRapidJsonObject(doc);
-
     // Method has a single return value.
-    auto returnValue = _whatTimeIsItHandler(requestArgs.theFirstTime);
+    auto returnValue = _whatTimeIsItHandler();
     WhatTimeIsItReturnValues returnValues = { returnValue };
 
     if (optResponseTopic)
@@ -581,98 +421,25 @@ void FullServer::_callWhatTimeIsItHandler(
     }
 }
 
-void FullServer::_callSetTheTimeHandler(
+void FullServer::_callHoldTemperatureHandler(
         const std::string& topic,
         const rapidjson::Document& doc,
         const std::optional<std::string> optCorrelationId,
         const std::optional<std::string> optResponseTopic
 ) const
 {
-    _broker->Log(LOG_INFO, "Handling call to set_the_time");
-    if (!_setTheTimeHandler)
+    _broker->Log(LOG_INFO, "Handling call to hold_temperature");
+    if (!_holdTemperatureHandler)
     {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
 
-    auto requestArgs = SetTheTimeRequestArguments::FromRapidJsonObject(doc);
-
-    // Method has multiple return values.
-    auto returnValues = _setTheTimeHandler(requestArgs.theFirstTime, requestArgs.theSecondTime);
-
-    if (optResponseTopic)
-    {
-        rapidjson::Document responseJson;
-        responseJson.SetObject();
-
-        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
-
-        rapidjson::StringBuffer buf;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-        responseJson.Accept(writer);
-        MqttProperties mqttProps;
-        mqttProps.correlationId = optCorrelationId;
-        mqttProps.returnCode = MethodReturnCode::SUCCESS;
-        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-    }
-}
-
-void FullServer::_callForwardTimeHandler(
-        const std::string& topic,
-        const rapidjson::Document& doc,
-        const std::optional<std::string> optCorrelationId,
-        const std::optional<std::string> optResponseTopic
-) const
-{
-    _broker->Log(LOG_INFO, "Handling call to forward_time");
-    if (!_forwardTimeHandler)
-    {
-        // TODO: publish an error response because we don't have a method handler.
-        return;
-    }
-
-    auto requestArgs = ForwardTimeRequestArguments::FromRapidJsonObject(doc);
+    auto requestArgs = HoldTemperatureRequestArguments::FromRapidJsonObject(doc);
 
     // Method has a single return value.
-    auto returnValue = _forwardTimeHandler(requestArgs.adjustment);
-    ForwardTimeReturnValues returnValues = { returnValue };
-
-    if (optResponseTopic)
-    {
-        rapidjson::Document responseJson;
-        responseJson.SetObject();
-
-        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
-
-        rapidjson::StringBuffer buf;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-        responseJson.Accept(writer);
-        MqttProperties mqttProps;
-        mqttProps.correlationId = optCorrelationId;
-        mqttProps.returnCode = MethodReturnCode::SUCCESS;
-        _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
-    }
-}
-
-void FullServer::_callHowOffIsTheClockHandler(
-        const std::string& topic,
-        const rapidjson::Document& doc,
-        const std::optional<std::string> optCorrelationId,
-        const std::optional<std::string> optResponseTopic
-) const
-{
-    _broker->Log(LOG_INFO, "Handling call to how_off_is_the_clock");
-    if (!_howOffIsTheClockHandler)
-    {
-        // TODO: publish an error response because we don't have a method handler.
-        return;
-    }
-
-    auto requestArgs = HowOffIsTheClockRequestArguments::FromRapidJsonObject(doc);
-
-    // Method has a single return value.
-    auto returnValue = _howOffIsTheClockHandler(requestArgs.actualTime);
-    HowOffIsTheClockReturnValues returnValues = { returnValue };
+    auto returnValue = _holdTemperatureHandler(requestArgs.temperatureCelsius);
+    HoldTemperatureReturnValues returnValues = { returnValue };
 
     if (optResponseTopic)
     {
@@ -1111,90 +878,6 @@ void FullServer::_receiveLastBreakfastTimePropertyUpdate(const std::string& topi
     republishLastBreakfastTimeProperty();
 }
 
-std::optional<std::chrono::duration<double>> FullServer::getBreakfastLengthProperty()
-{
-    std::lock_guard<std::mutex> lock(_breakfastLengthPropertyMutex);
-    if (_breakfastLengthProperty)
-    {
-        return _breakfastLengthProperty->length;
-    }
-    return std::nullopt;
-}
-
-void FullServer::registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::duration<double> length)>& cb)
-{
-    std::lock_guard<std::mutex> lock(_breakfastLengthPropertyCallbacksMutex);
-    _breakfastLengthPropertyCallbacks.push_back(cb);
-}
-
-void FullServer::updateBreakfastLengthProperty(std::chrono::duration<double> length)
-{
-    { // Scope lock
-        std::lock_guard<std::mutex> lock(_breakfastLengthPropertyMutex);
-        _breakfastLengthProperty = BreakfastLengthProperty{ length };
-        _lastBreakfastLengthPropertyVersion++;
-    }
-    { // Scope lock
-        std::lock_guard<std::mutex> lock(_breakfastLengthPropertyCallbacksMutex);
-        for (const auto& cb: _breakfastLengthPropertyCallbacks)
-        {
-            cb(length);
-        }
-    }
-    republishBreakfastLengthProperty();
-}
-
-void FullServer::republishBreakfastLengthProperty() const
-{
-    std::lock_guard<std::mutex> lock(_breakfastLengthPropertyMutex);
-    rapidjson::Document doc;
-    if (_breakfastLengthProperty)
-    {
-        doc.SetObject();
-        _breakfastLengthProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
-        doc.SetNull();
-    }
-
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
-    MqttProperties mqttProps;
-    mqttProps.propertyVersion = _lastBreakfastLengthPropertyVersion;
-    _broker->Publish((format("full/%1%/property/breakfastLength/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
-}
-
-void FullServer::_receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
-{
-    rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
-        //Log("Could not JSON parse breakfast_length property update payload.");
-        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-    }
-
-    if (!doc.IsObject() && !doc.IsNull())
-    {
-        throw std::runtime_error("Received breakfast_length payload is not an object or null");
-    }
-
-    // TODO: Check _lastBreakfastLengthPropertyVersion against optPropertyVersion and
-    // reject the update if it's older than what we have.
-
-    // Deserialize 1 values into struct.
-    BreakfastLengthProperty tempValue = BreakfastLengthProperty::FromRapidJsonObject(doc);
-
-    { // Scope lock
-        std::lock_guard<std::mutex> lock(_breakfastLengthPropertyMutex);
-        _breakfastLengthProperty = tempValue;
-        _lastBreakfastLengthPropertyVersion++;
-    }
-    republishBreakfastLengthProperty();
-}
-
 std::optional<LastBirthdaysProperty> FullServer::getLastBirthdaysProperty()
 {
     std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyMutex);
@@ -1294,8 +977,8 @@ void FullServer::_advertisementThreadLoop()
 
         doc.AddMember("interface_name", rapidjson::Value("Full", allocator), allocator);
         doc.AddMember("instance", rapidjson::Value(_instanceId.c_str(), allocator), allocator);
-        doc.AddMember("title", rapidjson::Value("Fully Featured Example Interface", allocator), allocator);
-        doc.AddMember("version", rapidjson::Value("0.0.1", allocator), allocator);
+        doc.AddMember("title", rapidjson::Value("Example Interface", allocator), allocator);
+        doc.AddMember("version", rapidjson::Value("0.0.2", allocator), allocator);
         doc.AddMember("connection_topic", rapidjson::Value(_broker->GetOnlineTopic().c_str(), allocator), allocator);
         doc.AddMember("timestamp", rapidjson::Value(timestamp.c_str(), allocator), allocator);
 

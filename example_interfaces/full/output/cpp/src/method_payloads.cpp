@@ -87,14 +87,14 @@ DoSomethingRequestArguments DoSomethingRequestArguments::FromRapidJsonObject(con
     DoSomethingRequestArguments doSomethingArgs;
 
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("aString");
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("task_to_do");
         if (itr != jsonObj.MemberEnd() && itr->value.IsString())
         {
-            doSomethingArgs.aString = itr->value.GetString();
+            doSomethingArgs.taskToDo = itr->value.GetString();
         }
         else
         {
-            throw std::runtime_error("Received payload for the 'aString' argument doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'task_to_do' argument doesn't have required value/type");
         }
     }
 
@@ -105,8 +105,8 @@ void DoSomethingRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent,
 {
     { // restrict scope
         rapidjson::Value tempStringValue;
-        tempStringValue.SetString(aString.c_str(), aString.size(), allocator);
-        parent.AddMember("aString", tempStringValue, allocator);
+        tempStringValue.SetString(taskToDo.c_str(), taskToDo.size(), allocator);
+        parent.AddMember("task_to_do", tempStringValue, allocator);
     }
 }
 
@@ -137,17 +137,6 @@ DoSomethingReturnValues DoSomethingReturnValues::FromRapidJsonObject(const rapid
             throw std::runtime_error("Received payload for the 'identifier' argument doesn't have required value/type");
         }
     }
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("day");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
-            doSomethingRc.day = static_cast<DayOfTheWeek>(itr->value.GetInt());
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'day' argument doesn't have required value/type");
-        }
-    }
 
     return doSomethingRc;
 };
@@ -161,66 +150,6 @@ void DoSomethingReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rap
     }
 
     parent.AddMember("identifier", identifier, allocator);
-
-    parent.AddMember("day", static_cast<int>(day), allocator);
-}
-
-// --- (De-)Serialization for echo method request arguments ---
-EchoRequestArguments EchoRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
-{
-    EchoRequestArguments echoArgs;
-
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("message");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            echoArgs.message = itr->value.GetString();
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'message' argument doesn't have required value/type");
-        }
-    }
-
-    return echoArgs;
-};
-
-void EchoRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
-{
-    { // restrict scope
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString(message.c_str(), message.size(), allocator);
-        parent.AddMember("message", tempStringValue, allocator);
-    }
-}
-
-// --- (De-)Serialization for echo method return type ---
-EchoReturnValues EchoReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
-{
-    EchoReturnValues echoRc;
-
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("message");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            echoRc.message = itr->value.GetString();
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'message' argument doesn't have required value/type");
-        }
-    }
-
-    return echoRc;
-};
-
-void EchoReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
-{
-    { // restrict scope
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString(message.c_str(), message.size(), allocator);
-        parent.AddMember("message", tempStringValue, allocator);
-    }
 }
 
 // --- (De-)Serialization for what_time_is_it method request arguments ---
@@ -228,30 +157,11 @@ WhatTimeIsItRequestArguments WhatTimeIsItRequestArguments::FromRapidJsonObject(c
 {
     WhatTimeIsItRequestArguments whatTimeIsItArgs;
 
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("the_first_time");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            auto tempTheFirstTimeIsoString = itr->value.GetString();
-            whatTimeIsItArgs.theFirstTime = parseIsoTimestamp(tempTheFirstTimeIsoString);
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'the_first_time' argument doesn't have required value/type");
-        }
-    }
-
     return whatTimeIsItArgs;
 };
 
 void WhatTimeIsItRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope for datetime ISO string conversion
-        rapidjson::Value tempTheFirstTimeStringValue;
-        std::string theFirstTimeIsoString = timePointToIsoString(theFirstTime);
-        tempTheFirstTimeStringValue.SetString(theFirstTimeIsoString.c_str(), theFirstTimeIsoString.size(), allocator);
-        parent.AddMember("the_first_time", tempTheFirstTimeStringValue, allocator);
-    }
 }
 
 // --- (De-)Serialization for what_time_is_it method return type ---
@@ -285,224 +195,52 @@ void WhatTimeIsItReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, ra
     }
 }
 
-// --- (De-)Serialization for set_the_time method request arguments ---
-SetTheTimeRequestArguments SetTheTimeRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+// --- (De-)Serialization for hold_temperature method request arguments ---
+HoldTemperatureRequestArguments HoldTemperatureRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
-    SetTheTimeRequestArguments setTheTimeArgs;
+    HoldTemperatureRequestArguments holdTemperatureArgs;
 
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("the_first_time");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("temperature_celsius");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble())
         {
-            auto tempTheFirstTimeIsoString = itr->value.GetString();
-            setTheTimeArgs.theFirstTime = parseIsoTimestamp(tempTheFirstTimeIsoString);
+            holdTemperatureArgs.temperatureCelsius = itr->value.GetDouble();
         }
         else
         {
-            throw std::runtime_error("Received payload for the 'the_first_time' argument doesn't have required value/type");
-        }
-    }
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("the_second_time");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            auto tempTheSecondTimeIsoString = itr->value.GetString();
-            setTheTimeArgs.theSecondTime = parseIsoTimestamp(tempTheSecondTimeIsoString);
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'the_second_time' argument doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'temperature_celsius' argument doesn't have required value/type");
         }
     }
 
-    return setTheTimeArgs;
+    return holdTemperatureArgs;
 };
 
-void SetTheTimeRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+void HoldTemperatureRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope for datetime ISO string conversion
-        rapidjson::Value tempTheFirstTimeStringValue;
-        std::string theFirstTimeIsoString = timePointToIsoString(theFirstTime);
-        tempTheFirstTimeStringValue.SetString(theFirstTimeIsoString.c_str(), theFirstTimeIsoString.size(), allocator);
-        parent.AddMember("the_first_time", tempTheFirstTimeStringValue, allocator);
-    }
-
-    { // Restrict Scope for datetime ISO string conversion
-        rapidjson::Value tempTheSecondTimeStringValue;
-        std::string theSecondTimeIsoString = timePointToIsoString(theSecondTime);
-        tempTheSecondTimeStringValue.SetString(theSecondTimeIsoString.c_str(), theSecondTimeIsoString.size(), allocator);
-        parent.AddMember("the_second_time", tempTheSecondTimeStringValue, allocator);
-    }
+    parent.AddMember("temperature_celsius", temperatureCelsius, allocator);
 }
 
-// --- (De-)Serialization for set_the_time method return type ---
-SetTheTimeReturnValues SetTheTimeReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+// --- (De-)Serialization for hold_temperature method return type ---
+HoldTemperatureReturnValues HoldTemperatureReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
-    SetTheTimeReturnValues setTheTimeRc;
+    HoldTemperatureReturnValues holdTemperatureRc;
 
     { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("timestamp");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
+        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("success");
+        if (itr != jsonObj.MemberEnd() && itr->value.IsBool())
         {
-            auto tempTimestampIsoString = itr->value.GetString();
-            setTheTimeRc.timestamp = parseIsoTimestamp(tempTimestampIsoString);
+            holdTemperatureRc.success = itr->value.GetBool();
         }
         else
         {
-            throw std::runtime_error("Received payload for the 'timestamp' argument doesn't have required value/type");
-        }
-    }
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("confirmation_message");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            setTheTimeRc.confirmationMessage = itr->value.GetString();
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'confirmation_message' argument doesn't have required value/type");
+            throw std::runtime_error("Received payload for the 'success' argument doesn't have required value/type");
         }
     }
 
-    return setTheTimeRc;
+    return holdTemperatureRc;
 };
 
-void SetTheTimeReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+void HoldTemperatureReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    { // Restrict Scope for datetime ISO string conversion
-        rapidjson::Value tempTimestampStringValue;
-        std::string timestampIsoString = timePointToIsoString(timestamp);
-        tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), allocator);
-        parent.AddMember("timestamp", tempTimestampStringValue, allocator);
-    }
-
-    { // restrict scope
-        rapidjson::Value tempStringValue;
-        tempStringValue.SetString(confirmationMessage.c_str(), confirmationMessage.size(), allocator);
-        parent.AddMember("confirmation_message", tempStringValue, allocator);
-    }
-}
-
-// --- (De-)Serialization for forward_time method request arguments ---
-ForwardTimeRequestArguments ForwardTimeRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
-{
-    ForwardTimeRequestArguments forwardTimeArgs;
-
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("adjustment");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            auto tempAdjustmentIsoString = itr->value.GetString();
-            forwardTimeArgs.adjustment = parseIsoDuration(tempAdjustmentIsoString);
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'adjustment' argument doesn't have required value/type");
-        }
-    }
-
-    return forwardTimeArgs;
-};
-
-void ForwardTimeRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
-{
-    { // Restrict Scope for duration ISO string conversion
-        rapidjson::Value tempAdjustmentStringValue;
-        std::string adjustmentIsoString = durationToIsoString(adjustment);
-        tempAdjustmentStringValue.SetString(adjustmentIsoString.c_str(), adjustmentIsoString.size(), allocator);
-        parent.AddMember("adjustment", tempAdjustmentStringValue, allocator);
-    }
-}
-
-// --- (De-)Serialization for forward_time method return type ---
-ForwardTimeReturnValues ForwardTimeReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
-{
-    ForwardTimeReturnValues forwardTimeRc;
-
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("new_time");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            auto tempNewTimeIsoString = itr->value.GetString();
-            forwardTimeRc.newTime = parseIsoTimestamp(tempNewTimeIsoString);
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'new_time' argument doesn't have required value/type");
-        }
-    }
-
-    return forwardTimeRc;
-};
-
-void ForwardTimeReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
-{
-    { // Restrict Scope for datetime ISO string conversion
-        rapidjson::Value tempNewTimeStringValue;
-        std::string newTimeIsoString = timePointToIsoString(newTime);
-        tempNewTimeStringValue.SetString(newTimeIsoString.c_str(), newTimeIsoString.size(), allocator);
-        parent.AddMember("new_time", tempNewTimeStringValue, allocator);
-    }
-}
-
-// --- (De-)Serialization for how_off_is_the_clock method request arguments ---
-HowOffIsTheClockRequestArguments HowOffIsTheClockRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
-{
-    HowOffIsTheClockRequestArguments howOffIsTheClockArgs;
-
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("actual_time");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            auto tempActualTimeIsoString = itr->value.GetString();
-            howOffIsTheClockArgs.actualTime = parseIsoTimestamp(tempActualTimeIsoString);
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'actual_time' argument doesn't have required value/type");
-        }
-    }
-
-    return howOffIsTheClockArgs;
-};
-
-void HowOffIsTheClockRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
-{
-    { // Restrict Scope for datetime ISO string conversion
-        rapidjson::Value tempActualTimeStringValue;
-        std::string actualTimeIsoString = timePointToIsoString(actualTime);
-        tempActualTimeStringValue.SetString(actualTimeIsoString.c_str(), actualTimeIsoString.size(), allocator);
-        parent.AddMember("actual_time", tempActualTimeStringValue, allocator);
-    }
-}
-
-// --- (De-)Serialization for how_off_is_the_clock method return type ---
-HowOffIsTheClockReturnValues HowOffIsTheClockReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
-{
-    HowOffIsTheClockReturnValues howOffIsTheClockRc;
-
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("difference");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            auto tempDifferenceIsoString = itr->value.GetString();
-            howOffIsTheClockRc.difference = parseIsoDuration(tempDifferenceIsoString);
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'difference' argument doesn't have required value/type");
-        }
-    }
-
-    return howOffIsTheClockRc;
-};
-
-void HowOffIsTheClockReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
-{
-    { // Restrict Scope for duration ISO string conversion
-        rapidjson::Value tempDifferenceStringValue;
-        std::string differenceIsoString = durationToIsoString(difference);
-        tempDifferenceStringValue.SetString(differenceIsoString.c_str(), differenceIsoString.size(), allocator);
-        parent.AddMember("difference", tempDifferenceStringValue, allocator);
-    }
+    parent.AddMember("success", success, allocator);
 }

@@ -22,51 +22,27 @@ def request_loop(client: FullClient):
         sleep(5)
 
         print("Making call to 'do_something'")
-        future_resp = client.do_something(a_string="apples")
+        future_resp = client.do_something(task_to_do="apples")
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
             print(f"Timed out waiting for response to 'do_something' call")
         sleep(5)
 
-        print("Making call to 'echo'")
-        future_resp = client.echo(message="apples")
-        try:
-            print(f"RESULT:  {future_resp.result(5)}")
-        except futures.TimeoutError:
-            print(f"Timed out waiting for response to 'echo' call")
-        sleep(5)
-
         print("Making call to 'what_time_is_it'")
-        future_resp = client.what_time_is_it(the_first_time=datetime.now(UTC))
+        future_resp = client.what_time_is_it()
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
             print(f"Timed out waiting for response to 'what_time_is_it' call")
         sleep(5)
 
-        print("Making call to 'set_the_time'")
-        future_resp = client.set_the_time(the_first_time=datetime.now(UTC), the_second_time=datetime.now(UTC))
+        print("Making call to 'hold_temperature'")
+        future_resp = client.hold_temperature(temperature_celsius=3.14)
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
-            print(f"Timed out waiting for response to 'set_the_time' call")
-        sleep(5)
-
-        print("Making call to 'forward_time'")
-        future_resp = client.forward_time(adjustment=timedelta(seconds=3536))
-        try:
-            print(f"RESULT:  {future_resp.result(5)}")
-        except futures.TimeoutError:
-            print(f"Timed out waiting for response to 'forward_time' call")
-        sleep(5)
-
-        print("Making call to 'how_off_is_the_clock'")
-        future_resp = client.how_off_is_the_clock(actual_time=datetime.now(UTC))
-        try:
-            print(f"RESULT:  {future_resp.result(5)}")
-        except futures.TimeoutError:
-            print(f"Timed out waiting for response to 'how_off_is_the_clock' call")
+            print(f"Timed out waiting for response to 'hold_temperature' call")
         sleep(5)
 
         client.favorite_number = 42
@@ -77,21 +53,14 @@ def request_loop(client: FullClient):
             breakfast="apples",
         )
 
-        client.lunch_menu = LunchMenuProperty(
-            monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
-            tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
-        )
-
         client.family_name = "apples"
 
         client.last_breakfast_time = datetime.now(UTC)
 
-        client.breakfast_length = timedelta(seconds=3536)
-
         client.last_birthdays = LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
-            sister=datetime.now(UTC),
+            sister=None,
             brothers_age=42,
         )
 
@@ -106,15 +75,20 @@ if __name__ == "__main__":
     client_builder = FullClientBuilder()
 
     @client_builder.receive_today_is
-    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: Optional[DayOfTheWeek], timestamp: datetime, process_time: timedelta, memory_segment: bytes):
+    def print_todayIs_receipt(dayOfMonth: int, dayOfWeek: DayOfTheWeek):
         """
         @param dayOfMonth int
-        @param dayOfWeek Optional[DayOfTheWeek]
-        @param timestamp datetime
-        @param process_time timedelta
-        @param memory_segment bytes
+        @param dayOfWeek DayOfTheWeek
         """
-        print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } timestamp={ timestamp } process_time={ process_time } memory_segment={ memory_segment } ")
+        print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
+
+    @client_builder.receive_random_word
+    def print_randomWord_receipt(word: str, time: datetime):
+        """
+        @param word str
+        @param time datetime
+        """
+        print(f"Got a 'randomWord' signal: word={ word } time={ time } ")
 
     @client_builder.favorite_number_updated
     def print_new_favorite_number_value(value: int):
@@ -140,11 +114,6 @@ if __name__ == "__main__":
     def print_new_last_breakfast_time_value(value: datetime):
         """ """
         print(f"Property 'last_breakfast_time' has been updated to: {value}")
-
-    @client_builder.breakfast_length_updated
-    def print_new_breakfast_length_value(value: timedelta):
-        """ """
-        print(f"Property 'breakfast_length' has been updated to: {value}")
 
     @client_builder.last_birthdays_updated
     def print_new_last_birthdays_value(value: LastBirthdaysProperty):

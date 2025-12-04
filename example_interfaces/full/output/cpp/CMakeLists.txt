@@ -4,7 +4,7 @@ cmake_policy(VERSION 3.16)
 
 project (full
 	LANGUAGES CXX
-	VERSION 0.0.1)
+	VERSION 0.0.2)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -118,7 +118,7 @@ configure_package_config_file(
 # help cmake enforce version rules
 write_basic_package_version_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/cmake/Full-config-version.cmake
-	VERSION 0.0.1
+	VERSION 0.0.2
 	COMPATIBILITY AnyNewerVersion
 )
 

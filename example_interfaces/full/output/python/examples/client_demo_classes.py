@@ -25,6 +25,11 @@ class SuperAwesomeDoerOfThings:
         self.counter += 1
         print(f"{self.label}-{self.counter} printing signal 'todayIs' : args={args}, kwargs={kwargs}")
 
+    @client_builder.receive_random_word
+    def print_randomWord_signal(self, *args, **kwargs):
+        self.counter += 1
+        print(f"{self.label}-{self.counter} printing signal 'randomWord' : args={args}, kwargs={kwargs}")
+
     @client_builder.favorite_number_updated
     def print_new_favorite_number_value(self, value: int):
         print(f"{self.label}-{self.counter} printing signal 'favorite_number' : value={value}")
@@ -45,10 +50,6 @@ class SuperAwesomeDoerOfThings:
     def print_new_last_breakfast_time_value(self, value: datetime):
         print(f"{self.label}-{self.counter} printing signal 'last_breakfast_time' : value={value}")
 
-    @client_builder.breakfast_length_updated
-    def print_new_breakfast_length_value(self, value: timedelta):
-        print(f"{self.label}-{self.counter} printing signal 'breakfast_length' : value={value}")
-
     @client_builder.last_birthdays_updated
     def print_new_last_birthdays_value(self, value: LastBirthdaysProperty):
         print(f"{self.label}-{self.counter} printing signal 'last_birthdays' : value={value}")
@@ -66,51 +67,27 @@ class SuperAwesomeDoerOfThings:
             sleep(5)
 
             print("Making call to 'do_something'")
-            future_resp = self.client.do_something(a_string="apples")
+            future_resp = self.client.do_something(task_to_do="apples")
             try:
                 print(f"RESULT:  {future_resp.result(5)}")
             except futures.TimeoutError:
                 print(f"Timed out waiting for response to 'do_something' call")
             sleep(5)
 
-            print("Making call to 'echo'")
-            future_resp = self.client.echo(message="apples")
-            try:
-                print(f"RESULT:  {future_resp.result(5)}")
-            except futures.TimeoutError:
-                print(f"Timed out waiting for response to 'echo' call")
-            sleep(5)
-
             print("Making call to 'what_time_is_it'")
-            future_resp = self.client.what_time_is_it(the_first_time=datetime.now(UTC))
+            future_resp = self.client.what_time_is_it()
             try:
                 print(f"RESULT:  {future_resp.result(5)}")
             except futures.TimeoutError:
                 print(f"Timed out waiting for response to 'what_time_is_it' call")
             sleep(5)
 
-            print("Making call to 'set_the_time'")
-            future_resp = self.client.set_the_time(the_first_time=datetime.now(UTC), the_second_time=datetime.now(UTC))
+            print("Making call to 'hold_temperature'")
+            future_resp = self.client.hold_temperature(temperature_celsius=3.14)
             try:
                 print(f"RESULT:  {future_resp.result(5)}")
             except futures.TimeoutError:
-                print(f"Timed out waiting for response to 'set_the_time' call")
-            sleep(5)
-
-            print("Making call to 'forward_time'")
-            future_resp = self.client.forward_time(adjustment=timedelta(seconds=3536))
-            try:
-                print(f"RESULT:  {future_resp.result(5)}")
-            except futures.TimeoutError:
-                print(f"Timed out waiting for response to 'forward_time' call")
-            sleep(5)
-
-            print("Making call to 'how_off_is_the_clock'")
-            future_resp = self.client.how_off_is_the_clock(actual_time=datetime.now(UTC))
-            try:
-                print(f"RESULT:  {future_resp.result(5)}")
-            except futures.TimeoutError:
-                print(f"Timed out waiting for response to 'how_off_is_the_clock' call")
+                print(f"Timed out waiting for response to 'hold_temperature' call")
             sleep(5)
 
             self.client.favorite_number = 42
@@ -121,16 +98,9 @@ class SuperAwesomeDoerOfThings:
                 breakfast="apples",
             )
 
-            self.client.lunch_menu = LunchMenuProperty(
-                monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
-                tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
-            )
-
             self.client.family_name = "apples"
 
             self.client.last_breakfast_time = datetime.now(UTC)
-
-            self.client.breakfast_length = timedelta(seconds=3536)
 
             self.client.last_birthdays = LastBirthdaysProperty(
                 mom=datetime.now(UTC),

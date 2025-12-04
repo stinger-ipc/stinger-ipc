@@ -39,7 +39,7 @@ struct DoSomethingRequestArguments
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static DoSomethingRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    std::string aString;
+    std::string taskToDo;
 };
 
 struct DoSomethingReturnValues
@@ -49,31 +49,12 @@ struct DoSomethingReturnValues
     // Values...
     std::string label;
     int identifier;
-    DayOfTheWeek day;
-};
-
-struct EchoRequestArguments
-{
-    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static EchoRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
-    // Values...
-    std::string message;
-};
-
-struct EchoReturnValues
-{
-    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static EchoReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
-    // Values...
-    std::string message;
 };
 
 struct WhatTimeIsItRequestArguments
 {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static WhatTimeIsItRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
-    // Values...
-    std::chrono::time_point<std::chrono::system_clock> theFirstTime;
 };
 
 struct WhatTimeIsItReturnValues
@@ -84,52 +65,18 @@ struct WhatTimeIsItReturnValues
     std::chrono::time_point<std::chrono::system_clock> timestamp;
 };
 
-struct SetTheTimeRequestArguments
+struct HoldTemperatureRequestArguments
 {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static SetTheTimeRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    static HoldTemperatureRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    std::chrono::time_point<std::chrono::system_clock> theFirstTime;
-    std::chrono::time_point<std::chrono::system_clock> theSecondTime;
+    double temperatureCelsius;
 };
 
-struct SetTheTimeReturnValues
+struct HoldTemperatureReturnValues
 {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static SetTheTimeReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    static HoldTemperatureReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
-    std::chrono::time_point<std::chrono::system_clock> timestamp;
-    std::string confirmationMessage;
-};
-
-struct ForwardTimeRequestArguments
-{
-    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static ForwardTimeRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
-    // Values...
-    std::chrono::duration<double> adjustment;
-};
-
-struct ForwardTimeReturnValues
-{
-    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static ForwardTimeReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
-    // Values...
-    std::chrono::time_point<std::chrono::system_clock> newTime;
-};
-
-struct HowOffIsTheClockRequestArguments
-{
-    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static HowOffIsTheClockRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
-    // Values...
-    std::chrono::time_point<std::chrono::system_clock> actualTime;
-};
-
-struct HowOffIsTheClockReturnValues
-{
-    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static HowOffIsTheClockReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
-    // Values...
-    std::chrono::duration<double> difference;
+    bool success;
 };

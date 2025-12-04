@@ -32,7 +32,7 @@ public:
     // This is the name of the API.
     static constexpr const char NAME[] = "Full";
     // This is the version of the API contract.
-    static constexpr const char INTERFACE_VERSION[] = "0.0.1";
+    static constexpr const char INTERFACE_VERSION[] = "0.0.2";
 
     // Constructor taking a connection object.
     FullClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
@@ -42,7 +42,11 @@ public:
 
     // Register a callback for the `todayIs` signal.
     // The provided method will be called whenever a `todayIs` is received.
-    void registerTodayIsCallback(const std::function<void(int, std::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>)>& cb);
+    void registerTodayIsCallback(const std::function<void(int, DayOfTheWeek)>& cb);
+
+    // Register a callback for the `randomWord` signal.
+    // The provided method will be called whenever a `randomWord` is received.
+    void registerRandomWordCallback(const std::function<void(std::string, std::chrono::time_point<std::chrono::system_clock>)>& cb);
 
     // ------------------- METHODS --------------------
 
@@ -51,28 +55,16 @@ public:
     std::future<int> addNumbers(int first, int second, std::optional<int> third);
 
     // Calls the `doSomething` method.
-    // Returns a future.  When that future resolves, it will have the returned value. [<ArgPrimitive name=label type=str>, <ArgPrimitive name=identifier type=int>, <ArgEnum name=day>]
-    std::future<DoSomethingReturnValues> doSomething(std::string aString);
-
-    // Calls the `echo` method.
-    // Returns a future.  When that future resolves, it will have the returned value. <ArgPrimitive name=message type=str>
-    std::future<std::string> echo(std::string message);
+    // Returns a future.  When that future resolves, it will have the returned value. [<ArgPrimitive name=label type=str>, <ArgPrimitive name=identifier type=int>]
+    std::future<DoSomethingReturnValues> doSomething(std::string task_to_do);
 
     // Calls the `what_time_is_it` method.
     // Returns a future.  When that future resolves, it will have the returned value. <ArgDateTime name=timestamp>
-    std::future<std::chrono::time_point<std::chrono::system_clock>> whatTimeIsIt(std::chrono::time_point<std::chrono::system_clock> the_first_time);
+    std::future<std::chrono::time_point<std::chrono::system_clock>> whatTimeIsIt();
 
-    // Calls the `set_the_time` method.
-    // Returns a future.  When that future resolves, it will have the returned value. [ArgDateTime(name=timestamp), <ArgPrimitive name=confirmation_message type=str>]
-    std::future<SetTheTimeReturnValues> setTheTime(std::chrono::time_point<std::chrono::system_clock> the_first_time, std::chrono::time_point<std::chrono::system_clock> the_second_time);
-
-    // Calls the `forward_time` method.
-    // Returns a future.  When that future resolves, it will have the returned value. <ArgDateTime name=new_time>
-    std::future<std::chrono::time_point<std::chrono::system_clock>> forwardTime(std::chrono::duration<double> adjustment);
-
-    // Calls the `how_off_is_the_clock` method.
-    // Returns a future.  When that future resolves, it will have the returned value. <ArgDuration name=difference>
-    std::future<std::chrono::duration<double>> howOffIsTheClock(std::chrono::time_point<std::chrono::system_clock> actual_time);
+    // Calls the `hold_temperature` method.
+    // Returns a future.  When that future resolves, it will have the returned value. <ArgPrimitive name=success type=bool>
+    std::future<bool> holdTemperature(double temperature_celsius);
 
     // ---------------- PROPERTIES ------------------
 
@@ -113,8 +105,6 @@ public:
     // The provided method will be called whenever a new value for the `lunch_menu` property is received.
     void registerLunchMenuPropertyCallback(const std::function<void(Lunch, Lunch)>& cb);
 
-    std::future<bool> updateLunchMenuProperty(Lunch, Lunch) const;
-
     // ---family_name Property---
 
     // Gets the latest value of the `family_name` property, if one has been received.
@@ -140,19 +130,6 @@ public:
     void registerLastBreakfastTimePropertyCallback(const std::function<void(std::chrono::time_point<std::chrono::system_clock>)>& cb);
 
     std::future<bool> updateLastBreakfastTimeProperty(std::chrono::time_point<std::chrono::system_clock>) const;
-
-    // ---breakfast_length Property---
-
-    // Gets the latest value of the `breakfast_length` property, if one has been received.
-    // If no value has been received yet, an empty optional is returned.
-
-    std::optional<std::chrono::duration<double>> getBreakfastLengthProperty();
-
-    // Add a callback that will be called whenever the `breakfast_length` property is updated.
-    // The provided method will be called whenever a new value for the `breakfast_length` property is received.
-    void registerBreakfastLengthPropertyCallback(const std::function<void(std::chrono::duration<double>)>& cb);
-
-    std::future<bool> updateBreakfastLengthProperty(std::chrono::duration<double>) const;
 
     // ---last_birthdays Property---
 
@@ -186,11 +163,18 @@ private:
     // ------------------ SIGNALS --------------------
 
     // List of callbacks to be called whenever the `todayIs` signal is received.
-    std::vector<std::function<void(int, std::optional<DayOfTheWeek>, std::chrono::time_point<std::chrono::system_clock>, std::chrono::duration<double>, std::vector<uint8_t>)>> _todayIsSignalCallbacks;
+    std::vector<std::function<void(int, DayOfTheWeek)>> _todayIsSignalCallbacks;
     std::mutex _todayIsSignalCallbacksMutex;
 
     // MQTT Subscription ID for `todayIs` signal receptions.
     int _todayIsSignalSubscriptionId = -1;
+
+    // List of callbacks to be called whenever the `randomWord` signal is received.
+    std::vector<std::function<void(std::string, std::chrono::time_point<std::chrono::system_clock>)>> _randomWordSignalCallbacks;
+    std::mutex _randomWordSignalCallbacksMutex;
+
+    // MQTT Subscription ID for `randomWord` signal receptions.
+    int _randomWordSignalSubscriptionId = -1;
 
     // ------------------- METHODS --------------------
     // Holds promises for pending `addNumbers` method calls.
@@ -205,35 +189,17 @@ private:
     // This is called internally to process responses to `doSomething` method calls.
     void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
-    // Holds promises for pending `echo` method calls.
-    std::map<std::string, std::promise<std::string>> _pendingEchoMethodCalls;
-    int _echoMethodSubscriptionId = -1;
-    // This is called internally to process responses to `echo` method calls.
-    void _handleEchoResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
-
     // Holds promises for pending `what_time_is_it` method calls.
     std::map<std::string, std::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingWhatTimeIsItMethodCalls;
     int _whatTimeIsItMethodSubscriptionId = -1;
     // This is called internally to process responses to `what_time_is_it` method calls.
     void _handleWhatTimeIsItResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
-    // Holds promises for pending `set_the_time` method calls.
-    std::map<std::string, std::promise<SetTheTimeReturnValues>> _pendingSetTheTimeMethodCalls;
-    int _setTheTimeMethodSubscriptionId = -1;
-    // This is called internally to process responses to `set_the_time` method calls.
-    void _handleSetTheTimeResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
-
-    // Holds promises for pending `forward_time` method calls.
-    std::map<std::string, std::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingForwardTimeMethodCalls;
-    int _forwardTimeMethodSubscriptionId = -1;
-    // This is called internally to process responses to `forward_time` method calls.
-    void _handleForwardTimeResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
-
-    // Holds promises for pending `how_off_is_the_clock` method calls.
-    std::map<std::string, std::promise<std::chrono::duration<double>>> _pendingHowOffIsTheClockMethodCalls;
-    int _howOffIsTheClockMethodSubscriptionId = -1;
-    // This is called internally to process responses to `how_off_is_the_clock` method calls.
-    void _handleHowOffIsTheClockResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    // Holds promises for pending `hold_temperature` method calls.
+    std::map<std::string, std::promise<bool>> _pendingHoldTemperatureMethodCalls;
+    int _holdTemperatureMethodSubscriptionId = -1;
+    // This is called internally to process responses to `hold_temperature` method calls.
+    void _handleHoldTemperatureResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
 
     // ---------------- PROPERTIES ------------------
 
@@ -341,27 +307,6 @@ private:
     // Callbacks registered for changes to the `last_breakfast_time` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _lastBreakfastTimePropertyCallbacks;
     std::mutex _lastBreakfastTimePropertyCallbacksMutex;
-
-    // ---breakfast_length Property---
-
-    // Last received value for the `breakfast_length` property.
-    std::optional<BreakfastLengthProperty> _breakfastLengthProperty;
-
-    // This is the property version of the last received `breakfast_length` property update.
-    int _lastBreakfastLengthPropertyVersion = -1;
-
-    // Mutex for protecting access to the `breakfast_length` property and its version.
-    mutable std::mutex _breakfastLengthPropertyMutex;
-
-    // MQTT Subscription ID for `breakfast_length` property updates.
-    int _breakfastLengthPropertySubscriptionId;
-
-    // Method for parsing a JSON payload that updates the `breakfast_length` property.
-    void _receiveBreakfastLengthPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
-
-    // Callbacks registered for changes to the `breakfast_length` property.
-    std::vector<std::function<void(std::chrono::duration<double>)>> _breakfastLengthPropertyCallbacks;
-    std::mutex _breakfastLengthPropertyCallbacksMutex;
 
     // ---last_birthdays Property---
 

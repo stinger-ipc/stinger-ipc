@@ -34,14 +34,13 @@ int main(int argc, char** argv)
     std::cout << "Setting initial value for property 'last_breakfast_time'.\n";
     server->updateLastBreakfastTimeProperty(std::chrono::system_clock::now());
 
-    std::cout << "Setting initial value for property 'breakfast_length'.\n";
-    server->updateBreakfastLengthProperty(std::chrono::duration<double>(3536));
-
     std::cout << "Setting initial value for property 'last_birthdays'.\n";
     server->updateLastBirthdaysProperty(std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now(), 42);
 
-    auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
+    auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY);
+    auto randomWordFuture = server->emitRandomWordSignal("apples", std::chrono::system_clock::now());
     todayIsFuture.wait();
+    randomWordFuture.wait();
     server->registerAddNumbersHandler([](int unused1, int unused2, std::optional<int> unused3) -> int
                                       {
                                           std::cout << "Received call for addNumbers\n";
@@ -51,38 +50,20 @@ int main(int argc, char** argv)
     server->registerDoSomethingHandler([](std::string unused1) -> DoSomethingReturnValues
                                        {
                                            std::cout << "Received call for doSomething\n";
-                                           return DoSomethingReturnValues{ "apples", 42, DayOfTheWeek::SATURDAY };
+                                           return DoSomethingReturnValues{ "apples", 42 };
                                        });
 
-    server->registerEchoHandler([](std::string unused1) -> std::string
-                                {
-                                    std::cout << "Received call for echo\n";
-                                    return "apples";
-                                });
-
-    server->registerWhatTimeIsItHandler([](std::chrono::time_point<std::chrono::system_clock> unused1) -> std::chrono::time_point<std::chrono::system_clock>
+    server->registerWhatTimeIsItHandler([]() -> std::chrono::time_point<std::chrono::system_clock>
                                         {
                                             std::cout << "Received call for what_time_is_it\n";
                                             return std::chrono::system_clock::now();
                                         });
 
-    server->registerSetTheTimeHandler([](std::chrono::time_point<std::chrono::system_clock> unused1, std::chrono::time_point<std::chrono::system_clock> unused2) -> SetTheTimeReturnValues
-                                      {
-                                          std::cout << "Received call for set_the_time\n";
-                                          return SetTheTimeReturnValues{ std::chrono::system_clock::now(), "apples" };
-                                      });
-
-    server->registerForwardTimeHandler([](std::chrono::duration<double> unused1) -> std::chrono::time_point<std::chrono::system_clock>
-                                       {
-                                           std::cout << "Received call for forward_time\n";
-                                           return std::chrono::system_clock::now();
-                                       });
-
-    server->registerHowOffIsTheClockHandler([](std::chrono::time_point<std::chrono::system_clock> unused1) -> std::chrono::duration<double>
-                                            {
-                                                std::cout << "Received call for how_off_is_the_clock\n";
-                                                return std::chrono::duration<double>(3536);
-                                            });
+    server->registerHoldTemperatureHandler([](double unused1) -> bool
+                                           {
+                                               std::cout << "Received call for hold_temperature\n";
+                                               return true;
+                                           });
 
     // Start a background thread that emits signals every 60 seconds.
     std::atomic<bool> keepRunning{ true };
@@ -95,16 +76,19 @@ int main(int argc, char** argv)
                                         // Call emitTodayIsSignal; do not block forever waiting for publish
                                         try
                                         {
-                                            auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
+                                            auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY);
+                                            std::this_thread::sleep_for(std::chrono::seconds(1));
+                                            auto randomWordFuture = server->emitRandomWordSignal("apples", std::chrono::system_clock::now());
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             todayIsFuture.wait();
+                                            randomWordFuture.wait();
                                         }
                                         catch (...)
                                         {
                                         }
 
                                         // Sleep in 1-second increments so we can stop quickly
-                                        for (int i = 0; i < 59 && keepRunning; ++i)
+                                        for (int i = 0; i < 58 && keepRunning; ++i)
                                         {
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                         }
@@ -125,9 +109,6 @@ int main(int argc, char** argv)
 
                                             std::cout << "Updating value for property 'last_breakfast_time'.\n";
                                             server->updateLastBreakfastTimeProperty(std::chrono::system_clock::now());
-
-                                            std::cout << "Updating value for property 'breakfast_length'.\n";
-                                            server->updateBreakfastLengthProperty(std::chrono::duration<double>(3536));
 
                                             std::cout << "Updating value for property 'last_birthdays'.\n";
                                             server->updateLastBirthdaysProperty(std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now(), 42);

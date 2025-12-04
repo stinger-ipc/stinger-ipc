@@ -195,36 +195,6 @@ void LastBreakfastTimeProperty::AddToRapidJsonObject(rapidjson::Value& parent, r
     }
 }
 
-BreakfastLengthProperty BreakfastLengthProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
-{
-    BreakfastLengthProperty breakfastLength;
-
-    { // Scoping
-        rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("length");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
-            auto tempLengthIsoString = itr->value.GetString();
-            breakfastLength.length = parseIsoDuration(tempLengthIsoString);
-        }
-        else
-        {
-            throw std::runtime_error("Received payload for the 'length' argument doesn't have required value/type");
-        }
-    }
-
-    return breakfastLength;
-};
-
-void BreakfastLengthProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
-{
-    { // Restrict Scope for duration ISO string conversion
-        rapidjson::Value tempLengthStringValue;
-        std::string lengthIsoString = durationToIsoString(length);
-        tempLengthStringValue.SetString(lengthIsoString.c_str(), lengthIsoString.size(), allocator);
-        parent.AddMember("length", tempLengthStringValue, allocator);
-    }
-}
-
 LastBirthdaysProperty LastBirthdaysProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     LastBirthdaysProperty lastBirthdays;

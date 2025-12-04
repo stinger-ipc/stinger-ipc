@@ -44,12 +44,12 @@ struct FullSubscriptionIds {
     any_method_response: u32,
 
     today_is_signal: Option<u32>,
+    random_word_signal: Option<u32>,
     favorite_number_property_value: u32,
     favorite_foods_property_value: u32,
     lunch_menu_property_value: u32,
     family_name_property_value: u32,
     last_breakfast_time_property_value: u32,
-    breakfast_length_property_value: u32,
     last_birthdays_property_value: u32,
 
     any_property_update_response: u32,
@@ -62,6 +62,7 @@ struct FullSubscriptionIds {
 #[derive(Clone)]
 struct FullSignalChannels {
     today_is_sender: broadcast::Sender<TodayIsSignalPayload>,
+    random_word_sender: broadcast::Sender<RandomWordSignalPayload>,
 }
 
 #[derive(Clone)]
@@ -80,9 +81,6 @@ struct FullProperties {
 
     pub last_breakfast_time: Arc<RwLockWatch<chrono::DateTime<chrono::Utc>>>,
     pub last_breakfast_time_version: Arc<AtomicU32>,
-
-    pub breakfast_length: Arc<RwLockWatch<chrono::Duration>>,
-    pub breakfast_length_version: Arc<AtomicU32>,
 
     pub last_birthdays: Arc<RwLockWatch<LastBirthdaysProperty>>,
     pub last_birthdays_version: Arc<AtomicU32>,
@@ -155,6 +153,23 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         debug!(
             "Subscription (id={}) to signal topic for 'todayIs'",
             subscription_id_today_is_signal
+        );
+        let topic_random_word_signal = format!(
+            "full/{}/signal/randomWord",
+            discovery_info.interface_info.instance
+        );
+        let subscription_id_random_word_signal = connection
+            .subscribe(
+                topic_random_word_signal,
+                QoS::ExactlyOnce,
+                message_received_tx.clone(),
+            )
+            .await;
+        let subscription_id_random_word_signal =
+            subscription_id_random_word_signal.unwrap_or(u32::MAX);
+        debug!(
+            "Subscription (id={}) to signal topic for 'randomWord'",
+            subscription_id_random_word_signal
         );
 
         // Subscribe to all the topics needed for properties.
@@ -249,24 +264,6 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             subscription_id_last_breakfast_time_property_value
         );
 
-        let topic_breakfast_length_property_value = format!(
-            "full/{}/property/breakfastLength/value",
-            discovery_info.interface_info.instance
-        );
-        let subscription_id_breakfast_length_property_value = connection
-            .subscribe(
-                topic_breakfast_length_property_value,
-                QoS::AtLeastOnce,
-                message_received_tx.clone(),
-            )
-            .await;
-        let subscription_id_breakfast_length_property_value =
-            subscription_id_breakfast_length_property_value.unwrap_or(u32::MAX);
-        debug!(
-            "Subscription (id={}) to property value topic for 'breakfast_length'",
-            subscription_id_breakfast_length_property_value
-        );
-
         let topic_last_birthdays_property_value = format!(
             "full/{}/property/lastBirthdays/value",
             discovery_info.interface_info.instance
@@ -326,13 +323,6 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             last_breakfast_time_version: Arc::new(AtomicU32::new(
                 discovery_info.properties.last_breakfast_time_version,
             )),
-
-            breakfast_length: Arc::new(RwLockWatch::new(
-                discovery_info.properties.breakfast_length,
-            )),
-            breakfast_length_version: Arc::new(AtomicU32::new(
-                discovery_info.properties.breakfast_length_version,
-            )),
             last_birthdays: Arc::new(RwLockWatch::new(discovery_info.properties.last_birthdays)),
             last_birthdays_version: Arc::new(AtomicU32::new(
                 discovery_info.properties.last_birthdays_version,
@@ -343,12 +333,12 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         let sub_ids = FullSubscriptionIds {
             any_method_response: subscription_id_any_method_response,
             today_is_signal: Some(subscription_id_today_is_signal),
+            random_word_signal: Some(subscription_id_random_word_signal),
             favorite_number_property_value: subscription_id_favorite_number_property_value,
             favorite_foods_property_value: subscription_id_favorite_foods_property_value,
             lunch_menu_property_value: subscription_id_lunch_menu_property_value,
             family_name_property_value: subscription_id_family_name_property_value,
             last_breakfast_time_property_value: subscription_id_last_breakfast_time_property_value,
-            breakfast_length_property_value: subscription_id_breakfast_length_property_value,
             last_birthdays_property_value: subscription_id_last_birthdays_property_value,
 
             any_property_update_response: subscription_id_any_property_update_response,
@@ -357,6 +347,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         // Create structure for the tx side of broadcast channels for signals.
         let signal_channels = FullSignalChannels {
             today_is_sender: broadcast::channel(64).0,
+            random_word_sender: broadcast::channel(64).0,
         };
 
         // Create FullClient structure.
@@ -380,6 +371,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// The signal payload, `TodayIsSignalPayload`, will be put onto the channel whenever it is received.
     pub fn get_today_is_receiver(&self) -> broadcast::Receiver<TodayIsSignalPayload> {
         self.signal_channels.today_is_sender.subscribe()
+    }
+    /// Get the RX receiver side of the broadcast channel for the randomWord signal.
+    /// The signal payload, `RandomWordSignalPayload`, will be put onto the channel whenever it is received.
+    pub fn get_random_word_receiver(&self) -> broadcast::Receiver<RandomWordSignalPayload> {
+        self.signal_channels.random_word_sender.subscribe()
     }
 
     async fn start_add_numbers(
@@ -451,7 +447,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
     async fn start_do_something(
         &mut self,
-        a_string: String,
+        task_to_do: String,
     ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
@@ -461,7 +457,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             hashmap.insert(correlation_id, sender);
         }
 
-        let data = DoSomethingRequestObject { a_string };
+        let data = DoSomethingRequestObject { task_to_do };
 
         let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
@@ -487,9 +483,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// This method awaits on the response to the call before returning.
     pub async fn do_something(
         &mut self,
-        a_string: String,
+        task_to_do: String,
     ) -> Result<DoSomethingReturnValues, MethodReturnCode> {
-        let receiver = self.start_do_something(a_string).await;
+        let receiver = self.start_do_something(task_to_do).await;
 
         let return_code: MethodReturnCode = receiver.await.unwrap();
         info!(
@@ -508,7 +504,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         }
     }
 
-    async fn start_echo(&mut self, message: String) -> oneshot::Receiver<MethodReturnCode> {
+    async fn start_what_time_is_it(&mut self) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -517,60 +513,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             hashmap.insert(correlation_id, sender);
         }
 
-        let data = EchoRequestObject { message };
-
-        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
-        let msg = message::request(
-            &format!("full/{}/method/echo", self.service_instance_id),
-            &data,
-            correlation_id,
-            response_topic,
-        )
-        .unwrap();
-        info!(
-            "Sending request to topic '{}': {:?}",
-            format!("full/{}/method/echo", self.service_instance_id),
-            data
-        );
-        let _ = self.mqtt_client.publish(msg).await;
-        receiver
-    }
-
-    /// The `echo` method.
-    /// Method arguments are packed into a EchoRequestObject structure
-    /// and published to the `full/{}/method/echo` MQTT topic.
-    ///
-    /// This method awaits on the response to the call before returning.
-    pub async fn echo(&mut self, message: String) -> Result<String, MethodReturnCode> {
-        let receiver = self.start_echo(message).await;
-
-        let return_code: MethodReturnCode = receiver.await.unwrap();
-        info!("Received response for method 'echo': {:?}", return_code);
-        match return_code {
-            MethodReturnCode::Success(payload_str) => {
-                let return_obj: EchoReturnValues =
-                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
-                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-                Ok(return_obj.message)
-            }
-            _ => Err(return_code),
-        }
-    }
-
-    async fn start_what_time_is_it(
-        &mut self,
-        the_first_time: chrono::DateTime<chrono::Utc>,
-    ) -> oneshot::Receiver<MethodReturnCode> {
-        // Setup tracking for the future response.
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id, sender);
-        }
-
-        let data = WhatTimeIsItRequestObject { the_first_time };
+        let data = WhatTimeIsItRequestObject {};
 
         let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
@@ -596,9 +539,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
     /// This method awaits on the response to the call before returning.
     pub async fn what_time_is_it(
         &mut self,
-        the_first_time: chrono::DateTime<chrono::Utc>,
     ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
-        let receiver = self.start_what_time_is_it(the_first_time).await;
+        let receiver = self.start_what_time_is_it().await;
 
         let return_code: MethodReturnCode = receiver.await.unwrap();
         info!(
@@ -617,10 +559,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         }
     }
 
-    async fn start_set_the_time(
+    async fn start_hold_temperature(
         &mut self,
-        the_first_time: chrono::DateTime<chrono::Utc>,
-        the_second_time: chrono::DateTime<chrono::Utc>,
+        temperature_celsius: f32,
     ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
@@ -630,14 +571,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
             hashmap.insert(correlation_id, sender);
         }
 
-        let data = SetTheTimeRequestObject {
-            the_first_time,
-            the_second_time,
+        let data = HoldTemperatureRequestObject {
+            temperature_celsius,
         };
 
         let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
         let msg = message::request(
-            &format!("full/{}/method/setTheTime", self.service_instance_id),
+            &format!("full/{}/method/holdTemperature", self.service_instance_id),
             &data,
             correlation_id,
             response_topic,
@@ -645,157 +585,36 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         .unwrap();
         info!(
             "Sending request to topic '{}': {:?}",
-            format!("full/{}/method/setTheTime", self.service_instance_id),
+            format!("full/{}/method/holdTemperature", self.service_instance_id),
             data
         );
         let _ = self.mqtt_client.publish(msg).await;
         receiver
     }
 
-    /// The `set_the_time` method.
-    /// Method arguments are packed into a SetTheTimeRequestObject structure
-    /// and published to the `full/{}/method/setTheTime` MQTT topic.
+    /// The `hold_temperature` method.
+    /// Method arguments are packed into a HoldTemperatureRequestObject structure
+    /// and published to the `full/{}/method/holdTemperature` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn set_the_time(
+    pub async fn hold_temperature(
         &mut self,
-        the_first_time: chrono::DateTime<chrono::Utc>,
-        the_second_time: chrono::DateTime<chrono::Utc>,
-    ) -> Result<SetTheTimeReturnValues, MethodReturnCode> {
-        let receiver = self
-            .start_set_the_time(the_first_time, the_second_time)
-            .await;
+        temperature_celsius: f32,
+    ) -> Result<bool, MethodReturnCode> {
+        let receiver = self.start_hold_temperature(temperature_celsius).await;
 
         let return_code: MethodReturnCode = receiver.await.unwrap();
         info!(
-            "Received response for method 'set_the_time': {:?}",
+            "Received response for method 'hold_temperature': {:?}",
             return_code
         );
         match return_code {
             MethodReturnCode::Success(payload_str) => {
-                let return_obj: SetTheTimeReturnValues =
+                let return_obj: HoldTemperatureReturnValues =
                     serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
                         .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
 
-                Ok(return_obj)
-            }
-            _ => Err(return_code),
-        }
-    }
-
-    async fn start_forward_time(
-        &mut self,
-        adjustment: chrono::Duration,
-    ) -> oneshot::Receiver<MethodReturnCode> {
-        // Setup tracking for the future response.
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id, sender);
-        }
-
-        let data = ForwardTimeRequestObject { adjustment };
-
-        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
-        let msg = message::request(
-            &format!("full/{}/method/forwardTime", self.service_instance_id),
-            &data,
-            correlation_id,
-            response_topic,
-        )
-        .unwrap();
-        info!(
-            "Sending request to topic '{}': {:?}",
-            format!("full/{}/method/forwardTime", self.service_instance_id),
-            data
-        );
-        let _ = self.mqtt_client.publish(msg).await;
-        receiver
-    }
-
-    /// The `forward_time` method.
-    /// Method arguments are packed into a ForwardTimeRequestObject structure
-    /// and published to the `full/{}/method/forwardTime` MQTT topic.
-    ///
-    /// This method awaits on the response to the call before returning.
-    pub async fn forward_time(
-        &mut self,
-        adjustment: chrono::Duration,
-    ) -> Result<chrono::DateTime<chrono::Utc>, MethodReturnCode> {
-        let receiver = self.start_forward_time(adjustment).await;
-
-        let return_code: MethodReturnCode = receiver.await.unwrap();
-        info!(
-            "Received response for method 'forward_time': {:?}",
-            return_code
-        );
-        match return_code {
-            MethodReturnCode::Success(payload_str) => {
-                let return_obj: ForwardTimeReturnValues =
-                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
-                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-                Ok(return_obj.new_time)
-            }
-            _ => Err(return_code),
-        }
-    }
-
-    async fn start_how_off_is_the_clock(
-        &mut self,
-        actual_time: chrono::DateTime<chrono::Utc>,
-    ) -> oneshot::Receiver<MethodReturnCode> {
-        // Setup tracking for the future response.
-        let correlation_id = Uuid::new_v4();
-        let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id, sender);
-        }
-
-        let data = HowOffIsTheClockRequestObject { actual_time };
-
-        let response_topic: String = format!("client/{}/Full/methodResponse", self.client_id);
-        let msg = message::request(
-            &format!("full/{}/method/howOffIsTheClock", self.service_instance_id),
-            &data,
-            correlation_id,
-            response_topic,
-        )
-        .unwrap();
-        info!(
-            "Sending request to topic '{}': {:?}",
-            format!("full/{}/method/howOffIsTheClock", self.service_instance_id),
-            data
-        );
-        let _ = self.mqtt_client.publish(msg).await;
-        receiver
-    }
-
-    /// The `how_off_is_the_clock` method.
-    /// Method arguments are packed into a HowOffIsTheClockRequestObject structure
-    /// and published to the `full/{}/method/howOffIsTheClock` MQTT topic.
-    ///
-    /// This method awaits on the response to the call before returning.
-    pub async fn how_off_is_the_clock(
-        &mut self,
-        actual_time: chrono::DateTime<chrono::Utc>,
-    ) -> Result<chrono::Duration, MethodReturnCode> {
-        let receiver = self.start_how_off_is_the_clock(actual_time).await;
-
-        let return_code: MethodReturnCode = receiver.await.unwrap();
-        info!(
-            "Received response for method 'how_off_is_the_clock': {:?}",
-            return_code
-        );
-        match return_code {
-            MethodReturnCode::Success(payload_str) => {
-                let return_obj: HowOffIsTheClockReturnValues =
-                    serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
-                        .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
-
-                Ok(return_obj.difference)
+                Ok(return_obj.success)
             }
             _ => Err(return_code),
         }
@@ -853,21 +672,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         self.properties.lunch_menu.subscribe()
     }
 
-    /// Sets the `lunch_menu` property and returns a oneshot that receives the acknowledgment back from the server.
-    pub async fn set_lunch_menu(&mut self, value: LunchMenuProperty) -> MethodReturnCode {
-        let write_request_lock = self.get_lunch_menu_handle();
-        let mut writer = write_request_lock.write().await;
-        *writer = value;
-        match writer.commit(std::time::Duration::from_secs(5)).await {
-            CommitResult::Applied(_) => MethodReturnCode::Success(None),
-            CommitResult::TimedOut => MethodReturnCode::Timeout(
-                "Timeout waiting for property update acknowledgment".to_string(),
-            ),
-        }
-    }
-
-    pub fn get_lunch_menu_handle(&self) -> Arc<WriteRequestLockWatch<LunchMenuProperty>> {
-        self.properties.lunch_menu.write_request().into()
+    pub fn get_lunch_menu_handle(&self) -> Arc<ReadOnlyLockWatch<LunchMenuProperty>> {
+        self.properties.lunch_menu.read_only().into()
     }
 
     /// Watch for changes to the `family_name` property.
@@ -919,29 +725,6 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         &self,
     ) -> Arc<WriteRequestLockWatch<chrono::DateTime<chrono::Utc>>> {
         self.properties.last_breakfast_time.write_request().into()
-    }
-
-    /// Watch for changes to the `breakfast_length` property.
-    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_breakfast_length(&self) -> watch::Receiver<chrono::Duration> {
-        self.properties.breakfast_length.subscribe()
-    }
-
-    /// Sets the `breakfast_length` property and returns a oneshot that receives the acknowledgment back from the server.
-    pub async fn set_breakfast_length(&mut self, value: chrono::Duration) -> MethodReturnCode {
-        let write_request_lock = self.get_breakfast_length_handle();
-        let mut writer = write_request_lock.write().await;
-        *writer = value;
-        match writer.commit(std::time::Duration::from_secs(5)).await {
-            CommitResult::Applied(_) => MethodReturnCode::Success(None),
-            CommitResult::TimedOut => MethodReturnCode::Timeout(
-                "Timeout waiting for property update acknowledgment".to_string(),
-            ),
-        }
-    }
-
-    pub fn get_breakfast_length_handle(&self) -> Arc<WriteRequestLockWatch<chrono::Duration>> {
-        self.properties.breakfast_length.write_request().into()
     }
 
     /// Watch for changes to the `last_birthdays` property.
@@ -1454,100 +1237,6 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_breakfast_length_prop = self.service_instance_id.clone();
-            let client_id_for_breakfast_length_prop = self.client_id.clone();
-            let mut publisher_for_breakfast_length_prop = self.mqtt_client.clone();
-            let breakfast_length_prop_version = props.breakfast_length_version.clone();
-            let resp_map_for_breakfast_length_prop = self.pending_responses.clone();
-            if let Some(mut rx_for_breakfast_length_prop) =
-                props.breakfast_length.take_request_receiver()
-            {
-                tokio::spawn(async move {
-                    while let Some((value, opt_responder)) =
-                        rx_for_breakfast_length_prop.recv().await
-                    {
-                        let payload_obj = BreakfastLengthProperty { length: value };
-
-                        let topic: String = format!(
-                            "full/{}/property/breakfastLength/setValue",
-                            instance_id_for_breakfast_length_prop
-                        );
-                        if let Some(responder) = opt_responder {
-                            let resp_topic = format!(
-                                "client/{}/Full/propertyUpdateResponse",
-                                client_id_for_breakfast_length_prop
-                            );
-                            let correlation_id = Uuid::new_v4();
-                            let (sender, receiver) = oneshot::channel();
-                            {
-                                let mut hashmap = resp_map_for_breakfast_length_prop
-                                    .lock()
-                                    .expect("Mutex was poisoned");
-                                hashmap.insert(correlation_id.clone(), sender);
-                            }
-                            match message::property_update_request(
-                                &topic,
-                                &payload_obj,
-                                breakfast_length_prop_version
-                                    .load(std::sync::atomic::Ordering::Relaxed),
-                                correlation_id,
-                                resp_topic,
-                            ) {
-                                Ok(msg) => {
-                                    let _publish_result =
-                                        publisher_for_breakfast_length_prop.publish(msg).await;
-                                    let result = receiver.await;
-                                    match result {
-                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
-                                            if let Some(response_text) = opt_response_text {
-                                                let resp_obj = serde_json::from_str::<
-                                                    BreakfastLengthProperty,
-                                                >(
-                                                    response_text.as_ref()
-                                                )
-                                                .unwrap();
-
-                                                let _ = responder.send(Some(resp_obj.length));
-                                            } else {
-                                                warn!("No response payload received for property update request for 'breakfast_length'");
-                                                let _ = responder.send(None);
-                                            }
-                                        }
-                                        _ => {
-                                            warn!("Property update request for 'breakfast_length' failed: {:?}", result);
-                                            let _ = responder.send(None);
-                                        }
-                                    };
-                                }
-                                Err(e) => {
-                                    warn!("Failed to create property update message for 'breakfast_length': {:?}", e);
-                                    let _ = responder.send(None);
-                                }
-                            }
-                        } else {
-                            match message::property_update(
-                                &topic,
-                                &payload_obj,
-                                breakfast_length_prop_version
-                                    .load(std::sync::atomic::Ordering::Relaxed),
-                            ) {
-                                Ok(msg) => {
-                                    let _publish_result =
-                                        publisher_for_breakfast_length_prop.publish_nowait(msg);
-                                }
-                                Err(e) => {
-                                    warn!("Failed to create property update message for 'breakfast_length': {:?}", e);
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        {
-            // Set up property change request handling task
             let instance_id_for_last_birthdays_prop = self.service_instance_id.clone();
             let client_id_for_last_birthdays_prop = self.client_id.clone();
             let mut publisher_for_last_birthdays_prop = self.mqtt_client.clone();
@@ -1700,7 +1389,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                             // Find broadcast channel.
                             let chan = sig_chans.today_is_sender.clone();
 
-                            // 5 arguments, send the entire struct to the channel.
+                            // 2 arguments, send the entire struct to the channel.
                             match serde_json::from_slice::<TodayIsSignalPayload>(&msg.payload) {
                                 Ok(pl) => {
                                     let _send_result = chan.send(pl);
@@ -1711,6 +1400,23 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                                         String::from_utf8_lossy(&msg.payload),
                                         e
                                     );
+                                    continue;
+                                }
+                            }
+                        }
+
+                        _i if sub_ids.random_word_signal == Some(_i) => {
+                            debug!("Received randomWord signal message");
+                            // Find broadcast channel.
+                            let chan = sig_chans.random_word_sender.clone();
+
+                            // 2 arguments, send the entire struct to the channel.
+                            match serde_json::from_slice::<RandomWordSignalPayload>(&msg.payload) {
+                                Ok(pl) => {
+                                    let _send_result = chan.send(pl);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to deserialize '{}' into RandomWordSignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
                                     continue;
                                 }
                             }
@@ -1879,43 +1585,6 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                                     {
                                         if let Ok(version_num) = version_str.parse::<u32>() {
                                             props.last_breakfast_time_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
-                                        }
-                                    }
-                                }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
-                        }
-
-                        _i if _i == sub_ids.breakfast_length_property_value => {
-                            debug!("Received BREAKFAST_LENGTH property value");
-                            // JSON deserialize into BreakfastLengthProperty struct
-                            match serde_json::from_slice::<BreakfastLengthProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.breakfast_length.write().await;
-
-                                    debug!(
-                                        "BREAKFAST_LENGTH property value updated: {:?}",
-                                        pl.length
-                                    );
-                                    *guard = pl.length.clone();
-
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.breakfast_length_version.store(
                                                 version_num,
                                                 std::sync::atomic::Ordering::Relaxed,
                                             );
