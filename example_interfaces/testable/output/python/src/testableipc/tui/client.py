@@ -118,10 +118,10 @@ class PropertyEditModal(ModalScreen[bool]):
 
             if self.property_name == "read_write_two_structs":
                 yield Label(f"first (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"first value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_first")
+                yield Input(placeholder=f"first value", value=self.current_value.first.model_dump_json(), classes="property_input_value", id="property_input_first")
 
                 yield Label(f"second (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"second value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_second")
+                yield Input(placeholder=f"second value", value=self.current_value.second.model_dump_json(), classes="property_input_value", id="property_input_second")
 
             if self.property_name == "read_only_enum":
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
@@ -198,14 +198,14 @@ class PropertyEditModal(ModalScreen[bool]):
             try:
                 if self.property_name == "read_write_integer":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = int(input_widget.value)
+                    new_read_write_integer_value = int(input_widget.value)
 
-                    self.client.read_write_integer = new_value
+                    self.client.read_write_integer = new_read_write_integer_value
                 elif self.property_name == "read_write_optional_integer":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = int(input_widget.value) if input_widget.value else None
+                    new_read_write_optional_integer_value = int(input_widget.value) if input_widget.value else None
 
-                    self.client.read_write_optional_integer = new_value
+                    self.client.read_write_optional_integer = new_read_write_optional_integer_value
                 elif self.property_name == "read_write_two_integers":
                     input_widget_first = self.query_one("#property_input_first", Input)
                     new_value_first = int(input_widget_first.value)
@@ -213,22 +213,22 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_second = self.query_one("#property_input_second", Input)
                     new_value_second = int(input_widget_second.value) if input_widget_second.value else None
 
-                    new_value = ReadWriteTwoIntegersProperty(
+                    new_read_write_two_integers_value = ReadWriteTwoIntegersProperty(
                         first=new_value_first,
                         second=new_value_second,
                     )
 
-                    self.client.read_write_two_integers = new_value
+                    self.client.read_write_two_integers = new_read_write_two_integers_value
                 elif self.property_name == "read_write_string":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = str(input_widget.value)
+                    new_read_write_string_value = str(input_widget.value)
 
-                    self.client.read_write_string = new_value
+                    self.client.read_write_string = new_read_write_string_value
                 elif self.property_name == "read_write_optional_string":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = str(input_widget.value) if input_widget.value else None
+                    new_read_write_optional_string_value = str(input_widget.value) if input_widget.value else None
 
-                    self.client.read_write_optional_string = new_value
+                    self.client.read_write_optional_string = new_read_write_optional_string_value
                 elif self.property_name == "read_write_two_strings":
                     input_widget_first = self.query_one("#property_input_first", Input)
                     new_value_first = str(input_widget_first.value)
@@ -236,22 +236,22 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_second = self.query_one("#property_input_second", Input)
                     new_value_second = str(input_widget_second.value) if input_widget_second.value else None
 
-                    new_value = ReadWriteTwoStringsProperty(
+                    new_read_write_two_strings_value = ReadWriteTwoStringsProperty(
                         first=new_value_first,
                         second=new_value_second,
                     )
 
-                    self.client.read_write_two_strings = new_value
+                    self.client.read_write_two_strings = new_read_write_two_strings_value
                 elif self.property_name == "read_write_struct":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = AllTypes.model_validate_json(input_widget.value)
+                    new_read_write_struct_value = AllTypes.model_validate_json(input_widget.value)
 
-                    self.client.read_write_struct = new_value
+                    self.client.read_write_struct = new_read_write_struct_value
                 elif self.property_name == "read_write_optional_struct":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = AllTypes.model_validate_json(input_widget.value) if input_widget.value else None
+                    new_read_write_optional_struct_value = AllTypes.model_validate_json(input_widget.value) if input_widget.value else None
 
-                    self.client.read_write_optional_struct = new_value
+                    self.client.read_write_optional_struct = new_read_write_optional_struct_value
                 elif self.property_name == "read_write_two_structs":
                     input_widget_first = self.query_one("#property_input_first", Input)
                     new_value_first = AllTypes.model_validate_json(input_widget_first.value)
@@ -259,22 +259,22 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_second = self.query_one("#property_input_second", Input)
                     new_value_second = AllTypes.model_validate_json(input_widget_second.value) if input_widget_second.value else None
 
-                    new_value = ReadWriteTwoStructsProperty(
+                    new_read_write_two_structs_value = ReadWriteTwoStructsProperty(
                         first=new_value_first,
                         second=new_value_second,
                     )
 
-                    self.client.read_write_two_structs = new_value
+                    self.client.read_write_two_structs = new_read_write_two_structs_value
                 elif self.property_name == "read_write_enum":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = Numbers(input_widget.value)
+                    new_read_write_enum_value = Numbers(input_widget.value)
 
-                    self.client.read_write_enum = new_value
+                    self.client.read_write_enum = new_read_write_enum_value
                 elif self.property_name == "read_write_optional_enum":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = Numbers(input_widget.value) if input_widget.value else None
+                    new_read_write_optional_enum_value = Numbers(input_widget.value) if input_widget.value else None
 
-                    self.client.read_write_optional_enum = new_value
+                    self.client.read_write_optional_enum = new_read_write_optional_enum_value
                 elif self.property_name == "read_write_two_enums":
                     input_widget_first = self.query_one("#property_input_first", Input)
                     new_value_first = Numbers(input_widget_first.value)
@@ -282,22 +282,22 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_second = self.query_one("#property_input_second", Input)
                     new_value_second = Numbers(input_widget_second.value) if input_widget_second.value else None
 
-                    new_value = ReadWriteTwoEnumsProperty(
+                    new_read_write_two_enums_value = ReadWriteTwoEnumsProperty(
                         first=new_value_first,
                         second=new_value_second,
                     )
 
-                    self.client.read_write_two_enums = new_value
+                    self.client.read_write_two_enums = new_read_write_two_enums_value
                 elif self.property_name == "read_write_datetime":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = datetime.fromisoformat(input_widget.value)
+                    new_read_write_datetime_value = datetime.fromisoformat(input_widget.value)
 
-                    self.client.read_write_datetime = new_value
+                    self.client.read_write_datetime = new_read_write_datetime_value
                 elif self.property_name == "read_write_optional_datetime":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = datetime.fromisoformat(input_widget.value) if input_widget.value else None
+                    new_read_write_optional_datetime_value = datetime.fromisoformat(input_widget.value) if input_widget.value else None
 
-                    self.client.read_write_optional_datetime = new_value
+                    self.client.read_write_optional_datetime = new_read_write_optional_datetime_value
                 elif self.property_name == "read_write_two_datetimes":
                     input_widget_first = self.query_one("#property_input_first", Input)
                     new_value_first = datetime.fromisoformat(input_widget_first.value)
@@ -305,22 +305,22 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_second = self.query_one("#property_input_second", Input)
                     new_value_second = datetime.fromisoformat(input_widget_second.value) if input_widget_second.value else None
 
-                    new_value = ReadWriteTwoDatetimesProperty(
+                    new_read_write_two_datetimes_value = ReadWriteTwoDatetimesProperty(
                         first=new_value_first,
                         second=new_value_second,
                     )
 
-                    self.client.read_write_two_datetimes = new_value
+                    self.client.read_write_two_datetimes = new_read_write_two_datetimes_value
                 elif self.property_name == "read_write_duration":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = isodate.parse_duration(input_widget.value)
+                    new_read_write_duration_value = isodate.parse_duration(input_widget.value)
 
-                    self.client.read_write_duration = new_value
+                    self.client.read_write_duration = new_read_write_duration_value
                 elif self.property_name == "read_write_optional_duration":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = isodate.parse_duration(input_widget.value) if input_widget.value else None
+                    new_read_write_optional_duration_value = isodate.parse_duration(input_widget.value) if input_widget.value else None
 
-                    self.client.read_write_optional_duration = new_value
+                    self.client.read_write_optional_duration = new_read_write_optional_duration_value
                 elif self.property_name == "read_write_two_durations":
                     input_widget_first = self.query_one("#property_input_first", Input)
                     new_value_first = isodate.parse_duration(input_widget_first.value)
@@ -328,22 +328,22 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_second = self.query_one("#property_input_second", Input)
                     new_value_second = isodate.parse_duration(input_widget_second.value) if input_widget_second.value else None
 
-                    new_value = ReadWriteTwoDurationsProperty(
+                    new_read_write_two_durations_value = ReadWriteTwoDurationsProperty(
                         first=new_value_first,
                         second=new_value_second,
                     )
 
-                    self.client.read_write_two_durations = new_value
+                    self.client.read_write_two_durations = new_read_write_two_durations_value
                 elif self.property_name == "read_write_binary":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = input_widget.value.encode("utf-8")
+                    new_read_write_binary_value = input_widget.value.encode("utf-8")
 
-                    self.client.read_write_binary = new_value
+                    self.client.read_write_binary = new_read_write_binary_value
                 elif self.property_name == "read_write_optional_binary":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = input_widget.value.encode("utf-8") if input_widget.value else None
+                    new_read_write_optional_binary_value = input_widget.value.encode("utf-8") if input_widget.value else None
 
-                    self.client.read_write_optional_binary = new_value
+                    self.client.read_write_optional_binary = new_read_write_optional_binary_value
                 elif self.property_name == "read_write_two_binaries":
                     input_widget_first = self.query_one("#property_input_first", Input)
                     new_value_first = input_widget_first.value.encode("utf-8")
@@ -351,17 +351,17 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_second = self.query_one("#property_input_second", Input)
                     new_value_second = input_widget_second.value.encode("utf-8") if input_widget_second.value else None
 
-                    new_value = ReadWriteTwoBinariesProperty(
+                    new_read_write_two_binaries_value = ReadWriteTwoBinariesProperty(
                         first=new_value_first,
                         second=new_value_second,
                     )
 
-                    self.client.read_write_two_binaries = new_value
+                    self.client.read_write_two_binaries = new_read_write_two_binaries_value
                 elif self.property_name == "read_write_list_of_strings":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = [str(v) for v in input_widget.value.split(",")]
+                    new_read_write_list_of_strings_value = [str(v) for v in input_widget.value.split(",")]
 
-                    self.client.read_write_list_of_strings = new_value
+                    self.client.read_write_list_of_strings = new_read_write_list_of_strings_value
                 elif self.property_name == "read_write_lists":
                     input_widget_the_list = self.query_one("#property_input_the_list", Input)
                     new_value_the_list = [Numbers(v) for v in input_widget_the_list.value.split(",")]
@@ -369,12 +369,12 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_optional_list = self.query_one("#property_input_optional_list", Input)
                     new_value_optional_list = [datetime.fromisoformat(v) for v in input_widget_optional_list.value.split(",")] if input_widget_optional_list.value else None
 
-                    new_value = ReadWriteListsProperty(
+                    new_read_write_lists_value = ReadWriteListsProperty(
                         the_list=new_value_the_list,
                         optional_list=new_value_optional_list,
                     )
 
-                    self.client.read_write_lists = new_value
+                    self.client.read_write_lists = new_read_write_lists_value
 
                 self.dismiss(True)
             except Exception as e:
@@ -776,7 +776,7 @@ class ClientScreen(Screen):
 
                 # Log to the RichLog widget
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                log.write(f"▶️[grey]{timestamp}[/grey] [bold cyan]{signal_name}[/bold cyan]: {data}")
+                log.write(f"[gray]{timestamp}[/gray] [bold cyan]{signal_name}[/bold cyan]: {data}")
 
             return handler
 

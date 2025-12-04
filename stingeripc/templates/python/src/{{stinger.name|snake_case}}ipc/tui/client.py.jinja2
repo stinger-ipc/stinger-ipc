@@ -84,7 +84,7 @@ class PropertyEditModal(ModalScreen[bool]):
                 {%else%}
                 {%-for arg in prop.arg_list%}
                     yield Label(f"{{arg.name}}{%if arg.arg_type.name == 'STRUCT'%} (JSON){%endif%}", classes="property_input_value_label")
-                    yield Input(placeholder=f"{{arg.name}} value", value={%if arg.arg_type.name == 'STRUCT'%}self.current_value.model_dump_json(){%else%}str(self.current_value.{{arg.name|snake_case}}){%endif%}, classes="property_input_value", id="property_input_{{arg.name|snake_case}}")
+                    yield Input(placeholder=f"{{arg.name}} value", value={%if arg.arg_type.name == 'STRUCT'%}self.current_value.{{arg.name|snake_case}}.model_dump_json(){%else%}str(self.current_value.{{arg.name|snake_case}}){%endif%}, classes="property_input_value", id="property_input_{{arg.name|snake_case}}")
                 {%endfor-%}
                 {%endif%}
             {%endfor%}
@@ -117,19 +117,19 @@ class PropertyEditModal(ModalScreen[bool]):
                 {%-if not loop.first%}el{%endif%}if self.property_name == '{{prop_name|snake_case}}':
                     {%-if prop.arg_list|length == 1%}
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = {{from_input_string(prop.arg_list[0], "input_widget.value")}}
+                    new_{{prop_name|snake_case}}_value = {{from_input_string(prop.arg_list[0], "input_widget.value")}}
                     {%else%}
                     {%-for arg in prop.arg_list%}
                     input_widget_{{arg.name|snake_case}} = self.query_one("#property_input_{{arg.name|snake_case}}", Input)
                     new_value_{{arg.name|snake_case}} = {{from_input_string(arg, "input_widget_" + arg.name|snake_case + ".value")}}
                     {%endfor%}
-                    new_value = {{prop_name|UpperCamelCase}}Property(
+                    new_{{prop_name|snake_case}}_value = {{prop_name|UpperCamelCase}}Property(
                         {%-for arg in prop.arg_list%}
                         {{arg.name|snake_case}}=new_value_{{arg.name|snake_case}},
                         {%-endfor%}
                     )
                     {%endif%}
-                    self.client.{{prop_name|snake_case}} = new_value
+                    self.client.{{prop_name|snake_case}} = new_{{prop_name|snake_case}}_value
                 {%endfor%}
             
                 self.dismiss(True)

@@ -91,9 +91,9 @@ class PropertyEditModal(ModalScreen[bool]):
             try:
                 if self.property_name == "school":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = str(input_widget.value)
+                    new_school_value = str(input_widget.value)
 
-                    self.client.school = new_value
+                    self.client.school = new_school_value
 
                 self.dismiss(True)
             except Exception as e:
@@ -410,7 +410,7 @@ class ClientScreen(Screen):
 
                 # Log to the RichLog widget
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                log.write(f"▶️[grey]{timestamp}[/grey] [bold cyan]{signal_name}[/bold cyan]: {data}")
+                log.write(f"[gray]{timestamp}[/gray] [bold cyan]{signal_name}[/bold cyan]: {data}")
 
             return handler
 

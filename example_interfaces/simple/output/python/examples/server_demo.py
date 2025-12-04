@@ -1,5 +1,6 @@
 from time import sleep
 import signal
+import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from simpleipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
@@ -18,8 +19,8 @@ if __name__ == "__main__":
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport, client_id="py-server-demo")
-    server = SimpleServer(conn, "py-server-demo:1", initial_property_values)
+    conn = MqttBrokerConnection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
+    server = SimpleServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), initial_property_values)
 
     @server.handle_trade_numbers
     def trade_numbers(your_number: int) -> int:

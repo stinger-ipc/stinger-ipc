@@ -473,8 +473,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteIntegerProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_integer.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_integer.mutex:
                 self._property_read_write_integer.value = prop_value
                 self._property_read_write_integer.version += 1
@@ -524,8 +532,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["value"])
+            try:
+                prop_obj = ReadOnlyIntegerProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_only_integer.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_only_integer.mutex:
                 self._property_read_only_integer.value = prop_value
                 self._property_read_only_integer.version += 1
@@ -575,8 +591,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_optional_integer.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_optional_integer.mutex:
                 self._property_read_write_optional_integer.value = prop_value
                 self._property_read_write_optional_integer.version += 1
@@ -627,7 +651,7 @@ class TestableServer:
                 return
 
             try:
-                prop_value = ReadWriteTwoIntegersProperty.model_validate_json(payload)
+                prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -635,6 +659,7 @@ class TestableServer:
                         response_topic, existing_prop_obj, str(self._property_read_write_two_integers.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_read_write_two_integers.mutex:
                 self._property_read_write_two_integers.value = prop_value
                 self._property_read_write_two_integers.version += 1
@@ -684,8 +709,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = str(payload_obj["value"])
+            try:
+                prop_obj = ReadOnlyStringProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_only_string.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_only_string.mutex:
                 self._property_read_only_string.value = prop_value
                 self._property_read_only_string.version += 1
@@ -735,8 +768,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = str(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteStringProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_string.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_string.mutex:
                 self._property_read_write_string.value = prop_value
                 self._property_read_write_string.version += 1
@@ -786,8 +827,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = str(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteOptionalStringProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_optional_string.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_optional_string.mutex:
                 self._property_read_write_optional_string.value = prop_value
                 self._property_read_write_optional_string.version += 1
@@ -838,7 +887,7 @@ class TestableServer:
                 return
 
             try:
-                prop_value = ReadWriteTwoStringsProperty.model_validate_json(payload)
+                prop_obj = ReadWriteTwoStringsProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -846,6 +895,7 @@ class TestableServer:
                         response_topic, existing_prop_obj, str(self._property_read_write_two_strings.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_read_write_two_strings.mutex:
                 self._property_read_write_two_strings.value = prop_value
                 self._property_read_write_two_strings.version += 1
@@ -895,8 +945,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = AllTypes(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteStructProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_struct.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_struct.mutex:
                 self._property_read_write_struct.value = prop_value
                 self._property_read_write_struct.version += 1
@@ -946,8 +1004,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = AllTypes(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteOptionalStructProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_optional_struct.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_optional_struct.mutex:
                 self._property_read_write_optional_struct.value = prop_value
                 self._property_read_write_optional_struct.version += 1
@@ -998,7 +1064,7 @@ class TestableServer:
                 return
 
             try:
-                prop_value = ReadWriteTwoStructsProperty.model_validate_json(payload)
+                prop_obj = ReadWriteTwoStructsProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -1006,6 +1072,7 @@ class TestableServer:
                         response_topic, existing_prop_obj, str(self._property_read_write_two_structs.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_read_write_two_structs.mutex:
                 self._property_read_write_two_structs.value = prop_value
                 self._property_read_write_two_structs.version += 1
@@ -1055,8 +1122,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = Numbers(payload_obj["value"])
+            try:
+                prop_obj = ReadOnlyEnumProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_only_enum.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_only_enum.mutex:
                 self._property_read_only_enum.value = prop_value
                 self._property_read_only_enum.version += 1
@@ -1106,8 +1181,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = Numbers(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteEnumProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_enum.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_enum.mutex:
                 self._property_read_write_enum.value = prop_value
                 self._property_read_write_enum.version += 1
@@ -1157,8 +1240,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = Numbers(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_optional_enum.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_optional_enum.mutex:
                 self._property_read_write_optional_enum.value = prop_value
                 self._property_read_write_optional_enum.version += 1
@@ -1209,7 +1300,7 @@ class TestableServer:
                 return
 
             try:
-                prop_value = ReadWriteTwoEnumsProperty.model_validate_json(payload)
+                prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -1217,6 +1308,7 @@ class TestableServer:
                         response_topic, existing_prop_obj, str(self._property_read_write_two_enums.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_read_write_two_enums.mutex:
                 self._property_read_write_two_enums.value = prop_value
                 self._property_read_write_two_enums.version += 1
@@ -1266,8 +1358,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = datetime(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteDatetimeProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_datetime.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_datetime.mutex:
                 self._property_read_write_datetime.value = prop_value
                 self._property_read_write_datetime.version += 1
@@ -1317,8 +1417,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = datetime(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_optional_datetime.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_optional_datetime.mutex:
                 self._property_read_write_optional_datetime.value = prop_value
                 self._property_read_write_optional_datetime.version += 1
@@ -1369,7 +1477,7 @@ class TestableServer:
                 return
 
             try:
-                prop_value = ReadWriteTwoDatetimesProperty.model_validate_json(payload)
+                prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -1377,6 +1485,7 @@ class TestableServer:
                         response_topic, existing_prop_obj, str(self._property_read_write_two_datetimes.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_read_write_two_datetimes.mutex:
                 self._property_read_write_two_datetimes.value = prop_value
                 self._property_read_write_two_datetimes.version += 1
@@ -1426,8 +1535,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = timedelta(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteDurationProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_duration.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_duration.mutex:
                 self._property_read_write_duration.value = prop_value
                 self._property_read_write_duration.version += 1
@@ -1477,8 +1594,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = timedelta(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_optional_duration.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_optional_duration.mutex:
                 self._property_read_write_optional_duration.value = prop_value
                 self._property_read_write_optional_duration.version += 1
@@ -1529,7 +1654,7 @@ class TestableServer:
                 return
 
             try:
-                prop_value = ReadWriteTwoDurationsProperty.model_validate_json(payload)
+                prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -1537,6 +1662,7 @@ class TestableServer:
                         response_topic, existing_prop_obj, str(self._property_read_write_two_durations.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_read_write_two_durations.mutex:
                 self._property_read_write_two_durations.value = prop_value
                 self._property_read_write_two_durations.version += 1
@@ -1586,8 +1712,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = bytes(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteBinaryProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_binary.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_binary.mutex:
                 self._property_read_write_binary.value = prop_value
                 self._property_read_write_binary.version += 1
@@ -1637,8 +1771,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = bytes(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_optional_binary.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_optional_binary.mutex:
                 self._property_read_write_optional_binary.value = prop_value
                 self._property_read_write_optional_binary.version += 1
@@ -1689,7 +1831,7 @@ class TestableServer:
                 return
 
             try:
-                prop_value = ReadWriteTwoBinariesProperty.model_validate_json(payload)
+                prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -1697,6 +1839,7 @@ class TestableServer:
                         response_topic, existing_prop_obj, str(self._property_read_write_two_binaries.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_read_write_two_binaries.mutex:
                 self._property_read_write_two_binaries.value = prop_value
                 self._property_read_write_two_binaries.version += 1
@@ -1746,8 +1889,16 @@ class TestableServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = list(payload_obj["value"])
+            try:
+                prop_obj = ReadWriteListOfStringsProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_read_write_list_of_strings.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.value
             with self._property_read_write_list_of_strings.mutex:
                 self._property_read_write_list_of_strings.value = prop_value
                 self._property_read_write_list_of_strings.version += 1
@@ -1798,7 +1949,7 @@ class TestableServer:
                 return
 
             try:
-                prop_value = ReadWriteListsProperty.model_validate_json(payload)
+                prop_obj = ReadWriteListsProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -1806,6 +1957,7 @@ class TestableServer:
                         response_topic, existing_prop_obj, str(self._property_read_write_lists.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_read_write_lists.mutex:
                 self._property_read_write_lists.value = prop_value
                 self._property_read_write_lists.version += 1

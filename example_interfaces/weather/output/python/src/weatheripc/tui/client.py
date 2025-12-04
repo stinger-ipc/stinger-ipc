@@ -97,26 +97,26 @@ class PropertyEditModal(ModalScreen[bool]):
 
             if self.property_name == "daily_forecast":
                 yield Label(f"monday (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"monday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_monday")
+                yield Input(placeholder=f"monday value", value=self.current_value.monday.model_dump_json(), classes="property_input_value", id="property_input_monday")
 
                 yield Label(f"tuesday (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"tuesday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_tuesday")
+                yield Input(placeholder=f"tuesday value", value=self.current_value.tuesday.model_dump_json(), classes="property_input_value", id="property_input_tuesday")
 
                 yield Label(f"wednesday (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"wednesday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_wednesday")
+                yield Input(placeholder=f"wednesday value", value=self.current_value.wednesday.model_dump_json(), classes="property_input_value", id="property_input_wednesday")
 
             if self.property_name == "hourly_forecast":
                 yield Label(f"hour_0 (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"hour_0 value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_hour_0")
+                yield Input(placeholder=f"hour_0 value", value=self.current_value.hour_0.model_dump_json(), classes="property_input_value", id="property_input_hour_0")
 
                 yield Label(f"hour_1 (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"hour_1 value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_hour_1")
+                yield Input(placeholder=f"hour_1 value", value=self.current_value.hour_1.model_dump_json(), classes="property_input_value", id="property_input_hour_1")
 
                 yield Label(f"hour_2 (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"hour_2 value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_hour_2")
+                yield Input(placeholder=f"hour_2 value", value=self.current_value.hour_2.model_dump_json(), classes="property_input_value", id="property_input_hour_2")
 
                 yield Label(f"hour_3 (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"hour_3 value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_hour_3")
+                yield Input(placeholder=f"hour_3 value", value=self.current_value.hour_3.model_dump_json(), classes="property_input_value", id="property_input_hour_3")
 
             if self.property_name == "current_condition_refresh_interval":
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
@@ -142,27 +142,27 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_longitude = self.query_one("#property_input_longitude", Input)
                     new_value_longitude = float(input_widget_longitude.value)
 
-                    new_value = LocationProperty(
+                    new_location_value = LocationProperty(
                         latitude=new_value_latitude,
                         longitude=new_value_longitude,
                     )
 
-                    self.client.location = new_value
+                    self.client.location = new_location_value
                 elif self.property_name == "current_condition_refresh_interval":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = int(input_widget.value)
+                    new_current_condition_refresh_interval_value = int(input_widget.value)
 
-                    self.client.current_condition_refresh_interval = new_value
+                    self.client.current_condition_refresh_interval = new_current_condition_refresh_interval_value
                 elif self.property_name == "hourly_forecast_refresh_interval":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = int(input_widget.value)
+                    new_hourly_forecast_refresh_interval_value = int(input_widget.value)
 
-                    self.client.hourly_forecast_refresh_interval = new_value
+                    self.client.hourly_forecast_refresh_interval = new_hourly_forecast_refresh_interval_value
                 elif self.property_name == "daily_forecast_refresh_interval":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = int(input_widget.value)
+                    new_daily_forecast_refresh_interval_value = int(input_widget.value)
 
-                    self.client.daily_forecast_refresh_interval = new_value
+                    self.client.daily_forecast_refresh_interval = new_daily_forecast_refresh_interval_value
 
                 self.dismiss(True)
             except Exception as e:
@@ -479,7 +479,7 @@ class ClientScreen(Screen):
 
                 # Log to the RichLog widget
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                log.write(f"▶️[grey]{timestamp}[/grey] [bold cyan]{signal_name}[/bold cyan]: {data}")
+                log.write(f"[gray]{timestamp}[/gray] [bold cyan]{signal_name}[/bold cyan]: {data}")
 
             return handler
 

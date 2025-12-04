@@ -214,12 +214,13 @@ class WeatherServer:
                 return
 
             try:
-                prop_value = LocationProperty.model_validate_json(payload)
+                prop_obj = LocationProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
                     self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_location.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e))
                 return
+            prop_value = prop_obj
             with self._property_location.mutex:
                 self._property_location.value = prop_value
                 self._property_location.version += 1
@@ -269,8 +270,16 @@ class WeatherServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = float(payload_obj["temperature_f"])
+            try:
+                prop_obj = CurrentTemperatureProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_current_temperature.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.temperature_f
             with self._property_current_temperature.mutex:
                 self._property_current_temperature.value = prop_value
                 self._property_current_temperature.version += 1
@@ -321,7 +330,7 @@ class WeatherServer:
                 return
 
             try:
-                prop_value = CurrentConditionProperty.model_validate_json(payload)
+                prop_obj = CurrentConditionProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -329,6 +338,7 @@ class WeatherServer:
                         response_topic, existing_prop_obj, str(self._property_current_condition.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_current_condition.mutex:
                 self._property_current_condition.value = prop_value
                 self._property_current_condition.version += 1
@@ -379,7 +389,7 @@ class WeatherServer:
                 return
 
             try:
-                prop_value = DailyForecastProperty.model_validate_json(payload)
+                prop_obj = DailyForecastProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -387,6 +397,7 @@ class WeatherServer:
                         response_topic, existing_prop_obj, str(self._property_daily_forecast.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_daily_forecast.mutex:
                 self._property_daily_forecast.value = prop_value
                 self._property_daily_forecast.version += 1
@@ -437,7 +448,7 @@ class WeatherServer:
                 return
 
             try:
-                prop_value = HourlyForecastProperty.model_validate_json(payload)
+                prop_obj = HourlyForecastProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -445,6 +456,7 @@ class WeatherServer:
                         response_topic, existing_prop_obj, str(self._property_hourly_forecast.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_hourly_forecast.mutex:
                 self._property_hourly_forecast.value = prop_value
                 self._property_hourly_forecast.version += 1
@@ -494,8 +506,16 @@ class WeatherServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["seconds"])
+            try:
+                prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_current_condition_refresh_interval.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.seconds
             with self._property_current_condition_refresh_interval.mutex:
                 self._property_current_condition_refresh_interval.value = prop_value
                 self._property_current_condition_refresh_interval.version += 1
@@ -547,8 +567,16 @@ class WeatherServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["seconds"])
+            try:
+                prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_hourly_forecast_refresh_interval.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.seconds
             with self._property_hourly_forecast_refresh_interval.mutex:
                 self._property_hourly_forecast_refresh_interval.value = prop_value
                 self._property_hourly_forecast_refresh_interval.version += 1
@@ -600,8 +628,16 @@ class WeatherServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["seconds"])
+            try:
+                prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_daily_forecast_refresh_interval.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.seconds
             with self._property_daily_forecast_refresh_interval.mutex:
                 self._property_daily_forecast_refresh_interval.value = prop_value
                 self._property_daily_forecast_refresh_interval.version += 1

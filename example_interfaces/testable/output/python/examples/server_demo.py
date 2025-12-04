@@ -1,5 +1,6 @@
 from time import sleep
 import signal
+import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from testableipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
@@ -82,7 +83,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -116,7 +117,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -216,8 +217,8 @@ if __name__ == "__main__":
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport, client_id="py-server-demo")
-    server = TestableServer(conn, "py-server-demo:1", initial_property_values)
+    conn = MqttBrokerConnection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
+    server = TestableServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), initial_property_values)
 
     @server.handle_call_with_nothing
     def call_with_nothing() -> None:
@@ -334,7 +335,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -372,7 +373,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -687,7 +688,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -787,7 +788,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -819,7 +820,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -840,7 +841,7 @@ if __name__ == "__main__":
             )
             server.emit_single_date_time(datetime.now(UTC))
             server.emit_single_optional_datetime(datetime.now(UTC))
-            server.emit_three_date_times(datetime.now(UTC), datetime.now(UTC), None)
+            server.emit_three_date_times(datetime.now(UTC), datetime.now(UTC), datetime.now(UTC))
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
             server.emit_three_durations(timedelta(seconds=3536), timedelta(seconds=3536), None)

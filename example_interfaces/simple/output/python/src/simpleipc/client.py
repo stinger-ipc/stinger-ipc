@@ -47,7 +47,7 @@ class SimpleClient:
         """Constructor for a `SimpleClient` object."""
         self._logger = logging.getLogger("SimpleClient")
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing SimpleClient")
+        self._logger.debug("Initializing SimpleClient with %s", instance_info.initial_property_values)
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
@@ -154,7 +154,7 @@ class SimpleClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_school_mutex:
-                self._property_school = prop_obj
+                self._property_school = prop_obj.name
                 self._property_school_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_school, value=prop_obj.name)

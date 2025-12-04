@@ -39,7 +39,7 @@ class SignalOnlyClient:
         """Constructor for a `SignalOnlyClient` object."""
         self._logger = logging.getLogger("SignalOnlyClient")
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing SignalOnlyClient")
+        self._logger.debug("Initializing SignalOnlyClient with %s", instance_info)
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id

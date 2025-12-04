@@ -126,8 +126,14 @@ class SimpleServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = str(payload_obj["name"])
+            try:
+                prop_obj = SchoolProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_school.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e))
+                return
+            prop_value = prop_obj.name
             with self._property_school.mutex:
                 self._property_school.value = prop_value
                 self._property_school.version += 1

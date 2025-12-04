@@ -53,7 +53,7 @@ class {{stinger.python.client_class_name}}:
         """
         self._logger = logging.getLogger('{{stinger.python.client_class_name}}')
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing {{stinger.python.client_class_name}}")
+        self._logger.debug("Initializing {{stinger.python.client_class_name}} with %s", {%if stinger.properties | length > 0 %}instance_info.initial_property_values{%else%}instance_info{%endif%})
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
@@ -187,7 +187,7 @@ class {{stinger.python.client_class_name}}:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_{{prop_name|snake_case}}_mutex:
-                self._property_{{prop_name|snake_case}} = prop_obj
+                self._property_{{prop_name|snake_case}} = prop_obj{% if prop_spec.arg_list | length == 1 %}.{{prop_spec.arg_list[0].name|snake_case}}{% endif %}
                 self._property_{{prop_name|snake_case}}_version = property_version
                 {% if prop_spec.arg_list | length == 1 %}
                 self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value=prop_obj.{{prop_spec.arg_list[0].name|snake_case}})

@@ -93,10 +93,10 @@ class PropertyEditModal(ModalScreen[bool]):
 
             if self.property_name == "lunch_menu":
                 yield Label(f"monday (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"monday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_monday")
+                yield Input(placeholder=f"monday value", value=self.current_value.monday.model_dump_json(), classes="property_input_value", id="property_input_monday")
 
                 yield Label(f"tuesday (JSON)", classes="property_input_value_label")
-                yield Input(placeholder=f"tuesday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_tuesday")
+                yield Input(placeholder=f"tuesday value", value=self.current_value.tuesday.model_dump_json(), classes="property_input_value", id="property_input_tuesday")
 
             if self.property_name == "family_name":
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
@@ -130,9 +130,9 @@ class PropertyEditModal(ModalScreen[bool]):
             try:
                 if self.property_name == "favorite_number":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = int(input_widget.value)
+                    new_favorite_number_value = int(input_widget.value)
 
-                    self.client.favorite_number = new_value
+                    self.client.favorite_number = new_favorite_number_value
                 elif self.property_name == "favorite_foods":
                     input_widget_drink = self.query_one("#property_input_drink", Input)
                     new_value_drink = str(input_widget_drink.value)
@@ -143,13 +143,13 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_breakfast = self.query_one("#property_input_breakfast", Input)
                     new_value_breakfast = str(input_widget_breakfast.value) if input_widget_breakfast.value else None
 
-                    new_value = FavoriteFoodsProperty(
+                    new_favorite_foods_value = FavoriteFoodsProperty(
                         drink=new_value_drink,
                         slices_of_pizza=new_value_slices_of_pizza,
                         breakfast=new_value_breakfast,
                     )
 
-                    self.client.favorite_foods = new_value
+                    self.client.favorite_foods = new_favorite_foods_value
                 elif self.property_name == "lunch_menu":
                     input_widget_monday = self.query_one("#property_input_monday", Input)
                     new_value_monday = Lunch.model_validate_json(input_widget_monday.value)
@@ -157,27 +157,27 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_tuesday = self.query_one("#property_input_tuesday", Input)
                     new_value_tuesday = Lunch.model_validate_json(input_widget_tuesday.value)
 
-                    new_value = LunchMenuProperty(
+                    new_lunch_menu_value = LunchMenuProperty(
                         monday=new_value_monday,
                         tuesday=new_value_tuesday,
                     )
 
-                    self.client.lunch_menu = new_value
+                    self.client.lunch_menu = new_lunch_menu_value
                 elif self.property_name == "family_name":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = str(input_widget.value)
+                    new_family_name_value = str(input_widget.value)
 
-                    self.client.family_name = new_value
+                    self.client.family_name = new_family_name_value
                 elif self.property_name == "last_breakfast_time":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = datetime.fromisoformat(input_widget.value)
+                    new_last_breakfast_time_value = datetime.fromisoformat(input_widget.value)
 
-                    self.client.last_breakfast_time = new_value
+                    self.client.last_breakfast_time = new_last_breakfast_time_value
                 elif self.property_name == "breakfast_length":
                     input_widget = self.query_one("#property_input", Input)
-                    new_value = isodate.parse_duration(input_widget.value)
+                    new_breakfast_length_value = isodate.parse_duration(input_widget.value)
 
-                    self.client.breakfast_length = new_value
+                    self.client.breakfast_length = new_breakfast_length_value
                 elif self.property_name == "last_birthdays":
                     input_widget_mom = self.query_one("#property_input_mom", Input)
                     new_value_mom = datetime.fromisoformat(input_widget_mom.value)
@@ -191,14 +191,14 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_brothers_age = self.query_one("#property_input_brothers_age", Input)
                     new_value_brothers_age = int(input_widget_brothers_age.value) if input_widget_brothers_age.value else None
 
-                    new_value = LastBirthdaysProperty(
+                    new_last_birthdays_value = LastBirthdaysProperty(
                         mom=new_value_mom,
                         dad=new_value_dad,
                         sister=new_value_sister,
                         brothers_age=new_value_brothers_age,
                     )
 
-                    self.client.last_birthdays = new_value
+                    self.client.last_birthdays = new_last_birthdays_value
 
                 self.dismiss(True)
             except Exception as e:
@@ -536,7 +536,7 @@ class ClientScreen(Screen):
 
                 # Log to the RichLog widget
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                log.write(f"▶️[grey]{timestamp}[/grey] [bold cyan]{signal_name}[/bold cyan]: {data}")
+                log.write(f"[gray]{timestamp}[/gray] [bold cyan]{signal_name}[/bold cyan]: {data}")
 
             return handler
 

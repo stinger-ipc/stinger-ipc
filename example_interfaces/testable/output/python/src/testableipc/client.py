@@ -120,7 +120,7 @@ class TestableClient:
         """Constructor for a `TestableClient` object."""
         self._logger = logging.getLogger("TestableClient")
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing TestableClient")
+        self._logger.debug("Initializing TestableClient with %s", instance_info.initial_property_values)
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
@@ -1288,7 +1288,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_integer_mutex:
-                self._property_read_write_integer = prop_obj
+                self._property_read_write_integer = prop_obj.value
                 self._property_read_write_integer_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_integer, value=prop_obj.value)
@@ -1306,7 +1306,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_integer_mutex:
-                self._property_read_only_integer = prop_obj
+                self._property_read_only_integer = prop_obj.value
                 self._property_read_only_integer_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_only_integer, value=prop_obj.value)
@@ -1324,7 +1324,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_integer_mutex:
-                self._property_read_write_optional_integer = prop_obj
+                self._property_read_write_optional_integer = prop_obj.value
                 self._property_read_write_optional_integer_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_integer, value=prop_obj.value)
@@ -1360,7 +1360,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_string_mutex:
-                self._property_read_only_string = prop_obj
+                self._property_read_only_string = prop_obj.value
                 self._property_read_only_string_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_only_string, value=prop_obj.value)
@@ -1378,7 +1378,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_string_mutex:
-                self._property_read_write_string = prop_obj
+                self._property_read_write_string = prop_obj.value
                 self._property_read_write_string_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_string, value=prop_obj.value)
@@ -1396,7 +1396,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_string_mutex:
-                self._property_read_write_optional_string = prop_obj
+                self._property_read_write_optional_string = prop_obj.value
                 self._property_read_write_optional_string_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_string, value=prop_obj.value)
@@ -1432,7 +1432,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_struct_mutex:
-                self._property_read_write_struct = prop_obj
+                self._property_read_write_struct = prop_obj.value
                 self._property_read_write_struct_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_struct, value=prop_obj.value)
@@ -1450,7 +1450,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_struct_mutex:
-                self._property_read_write_optional_struct = prop_obj
+                self._property_read_write_optional_struct = prop_obj.value
                 self._property_read_write_optional_struct_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_struct, value=prop_obj.value)
@@ -1486,7 +1486,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_enum_mutex:
-                self._property_read_only_enum = prop_obj
+                self._property_read_only_enum = prop_obj.value
                 self._property_read_only_enum_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_only_enum, value=prop_obj.value)
@@ -1504,7 +1504,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_enum_mutex:
-                self._property_read_write_enum = prop_obj
+                self._property_read_write_enum = prop_obj.value
                 self._property_read_write_enum_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_enum, value=prop_obj.value)
@@ -1522,7 +1522,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_enum_mutex:
-                self._property_read_write_optional_enum = prop_obj
+                self._property_read_write_optional_enum = prop_obj.value
                 self._property_read_write_optional_enum_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_enum, value=prop_obj.value)
@@ -1558,7 +1558,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_datetime_mutex:
-                self._property_read_write_datetime = prop_obj
+                self._property_read_write_datetime = prop_obj.value
                 self._property_read_write_datetime_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_datetime, value=prop_obj.value)
@@ -1576,7 +1576,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_datetime_mutex:
-                self._property_read_write_optional_datetime = prop_obj
+                self._property_read_write_optional_datetime = prop_obj.value
                 self._property_read_write_optional_datetime_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_datetime, value=prop_obj.value)
@@ -1612,7 +1612,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_duration_mutex:
-                self._property_read_write_duration = prop_obj
+                self._property_read_write_duration = prop_obj.value
                 self._property_read_write_duration_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_duration, value=prop_obj.value)
@@ -1630,7 +1630,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_duration_mutex:
-                self._property_read_write_optional_duration = prop_obj
+                self._property_read_write_optional_duration = prop_obj.value
                 self._property_read_write_optional_duration_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_duration, value=prop_obj.value)
@@ -1666,7 +1666,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_binary_mutex:
-                self._property_read_write_binary = prop_obj
+                self._property_read_write_binary = prop_obj.value
                 self._property_read_write_binary_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_binary, value=prop_obj.value)
@@ -1684,7 +1684,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_binary_mutex:
-                self._property_read_write_optional_binary = prop_obj
+                self._property_read_write_optional_binary = prop_obj.value
                 self._property_read_write_optional_binary_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_optional_binary, value=prop_obj.value)
@@ -1720,7 +1720,7 @@ class TestableClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_list_of_strings_mutex:
-                self._property_read_write_list_of_strings = prop_obj
+                self._property_read_write_list_of_strings = prop_obj.value
                 self._property_read_write_list_of_strings_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_read_write_list_of_strings, value=prop_obj.value)

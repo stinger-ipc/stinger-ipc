@@ -133,17 +133,17 @@ class {{stinger.python.server_class_name}}:
                     self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.OUT_OF_SYNC, correlation_id, f"Request version {prop_version} does not match current version {self._property_{{prop_name|snake_case}}.version}")
                 return
 
-            {%if prop.arg_list | length > 1 -%}
             try:
-                prop_value = {{prop.python_class}}.model_validate_json(payload)
+                prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
                     self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e))
                 return
+            {% if prop.arg_list | length > 1-%}
+            prop_value = prop_obj
             {%else-%}
-            payload_obj = json.loads(payload)
-            prop_value = {{prop.arg_list[0].python_class}}(payload_obj["{{prop.arg_list[0].name}}"])
+            prop_value = prop_obj.{{prop.arg_list[0].name}}
             {%endif-%}
             with self._property_{{prop_name|snake_case}}.mutex:
                 self._property_{{prop_name|snake_case}}.value = prop_value

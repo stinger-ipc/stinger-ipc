@@ -197,8 +197,16 @@ class FullServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = int(payload_obj["number"])
+            try:
+                prop_obj = FavoriteNumberProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.number
             with self._property_favorite_number.mutex:
                 self._property_favorite_number.value = prop_value
                 self._property_favorite_number.version += 1
@@ -249,7 +257,7 @@ class FullServer:
                 return
 
             try:
-                prop_value = FavoriteFoodsProperty.model_validate_json(payload)
+                prop_obj = FavoriteFoodsProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -257,6 +265,7 @@ class FullServer:
                         response_topic, existing_prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_favorite_foods.mutex:
                 self._property_favorite_foods.value = prop_value
                 self._property_favorite_foods.version += 1
@@ -307,7 +316,7 @@ class FullServer:
                 return
 
             try:
-                prop_value = LunchMenuProperty.model_validate_json(payload)
+                prop_obj = LunchMenuProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -315,6 +324,7 @@ class FullServer:
                         response_topic, existing_prop_obj, str(self._property_lunch_menu.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_lunch_menu.mutex:
                 self._property_lunch_menu.value = prop_value
                 self._property_lunch_menu.version += 1
@@ -364,8 +374,16 @@ class FullServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = str(payload_obj["family_name"])
+            try:
+                prop_obj = FamilyNameProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_family_name.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.family_name
             with self._property_family_name.mutex:
                 self._property_family_name.value = prop_value
                 self._property_family_name.version += 1
@@ -415,8 +433,16 @@ class FullServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = datetime(payload_obj["timestamp"])
+            try:
+                prop_obj = LastBreakfastTimeProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.timestamp
             with self._property_last_breakfast_time.mutex:
                 self._property_last_breakfast_time.value = prop_value
                 self._property_last_breakfast_time.version += 1
@@ -466,8 +492,16 @@ class FullServer:
                     )
                 return
 
-            payload_obj = json.loads(payload)
-            prop_value = timedelta(payload_obj["length"])
+            try:
+                prop_obj = BreakfastLengthProperty.model_validate_json(payload)
+            except ValidationError as e:
+                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                if response_topic is not None:
+                    self._conn.publish_property_response(
+                        response_topic, existing_prop_obj, str(self._property_breakfast_length.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    )
+                return
+            prop_value = prop_obj.length
             with self._property_breakfast_length.mutex:
                 self._property_breakfast_length.value = prop_value
                 self._property_breakfast_length.version += 1
@@ -518,7 +552,7 @@ class FullServer:
                 return
 
             try:
-                prop_value = LastBirthdaysProperty.model_validate_json(payload)
+                prop_obj = LastBirthdaysProperty.model_validate_json(payload)
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", topic, e)
                 if response_topic is not None:
@@ -526,6 +560,7 @@ class FullServer:
                         response_topic, existing_prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
                     )
                 return
+            prop_value = prop_obj
             with self._property_last_birthdays.mutex:
                 self._property_last_birthdays.value = prop_value
                 self._property_last_birthdays.version += 1

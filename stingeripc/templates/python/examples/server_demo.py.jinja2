@@ -1,5 +1,6 @@
 from time import sleep
 import signal
+import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from {{stinger.python.package_name}}.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
@@ -28,10 +29,9 @@ if __name__ == '__main__':
     {%endfor%}
     )
     {%endif%}
-
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport, client_id="py-server-demo")
-    server = {{stinger.python.server_class_name}}(conn, "py-server-demo:1"{%if stinger.properties | length > 0 %}, initial_property_values{%endif%})
+    conn = MqttBrokerConnection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
+    server = {{stinger.python.server_class_name}}(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"){%if stinger.properties | length > 0 %}, initial_property_values{%endif%})
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}} 

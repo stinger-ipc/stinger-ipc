@@ -399,7 +399,7 @@ class ClientScreen(Screen):
 
                 # Log to the RichLog widget
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                log.write(f"▶️[grey]{timestamp}[/grey] [bold cyan]{signal_name}[/bold cyan]: {data}")
+                log.write(f"[gray]{timestamp}[/gray] [bold cyan]{signal_name}[/bold cyan]: {data}")
 
             return handler
 

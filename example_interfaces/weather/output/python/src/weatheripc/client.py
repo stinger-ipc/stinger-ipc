@@ -56,7 +56,7 @@ class WeatherClient:
         """Constructor for a `WeatherClient` object."""
         self._logger = logging.getLogger("WeatherClient")
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing WeatherClient")
+        self._logger.debug("Initializing WeatherClient with %s", instance_info.initial_property_values)
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
@@ -375,7 +375,7 @@ class WeatherClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_temperature_mutex:
-                self._property_current_temperature = prop_obj
+                self._property_current_temperature = prop_obj.temperature_f
                 self._property_current_temperature_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_current_temperature, value=prop_obj.temperature_f)
@@ -447,7 +447,7 @@ class WeatherClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_condition_refresh_interval_mutex:
-                self._property_current_condition_refresh_interval = prop_obj
+                self._property_current_condition_refresh_interval = prop_obj.seconds
                 self._property_current_condition_refresh_interval_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_current_condition_refresh_interval, value=prop_obj.seconds)
@@ -465,7 +465,7 @@ class WeatherClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_hourly_forecast_refresh_interval_mutex:
-                self._property_hourly_forecast_refresh_interval = prop_obj
+                self._property_hourly_forecast_refresh_interval = prop_obj.seconds
                 self._property_hourly_forecast_refresh_interval_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_hourly_forecast_refresh_interval, value=prop_obj.seconds)
@@ -483,7 +483,7 @@ class WeatherClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_daily_forecast_refresh_interval_mutex:
-                self._property_daily_forecast_refresh_interval = prop_obj
+                self._property_daily_forecast_refresh_interval = prop_obj.seconds
                 self._property_daily_forecast_refresh_interval_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_daily_forecast_refresh_interval, value=prop_obj.seconds)

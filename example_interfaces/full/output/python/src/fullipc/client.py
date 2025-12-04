@@ -59,7 +59,7 @@ class FullClient:
         """Constructor for a `FullClient` object."""
         self._logger = logging.getLogger("FullClient")
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing FullClient")
+        self._logger.debug("Initializing FullClient with %s", instance_info.initial_property_values)
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
@@ -366,7 +366,7 @@ class FullClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_favorite_number_mutex:
-                self._property_favorite_number = prop_obj
+                self._property_favorite_number = prop_obj.number
                 self._property_favorite_number_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_favorite_number, value=prop_obj.number)
@@ -420,7 +420,7 @@ class FullClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_family_name_mutex:
-                self._property_family_name = prop_obj
+                self._property_family_name = prop_obj.family_name
                 self._property_family_name_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_family_name, value=prop_obj.family_name)
@@ -438,7 +438,7 @@ class FullClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_last_breakfast_time_mutex:
-                self._property_last_breakfast_time = prop_obj
+                self._property_last_breakfast_time = prop_obj.timestamp
                 self._property_last_breakfast_time_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_last_breakfast_time, value=prop_obj.timestamp)
@@ -456,7 +456,7 @@ class FullClient:
             user_properties = properties.get("UserProperty", {})
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_breakfast_length_mutex:
-                self._property_breakfast_length = prop_obj
+                self._property_breakfast_length = prop_obj.length
                 self._property_breakfast_length_version = property_version
 
                 self._do_callbacks_for(self._changed_value_callbacks_for_breakfast_length, value=prop_obj.length)
