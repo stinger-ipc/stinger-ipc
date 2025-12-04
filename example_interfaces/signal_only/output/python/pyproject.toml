@@ -9,6 +9,9 @@ dependencies = [
     "isodate>=0.7.2",
 ]
 
+[project.optional-dependencies]
+tui = ["textual"]
+
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"

@@ -333,7 +333,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
                         "location" => {
                             let deserialized_property =
                                 serde_json::from_slice::<LocationProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -359,7 +359,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
                                 serde_json::from_slice::<CurrentTemperatureProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -387,7 +387,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
                                 serde_json::from_slice::<CurrentConditionProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -413,7 +413,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
                         "dailyForecast" => {
                             let deserialized_property =
                                 serde_json::from_slice::<DailyForecastProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -439,7 +439,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
                         "hourlyForecast" => {
                             let deserialized_property =
                                 serde_json::from_slice::<HourlyForecastProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -467,7 +467,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
                                 serde_json::from_slice::<CurrentConditionRefreshIntervalProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -495,7 +495,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
                                 serde_json::from_slice::<HourlyForecastRefreshIntervalProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -523,7 +523,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
                                 serde_json::from_slice::<DailyForecastRefreshIntervalProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")

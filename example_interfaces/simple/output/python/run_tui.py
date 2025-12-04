@@ -16,7 +16,7 @@ def main():
     file_handler = logging.FileHandler("/tmp/jacob.log", mode="a")
     file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
     root_logger.addHandler(file_handler)
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.ERROR)
 
     logging.debug("Starting SimpleIPC TUI application.")
 

@@ -339,7 +339,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
                         "{{prop_name|lowerCamelCase}}" => {
                             
                             let deserialized_property = serde_json::from_slice::<{{prop_name|UpperCamelCase}}Property>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message.user_properties
                                 .get("PropertyVersion")
                                 .and_then(|v| v.parse::<u32>().ok())

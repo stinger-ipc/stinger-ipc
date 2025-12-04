@@ -335,7 +335,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteIntegerProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -361,7 +361,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                         "readOnlyInteger" => {
                             let deserialized_property =
                                 serde_json::from_slice::<ReadOnlyIntegerProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -389,7 +389,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteOptionalIntegerProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -417,7 +417,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteTwoIntegersProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -443,7 +443,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                         "readOnlyString" => {
                             let deserialized_property =
                                 serde_json::from_slice::<ReadOnlyStringProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -469,7 +469,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                         "readWriteString" => {
                             let deserialized_property =
                                 serde_json::from_slice::<ReadWriteStringProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -497,7 +497,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteOptionalStringProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -525,7 +525,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteTwoStringsProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -551,7 +551,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                         "readWriteStruct" => {
                             let deserialized_property =
                                 serde_json::from_slice::<ReadWriteStructProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -579,7 +579,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteOptionalStructProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -607,7 +607,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteTwoStructsProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -633,7 +633,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                         "readOnlyEnum" => {
                             let deserialized_property =
                                 serde_json::from_slice::<ReadOnlyEnumProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -659,7 +659,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                         "readWriteEnum" => {
                             let deserialized_property =
                                 serde_json::from_slice::<ReadWriteEnumProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -687,7 +687,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteOptionalEnumProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -715,7 +715,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteTwoEnumsProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -743,7 +743,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteDatetimeProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -771,7 +771,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteOptionalDatetimeProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -799,7 +799,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteTwoDatetimesProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -827,7 +827,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteDurationProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -855,7 +855,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteOptionalDurationProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -883,7 +883,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteTwoDurationsProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -909,7 +909,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                         "readWriteBinary" => {
                             let deserialized_property =
                                 serde_json::from_slice::<ReadWriteBinaryProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -937,7 +937,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteOptionalBinaryProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -965,7 +965,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteTwoBinariesProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -993,7 +993,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                                 serde_json::from_slice::<ReadWriteListOfStringsProperty>(
                                     &message.payload,
                                 );
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")
@@ -1019,7 +1019,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> TestableDiscovery<C> {
                         "readWriteLists" => {
                             let deserialized_property =
                                 serde_json::from_slice::<ReadWriteListsProperty>(&message.payload);
-                            error!("Message user properties: {:?}", message.user_properties);
+
                             let version = message
                                 .user_properties
                                 .get("PropertyVersion")

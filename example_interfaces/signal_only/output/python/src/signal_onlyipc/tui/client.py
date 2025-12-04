@@ -2,11 +2,14 @@
 
 import concurrent.futures as futures
 from datetime import datetime, timedelta
+import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult
 from textual.screen import Screen, ModalScreen
 from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label
 from textual.containers import Horizontal, VerticalScroll, Vertical
+from signal_onlyipc.interface_types import *
+from signal_onlyipc.client import SignalOnlyClient
 
 
 class PropertyEditModal(ModalScreen[bool]):
@@ -18,7 +21,7 @@ class PropertyEditModal(ModalScreen[bool]):
     }
     
     #property_modal_container {
-        width: 60;
+        width: 60%;
         height: auto;
         background: $surface;
         border: thick $primary;
@@ -37,8 +40,18 @@ class PropertyEditModal(ModalScreen[bool]):
         margin-top: 1;
         margin-bottom: 1;
     }
+
+    .property_input_value_label {
+        margin-top: 1;
+        margin-bottom: 1;
+        color: $primary;
+    }
     
     #property_input {
+        margin-bottom: 1;
+    }
+
+    .property_input_value {
         margin-bottom: 1;
     }
     
@@ -54,7 +67,7 @@ class PropertyEditModal(ModalScreen[bool]):
     }
     """
 
-    def __init__(self, property_name: str, current_value: Any, client: Any):
+    def __init__(self, property_name: str, current_value: Any, client: SignalOnlyClient):
         super().__init__()
         self.property_name = property_name
         self.current_value = current_value
@@ -65,7 +78,6 @@ class PropertyEditModal(ModalScreen[bool]):
         with Vertical(id="property_modal_container"):
             yield Static(f"Edit: {self.property_name}", id="property_modal_title")
             yield Label(f"Current value: {self.current_value}", classes="property_input_label")
-            yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             with Horizontal(id="property_button_container"):
                 yield Button("Update", variant="primary", id="update_button")
@@ -74,24 +86,8 @@ class PropertyEditModal(ModalScreen[bool]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
         if event.button.id == "update_button":
-            input_widget = self.query_one("#property_input", Input)
-            new_value_str = input_widget.value
-
             try:
-                # Parse the value based on current value type
-                if self.current_value is None:
-                    new_value = new_value_str if new_value_str else None
-                elif isinstance(self.current_value, bool):
-                    new_value = new_value_str.lower() in ("true", "1", "yes", "y")
-                elif isinstance(self.current_value, int):
-                    new_value = int(new_value_str) if new_value_str else None
-                elif isinstance(self.current_value, float):
-                    new_value = float(new_value_str) if new_value_str else None
-                else:
-                    new_value = new_value_str
 
-                # Set the property on the client
-                setattr(self.client, self.property_name, new_value)
                 self.dismiss(True)
             except Exception as e:
                 self.app.notify(f"Error updating property: {e}", severity="error")
@@ -165,7 +161,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
         self.method_name = method_name
         self.params = params
         self.client = client
-        self.result_widget = None
+        self.result_widget: Optional[Static] = None
 
     def compose(self) -> ComposeResult:
         """Compose the modal screen."""
@@ -196,6 +192,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
 
     def _call_method(self) -> None:
         """Call the method with collected inputs."""
+        assert self.result_widget is not None, "result_widget must be initialized"
         try:
             # Collect inputs
             kwargs = {}
@@ -371,15 +368,15 @@ class ClientScreen(Screen):
 
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")
-            btn.method_name = method_name  # type: ignore  # Store for retrieval
-            btn.method_params = params  # type: ignore
+            btn.method_name = method_name  # Store for retrieval
+            btn.method_params = params
             pane.mount(btn)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle method button presses."""
         if hasattr(event.button, "method_name"):
-            method_name = event.button.method_name  # type: ignore
-            method_params = event.button.method_params  # type: ignore
+            method_name = event.button.method_name
+            method_params = event.button.method_params
 
             # Show modal for method call
             modal = MethodCallModal(method_name, method_params, self.client)
@@ -402,7 +399,7 @@ class ClientScreen(Screen):
 
                 # Log to the RichLog widget
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                log.write(f"[cyan]{timestamp}[/cyan] [bold yellow]{signal_name}[/bold yellow]: {data}")
+                log.write(f"▶️[grey]{timestamp}[/grey] [bold cyan]{signal_name}[/bold cyan]: {data}")
 
             return handler
 
@@ -426,29 +423,12 @@ class ClientScreen(Screen):
             # Add writable or readonly class
             if is_writable:
                 prop_widget.add_class("writable")
-                prop_widget.can_focus = True  # type: ignore
-                prop_widget.property_name = prop_name  # type: ignore  # Store for click handling
+                prop_widget.can_focus = True
+                prop_widget.property_name = prop_name  # Store for click handling
             else:
                 prop_widget.add_class("readonly")
 
             pane.mount(prop_widget)
-
-            # Define the update handler
-            def update_handler(value):
-                # Store the current value for editing
-                prop_widget.current_value = value  # type: ignore
-
-                # Format the value for display
-                value_str = str(value)
-                if len(value_str) > 200:
-                    value_str = value_str[:200] + "..."
-
-                # Update the widget
-                prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
-
-            # Register the handler with call_immediately=True
-            changed_method = getattr(self.client, changed_method_name)
-            changed_method(update_handler, call_immediately=True)
 
         # Register all properties
 
@@ -457,8 +437,8 @@ class ClientScreen(Screen):
         # Check if the clicked widget is a writable property
         widget = event.widget
         if hasattr(widget, "property_name") and hasattr(widget, "current_value"):
-            property_name = widget.property_name  # type: ignore
-            current_value = widget.current_value  # type: ignore
+            property_name = widget.property_name
+            current_value = widget.current_value
 
             # Open the edit modal
             modal = PropertyEditModal(property_name, current_value, self.client)

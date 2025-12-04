@@ -2,17 +2,14 @@
 
 import concurrent.futures as futures
 from datetime import datetime, timedelta
+import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult
 from textual.screen import Screen, ModalScreen
 from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label
 from textual.containers import Horizontal, VerticalScroll, Vertical
-
-from testableipc.interface_types import (
-    Entry,
-    AllTypes,
-    Numbers,
-)
+from testableipc.interface_types import *
+from testableipc.client import TestableClient
 
 
 class PropertyEditModal(ModalScreen[bool]):
@@ -24,7 +21,7 @@ class PropertyEditModal(ModalScreen[bool]):
     }
     
     #property_modal_container {
-        width: 60;
+        width: 60%;
         height: auto;
         background: $surface;
         border: thick $primary;
@@ -43,8 +40,18 @@ class PropertyEditModal(ModalScreen[bool]):
         margin-top: 1;
         margin-bottom: 1;
     }
+
+    .property_input_value_label {
+        margin-top: 1;
+        margin-bottom: 1;
+        color: $primary;
+    }
     
     #property_input {
+        margin-bottom: 1;
+    }
+
+    .property_input_value {
         margin-bottom: 1;
     }
     
@@ -60,7 +67,7 @@ class PropertyEditModal(ModalScreen[bool]):
     }
     """
 
-    def __init__(self, property_name: str, current_value: Any, client: Any):
+    def __init__(self, property_name: str, current_value: Any, client: TestableClient):
         super().__init__()
         self.property_name = property_name
         self.current_value = current_value
@@ -71,7 +78,115 @@ class PropertyEditModal(ModalScreen[bool]):
         with Vertical(id="property_modal_container"):
             yield Static(f"Edit: {self.property_name}", id="property_modal_title")
             yield Label(f"Current value: {self.current_value}", classes="property_input_label")
-            yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+            if self.property_name == "read_write_integer":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_only_integer":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_optional_integer":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_two_integers":
+                yield Label(f"first", classes="property_input_value_label")
+                yield Input(placeholder=f"first value", value=str(self.current_value.first), classes="property_input_value", id="property_input_first")
+
+                yield Label(f"second", classes="property_input_value_label")
+                yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
+
+            if self.property_name == "read_only_string":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_string":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_optional_string":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_two_strings":
+                yield Label(f"first", classes="property_input_value_label")
+                yield Input(placeholder=f"first value", value=str(self.current_value.first), classes="property_input_value", id="property_input_first")
+
+                yield Label(f"second", classes="property_input_value_label")
+                yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
+
+            if self.property_name == "read_write_struct":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_optional_struct":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_two_structs":
+                yield Label(f"first (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"first value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_first")
+
+                yield Label(f"second (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"second value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_second")
+
+            if self.property_name == "read_only_enum":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_enum":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_optional_enum":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_two_enums":
+                yield Label(f"first", classes="property_input_value_label")
+                yield Input(placeholder=f"first value", value=str(self.current_value.first), classes="property_input_value", id="property_input_first")
+
+                yield Label(f"second", classes="property_input_value_label")
+                yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
+
+            if self.property_name == "read_write_datetime":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_optional_datetime":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_two_datetimes":
+                yield Label(f"first", classes="property_input_value_label")
+                yield Input(placeholder=f"first value", value=str(self.current_value.first), classes="property_input_value", id="property_input_first")
+
+                yield Label(f"second", classes="property_input_value_label")
+                yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
+
+            if self.property_name == "read_write_duration":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_optional_duration":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_two_durations":
+                yield Label(f"first", classes="property_input_value_label")
+                yield Input(placeholder=f"first value", value=str(self.current_value.first), classes="property_input_value", id="property_input_first")
+
+                yield Label(f"second", classes="property_input_value_label")
+                yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
+
+            if self.property_name == "read_write_binary":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_optional_binary":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_two_binaries":
+                yield Label(f"first", classes="property_input_value_label")
+                yield Input(placeholder=f"first value", value=str(self.current_value.first), classes="property_input_value", id="property_input_first")
+
+                yield Label(f"second", classes="property_input_value_label")
+                yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
+
+            if self.property_name == "read_write_list_of_strings":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "read_write_lists":
+                yield Label(f"the_list", classes="property_input_value_label")
+                yield Input(placeholder=f"the_list value", value=str(self.current_value.the_list), classes="property_input_value", id="property_input_the_list")
+
+                yield Label(f"optionalList", classes="property_input_value_label")
+                yield Input(placeholder=f"optionalList value", value=str(self.current_value.optional_list), classes="property_input_value", id="property_input_optional_list")
 
             with Horizontal(id="property_button_container"):
                 yield Button("Update", variant="primary", id="update_button")
@@ -80,24 +195,187 @@ class PropertyEditModal(ModalScreen[bool]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
         if event.button.id == "update_button":
-            input_widget = self.query_one("#property_input", Input)
-            new_value_str = input_widget.value
-
             try:
-                # Parse the value based on current value type
-                if self.current_value is None:
-                    new_value = new_value_str if new_value_str else None
-                elif isinstance(self.current_value, bool):
-                    new_value = new_value_str.lower() in ("true", "1", "yes", "y")
-                elif isinstance(self.current_value, int):
-                    new_value = int(new_value_str) if new_value_str else None
-                elif isinstance(self.current_value, float):
-                    new_value = float(new_value_str) if new_value_str else None
-                else:
-                    new_value = new_value_str
+                if self.property_name == "read_write_integer":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = int(input_widget.value)
 
-                # Set the property on the client
-                setattr(self.client, self.property_name, new_value)
+                    self.client.read_write_integer = new_value
+                elif self.property_name == "read_write_optional_integer":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = int(input_widget.value) if input_widget.value else None
+
+                    self.client.read_write_optional_integer = new_value
+                elif self.property_name == "read_write_two_integers":
+                    input_widget_first = self.query_one("#property_input_first", Input)
+                    new_value_first = int(input_widget_first.value)
+
+                    input_widget_second = self.query_one("#property_input_second", Input)
+                    new_value_second = int(input_widget_second.value) if input_widget_second.value else None
+
+                    new_value = ReadWriteTwoIntegersProperty(
+                        first=new_value_first,
+                        second=new_value_second,
+                    )
+
+                    self.client.read_write_two_integers = new_value
+                elif self.property_name == "read_write_string":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = str(input_widget.value)
+
+                    self.client.read_write_string = new_value
+                elif self.property_name == "read_write_optional_string":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = str(input_widget.value) if input_widget.value else None
+
+                    self.client.read_write_optional_string = new_value
+                elif self.property_name == "read_write_two_strings":
+                    input_widget_first = self.query_one("#property_input_first", Input)
+                    new_value_first = str(input_widget_first.value)
+
+                    input_widget_second = self.query_one("#property_input_second", Input)
+                    new_value_second = str(input_widget_second.value) if input_widget_second.value else None
+
+                    new_value = ReadWriteTwoStringsProperty(
+                        first=new_value_first,
+                        second=new_value_second,
+                    )
+
+                    self.client.read_write_two_strings = new_value
+                elif self.property_name == "read_write_struct":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = AllTypes.model_validate_json(input_widget.value)
+
+                    self.client.read_write_struct = new_value
+                elif self.property_name == "read_write_optional_struct":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = AllTypes.model_validate_json(input_widget.value) if input_widget.value else None
+
+                    self.client.read_write_optional_struct = new_value
+                elif self.property_name == "read_write_two_structs":
+                    input_widget_first = self.query_one("#property_input_first", Input)
+                    new_value_first = AllTypes.model_validate_json(input_widget_first.value)
+
+                    input_widget_second = self.query_one("#property_input_second", Input)
+                    new_value_second = AllTypes.model_validate_json(input_widget_second.value) if input_widget_second.value else None
+
+                    new_value = ReadWriteTwoStructsProperty(
+                        first=new_value_first,
+                        second=new_value_second,
+                    )
+
+                    self.client.read_write_two_structs = new_value
+                elif self.property_name == "read_write_enum":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = Numbers(input_widget.value)
+
+                    self.client.read_write_enum = new_value
+                elif self.property_name == "read_write_optional_enum":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = Numbers(input_widget.value) if input_widget.value else None
+
+                    self.client.read_write_optional_enum = new_value
+                elif self.property_name == "read_write_two_enums":
+                    input_widget_first = self.query_one("#property_input_first", Input)
+                    new_value_first = Numbers(input_widget_first.value)
+
+                    input_widget_second = self.query_one("#property_input_second", Input)
+                    new_value_second = Numbers(input_widget_second.value) if input_widget_second.value else None
+
+                    new_value = ReadWriteTwoEnumsProperty(
+                        first=new_value_first,
+                        second=new_value_second,
+                    )
+
+                    self.client.read_write_two_enums = new_value
+                elif self.property_name == "read_write_datetime":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = datetime.fromisoformat(input_widget.value)
+
+                    self.client.read_write_datetime = new_value
+                elif self.property_name == "read_write_optional_datetime":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = datetime.fromisoformat(input_widget.value) if input_widget.value else None
+
+                    self.client.read_write_optional_datetime = new_value
+                elif self.property_name == "read_write_two_datetimes":
+                    input_widget_first = self.query_one("#property_input_first", Input)
+                    new_value_first = datetime.fromisoformat(input_widget_first.value)
+
+                    input_widget_second = self.query_one("#property_input_second", Input)
+                    new_value_second = datetime.fromisoformat(input_widget_second.value) if input_widget_second.value else None
+
+                    new_value = ReadWriteTwoDatetimesProperty(
+                        first=new_value_first,
+                        second=new_value_second,
+                    )
+
+                    self.client.read_write_two_datetimes = new_value
+                elif self.property_name == "read_write_duration":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = isodate.parse_duration(input_widget.value)
+
+                    self.client.read_write_duration = new_value
+                elif self.property_name == "read_write_optional_duration":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = isodate.parse_duration(input_widget.value) if input_widget.value else None
+
+                    self.client.read_write_optional_duration = new_value
+                elif self.property_name == "read_write_two_durations":
+                    input_widget_first = self.query_one("#property_input_first", Input)
+                    new_value_first = isodate.parse_duration(input_widget_first.value)
+
+                    input_widget_second = self.query_one("#property_input_second", Input)
+                    new_value_second = isodate.parse_duration(input_widget_second.value) if input_widget_second.value else None
+
+                    new_value = ReadWriteTwoDurationsProperty(
+                        first=new_value_first,
+                        second=new_value_second,
+                    )
+
+                    self.client.read_write_two_durations = new_value
+                elif self.property_name == "read_write_binary":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = input_widget.value.encode("utf-8")
+
+                    self.client.read_write_binary = new_value
+                elif self.property_name == "read_write_optional_binary":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = input_widget.value.encode("utf-8") if input_widget.value else None
+
+                    self.client.read_write_optional_binary = new_value
+                elif self.property_name == "read_write_two_binaries":
+                    input_widget_first = self.query_one("#property_input_first", Input)
+                    new_value_first = input_widget_first.value.encode("utf-8")
+
+                    input_widget_second = self.query_one("#property_input_second", Input)
+                    new_value_second = input_widget_second.value.encode("utf-8") if input_widget_second.value else None
+
+                    new_value = ReadWriteTwoBinariesProperty(
+                        first=new_value_first,
+                        second=new_value_second,
+                    )
+
+                    self.client.read_write_two_binaries = new_value
+                elif self.property_name == "read_write_list_of_strings":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = [str(v) for v in input_widget.value.split(",")]
+
+                    self.client.read_write_list_of_strings = new_value
+                elif self.property_name == "read_write_lists":
+                    input_widget_the_list = self.query_one("#property_input_the_list", Input)
+                    new_value_the_list = [Numbers(v) for v in input_widget_the_list.value.split(",")]
+
+                    input_widget_optional_list = self.query_one("#property_input_optional_list", Input)
+                    new_value_optional_list = [datetime.fromisoformat(v) for v in input_widget_optional_list.value.split(",")] if input_widget_optional_list.value else None
+
+                    new_value = ReadWriteListsProperty(
+                        the_list=new_value_the_list,
+                        optional_list=new_value_optional_list,
+                    )
+
+                    self.client.read_write_lists = new_value
+
                 self.dismiss(True)
             except Exception as e:
                 self.app.notify(f"Error updating property: {e}", severity="error")
@@ -171,7 +449,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
         self.method_name = method_name
         self.params = params
         self.client = client
-        self.result_widget = None
+        self.result_widget: Optional[Static] = None
 
     def compose(self) -> ComposeResult:
         """Compose the modal screen."""
@@ -202,6 +480,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
 
     def _call_method(self) -> None:
         """Call the method with collected inputs."""
+        assert self.result_widget is not None, "result_widget must be initialized"
         try:
             # Collect inputs
             kwargs = {}
@@ -466,15 +745,15 @@ class ClientScreen(Screen):
 
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")
-            btn.method_name = method_name  # type: ignore  # Store for retrieval
-            btn.method_params = params  # type: ignore
+            btn.method_name = method_name  # Store for retrieval
+            btn.method_params = params
             pane.mount(btn)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle method button presses."""
         if hasattr(event.button, "method_name"):
-            method_name = event.button.method_name  # type: ignore
-            method_params = event.button.method_params  # type: ignore
+            method_name = event.button.method_name
+            method_params = event.button.method_params
 
             # Show modal for method call
             modal = MethodCallModal(method_name, method_params, self.client)
@@ -497,7 +776,7 @@ class ClientScreen(Screen):
 
                 # Log to the RichLog widget
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                log.write(f"[cyan]{timestamp}[/cyan] [bold yellow]{signal_name}[/bold yellow]: {data}")
+                log.write(f"▶️[grey]{timestamp}[/grey] [bold cyan]{signal_name}[/bold cyan]: {data}")
 
             return handler
 
@@ -541,29 +820,716 @@ class ClientScreen(Screen):
             # Add writable or readonly class
             if is_writable:
                 prop_widget.add_class("writable")
-                prop_widget.can_focus = True  # type: ignore
-                prop_widget.property_name = prop_name  # type: ignore  # Store for click handling
+                prop_widget.can_focus = True
+                prop_widget.property_name = prop_name  # Store for click handling
             else:
                 prop_widget.add_class("readonly")
 
             pane.mount(prop_widget)
 
-            # Define the update handler
-            def update_handler(value):
-                # Store the current value for editing
-                prop_widget.current_value = value  # type: ignore
+            if prop_name == "read_write_integer":
 
-                # Format the value for display
-                value_str = str(value)
-                if len(value_str) > 200:
-                    value_str = value_str[:200] + "..."
+                def on_read_write_integer_updated(value: int):
+                    prop_widget.current_value = value
 
-                # Update the widget
-                prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+                    values = []
 
-            # Register the handler with call_immediately=True
-            changed_method = getattr(self.client, changed_method_name)
-            changed_method(update_handler, call_immediately=True)
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_integer_changed(on_read_write_integer_updated, call_immediately=True)
+
+            elif prop_name == "read_only_integer":
+
+                def on_read_only_integer_updated(value: int):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_only_integer_changed(on_read_only_integer_updated, call_immediately=True)
+
+            elif prop_name == "read_write_optional_integer":
+
+                def on_read_write_optional_integer_updated(value: Optional[int]):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_optional_integer_changed(on_read_write_optional_integer_updated, call_immediately=True)
+
+            elif prop_name == "read_write_two_integers":
+
+                def on_read_write_two_integers_updated(value: ReadWriteTwoIntegersProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]first[/bold]: { value.first }"  # PRIMITIVE
+                    values.append(line)
+
+                    line = f"[bold]second[/bold]: { value.second }"  # PRIMITIVE
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_two_integers_changed(on_read_write_two_integers_updated, call_immediately=True)
+
+            elif prop_name == "read_only_string":
+
+                def on_read_only_string_updated(value: str):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_only_string_changed(on_read_only_string_updated, call_immediately=True)
+
+            elif prop_name == "read_write_string":
+
+                def on_read_write_string_updated(value: str):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_string_changed(on_read_write_string_updated, call_immediately=True)
+
+            elif prop_name == "read_write_optional_string":
+
+                def on_read_write_optional_string_updated(value: Optional[str]):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_optional_string_changed(on_read_write_optional_string_updated, call_immediately=True)
+
+            elif prop_name == "read_write_two_strings":
+
+                def on_read_write_two_strings_updated(value: ReadWriteTwoStringsProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]first[/bold]: { value.first }"  # PRIMITIVE
+                    values.append(line)
+
+                    line = f"[bold]second[/bold]: { value.second }"  # PRIMITIVE
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_two_strings_changed(on_read_write_two_strings_updated, call_immediately=True)
+
+            elif prop_name == "read_write_struct":
+
+                def on_read_write_struct_updated(value: AllTypes):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"[bold]value.the_bool[/bold]: { value.the_bool }")
+
+                    values.append(f"[bold]value.the_int[/bold]: { value.the_int }")
+
+                    values.append(f"[bold]value.the_number[/bold]: { value.the_number }")
+
+                    values.append(f"[bold]value.the_str[/bold]: { value.the_str }")
+
+                    values.append(f"[bold]value.the_enum[/bold]: { value.the_enum }")
+
+                    values.append(f"[bold]value.an_entry_object[/bold]: { value.an_entry_object }")
+
+                    values.append(f"[bold]value.date_and_time[/bold]: { value.date_and_time }")
+
+                    values.append(f"[bold]value.time_duration[/bold]: { value.time_duration }")
+
+                    values.append(f"[bold]value.data[/bold]: { value.data }")
+
+                    values.append(f"[bold]value.OptionalInteger[/bold]: { value.optional_integer }")
+
+                    values.append(f"[bold]value.OptionalString[/bold]: { value.optional_string }")
+
+                    values.append(f"[bold]value.OptionalEnum[/bold]: { value.optional_enum }")
+
+                    values.append(f"[bold]value.optionalEntryObject[/bold]: { value.optional_entry_object }")
+
+                    values.append(f"[bold]value.OptionalDateTime[/bold]: { value.optional_date_time }")
+
+                    values.append(f"[bold]value.OptionalDuration[/bold]: { value.optional_duration }")
+
+                    values.append(f"[bold]value.OptionalBinary[/bold]: { value.optional_binary }")
+
+                    values.append(f"[bold]value.array_of_integers[/bold]: { value.array_of_integers }")
+
+                    values.append(f"[bold]value.optional_array_of_integers[/bold]: { value.optional_array_of_integers }")
+
+                    values.append(f"[bold]value.array_of_strings[/bold]: { value.array_of_strings }")
+
+                    values.append(f"[bold]value.optional_array_of_strings[/bold]: { value.optional_array_of_strings }")
+
+                    values.append(f"[bold]value.array_of_enums[/bold]: { value.array_of_enums }")
+
+                    values.append(f"[bold]value.optional_array_of_enums[/bold]: { value.optional_array_of_enums }")
+
+                    values.append(f"[bold]value.array_of_datetimes[/bold]: { value.array_of_datetimes }")
+
+                    values.append(f"[bold]value.optional_array_of_datetimes[/bold]: { value.optional_array_of_datetimes }")
+
+                    values.append(f"[bold]value.array_of_durations[/bold]: { value.array_of_durations }")
+
+                    values.append(f"[bold]value.optional_array_of_durations[/bold]: { value.optional_array_of_durations }")
+
+                    values.append(f"[bold]value.array_of_binaries[/bold]: { value.array_of_binaries }")
+
+                    values.append(f"[bold]value.optional_array_of_binaries[/bold]: { value.optional_array_of_binaries }")
+
+                    values.append(f"[bold]value.array_of_entry_objects[/bold]: { value.array_of_entry_objects }")
+
+                    values.append(f"[bold]value.optional_array_of_entry_objects[/bold]: { value.optional_array_of_entry_objects }")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_struct_changed(on_read_write_struct_updated, call_immediately=True)
+
+            elif prop_name == "read_write_optional_struct":
+
+                def on_read_write_optional_struct_updated(value: AllTypes):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"[bold]value.the_bool[/bold]: { value.the_bool }")
+
+                    values.append(f"[bold]value.the_int[/bold]: { value.the_int }")
+
+                    values.append(f"[bold]value.the_number[/bold]: { value.the_number }")
+
+                    values.append(f"[bold]value.the_str[/bold]: { value.the_str }")
+
+                    values.append(f"[bold]value.the_enum[/bold]: { value.the_enum }")
+
+                    values.append(f"[bold]value.an_entry_object[/bold]: { value.an_entry_object }")
+
+                    values.append(f"[bold]value.date_and_time[/bold]: { value.date_and_time }")
+
+                    values.append(f"[bold]value.time_duration[/bold]: { value.time_duration }")
+
+                    values.append(f"[bold]value.data[/bold]: { value.data }")
+
+                    values.append(f"[bold]value.OptionalInteger[/bold]: { value.optional_integer }")
+
+                    values.append(f"[bold]value.OptionalString[/bold]: { value.optional_string }")
+
+                    values.append(f"[bold]value.OptionalEnum[/bold]: { value.optional_enum }")
+
+                    values.append(f"[bold]value.optionalEntryObject[/bold]: { value.optional_entry_object }")
+
+                    values.append(f"[bold]value.OptionalDateTime[/bold]: { value.optional_date_time }")
+
+                    values.append(f"[bold]value.OptionalDuration[/bold]: { value.optional_duration }")
+
+                    values.append(f"[bold]value.OptionalBinary[/bold]: { value.optional_binary }")
+
+                    values.append(f"[bold]value.array_of_integers[/bold]: { value.array_of_integers }")
+
+                    values.append(f"[bold]value.optional_array_of_integers[/bold]: { value.optional_array_of_integers }")
+
+                    values.append(f"[bold]value.array_of_strings[/bold]: { value.array_of_strings }")
+
+                    values.append(f"[bold]value.optional_array_of_strings[/bold]: { value.optional_array_of_strings }")
+
+                    values.append(f"[bold]value.array_of_enums[/bold]: { value.array_of_enums }")
+
+                    values.append(f"[bold]value.optional_array_of_enums[/bold]: { value.optional_array_of_enums }")
+
+                    values.append(f"[bold]value.array_of_datetimes[/bold]: { value.array_of_datetimes }")
+
+                    values.append(f"[bold]value.optional_array_of_datetimes[/bold]: { value.optional_array_of_datetimes }")
+
+                    values.append(f"[bold]value.array_of_durations[/bold]: { value.array_of_durations }")
+
+                    values.append(f"[bold]value.optional_array_of_durations[/bold]: { value.optional_array_of_durations }")
+
+                    values.append(f"[bold]value.array_of_binaries[/bold]: { value.array_of_binaries }")
+
+                    values.append(f"[bold]value.optional_array_of_binaries[/bold]: { value.optional_array_of_binaries }")
+
+                    values.append(f"[bold]value.array_of_entry_objects[/bold]: { value.array_of_entry_objects }")
+
+                    values.append(f"[bold]value.optional_array_of_entry_objects[/bold]: { value.optional_array_of_entry_objects }")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_optional_struct_changed(on_read_write_optional_struct_updated, call_immediately=True)
+
+            elif prop_name == "read_write_two_structs":
+
+                def on_read_write_two_structs_updated(value: ReadWriteTwoStructsProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"[bold]first.the_bool[/bold]: { value.first.the_bool }")
+
+                    values.append(f"[bold]first.the_int[/bold]: { value.first.the_int }")
+
+                    values.append(f"[bold]first.the_number[/bold]: { value.first.the_number }")
+
+                    values.append(f"[bold]first.the_str[/bold]: { value.first.the_str }")
+
+                    values.append(f"[bold]first.the_enum[/bold]: { value.first.the_enum }")
+
+                    values.append(f"[bold]first.an_entry_object[/bold]: { value.first.an_entry_object }")
+
+                    values.append(f"[bold]first.date_and_time[/bold]: { value.first.date_and_time }")
+
+                    values.append(f"[bold]first.time_duration[/bold]: { value.first.time_duration }")
+
+                    values.append(f"[bold]first.data[/bold]: { value.first.data }")
+
+                    values.append(f"[bold]first.OptionalInteger[/bold]: { value.first.optional_integer }")
+
+                    values.append(f"[bold]first.OptionalString[/bold]: { value.first.optional_string }")
+
+                    values.append(f"[bold]first.OptionalEnum[/bold]: { value.first.optional_enum }")
+
+                    values.append(f"[bold]first.optionalEntryObject[/bold]: { value.first.optional_entry_object }")
+
+                    values.append(f"[bold]first.OptionalDateTime[/bold]: { value.first.optional_date_time }")
+
+                    values.append(f"[bold]first.OptionalDuration[/bold]: { value.first.optional_duration }")
+
+                    values.append(f"[bold]first.OptionalBinary[/bold]: { value.first.optional_binary }")
+
+                    values.append(f"[bold]first.array_of_integers[/bold]: { value.first.array_of_integers }")
+
+                    values.append(f"[bold]first.optional_array_of_integers[/bold]: { value.first.optional_array_of_integers }")
+
+                    values.append(f"[bold]first.array_of_strings[/bold]: { value.first.array_of_strings }")
+
+                    values.append(f"[bold]first.optional_array_of_strings[/bold]: { value.first.optional_array_of_strings }")
+
+                    values.append(f"[bold]first.array_of_enums[/bold]: { value.first.array_of_enums }")
+
+                    values.append(f"[bold]first.optional_array_of_enums[/bold]: { value.first.optional_array_of_enums }")
+
+                    values.append(f"[bold]first.array_of_datetimes[/bold]: { value.first.array_of_datetimes }")
+
+                    values.append(f"[bold]first.optional_array_of_datetimes[/bold]: { value.first.optional_array_of_datetimes }")
+
+                    values.append(f"[bold]first.array_of_durations[/bold]: { value.first.array_of_durations }")
+
+                    values.append(f"[bold]first.optional_array_of_durations[/bold]: { value.first.optional_array_of_durations }")
+
+                    values.append(f"[bold]first.array_of_binaries[/bold]: { value.first.array_of_binaries }")
+
+                    values.append(f"[bold]first.optional_array_of_binaries[/bold]: { value.first.optional_array_of_binaries }")
+
+                    values.append(f"[bold]first.array_of_entry_objects[/bold]: { value.first.array_of_entry_objects }")
+
+                    values.append(f"[bold]first.optional_array_of_entry_objects[/bold]: { value.first.optional_array_of_entry_objects }")
+
+                    values.append(f"[bold]second.the_bool[/bold]: { value.second.the_bool }")
+
+                    values.append(f"[bold]second.the_int[/bold]: { value.second.the_int }")
+
+                    values.append(f"[bold]second.the_number[/bold]: { value.second.the_number }")
+
+                    values.append(f"[bold]second.the_str[/bold]: { value.second.the_str }")
+
+                    values.append(f"[bold]second.the_enum[/bold]: { value.second.the_enum }")
+
+                    values.append(f"[bold]second.an_entry_object[/bold]: { value.second.an_entry_object }")
+
+                    values.append(f"[bold]second.date_and_time[/bold]: { value.second.date_and_time }")
+
+                    values.append(f"[bold]second.time_duration[/bold]: { value.second.time_duration }")
+
+                    values.append(f"[bold]second.data[/bold]: { value.second.data }")
+
+                    values.append(f"[bold]second.OptionalInteger[/bold]: { value.second.optional_integer }")
+
+                    values.append(f"[bold]second.OptionalString[/bold]: { value.second.optional_string }")
+
+                    values.append(f"[bold]second.OptionalEnum[/bold]: { value.second.optional_enum }")
+
+                    values.append(f"[bold]second.optionalEntryObject[/bold]: { value.second.optional_entry_object }")
+
+                    values.append(f"[bold]second.OptionalDateTime[/bold]: { value.second.optional_date_time }")
+
+                    values.append(f"[bold]second.OptionalDuration[/bold]: { value.second.optional_duration }")
+
+                    values.append(f"[bold]second.OptionalBinary[/bold]: { value.second.optional_binary }")
+
+                    values.append(f"[bold]second.array_of_integers[/bold]: { value.second.array_of_integers }")
+
+                    values.append(f"[bold]second.optional_array_of_integers[/bold]: { value.second.optional_array_of_integers }")
+
+                    values.append(f"[bold]second.array_of_strings[/bold]: { value.second.array_of_strings }")
+
+                    values.append(f"[bold]second.optional_array_of_strings[/bold]: { value.second.optional_array_of_strings }")
+
+                    values.append(f"[bold]second.array_of_enums[/bold]: { value.second.array_of_enums }")
+
+                    values.append(f"[bold]second.optional_array_of_enums[/bold]: { value.second.optional_array_of_enums }")
+
+                    values.append(f"[bold]second.array_of_datetimes[/bold]: { value.second.array_of_datetimes }")
+
+                    values.append(f"[bold]second.optional_array_of_datetimes[/bold]: { value.second.optional_array_of_datetimes }")
+
+                    values.append(f"[bold]second.array_of_durations[/bold]: { value.second.array_of_durations }")
+
+                    values.append(f"[bold]second.optional_array_of_durations[/bold]: { value.second.optional_array_of_durations }")
+
+                    values.append(f"[bold]second.array_of_binaries[/bold]: { value.second.array_of_binaries }")
+
+                    values.append(f"[bold]second.optional_array_of_binaries[/bold]: { value.second.optional_array_of_binaries }")
+
+                    values.append(f"[bold]second.array_of_entry_objects[/bold]: { value.second.array_of_entry_objects }")
+
+                    values.append(f"[bold]second.optional_array_of_entry_objects[/bold]: { value.second.optional_array_of_entry_objects }")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_two_structs_changed(on_read_write_two_structs_updated, call_immediately=True)
+
+            elif prop_name == "read_only_enum":
+
+                def on_read_only_enum_updated(value: Numbers):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value.name if value else 'None'} ({value.value if value else 'None'})")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_only_enum_changed(on_read_only_enum_updated, call_immediately=True)
+
+            elif prop_name == "read_write_enum":
+
+                def on_read_write_enum_updated(value: Numbers):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value.name if value else 'None'} ({value.value if value else 'None'})")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_enum_changed(on_read_write_enum_updated, call_immediately=True)
+
+            elif prop_name == "read_write_optional_enum":
+
+                def on_read_write_optional_enum_updated(value: Optional[Numbers]):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value.name if value else 'None'} ({value.value if value else 'None'})")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_optional_enum_changed(on_read_write_optional_enum_updated, call_immediately=True)
+
+            elif prop_name == "read_write_two_enums":
+
+                def on_read_write_two_enums_updated(value: ReadWriteTwoEnumsProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]first[/bold]: { value.first.name if value.first else 'None' } ({ value.first.value if value.first else 'None' })"
+                    values.append(line)
+
+                    line = f"[bold]second[/bold]: { value.second.name if value.second else 'None' } ({ value.second.value if value.second else 'None' })"
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_two_enums_changed(on_read_write_two_enums_updated, call_immediately=True)
+
+            elif prop_name == "read_write_datetime":
+
+                def on_read_write_datetime_updated(value: datetime):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value.isoformat() if value else 'None'}")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_datetime_changed(on_read_write_datetime_updated, call_immediately=True)
+
+            elif prop_name == "read_write_optional_datetime":
+
+                def on_read_write_optional_datetime_updated(value: Optional[datetime]):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value.isoformat() if value else 'None'}")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_optional_datetime_changed(on_read_write_optional_datetime_updated, call_immediately=True)
+
+            elif prop_name == "read_write_two_datetimes":
+
+                def on_read_write_two_datetimes_updated(value: ReadWriteTwoDatetimesProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]first[/bold]: { value.first.isoformat() if value.first else 'None' }"
+                    values.append(line)
+
+                    line = f"[bold]second[/bold]: { value.second.isoformat() if value.second else 'None' }"
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_two_datetimes_changed(on_read_write_two_datetimes_updated, call_immediately=True)
+
+            elif prop_name == "read_write_duration":
+
+                def on_read_write_duration_updated(value: timedelta):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # DURATION
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_duration_changed(on_read_write_duration_updated, call_immediately=True)
+
+            elif prop_name == "read_write_optional_duration":
+
+                def on_read_write_optional_duration_updated(value: Optional[timedelta]):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # DURATION
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_optional_duration_changed(on_read_write_optional_duration_updated, call_immediately=True)
+
+            elif prop_name == "read_write_two_durations":
+
+                def on_read_write_two_durations_updated(value: ReadWriteTwoDurationsProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]first[/bold]: { value.first }"  # DURATION
+                    values.append(line)
+
+                    line = f"[bold]second[/bold]: { value.second }"  # DURATION
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_two_durations_changed(on_read_write_two_durations_updated, call_immediately=True)
+
+            elif prop_name == "read_write_binary":
+
+                def on_read_write_binary_updated(value: bytes):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # BINARY
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_binary_changed(on_read_write_binary_updated, call_immediately=True)
+
+            elif prop_name == "read_write_optional_binary":
+
+                def on_read_write_optional_binary_updated(value: bytes):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # BINARY
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_optional_binary_changed(on_read_write_optional_binary_updated, call_immediately=True)
+
+            elif prop_name == "read_write_two_binaries":
+
+                def on_read_write_two_binaries_updated(value: ReadWriteTwoBinariesProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]first[/bold]: { value.first }"  # BINARY
+                    values.append(line)
+
+                    line = f"[bold]second[/bold]: { value.second }"  # BINARY
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_two_binaries_changed(on_read_write_two_binaries_updated, call_immediately=True)
+
+            elif prop_name == "read_write_list_of_strings":
+
+                def on_read_write_list_of_strings_updated(value: List[str]):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # ARRAY
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_list_of_strings_changed(on_read_write_list_of_strings_updated, call_immediately=True)
+
+            elif prop_name == "read_write_lists":
+
+                def on_read_write_lists_updated(value: ReadWriteListsProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]the_list[/bold]: { value.the_list }"  # ARRAY
+                    values.append(line)
+
+                    line = f"[bold]optionalList[/bold]: { value.optional_list }"  # ARRAY
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.read_write_lists_changed(on_read_write_lists_updated, call_immediately=True)
 
         # Register all properties
         register_property("read_write_integer", "read_write_integer_changed", is_writable=True)
@@ -598,8 +1564,8 @@ class ClientScreen(Screen):
         # Check if the clicked widget is a writable property
         widget = event.widget
         if hasattr(widget, "property_name") and hasattr(widget, "current_value"):
-            property_name = widget.property_name  # type: ignore
-            current_value = widget.current_value  # type: ignore
+            property_name = widget.property_name
+            current_value = widget.current_value
 
             # Open the edit modal
             modal = PropertyEditModal(property_name, current_value, self.client)

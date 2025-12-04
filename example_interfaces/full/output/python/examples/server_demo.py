@@ -129,7 +129,7 @@ if __name__ == "__main__":
             server.emit_today_is(42, DayOfTheWeek.SATURDAY, datetime.now(UTC), timedelta(seconds=3536), b"example binary data")
 
             sleep(4)
-            server.emit_today_is(dayOfMonth=42, dayOfWeek=DayOfTheWeek.SATURDAY, timestamp=datetime.now(UTC), process_time=timedelta(seconds=3536), memory_segment=b"example binary data")
+            server.emit_today_is(day_of_month=42, day_of_week=DayOfTheWeek.SATURDAY, timestamp=datetime.now(UTC), process_time=timedelta(seconds=3536), memory_segment=b"example binary data")
 
             sleep(42)
         except KeyboardInterrupt:

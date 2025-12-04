@@ -127,7 +127,7 @@ class MqttBrokerConnection(IBrokerConnection):
         self._message_callbacks.append(callback)
 
     def _on_message(self, client, userdata, msg):
-        self._logger.debug("Got a message to %s", msg.topic)
+        self._logger.debug("Got a message to %s : %s", msg.topic, msg.payload.decode())
         properties = msg.properties.__dict__ if hasattr(msg, "properties") else {}
         if "UserProperty" in properties:
             properties["UserProperty"] = dict(properties["UserProperty"])

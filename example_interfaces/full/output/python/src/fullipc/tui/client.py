@@ -2,16 +2,14 @@
 
 import concurrent.futures as futures
 from datetime import datetime, timedelta
+import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult
 from textual.screen import Screen, ModalScreen
 from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label
 from textual.containers import Horizontal, VerticalScroll, Vertical
-
-from fullipc.interface_types import (
-    Lunch,
-    DayOfTheWeek,
-)
+from fullipc.interface_types import *
+from fullipc.client import FullClient
 
 
 class PropertyEditModal(ModalScreen[bool]):
@@ -23,7 +21,7 @@ class PropertyEditModal(ModalScreen[bool]):
     }
     
     #property_modal_container {
-        width: 60;
+        width: 60%;
         height: auto;
         background: $surface;
         border: thick $primary;
@@ -42,8 +40,18 @@ class PropertyEditModal(ModalScreen[bool]):
         margin-top: 1;
         margin-bottom: 1;
     }
+
+    .property_input_value_label {
+        margin-top: 1;
+        margin-bottom: 1;
+        color: $primary;
+    }
     
     #property_input {
+        margin-bottom: 1;
+    }
+
+    .property_input_value {
         margin-bottom: 1;
     }
     
@@ -59,7 +67,7 @@ class PropertyEditModal(ModalScreen[bool]):
     }
     """
 
-    def __init__(self, property_name: str, current_value: Any, client: Any):
+    def __init__(self, property_name: str, current_value: Any, client: FullClient):
         super().__init__()
         self.property_name = property_name
         self.current_value = current_value
@@ -70,7 +78,47 @@ class PropertyEditModal(ModalScreen[bool]):
         with Vertical(id="property_modal_container"):
             yield Static(f"Edit: {self.property_name}", id="property_modal_title")
             yield Label(f"Current value: {self.current_value}", classes="property_input_label")
-            yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+            if self.property_name == "favorite_number":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "favorite_foods":
+                yield Label(f"drink", classes="property_input_value_label")
+                yield Input(placeholder=f"drink value", value=str(self.current_value.drink), classes="property_input_value", id="property_input_drink")
+
+                yield Label(f"slices_of_pizza", classes="property_input_value_label")
+                yield Input(placeholder=f"slices_of_pizza value", value=str(self.current_value.slices_of_pizza), classes="property_input_value", id="property_input_slices_of_pizza")
+
+                yield Label(f"breakfast", classes="property_input_value_label")
+                yield Input(placeholder=f"breakfast value", value=str(self.current_value.breakfast), classes="property_input_value", id="property_input_breakfast")
+
+            if self.property_name == "lunch_menu":
+                yield Label(f"monday (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"monday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_monday")
+
+                yield Label(f"tuesday (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"tuesday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_tuesday")
+
+            if self.property_name == "family_name":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "last_breakfast_time":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "breakfast_length":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "last_birthdays":
+                yield Label(f"mom", classes="property_input_value_label")
+                yield Input(placeholder=f"mom value", value=str(self.current_value.mom), classes="property_input_value", id="property_input_mom")
+
+                yield Label(f"dad", classes="property_input_value_label")
+                yield Input(placeholder=f"dad value", value=str(self.current_value.dad), classes="property_input_value", id="property_input_dad")
+
+                yield Label(f"sister", classes="property_input_value_label")
+                yield Input(placeholder=f"sister value", value=str(self.current_value.sister), classes="property_input_value", id="property_input_sister")
+
+                yield Label(f"brothers_age", classes="property_input_value_label")
+                yield Input(placeholder=f"brothers_age value", value=str(self.current_value.brothers_age), classes="property_input_value", id="property_input_brothers_age")
 
             with Horizontal(id="property_button_container"):
                 yield Button("Update", variant="primary", id="update_button")
@@ -79,24 +127,79 @@ class PropertyEditModal(ModalScreen[bool]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
         if event.button.id == "update_button":
-            input_widget = self.query_one("#property_input", Input)
-            new_value_str = input_widget.value
-
             try:
-                # Parse the value based on current value type
-                if self.current_value is None:
-                    new_value = new_value_str if new_value_str else None
-                elif isinstance(self.current_value, bool):
-                    new_value = new_value_str.lower() in ("true", "1", "yes", "y")
-                elif isinstance(self.current_value, int):
-                    new_value = int(new_value_str) if new_value_str else None
-                elif isinstance(self.current_value, float):
-                    new_value = float(new_value_str) if new_value_str else None
-                else:
-                    new_value = new_value_str
+                if self.property_name == "favorite_number":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = int(input_widget.value)
 
-                # Set the property on the client
-                setattr(self.client, self.property_name, new_value)
+                    self.client.favorite_number = new_value
+                elif self.property_name == "favorite_foods":
+                    input_widget_drink = self.query_one("#property_input_drink", Input)
+                    new_value_drink = str(input_widget_drink.value)
+
+                    input_widget_slices_of_pizza = self.query_one("#property_input_slices_of_pizza", Input)
+                    new_value_slices_of_pizza = int(input_widget_slices_of_pizza.value)
+
+                    input_widget_breakfast = self.query_one("#property_input_breakfast", Input)
+                    new_value_breakfast = str(input_widget_breakfast.value) if input_widget_breakfast.value else None
+
+                    new_value = FavoriteFoodsProperty(
+                        drink=new_value_drink,
+                        slices_of_pizza=new_value_slices_of_pizza,
+                        breakfast=new_value_breakfast,
+                    )
+
+                    self.client.favorite_foods = new_value
+                elif self.property_name == "lunch_menu":
+                    input_widget_monday = self.query_one("#property_input_monday", Input)
+                    new_value_monday = Lunch.model_validate_json(input_widget_monday.value)
+
+                    input_widget_tuesday = self.query_one("#property_input_tuesday", Input)
+                    new_value_tuesday = Lunch.model_validate_json(input_widget_tuesday.value)
+
+                    new_value = LunchMenuProperty(
+                        monday=new_value_monday,
+                        tuesday=new_value_tuesday,
+                    )
+
+                    self.client.lunch_menu = new_value
+                elif self.property_name == "family_name":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = str(input_widget.value)
+
+                    self.client.family_name = new_value
+                elif self.property_name == "last_breakfast_time":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = datetime.fromisoformat(input_widget.value)
+
+                    self.client.last_breakfast_time = new_value
+                elif self.property_name == "breakfast_length":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = isodate.parse_duration(input_widget.value)
+
+                    self.client.breakfast_length = new_value
+                elif self.property_name == "last_birthdays":
+                    input_widget_mom = self.query_one("#property_input_mom", Input)
+                    new_value_mom = datetime.fromisoformat(input_widget_mom.value)
+
+                    input_widget_dad = self.query_one("#property_input_dad", Input)
+                    new_value_dad = datetime.fromisoformat(input_widget_dad.value)
+
+                    input_widget_sister = self.query_one("#property_input_sister", Input)
+                    new_value_sister = datetime.fromisoformat(input_widget_sister.value) if input_widget_sister.value else None
+
+                    input_widget_brothers_age = self.query_one("#property_input_brothers_age", Input)
+                    new_value_brothers_age = int(input_widget_brothers_age.value) if input_widget_brothers_age.value else None
+
+                    new_value = LastBirthdaysProperty(
+                        mom=new_value_mom,
+                        dad=new_value_dad,
+                        sister=new_value_sister,
+                        brothers_age=new_value_brothers_age,
+                    )
+
+                    self.client.last_birthdays = new_value
+
                 self.dismiss(True)
             except Exception as e:
                 self.app.notify(f"Error updating property: {e}", severity="error")
@@ -170,7 +273,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
         self.method_name = method_name
         self.params = params
         self.client = client
-        self.result_widget = None
+        self.result_widget: Optional[Static] = None
 
     def compose(self) -> ComposeResult:
         """Compose the modal screen."""
@@ -201,6 +304,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
 
     def _call_method(self) -> None:
         """Call the method with collected inputs."""
+        assert self.result_widget is not None, "result_widget must be initialized"
         try:
             # Collect inputs
             kwargs = {}
@@ -401,15 +505,15 @@ class ClientScreen(Screen):
 
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")
-            btn.method_name = method_name  # type: ignore  # Store for retrieval
-            btn.method_params = params  # type: ignore
+            btn.method_name = method_name  # Store for retrieval
+            btn.method_params = params
             pane.mount(btn)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle method button presses."""
         if hasattr(event.button, "method_name"):
-            method_name = event.button.method_name  # type: ignore
-            method_params = event.button.method_params  # type: ignore
+            method_name = event.button.method_name
+            method_params = event.button.method_params
 
             # Show modal for method call
             modal = MethodCallModal(method_name, method_params, self.client)
@@ -432,7 +536,7 @@ class ClientScreen(Screen):
 
                 # Log to the RichLog widget
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                log.write(f"[cyan]{timestamp}[/cyan] [bold yellow]{signal_name}[/bold yellow]: {data}")
+                log.write(f"▶️[grey]{timestamp}[/grey] [bold cyan]{signal_name}[/bold cyan]: {data}")
 
             return handler
 
@@ -452,29 +556,174 @@ class ClientScreen(Screen):
             # Add writable or readonly class
             if is_writable:
                 prop_widget.add_class("writable")
-                prop_widget.can_focus = True  # type: ignore
-                prop_widget.property_name = prop_name  # type: ignore  # Store for click handling
+                prop_widget.can_focus = True
+                prop_widget.property_name = prop_name  # Store for click handling
             else:
                 prop_widget.add_class("readonly")
 
             pane.mount(prop_widget)
 
-            # Define the update handler
-            def update_handler(value):
-                # Store the current value for editing
-                prop_widget.current_value = value  # type: ignore
+            if prop_name == "favorite_number":
 
-                # Format the value for display
-                value_str = str(value)
-                if len(value_str) > 200:
-                    value_str = value_str[:200] + "..."
+                def on_favorite_number_updated(value: int):
+                    prop_widget.current_value = value
 
-                # Update the widget
-                prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+                    values = []
 
-            # Register the handler with call_immediately=True
-            changed_method = getattr(self.client, changed_method_name)
-            changed_method(update_handler, call_immediately=True)
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.favorite_number_changed(on_favorite_number_updated, call_immediately=True)
+
+            elif prop_name == "favorite_foods":
+
+                def on_favorite_foods_updated(value: FavoriteFoodsProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]drink[/bold]: { value.drink }"  # PRIMITIVE
+                    values.append(line)
+
+                    line = f"[bold]slices_of_pizza[/bold]: { value.slices_of_pizza }"  # PRIMITIVE
+                    values.append(line)
+
+                    line = f"[bold]breakfast[/bold]: { value.breakfast }"  # PRIMITIVE
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.favorite_foods_changed(on_favorite_foods_updated, call_immediately=True)
+
+            elif prop_name == "lunch_menu":
+
+                def on_lunch_menu_updated(value: LunchMenuProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"[bold]monday.drink[/bold]: { value.monday.drink }")
+
+                    values.append(f"[bold]monday.sandwich[/bold]: { value.monday.sandwich }")
+
+                    values.append(f"[bold]monday.crackers[/bold]: { value.monday.crackers }")
+
+                    values.append(f"[bold]monday.day[/bold]: { value.monday.day }")
+
+                    values.append(f"[bold]monday.order_number[/bold]: { value.monday.order_number }")
+
+                    values.append(f"[bold]monday.time_of_lunch[/bold]: { value.monday.time_of_lunch }")
+
+                    values.append(f"[bold]monday.duration_of_lunch[/bold]: { value.monday.duration_of_lunch }")
+
+                    values.append(f"[bold]tuesday.drink[/bold]: { value.tuesday.drink }")
+
+                    values.append(f"[bold]tuesday.sandwich[/bold]: { value.tuesday.sandwich }")
+
+                    values.append(f"[bold]tuesday.crackers[/bold]: { value.tuesday.crackers }")
+
+                    values.append(f"[bold]tuesday.day[/bold]: { value.tuesday.day }")
+
+                    values.append(f"[bold]tuesday.order_number[/bold]: { value.tuesday.order_number }")
+
+                    values.append(f"[bold]tuesday.time_of_lunch[/bold]: { value.tuesday.time_of_lunch }")
+
+                    values.append(f"[bold]tuesday.duration_of_lunch[/bold]: { value.tuesday.duration_of_lunch }")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.lunch_menu_changed(on_lunch_menu_updated, call_immediately=True)
+
+            elif prop_name == "family_name":
+
+                def on_family_name_updated(value: str):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.family_name_changed(on_family_name_updated, call_immediately=True)
+
+            elif prop_name == "last_breakfast_time":
+
+                def on_last_breakfast_time_updated(value: datetime):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value.isoformat() if value else 'None'}")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.last_breakfast_time_changed(on_last_breakfast_time_updated, call_immediately=True)
+
+            elif prop_name == "breakfast_length":
+
+                def on_breakfast_length_updated(value: timedelta):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # DURATION
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.breakfast_length_changed(on_breakfast_length_updated, call_immediately=True)
+
+            elif prop_name == "last_birthdays":
+
+                def on_last_birthdays_updated(value: LastBirthdaysProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]mom[/bold]: { value.mom.isoformat() if value.mom else 'None' }"
+                    values.append(line)
+
+                    line = f"[bold]dad[/bold]: { value.dad.isoformat() if value.dad else 'None' }"
+                    values.append(line)
+
+                    line = f"[bold]sister[/bold]: { value.sister.isoformat() if value.sister else 'None' }"
+                    values.append(line)
+
+                    line = f"[bold]brothers_age[/bold]: { value.brothers_age }"  # PRIMITIVE
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.last_birthdays_changed(on_last_birthdays_updated, call_immediately=True)
 
         # Register all properties
         register_property("favorite_number", "favorite_number_changed", is_writable=True)
@@ -490,8 +739,8 @@ class ClientScreen(Screen):
         # Check if the clicked widget is a writable property
         widget = event.widget
         if hasattr(widget, "property_name") and hasattr(widget, "current_value"):
-            property_name = widget.property_name  # type: ignore
-            current_value = widget.current_value  # type: ignore
+            property_name = widget.property_name
+            current_value = widget.current_value
 
             # Open the edit modal
             modal = PropertyEditModal(property_name, current_value, self.client)

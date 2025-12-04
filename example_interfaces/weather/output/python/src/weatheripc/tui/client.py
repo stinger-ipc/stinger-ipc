@@ -2,17 +2,14 @@
 
 import concurrent.futures as futures
 from datetime import datetime, timedelta
+import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult
 from textual.screen import Screen, ModalScreen
 from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label
 from textual.containers import Horizontal, VerticalScroll, Vertical
-
-from weatheripc.interface_types import (
-    ForecastForHour,
-    ForecastForDay,
-    WeatherCondition,
-)
+from weatheripc.interface_types import *
+from weatheripc.client import WeatherClient
 
 
 class PropertyEditModal(ModalScreen[bool]):
@@ -24,7 +21,7 @@ class PropertyEditModal(ModalScreen[bool]):
     }
     
     #property_modal_container {
-        width: 60;
+        width: 60%;
         height: auto;
         background: $surface;
         border: thick $primary;
@@ -43,8 +40,18 @@ class PropertyEditModal(ModalScreen[bool]):
         margin-top: 1;
         margin-bottom: 1;
     }
+
+    .property_input_value_label {
+        margin-top: 1;
+        margin-bottom: 1;
+        color: $primary;
+    }
     
     #property_input {
+        margin-bottom: 1;
+    }
+
+    .property_input_value {
         margin-bottom: 1;
     }
     
@@ -60,7 +67,7 @@ class PropertyEditModal(ModalScreen[bool]):
     }
     """
 
-    def __init__(self, property_name: str, current_value: Any, client: Any):
+    def __init__(self, property_name: str, current_value: Any, client: WeatherClient):
         super().__init__()
         self.property_name = property_name
         self.current_value = current_value
@@ -71,7 +78,54 @@ class PropertyEditModal(ModalScreen[bool]):
         with Vertical(id="property_modal_container"):
             yield Static(f"Edit: {self.property_name}", id="property_modal_title")
             yield Label(f"Current value: {self.current_value}", classes="property_input_label")
-            yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+            if self.property_name == "location":
+                yield Label(f"latitude", classes="property_input_value_label")
+                yield Input(placeholder=f"latitude value", value=str(self.current_value.latitude), classes="property_input_value", id="property_input_latitude")
+
+                yield Label(f"longitude", classes="property_input_value_label")
+                yield Input(placeholder=f"longitude value", value=str(self.current_value.longitude), classes="property_input_value", id="property_input_longitude")
+
+            if self.property_name == "current_temperature":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "current_condition":
+                yield Label(f"condition", classes="property_input_value_label")
+                yield Input(placeholder=f"condition value", value=str(self.current_value.condition), classes="property_input_value", id="property_input_condition")
+
+                yield Label(f"description", classes="property_input_value_label")
+                yield Input(placeholder=f"description value", value=str(self.current_value.description), classes="property_input_value", id="property_input_description")
+
+            if self.property_name == "daily_forecast":
+                yield Label(f"monday (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"monday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_monday")
+
+                yield Label(f"tuesday (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"tuesday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_tuesday")
+
+                yield Label(f"wednesday (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"wednesday value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_wednesday")
+
+            if self.property_name == "hourly_forecast":
+                yield Label(f"hour_0 (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"hour_0 value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_hour_0")
+
+                yield Label(f"hour_1 (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"hour_1 value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_hour_1")
+
+                yield Label(f"hour_2 (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"hour_2 value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_hour_2")
+
+                yield Label(f"hour_3 (JSON)", classes="property_input_value_label")
+                yield Input(placeholder=f"hour_3 value", value=self.current_value.model_dump_json(), classes="property_input_value", id="property_input_hour_3")
+
+            if self.property_name == "current_condition_refresh_interval":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "hourly_forecast_refresh_interval":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+            if self.property_name == "daily_forecast_refresh_interval":
+                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             with Horizontal(id="property_button_container"):
                 yield Button("Update", variant="primary", id="update_button")
@@ -80,24 +134,36 @@ class PropertyEditModal(ModalScreen[bool]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
         if event.button.id == "update_button":
-            input_widget = self.query_one("#property_input", Input)
-            new_value_str = input_widget.value
-
             try:
-                # Parse the value based on current value type
-                if self.current_value is None:
-                    new_value = new_value_str if new_value_str else None
-                elif isinstance(self.current_value, bool):
-                    new_value = new_value_str.lower() in ("true", "1", "yes", "y")
-                elif isinstance(self.current_value, int):
-                    new_value = int(new_value_str) if new_value_str else None
-                elif isinstance(self.current_value, float):
-                    new_value = float(new_value_str) if new_value_str else None
-                else:
-                    new_value = new_value_str
+                if self.property_name == "location":
+                    input_widget_latitude = self.query_one("#property_input_latitude", Input)
+                    new_value_latitude = float(input_widget_latitude.value)
 
-                # Set the property on the client
-                setattr(self.client, self.property_name, new_value)
+                    input_widget_longitude = self.query_one("#property_input_longitude", Input)
+                    new_value_longitude = float(input_widget_longitude.value)
+
+                    new_value = LocationProperty(
+                        latitude=new_value_latitude,
+                        longitude=new_value_longitude,
+                    )
+
+                    self.client.location = new_value
+                elif self.property_name == "current_condition_refresh_interval":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = int(input_widget.value)
+
+                    self.client.current_condition_refresh_interval = new_value
+                elif self.property_name == "hourly_forecast_refresh_interval":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = int(input_widget.value)
+
+                    self.client.hourly_forecast_refresh_interval = new_value
+                elif self.property_name == "daily_forecast_refresh_interval":
+                    input_widget = self.query_one("#property_input", Input)
+                    new_value = int(input_widget.value)
+
+                    self.client.daily_forecast_refresh_interval = new_value
+
                 self.dismiss(True)
             except Exception as e:
                 self.app.notify(f"Error updating property: {e}", severity="error")
@@ -171,7 +237,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
         self.method_name = method_name
         self.params = params
         self.client = client
-        self.result_widget = None
+        self.result_widget: Optional[Static] = None
 
     def compose(self) -> ComposeResult:
         """Compose the modal screen."""
@@ -202,6 +268,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
 
     def _call_method(self) -> None:
         """Call the method with collected inputs."""
+        assert self.result_widget is not None, "result_widget must be initialized"
         try:
             # Collect inputs
             kwargs = {}
@@ -381,15 +448,15 @@ class ClientScreen(Screen):
 
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")
-            btn.method_name = method_name  # type: ignore  # Store for retrieval
-            btn.method_params = params  # type: ignore
+            btn.method_name = method_name  # Store for retrieval
+            btn.method_params = params
             pane.mount(btn)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle method button presses."""
         if hasattr(event.button, "method_name"):
-            method_name = event.button.method_name  # type: ignore
-            method_params = event.button.method_params  # type: ignore
+            method_name = event.button.method_name
+            method_params = event.button.method_params
 
             # Show modal for method call
             modal = MethodCallModal(method_name, method_params, self.client)
@@ -412,7 +479,7 @@ class ClientScreen(Screen):
 
                 # Log to the RichLog widget
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                log.write(f"[cyan]{timestamp}[/cyan] [bold yellow]{signal_name}[/bold yellow]: {data}")
+                log.write(f"▶️[grey]{timestamp}[/grey] [bold cyan]{signal_name}[/bold cyan]: {data}")
 
             return handler
 
@@ -432,29 +499,206 @@ class ClientScreen(Screen):
             # Add writable or readonly class
             if is_writable:
                 prop_widget.add_class("writable")
-                prop_widget.can_focus = True  # type: ignore
-                prop_widget.property_name = prop_name  # type: ignore  # Store for click handling
+                prop_widget.can_focus = True
+                prop_widget.property_name = prop_name  # Store for click handling
             else:
                 prop_widget.add_class("readonly")
 
             pane.mount(prop_widget)
 
-            # Define the update handler
-            def update_handler(value):
-                # Store the current value for editing
-                prop_widget.current_value = value  # type: ignore
+            if prop_name == "location":
 
-                # Format the value for display
-                value_str = str(value)
-                if len(value_str) > 200:
-                    value_str = value_str[:200] + "..."
+                def on_location_updated(value: LocationProperty):
+                    prop_widget.current_value = value
 
-                # Update the widget
-                prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+                    values = []
 
-            # Register the handler with call_immediately=True
-            changed_method = getattr(self.client, changed_method_name)
-            changed_method(update_handler, call_immediately=True)
+                    line = f"[bold]latitude[/bold]: { value.latitude }"  # PRIMITIVE
+                    values.append(line)
+
+                    line = f"[bold]longitude[/bold]: { value.longitude }"  # PRIMITIVE
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.location_changed(on_location_updated, call_immediately=True)
+
+            elif prop_name == "current_temperature":
+
+                def on_current_temperature_updated(value: float):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.current_temperature_changed(on_current_temperature_updated, call_immediately=True)
+
+            elif prop_name == "current_condition":
+
+                def on_current_condition_updated(value: CurrentConditionProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    line = f"[bold]condition[/bold]: { value.condition.name if value.condition else 'None' } ({ value.condition.value if value.condition else 'None' })"
+                    values.append(line)
+
+                    line = f"[bold]description[/bold]: { value.description }"  # PRIMITIVE
+                    values.append(line)
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.current_condition_changed(on_current_condition_updated, call_immediately=True)
+
+            elif prop_name == "daily_forecast":
+
+                def on_daily_forecast_updated(value: DailyForecastProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"[bold]monday.high_temperature[/bold]: { value.monday.high_temperature }")
+
+                    values.append(f"[bold]monday.low_temperature[/bold]: { value.monday.low_temperature }")
+
+                    values.append(f"[bold]monday.condition[/bold]: { value.monday.condition }")
+
+                    values.append(f"[bold]monday.start_time[/bold]: { value.monday.start_time }")
+
+                    values.append(f"[bold]monday.end_time[/bold]: { value.monday.end_time }")
+
+                    values.append(f"[bold]tuesday.high_temperature[/bold]: { value.tuesday.high_temperature }")
+
+                    values.append(f"[bold]tuesday.low_temperature[/bold]: { value.tuesday.low_temperature }")
+
+                    values.append(f"[bold]tuesday.condition[/bold]: { value.tuesday.condition }")
+
+                    values.append(f"[bold]tuesday.start_time[/bold]: { value.tuesday.start_time }")
+
+                    values.append(f"[bold]tuesday.end_time[/bold]: { value.tuesday.end_time }")
+
+                    values.append(f"[bold]wednesday.high_temperature[/bold]: { value.wednesday.high_temperature }")
+
+                    values.append(f"[bold]wednesday.low_temperature[/bold]: { value.wednesday.low_temperature }")
+
+                    values.append(f"[bold]wednesday.condition[/bold]: { value.wednesday.condition }")
+
+                    values.append(f"[bold]wednesday.start_time[/bold]: { value.wednesday.start_time }")
+
+                    values.append(f"[bold]wednesday.end_time[/bold]: { value.wednesday.end_time }")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.daily_forecast_changed(on_daily_forecast_updated, call_immediately=True)
+
+            elif prop_name == "hourly_forecast":
+
+                def on_hourly_forecast_updated(value: HourlyForecastProperty):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"[bold]hour_0.temperature[/bold]: { value.hour_0.temperature }")
+
+                    values.append(f"[bold]hour_0.starttime[/bold]: { value.hour_0.starttime }")
+
+                    values.append(f"[bold]hour_0.condition[/bold]: { value.hour_0.condition }")
+
+                    values.append(f"[bold]hour_1.temperature[/bold]: { value.hour_1.temperature }")
+
+                    values.append(f"[bold]hour_1.starttime[/bold]: { value.hour_1.starttime }")
+
+                    values.append(f"[bold]hour_1.condition[/bold]: { value.hour_1.condition }")
+
+                    values.append(f"[bold]hour_2.temperature[/bold]: { value.hour_2.temperature }")
+
+                    values.append(f"[bold]hour_2.starttime[/bold]: { value.hour_2.starttime }")
+
+                    values.append(f"[bold]hour_2.condition[/bold]: { value.hour_2.condition }")
+
+                    values.append(f"[bold]hour_3.temperature[/bold]: { value.hour_3.temperature }")
+
+                    values.append(f"[bold]hour_3.starttime[/bold]: { value.hour_3.starttime }")
+
+                    values.append(f"[bold]hour_3.condition[/bold]: { value.hour_3.condition }")
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.hourly_forecast_changed(on_hourly_forecast_updated, call_immediately=True)
+
+            elif prop_name == "current_condition_refresh_interval":
+
+                def on_current_condition_refresh_interval_updated(value: int):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.current_condition_refresh_interval_changed(on_current_condition_refresh_interval_updated, call_immediately=True)
+
+            elif prop_name == "hourly_forecast_refresh_interval":
+
+                def on_hourly_forecast_refresh_interval_updated(value: int):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.hourly_forecast_refresh_interval_changed(on_hourly_forecast_refresh_interval_updated, call_immediately=True)
+
+            elif prop_name == "daily_forecast_refresh_interval":
+
+                def on_daily_forecast_refresh_interval_updated(value: int):
+                    prop_widget.current_value = value
+
+                    values = []
+
+                    values.append(f"{value}")  # PRIMITIVE
+
+                    value_str = "\n".join(values)
+
+                    # Update the widget
+                    prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
+
+                # Register the handler with call_immediately=True
+                self.client.daily_forecast_refresh_interval_changed(on_daily_forecast_refresh_interval_updated, call_immediately=True)
 
         # Register all properties
         register_property("location", "location_changed", is_writable=True)
@@ -471,8 +715,8 @@ class ClientScreen(Screen):
         # Check if the clicked widget is a writable property
         widget = event.widget
         if hasattr(widget, "property_name") and hasattr(widget, "current_value"):
-            property_name = widget.property_name  # type: ignore
-            current_value = widget.current_value  # type: ignore
+            property_name = widget.property_name
+            current_value = widget.current_value
 
             # Open the edit modal
             modal = PropertyEditModal(property_name, current_value, self.client)
