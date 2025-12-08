@@ -178,6 +178,8 @@ $defs:
         minimum: 1
         description: >
           Payload ordering index required for some serialization formats.
+      example:
+        description: An example value used in demo code and documentation.
 
   primitiveArg:
     properties:
@@ -191,6 +193,9 @@ $defs:
           - datetime
           - duration
           - binary
+      example:
+        description: An example value used in demo code and documentation.
+        type: ["string", "number", "boolean", "integer", "null"]
 
   enumArg:
     properties:
@@ -204,6 +209,9 @@ $defs:
         pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
         description: >
           This must be semantically compatible with the version defined in the enums section.
+      example:
+        description: An example value used in demo code and documentation.
+        type: ["string", "null"]
     required:
       - enumName
 
@@ -219,6 +227,9 @@ $defs:
         pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
         description: >
           This must be semantically compatible with the version defined in the structures section.
+      example:
+        description: An example value used in demo code and documentation.
+        type: ["object", "null"]
     required:
       - structName
 
@@ -232,6 +243,9 @@ $defs:
           - $ref: "#/$defs/primitiveArg"
           - $ref: "#/$defs/enumArg"
           - $ref: "#/$defs/structArg"
+      example:
+        description: An example value used in demo code and documentation.
+        type: ["array", "null"]
     required:
       - itemType
 
