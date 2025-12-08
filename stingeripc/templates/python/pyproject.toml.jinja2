@@ -16,5 +16,8 @@ tui = ["textual"]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project.scripts]
+{{stinger.name|hyphen_case}}-tui = "{{stinger.name|snake_case}}ipc.tui.app:main"
+
 [tool.setuptools.package-data]
 packages = ["{{stinger.name|snake_case}}ipc"]
