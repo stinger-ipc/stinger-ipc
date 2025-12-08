@@ -125,163 +125,163 @@ class TestableClient:
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
 
-        self._pending_method_responses: dict[str, Callable[..., None]] = {}
+        self._pending_method_responses: Dict[str, Callable[..., None]] = {}
 
         self._property_read_write_integer = instance_info.initial_property_values.read_write_integer  # type: int
         self._property_read_write_integer_mutex = threading.Lock()
         self._property_read_write_integer_version = instance_info.initial_property_values.read_write_integer_version
         self._conn.subscribe("testable/{}/property/readWriteInteger/value".format(self._service_id), self._receive_read_write_integer_property_update_message)
-        self._changed_value_callbacks_for_read_write_integer: list[ReadWriteIntegerPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_integer: List[ReadWriteIntegerPropertyUpdatedCallbackType] = []
         self._property_read_only_integer = instance_info.initial_property_values.read_only_integer  # type: int
         self._property_read_only_integer_mutex = threading.Lock()
         self._property_read_only_integer_version = instance_info.initial_property_values.read_only_integer_version
         self._conn.subscribe("testable/{}/property/readOnlyInteger/value".format(self._service_id), self._receive_read_only_integer_property_update_message)
-        self._changed_value_callbacks_for_read_only_integer: list[ReadOnlyIntegerPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_only_integer: List[ReadOnlyIntegerPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_integer = instance_info.initial_property_values.read_write_optional_integer  # type: Optional[int]
         self._property_read_write_optional_integer_mutex = threading.Lock()
         self._property_read_write_optional_integer_version = instance_info.initial_property_values.read_write_optional_integer_version
         self._conn.subscribe("testable/{}/property/readWriteOptionalInteger/value".format(self._service_id), self._receive_read_write_optional_integer_property_update_message)
-        self._changed_value_callbacks_for_read_write_optional_integer: list[ReadWriteOptionalIntegerPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_optional_integer: List[ReadWriteOptionalIntegerPropertyUpdatedCallbackType] = []
         self._property_read_write_two_integers = instance_info.initial_property_values.read_write_two_integers  # type: ReadWriteTwoIntegersProperty
         self._property_read_write_two_integers_mutex = threading.Lock()
         self._property_read_write_two_integers_version = instance_info.initial_property_values.read_write_two_integers_version
         self._conn.subscribe("testable/{}/property/readWriteTwoIntegers/value".format(self._service_id), self._receive_read_write_two_integers_property_update_message)
-        self._changed_value_callbacks_for_read_write_two_integers: list[ReadWriteTwoIntegersPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_two_integers: List[ReadWriteTwoIntegersPropertyUpdatedCallbackType] = []
         self._property_read_only_string = instance_info.initial_property_values.read_only_string  # type: str
         self._property_read_only_string_mutex = threading.Lock()
         self._property_read_only_string_version = instance_info.initial_property_values.read_only_string_version
         self._conn.subscribe("testable/{}/property/readOnlyString/value".format(self._service_id), self._receive_read_only_string_property_update_message)
-        self._changed_value_callbacks_for_read_only_string: list[ReadOnlyStringPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_only_string: List[ReadOnlyStringPropertyUpdatedCallbackType] = []
         self._property_read_write_string = instance_info.initial_property_values.read_write_string  # type: str
         self._property_read_write_string_mutex = threading.Lock()
         self._property_read_write_string_version = instance_info.initial_property_values.read_write_string_version
         self._conn.subscribe("testable/{}/property/readWriteString/value".format(self._service_id), self._receive_read_write_string_property_update_message)
-        self._changed_value_callbacks_for_read_write_string: list[ReadWriteStringPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_string: List[ReadWriteStringPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_string = instance_info.initial_property_values.read_write_optional_string  # type: Optional[str]
         self._property_read_write_optional_string_mutex = threading.Lock()
         self._property_read_write_optional_string_version = instance_info.initial_property_values.read_write_optional_string_version
         self._conn.subscribe("testable/{}/property/readWriteOptionalString/value".format(self._service_id), self._receive_read_write_optional_string_property_update_message)
-        self._changed_value_callbacks_for_read_write_optional_string: list[ReadWriteOptionalStringPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_optional_string: List[ReadWriteOptionalStringPropertyUpdatedCallbackType] = []
         self._property_read_write_two_strings = instance_info.initial_property_values.read_write_two_strings  # type: ReadWriteTwoStringsProperty
         self._property_read_write_two_strings_mutex = threading.Lock()
         self._property_read_write_two_strings_version = instance_info.initial_property_values.read_write_two_strings_version
         self._conn.subscribe("testable/{}/property/readWriteTwoStrings/value".format(self._service_id), self._receive_read_write_two_strings_property_update_message)
-        self._changed_value_callbacks_for_read_write_two_strings: list[ReadWriteTwoStringsPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_two_strings: List[ReadWriteTwoStringsPropertyUpdatedCallbackType] = []
         self._property_read_write_struct = instance_info.initial_property_values.read_write_struct  # type: AllTypes
         self._property_read_write_struct_mutex = threading.Lock()
         self._property_read_write_struct_version = instance_info.initial_property_values.read_write_struct_version
         self._conn.subscribe("testable/{}/property/readWriteStruct/value".format(self._service_id), self._receive_read_write_struct_property_update_message)
-        self._changed_value_callbacks_for_read_write_struct: list[ReadWriteStructPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_struct: List[ReadWriteStructPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_struct = instance_info.initial_property_values.read_write_optional_struct  # type: AllTypes
         self._property_read_write_optional_struct_mutex = threading.Lock()
         self._property_read_write_optional_struct_version = instance_info.initial_property_values.read_write_optional_struct_version
         self._conn.subscribe("testable/{}/property/readWriteOptionalStruct/value".format(self._service_id), self._receive_read_write_optional_struct_property_update_message)
-        self._changed_value_callbacks_for_read_write_optional_struct: list[ReadWriteOptionalStructPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_optional_struct: List[ReadWriteOptionalStructPropertyUpdatedCallbackType] = []
         self._property_read_write_two_structs = instance_info.initial_property_values.read_write_two_structs  # type: ReadWriteTwoStructsProperty
         self._property_read_write_two_structs_mutex = threading.Lock()
         self._property_read_write_two_structs_version = instance_info.initial_property_values.read_write_two_structs_version
         self._conn.subscribe("testable/{}/property/readWriteTwoStructs/value".format(self._service_id), self._receive_read_write_two_structs_property_update_message)
-        self._changed_value_callbacks_for_read_write_two_structs: list[ReadWriteTwoStructsPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_two_structs: List[ReadWriteTwoStructsPropertyUpdatedCallbackType] = []
         self._property_read_only_enum = instance_info.initial_property_values.read_only_enum  # type: Numbers
         self._property_read_only_enum_mutex = threading.Lock()
         self._property_read_only_enum_version = instance_info.initial_property_values.read_only_enum_version
         self._conn.subscribe("testable/{}/property/readOnlyEnum/value".format(self._service_id), self._receive_read_only_enum_property_update_message)
-        self._changed_value_callbacks_for_read_only_enum: list[ReadOnlyEnumPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_only_enum: List[ReadOnlyEnumPropertyUpdatedCallbackType] = []
         self._property_read_write_enum = instance_info.initial_property_values.read_write_enum  # type: Numbers
         self._property_read_write_enum_mutex = threading.Lock()
         self._property_read_write_enum_version = instance_info.initial_property_values.read_write_enum_version
         self._conn.subscribe("testable/{}/property/readWriteEnum/value".format(self._service_id), self._receive_read_write_enum_property_update_message)
-        self._changed_value_callbacks_for_read_write_enum: list[ReadWriteEnumPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_enum: List[ReadWriteEnumPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_enum = instance_info.initial_property_values.read_write_optional_enum  # type: Optional[Numbers]
         self._property_read_write_optional_enum_mutex = threading.Lock()
         self._property_read_write_optional_enum_version = instance_info.initial_property_values.read_write_optional_enum_version
         self._conn.subscribe("testable/{}/property/readWriteOptionalEnum/value".format(self._service_id), self._receive_read_write_optional_enum_property_update_message)
-        self._changed_value_callbacks_for_read_write_optional_enum: list[ReadWriteOptionalEnumPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_optional_enum: List[ReadWriteOptionalEnumPropertyUpdatedCallbackType] = []
         self._property_read_write_two_enums = instance_info.initial_property_values.read_write_two_enums  # type: ReadWriteTwoEnumsProperty
         self._property_read_write_two_enums_mutex = threading.Lock()
         self._property_read_write_two_enums_version = instance_info.initial_property_values.read_write_two_enums_version
         self._conn.subscribe("testable/{}/property/readWriteTwoEnums/value".format(self._service_id), self._receive_read_write_two_enums_property_update_message)
-        self._changed_value_callbacks_for_read_write_two_enums: list[ReadWriteTwoEnumsPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_two_enums: List[ReadWriteTwoEnumsPropertyUpdatedCallbackType] = []
         self._property_read_write_datetime = instance_info.initial_property_values.read_write_datetime  # type: datetime
         self._property_read_write_datetime_mutex = threading.Lock()
         self._property_read_write_datetime_version = instance_info.initial_property_values.read_write_datetime_version
         self._conn.subscribe("testable/{}/property/readWriteDatetime/value".format(self._service_id), self._receive_read_write_datetime_property_update_message)
-        self._changed_value_callbacks_for_read_write_datetime: list[ReadWriteDatetimePropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_datetime: List[ReadWriteDatetimePropertyUpdatedCallbackType] = []
         self._property_read_write_optional_datetime = instance_info.initial_property_values.read_write_optional_datetime  # type: Optional[datetime]
         self._property_read_write_optional_datetime_mutex = threading.Lock()
         self._property_read_write_optional_datetime_version = instance_info.initial_property_values.read_write_optional_datetime_version
         self._conn.subscribe("testable/{}/property/readWriteOptionalDatetime/value".format(self._service_id), self._receive_read_write_optional_datetime_property_update_message)
-        self._changed_value_callbacks_for_read_write_optional_datetime: list[ReadWriteOptionalDatetimePropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_optional_datetime: List[ReadWriteOptionalDatetimePropertyUpdatedCallbackType] = []
         self._property_read_write_two_datetimes = instance_info.initial_property_values.read_write_two_datetimes  # type: ReadWriteTwoDatetimesProperty
         self._property_read_write_two_datetimes_mutex = threading.Lock()
         self._property_read_write_two_datetimes_version = instance_info.initial_property_values.read_write_two_datetimes_version
         self._conn.subscribe("testable/{}/property/readWriteTwoDatetimes/value".format(self._service_id), self._receive_read_write_two_datetimes_property_update_message)
-        self._changed_value_callbacks_for_read_write_two_datetimes: list[ReadWriteTwoDatetimesPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_two_datetimes: List[ReadWriteTwoDatetimesPropertyUpdatedCallbackType] = []
         self._property_read_write_duration = instance_info.initial_property_values.read_write_duration  # type: timedelta
         self._property_read_write_duration_mutex = threading.Lock()
         self._property_read_write_duration_version = instance_info.initial_property_values.read_write_duration_version
         self._conn.subscribe("testable/{}/property/readWriteDuration/value".format(self._service_id), self._receive_read_write_duration_property_update_message)
-        self._changed_value_callbacks_for_read_write_duration: list[ReadWriteDurationPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_duration: List[ReadWriteDurationPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_duration = instance_info.initial_property_values.read_write_optional_duration  # type: Optional[timedelta]
         self._property_read_write_optional_duration_mutex = threading.Lock()
         self._property_read_write_optional_duration_version = instance_info.initial_property_values.read_write_optional_duration_version
         self._conn.subscribe("testable/{}/property/readWriteOptionalDuration/value".format(self._service_id), self._receive_read_write_optional_duration_property_update_message)
-        self._changed_value_callbacks_for_read_write_optional_duration: list[ReadWriteOptionalDurationPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_optional_duration: List[ReadWriteOptionalDurationPropertyUpdatedCallbackType] = []
         self._property_read_write_two_durations = instance_info.initial_property_values.read_write_two_durations  # type: ReadWriteTwoDurationsProperty
         self._property_read_write_two_durations_mutex = threading.Lock()
         self._property_read_write_two_durations_version = instance_info.initial_property_values.read_write_two_durations_version
         self._conn.subscribe("testable/{}/property/readWriteTwoDurations/value".format(self._service_id), self._receive_read_write_two_durations_property_update_message)
-        self._changed_value_callbacks_for_read_write_two_durations: list[ReadWriteTwoDurationsPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_two_durations: List[ReadWriteTwoDurationsPropertyUpdatedCallbackType] = []
         self._property_read_write_binary = instance_info.initial_property_values.read_write_binary  # type: bytes
         self._property_read_write_binary_mutex = threading.Lock()
         self._property_read_write_binary_version = instance_info.initial_property_values.read_write_binary_version
         self._conn.subscribe("testable/{}/property/readWriteBinary/value".format(self._service_id), self._receive_read_write_binary_property_update_message)
-        self._changed_value_callbacks_for_read_write_binary: list[ReadWriteBinaryPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_binary: List[ReadWriteBinaryPropertyUpdatedCallbackType] = []
         self._property_read_write_optional_binary = instance_info.initial_property_values.read_write_optional_binary  # type: bytes
         self._property_read_write_optional_binary_mutex = threading.Lock()
         self._property_read_write_optional_binary_version = instance_info.initial_property_values.read_write_optional_binary_version
         self._conn.subscribe("testable/{}/property/readWriteOptionalBinary/value".format(self._service_id), self._receive_read_write_optional_binary_property_update_message)
-        self._changed_value_callbacks_for_read_write_optional_binary: list[ReadWriteOptionalBinaryPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_optional_binary: List[ReadWriteOptionalBinaryPropertyUpdatedCallbackType] = []
         self._property_read_write_two_binaries = instance_info.initial_property_values.read_write_two_binaries  # type: ReadWriteTwoBinariesProperty
         self._property_read_write_two_binaries_mutex = threading.Lock()
         self._property_read_write_two_binaries_version = instance_info.initial_property_values.read_write_two_binaries_version
         self._conn.subscribe("testable/{}/property/readWriteTwoBinaries/value".format(self._service_id), self._receive_read_write_two_binaries_property_update_message)
-        self._changed_value_callbacks_for_read_write_two_binaries: list[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_two_binaries: List[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
         self._property_read_write_list_of_strings = instance_info.initial_property_values.read_write_list_of_strings  # type: List[str]
         self._property_read_write_list_of_strings_mutex = threading.Lock()
         self._property_read_write_list_of_strings_version = instance_info.initial_property_values.read_write_list_of_strings_version
         self._conn.subscribe("testable/{}/property/readWriteListOfStrings/value".format(self._service_id), self._receive_read_write_list_of_strings_property_update_message)
-        self._changed_value_callbacks_for_read_write_list_of_strings: list[ReadWriteListOfStringsPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_read_write_list_of_strings: List[ReadWriteListOfStringsPropertyUpdatedCallbackType] = []
         self._property_read_write_lists = instance_info.initial_property_values.read_write_lists  # type: ReadWriteListsProperty
         self._property_read_write_lists_mutex = threading.Lock()
         self._property_read_write_lists_version = instance_info.initial_property_values.read_write_lists_version
         self._conn.subscribe("testable/{}/property/readWriteLists/value".format(self._service_id), self._receive_read_write_lists_property_update_message)
-        self._changed_value_callbacks_for_read_write_lists: list[ReadWriteListsPropertyUpdatedCallbackType] = []
-        self._signal_recv_callbacks_for_empty: list[EmptySignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_int: list[SingleIntSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_optional_int: list[SingleOptionalIntSignalCallbackType] = []
-        self._signal_recv_callbacks_for_three_integers: list[ThreeIntegersSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_string: list[SingleStringSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_optional_string: list[SingleOptionalStringSignalCallbackType] = []
-        self._signal_recv_callbacks_for_three_strings: list[ThreeStringsSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_enum: list[SingleEnumSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_optional_enum: list[SingleOptionalEnumSignalCallbackType] = []
-        self._signal_recv_callbacks_for_three_enums: list[ThreeEnumsSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_struct: list[SingleStructSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_optional_struct: list[SingleOptionalStructSignalCallbackType] = []
-        self._signal_recv_callbacks_for_three_structs: list[ThreeStructsSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_date_time: list[SingleDateTimeSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_optional_datetime: list[SingleOptionalDatetimeSignalCallbackType] = []
-        self._signal_recv_callbacks_for_three_date_times: list[ThreeDateTimesSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_duration: list[SingleDurationSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_optional_duration: list[SingleOptionalDurationSignalCallbackType] = []
-        self._signal_recv_callbacks_for_three_durations: list[ThreeDurationsSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_binary: list[SingleBinarySignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_optional_binary: list[SingleOptionalBinarySignalCallbackType] = []
-        self._signal_recv_callbacks_for_three_binaries: list[ThreeBinariesSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_array_of_integers: list[SingleArrayOfIntegersSignalCallbackType] = []
-        self._signal_recv_callbacks_for_single_optional_array_of_strings: list[SingleOptionalArrayOfStringsSignalCallbackType] = []
-        self._signal_recv_callbacks_for_array_of_every_type: list[ArrayOfEveryTypeSignalCallbackType] = []
+        self._changed_value_callbacks_for_read_write_lists: List[ReadWriteListsPropertyUpdatedCallbackType] = []
+        self._signal_recv_callbacks_for_empty: List[EmptySignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_int: List[SingleIntSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_optional_int: List[SingleOptionalIntSignalCallbackType] = []
+        self._signal_recv_callbacks_for_three_integers: List[ThreeIntegersSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_string: List[SingleStringSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_optional_string: List[SingleOptionalStringSignalCallbackType] = []
+        self._signal_recv_callbacks_for_three_strings: List[ThreeStringsSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_enum: List[SingleEnumSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_optional_enum: List[SingleOptionalEnumSignalCallbackType] = []
+        self._signal_recv_callbacks_for_three_enums: List[ThreeEnumsSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_struct: List[SingleStructSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_optional_struct: List[SingleOptionalStructSignalCallbackType] = []
+        self._signal_recv_callbacks_for_three_structs: List[ThreeStructsSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_date_time: List[SingleDateTimeSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_optional_datetime: List[SingleOptionalDatetimeSignalCallbackType] = []
+        self._signal_recv_callbacks_for_three_date_times: List[ThreeDateTimesSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_duration: List[SingleDurationSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_optional_duration: List[SingleOptionalDurationSignalCallbackType] = []
+        self._signal_recv_callbacks_for_three_durations: List[ThreeDurationsSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_binary: List[SingleBinarySignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_optional_binary: List[SingleOptionalBinarySignalCallbackType] = []
+        self._signal_recv_callbacks_for_three_binaries: List[ThreeBinariesSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_array_of_integers: List[SingleArrayOfIntegersSignalCallbackType] = []
+        self._signal_recv_callbacks_for_single_optional_array_of_strings: List[SingleOptionalArrayOfStringsSignalCallbackType] = []
+        self._signal_recv_callbacks_for_array_of_every_type: List[ArrayOfEveryTypeSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/testable/methodResponse", self._receive_any_method_response_message)
 
         self._property_response_topic = f"client/{self._conn.client_id}/testable/propertyUpdateResponse"
@@ -2804,32 +2804,32 @@ class TestableClientBuilder:
         self._signal_recv_callbacks_for_single_array_of_integers = []  # type: List[SingleArrayOfIntegersSignalCallbackType]
         self._signal_recv_callbacks_for_single_optional_array_of_strings = []  # type: List[SingleOptionalArrayOfStringsSignalCallbackType]
         self._signal_recv_callbacks_for_array_of_every_type = []  # type: List[ArrayOfEveryTypeSignalCallbackType]
-        self._property_updated_callbacks_for_read_write_integer: list[ReadWriteIntegerPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_only_integer: list[ReadOnlyIntegerPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_optional_integer: list[ReadWriteOptionalIntegerPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_two_integers: list[ReadWriteTwoIntegersPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_only_string: list[ReadOnlyStringPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_string: list[ReadWriteStringPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_optional_string: list[ReadWriteOptionalStringPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_two_strings: list[ReadWriteTwoStringsPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_struct: list[ReadWriteStructPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_optional_struct: list[ReadWriteOptionalStructPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_two_structs: list[ReadWriteTwoStructsPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_only_enum: list[ReadOnlyEnumPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_enum: list[ReadWriteEnumPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_optional_enum: list[ReadWriteOptionalEnumPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_two_enums: list[ReadWriteTwoEnumsPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_datetime: list[ReadWriteDatetimePropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_optional_datetime: list[ReadWriteOptionalDatetimePropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_two_datetimes: list[ReadWriteTwoDatetimesPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_duration: list[ReadWriteDurationPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_optional_duration: list[ReadWriteOptionalDurationPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_two_durations: list[ReadWriteTwoDurationsPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_binary: list[ReadWriteBinaryPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_optional_binary: list[ReadWriteOptionalBinaryPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_two_binaries: list[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_list_of_strings: list[ReadWriteListOfStringsPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_read_write_lists: list[ReadWriteListsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_integer: List[ReadWriteIntegerPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_only_integer: List[ReadOnlyIntegerPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_optional_integer: List[ReadWriteOptionalIntegerPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_two_integers: List[ReadWriteTwoIntegersPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_only_string: List[ReadOnlyStringPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_string: List[ReadWriteStringPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_optional_string: List[ReadWriteOptionalStringPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_two_strings: List[ReadWriteTwoStringsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_struct: List[ReadWriteStructPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_optional_struct: List[ReadWriteOptionalStructPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_two_structs: List[ReadWriteTwoStructsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_only_enum: List[ReadOnlyEnumPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_enum: List[ReadWriteEnumPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_optional_enum: List[ReadWriteOptionalEnumPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_two_enums: List[ReadWriteTwoEnumsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_datetime: List[ReadWriteDatetimePropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_optional_datetime: List[ReadWriteOptionalDatetimePropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_two_datetimes: List[ReadWriteTwoDatetimesPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_duration: List[ReadWriteDurationPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_optional_duration: List[ReadWriteOptionalDurationPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_two_durations: List[ReadWriteTwoDurationsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_binary: List[ReadWriteBinaryPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_optional_binary: List[ReadWriteOptionalBinaryPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_two_binaries: List[ReadWriteTwoBinariesPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_list_of_strings: List[ReadWriteListOfStringsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_read_write_lists: List[ReadWriteListsPropertyUpdatedCallbackType] = []
 
     def receive_empty(self, handler):
         """Used as a decorator for methods which handle particular signals."""
@@ -3759,7 +3759,7 @@ class TestableClientDiscoverer:
         fut = futures.Future()  # type: futures.Future[TestableClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                instance_info = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services.values()))
                 if self._builder is None:
                     fut.set_result(TestableClient(self._conn, instance_info))
                 else:

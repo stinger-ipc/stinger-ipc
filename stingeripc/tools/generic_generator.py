@@ -12,7 +12,7 @@ import yaml
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface
 from stingeripc.filtering import filter_by_consumer
-import tomllib
+from stingeripc.config import load_config, StingerConfig
 import logging
 import yaml
 import yamlloader
@@ -41,8 +41,9 @@ def main(
 
     config_obj = None
     if config:
-        with config.open("rb") as f:
-            config_obj = tomllib.load(f)
+        config_obj = load_config(config)
+    else:
+        config_obj = StingerConfig()
 
     print(f"🟢   [bold cyan]LOAD:[/bold cyan] {inname}")
     if consumer:
@@ -105,7 +106,7 @@ def main(
                 code_templator.add_template_package(pkg_name)
                 web_templator.add_template_package(pkg_name)
                 pkg_path = importlib.resources.files(pkg_name)
-                template_dirs.append(Path(pkg_path))
+                template_dirs.append(Path(str(pkg_path)))
             except ModuleNotFoundError as e:
                 raise RuntimeError(f"Template package not found: {pkg_name}") from e
     

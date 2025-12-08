@@ -58,17 +58,17 @@ class {{stinger.python.client_class_name}}:
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
         {%if stinger.methods | length > 0 %}
-        self._pending_method_responses: dict[str, Callable[..., None]] = {}
+        self._pending_method_responses: Dict[str, Callable[..., None]] = {}
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
         self._property_{{prop_name|snake_case}} = instance_info.initial_property_values.{{prop_name|snake_case}}  # type: {{prop_spec.python_annotation}}
         self._property_{{prop_name|snake_case}}_mutex = threading.Lock()
         self._property_{{prop_name|snake_case}}_version = instance_info.initial_property_values.{{prop_name|snake_case}}_version
         self._conn.subscribe("{{prop_spec.value_topic}}".format(self._service_id), self._receive_{{prop_name | snake_case}}_property_update_message)
-        self._changed_value_callbacks_for_{{prop_name}}: list[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_{{prop_name}}: List[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
         {%-for sig_name in stinger.signals.keys()-%}
-        self._signal_recv_callbacks_for_{{sig_name | snake_case }}: list[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
+        self._signal_recv_callbacks_for_{{sig_name | snake_case }}: List[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
         {%endfor-%}
         {%-if stinger.methods|length > 0-%}
         self._conn.subscribe(f"{{stinger.all_methods_response_topic('{self._conn.client_id}')}}", self._receive_any_method_response_message)
@@ -274,7 +274,7 @@ class {{stinger.python.client_class_name}}Builder:
         self._signal_recv_callbacks_for_{{sig_name | snake_case}} = [] # type: List[{{sig_name | UpperCamelCase}}SignalCallbackType]
         {%endfor-%}
         {%for prop_name in stinger.properties.keys()-%}
-        self._property_updated_callbacks_for_{{prop_name | snake_case}}: list[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_{{prop_name | snake_case}}: List[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
 
     {%for sig_name, sig in stinger.signals.items()%}
@@ -373,14 +373,14 @@ class {{stinger.python.client_class_name}}Discoverer:
         with self._mutex:
             return self._discovered_services.get(instance_id, None)
 
-    def get_singleton_client(self) -> futures.Future[{{stinger.python.client_class_name}}]:
+    def get_singleton_client(self) -> futures.Future{%if not config.python.python37%}[{{stinger.python.client_class_name}}]{%endif%}:
         """ Returns a {{stinger.python.client_class_name}} for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
-        fut = futures.Future() # type: futures.Future[{{stinger.python.client_class_name}}]
+        fut = futures.Future() # type: futures.Future{%if not config.python.python37%}[{{stinger.python.client_class_name}}]{%endif%}
         with self._mutex:
             if len(self._discovered_services) > 0:
-                instance_info = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services.values()))
                 if self._builder is None:
                     fut.set_result({{stinger.python.client_class_name}}(self._conn, instance_info))
                 else:

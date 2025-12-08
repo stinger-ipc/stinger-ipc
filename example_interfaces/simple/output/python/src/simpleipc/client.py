@@ -52,14 +52,14 @@ class SimpleClient:
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
 
-        self._pending_method_responses: dict[str, Callable[..., None]] = {}
+        self._pending_method_responses: Dict[str, Callable[..., None]] = {}
 
         self._property_school = instance_info.initial_property_values.school  # type: str
         self._property_school_mutex = threading.Lock()
         self._property_school_version = instance_info.initial_property_values.school_version
         self._conn.subscribe("simple/{}/property/school/value".format(self._service_id), self._receive_school_property_update_message)
-        self._changed_value_callbacks_for_school: list[SchoolPropertyUpdatedCallbackType] = []
-        self._signal_recv_callbacks_for_person_entered: list[PersonEnteredSignalCallbackType] = []
+        self._changed_value_callbacks_for_school: List[SchoolPropertyUpdatedCallbackType] = []
+        self._signal_recv_callbacks_for_person_entered: List[PersonEnteredSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/Simple/methodResponse", self._receive_any_method_response_message)
 
         self._property_response_topic = f"client/{self._conn.client_id}/Simple/propertyUpdateResponse"
@@ -220,7 +220,7 @@ class SimpleClientBuilder:
         """Creates a new SimpleClientBuilder."""
         self._logger = logging.getLogger("SimpleClientBuilder")
         self._signal_recv_callbacks_for_person_entered = []  # type: List[PersonEnteredSignalCallbackType]
-        self._property_updated_callbacks_for_school: list[SchoolPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_school: List[SchoolPropertyUpdatedCallbackType] = []
 
     def receive_person_entered(self, handler):
         """Used as a decorator for methods which handle particular signals."""
@@ -317,7 +317,7 @@ class SimpleClientDiscoverer:
         fut = futures.Future()  # type: futures.Future[SimpleClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                instance_info = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services.values()))
                 if self._builder is None:
                     fut.set_result(SimpleClient(self._conn, instance_info))
                 else:

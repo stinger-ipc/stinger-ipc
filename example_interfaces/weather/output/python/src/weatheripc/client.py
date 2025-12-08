@@ -61,49 +61,49 @@ class WeatherClient:
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
 
-        self._pending_method_responses: dict[str, Callable[..., None]] = {}
+        self._pending_method_responses: Dict[str, Callable[..., None]] = {}
 
         self._property_location = instance_info.initial_property_values.location  # type: LocationProperty
         self._property_location_mutex = threading.Lock()
         self._property_location_version = instance_info.initial_property_values.location_version
         self._conn.subscribe("weather/{}/property/location/value".format(self._service_id), self._receive_location_property_update_message)
-        self._changed_value_callbacks_for_location: list[LocationPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_location: List[LocationPropertyUpdatedCallbackType] = []
         self._property_current_temperature = instance_info.initial_property_values.current_temperature  # type: float
         self._property_current_temperature_mutex = threading.Lock()
         self._property_current_temperature_version = instance_info.initial_property_values.current_temperature_version
         self._conn.subscribe("weather/{}/property/currentTemperature/value".format(self._service_id), self._receive_current_temperature_property_update_message)
-        self._changed_value_callbacks_for_current_temperature: list[CurrentTemperaturePropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_current_temperature: List[CurrentTemperaturePropertyUpdatedCallbackType] = []
         self._property_current_condition = instance_info.initial_property_values.current_condition  # type: CurrentConditionProperty
         self._property_current_condition_mutex = threading.Lock()
         self._property_current_condition_version = instance_info.initial_property_values.current_condition_version
         self._conn.subscribe("weather/{}/property/currentCondition/value".format(self._service_id), self._receive_current_condition_property_update_message)
-        self._changed_value_callbacks_for_current_condition: list[CurrentConditionPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_current_condition: List[CurrentConditionPropertyUpdatedCallbackType] = []
         self._property_daily_forecast = instance_info.initial_property_values.daily_forecast  # type: DailyForecastProperty
         self._property_daily_forecast_mutex = threading.Lock()
         self._property_daily_forecast_version = instance_info.initial_property_values.daily_forecast_version
         self._conn.subscribe("weather/{}/property/dailyForecast/value".format(self._service_id), self._receive_daily_forecast_property_update_message)
-        self._changed_value_callbacks_for_daily_forecast: list[DailyForecastPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_daily_forecast: List[DailyForecastPropertyUpdatedCallbackType] = []
         self._property_hourly_forecast = instance_info.initial_property_values.hourly_forecast  # type: HourlyForecastProperty
         self._property_hourly_forecast_mutex = threading.Lock()
         self._property_hourly_forecast_version = instance_info.initial_property_values.hourly_forecast_version
         self._conn.subscribe("weather/{}/property/hourlyForecast/value".format(self._service_id), self._receive_hourly_forecast_property_update_message)
-        self._changed_value_callbacks_for_hourly_forecast: list[HourlyForecastPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_hourly_forecast: List[HourlyForecastPropertyUpdatedCallbackType] = []
         self._property_current_condition_refresh_interval = instance_info.initial_property_values.current_condition_refresh_interval  # type: int
         self._property_current_condition_refresh_interval_mutex = threading.Lock()
         self._property_current_condition_refresh_interval_version = instance_info.initial_property_values.current_condition_refresh_interval_version
         self._conn.subscribe("weather/{}/property/currentConditionRefreshInterval/value".format(self._service_id), self._receive_current_condition_refresh_interval_property_update_message)
-        self._changed_value_callbacks_for_current_condition_refresh_interval: list[CurrentConditionRefreshIntervalPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_current_condition_refresh_interval: List[CurrentConditionRefreshIntervalPropertyUpdatedCallbackType] = []
         self._property_hourly_forecast_refresh_interval = instance_info.initial_property_values.hourly_forecast_refresh_interval  # type: int
         self._property_hourly_forecast_refresh_interval_mutex = threading.Lock()
         self._property_hourly_forecast_refresh_interval_version = instance_info.initial_property_values.hourly_forecast_refresh_interval_version
         self._conn.subscribe("weather/{}/property/hourlyForecastRefreshInterval/value".format(self._service_id), self._receive_hourly_forecast_refresh_interval_property_update_message)
-        self._changed_value_callbacks_for_hourly_forecast_refresh_interval: list[HourlyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_hourly_forecast_refresh_interval: List[HourlyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
         self._property_daily_forecast_refresh_interval = instance_info.initial_property_values.daily_forecast_refresh_interval  # type: int
         self._property_daily_forecast_refresh_interval_mutex = threading.Lock()
         self._property_daily_forecast_refresh_interval_version = instance_info.initial_property_values.daily_forecast_refresh_interval_version
         self._conn.subscribe("weather/{}/property/dailyForecastRefreshInterval/value".format(self._service_id), self._receive_daily_forecast_refresh_interval_property_update_message)
-        self._changed_value_callbacks_for_daily_forecast_refresh_interval: list[DailyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
-        self._signal_recv_callbacks_for_current_time: list[CurrentTimeSignalCallbackType] = []
+        self._changed_value_callbacks_for_daily_forecast_refresh_interval: List[DailyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
+        self._signal_recv_callbacks_for_current_time: List[CurrentTimeSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/weather/methodResponse", self._receive_any_method_response_message)
 
         self._property_response_topic = f"client/{self._conn.client_id}/weather/propertyUpdateResponse"
@@ -618,14 +618,14 @@ class WeatherClientBuilder:
         """Creates a new WeatherClientBuilder."""
         self._logger = logging.getLogger("WeatherClientBuilder")
         self._signal_recv_callbacks_for_current_time = []  # type: List[CurrentTimeSignalCallbackType]
-        self._property_updated_callbacks_for_location: list[LocationPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_current_temperature: list[CurrentTemperaturePropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_current_condition: list[CurrentConditionPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_daily_forecast: list[DailyForecastPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_hourly_forecast: list[HourlyForecastPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_current_condition_refresh_interval: list[CurrentConditionRefreshIntervalPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_hourly_forecast_refresh_interval: list[HourlyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_daily_forecast_refresh_interval: list[DailyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_location: List[LocationPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_current_temperature: List[CurrentTemperaturePropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_current_condition: List[CurrentConditionPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_daily_forecast: List[DailyForecastPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_hourly_forecast: List[HourlyForecastPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_current_condition_refresh_interval: List[CurrentConditionRefreshIntervalPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_hourly_forecast_refresh_interval: List[HourlyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_daily_forecast_refresh_interval: List[DailyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
 
     def receive_current_time(self, handler):
         """Used as a decorator for methods which handle particular signals."""
@@ -841,7 +841,7 @@ class WeatherClientDiscoverer:
         fut = futures.Future()  # type: futures.Future[WeatherClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                instance_info = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services.values()))
                 if self._builder is None:
                     fut.set_result(WeatherClient(self._conn, instance_info))
                 else:

@@ -44,11 +44,11 @@ class SignalOnlyClient:
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
 
-        self._signal_recv_callbacks_for_another_signal: list[AnotherSignalSignalCallbackType] = []
-        self._signal_recv_callbacks_for_bark: list[BarkSignalCallbackType] = []
-        self._signal_recv_callbacks_for_maybe_number: list[MaybeNumberSignalCallbackType] = []
-        self._signal_recv_callbacks_for_maybe_name: list[MaybeNameSignalCallbackType] = []
-        self._signal_recv_callbacks_for_now: list[NowSignalCallbackType] = []
+        self._signal_recv_callbacks_for_another_signal: List[AnotherSignalSignalCallbackType] = []
+        self._signal_recv_callbacks_for_bark: List[BarkSignalCallbackType] = []
+        self._signal_recv_callbacks_for_maybe_number: List[MaybeNumberSignalCallbackType] = []
+        self._signal_recv_callbacks_for_maybe_name: List[MaybeNameSignalCallbackType] = []
+        self._signal_recv_callbacks_for_now: List[NowSignalCallbackType] = []
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """Call each callback in the callback dictionary with the provided args."""
@@ -325,7 +325,7 @@ class SignalOnlyClientDiscoverer:
         fut = futures.Future()  # type: futures.Future[SignalOnlyClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                instance_info = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services.values()))
                 if self._builder is None:
                     fut.set_result(SignalOnlyClient(self._conn, instance_info))
                 else:

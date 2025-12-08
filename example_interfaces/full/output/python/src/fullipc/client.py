@@ -61,40 +61,40 @@ class FullClient:
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
 
-        self._pending_method_responses: dict[str, Callable[..., None]] = {}
+        self._pending_method_responses: Dict[str, Callable[..., None]] = {}
 
         self._property_favorite_number = instance_info.initial_property_values.favorite_number  # type: int
         self._property_favorite_number_mutex = threading.Lock()
         self._property_favorite_number_version = instance_info.initial_property_values.favorite_number_version
         self._conn.subscribe("full/{}/property/favoriteNumber/value".format(self._service_id), self._receive_favorite_number_property_update_message)
-        self._changed_value_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_favorite_number: List[FavoriteNumberPropertyUpdatedCallbackType] = []
         self._property_favorite_foods = instance_info.initial_property_values.favorite_foods  # type: FavoriteFoodsProperty
         self._property_favorite_foods_mutex = threading.Lock()
         self._property_favorite_foods_version = instance_info.initial_property_values.favorite_foods_version
         self._conn.subscribe("full/{}/property/favoriteFoods/value".format(self._service_id), self._receive_favorite_foods_property_update_message)
-        self._changed_value_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_favorite_foods: List[FavoriteFoodsPropertyUpdatedCallbackType] = []
         self._property_lunch_menu = instance_info.initial_property_values.lunch_menu  # type: LunchMenuProperty
         self._property_lunch_menu_mutex = threading.Lock()
         self._property_lunch_menu_version = instance_info.initial_property_values.lunch_menu_version
         self._conn.subscribe("full/{}/property/lunchMenu/value".format(self._service_id), self._receive_lunch_menu_property_update_message)
-        self._changed_value_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_lunch_menu: List[LunchMenuPropertyUpdatedCallbackType] = []
         self._property_family_name = instance_info.initial_property_values.family_name  # type: str
         self._property_family_name_mutex = threading.Lock()
         self._property_family_name_version = instance_info.initial_property_values.family_name_version
         self._conn.subscribe("full/{}/property/familyName/value".format(self._service_id), self._receive_family_name_property_update_message)
-        self._changed_value_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_family_name: List[FamilyNamePropertyUpdatedCallbackType] = []
         self._property_last_breakfast_time = instance_info.initial_property_values.last_breakfast_time  # type: datetime
         self._property_last_breakfast_time_mutex = threading.Lock()
         self._property_last_breakfast_time_version = instance_info.initial_property_values.last_breakfast_time_version
         self._conn.subscribe("full/{}/property/lastBreakfastTime/value".format(self._service_id), self._receive_last_breakfast_time_property_update_message)
-        self._changed_value_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_last_breakfast_time: List[LastBreakfastTimePropertyUpdatedCallbackType] = []
         self._property_last_birthdays = instance_info.initial_property_values.last_birthdays  # type: LastBirthdaysProperty
         self._property_last_birthdays_mutex = threading.Lock()
         self._property_last_birthdays_version = instance_info.initial_property_values.last_birthdays_version
         self._conn.subscribe("full/{}/property/lastBirthdays/value".format(self._service_id), self._receive_last_birthdays_property_update_message)
-        self._changed_value_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
-        self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
-        self._signal_recv_callbacks_for_random_word: list[RandomWordSignalCallbackType] = []
+        self._changed_value_callbacks_for_last_birthdays: List[LastBirthdaysPropertyUpdatedCallbackType] = []
+        self._signal_recv_callbacks_for_today_is: List[TodayIsSignalCallbackType] = []
+        self._signal_recv_callbacks_for_random_word: List[RandomWordSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/Full/methodResponse", self._receive_any_method_response_message)
 
         self._property_response_topic = f"client/{self._conn.client_id}/Full/propertyUpdateResponse"
@@ -594,12 +594,12 @@ class FullClientBuilder:
         self._logger = logging.getLogger("FullClientBuilder")
         self._signal_recv_callbacks_for_today_is = []  # type: List[TodayIsSignalCallbackType]
         self._signal_recv_callbacks_for_random_word = []  # type: List[RandomWordSignalCallbackType]
-        self._property_updated_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_favorite_number: List[FavoriteNumberPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_favorite_foods: List[FavoriteFoodsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_lunch_menu: List[LunchMenuPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_family_name: List[FamilyNamePropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_last_breakfast_time: List[LastBreakfastTimePropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_last_birthdays: List[LastBirthdaysPropertyUpdatedCallbackType] = []
 
     def receive_today_is(self, handler):
         """Used as a decorator for methods which handle particular signals."""
@@ -798,7 +798,7 @@ class FullClientDiscoverer:
         fut = futures.Future()  # type: futures.Future[FullClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                instance_info = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services.values()))
                 if self._builder is None:
                     fut.set_result(FullClient(self._conn, instance_info))
                 else:
