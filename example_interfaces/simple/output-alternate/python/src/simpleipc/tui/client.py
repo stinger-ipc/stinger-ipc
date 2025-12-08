@@ -375,8 +375,8 @@ class ClientScreen(Screen):
         methods = {
             "trade_numbers": {
                 "your_number": int,
-            },  # type: Dict[str, Any]
-        }
+            },
+        }  # type: Dict[str, Dict[str, Any]]
 
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")

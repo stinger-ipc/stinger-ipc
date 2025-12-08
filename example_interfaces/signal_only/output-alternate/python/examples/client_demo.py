@@ -63,7 +63,5 @@ if __name__ == "__main__":
 
     sleep(2)
 
-    threading.Thread(target=request_loop, args=(client,), daemon=True).start()
-
     print("Ctrl-C will stop the program.")
     signal.pause()

@@ -445,10 +445,10 @@ class ClientScreen(Screen):
 
         # Define all methods with their parameters
         methods = {
-            "refresh_daily_forecast": {},  # type: Dict[str, Any]
-            "refresh_hourly_forecast": {},  # type: Dict[str, Any]
-            "refresh_current_conditions": {},  # type: Dict[str, Any]
-        }
+            "refresh_daily_forecast": {},
+            "refresh_hourly_forecast": {},
+            "refresh_current_conditions": {},
+        }  # type: Dict[str, Dict[str, Any]]
 
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")

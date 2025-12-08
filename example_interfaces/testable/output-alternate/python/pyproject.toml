@@ -24,9 +24,6 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 
-[project.scripts]
-testable-tui = "testableipc.tui.app:main"
-
 
 [tool.setuptools.package-data]
 packages = ["testableipc"]

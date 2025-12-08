@@ -674,95 +674,95 @@ class ClientScreen(Screen):
 
         # Define all methods with their parameters
         methods = {
-            "call_with_nothing": {},  # type: Dict[str, Any]
+            "call_with_nothing": {},
             "call_one_integer": {
                 "input1": int,
-            },  # type: Dict[str, Any]
+            },
             "call_optional_integer": {
                 "input1": Optional[int],
-            },  # type: Dict[str, Any]
+            },
             "call_three_integers": {
                 "input1": int,
                 "input2": int,
                 "input3": Optional[int],
-            },  # type: Dict[str, Any]
+            },
             "call_one_string": {
                 "input1": str,
-            },  # type: Dict[str, Any]
+            },
             "call_optional_string": {
                 "input1": Optional[str],
-            },  # type: Dict[str, Any]
+            },
             "call_three_strings": {
                 "input1": str,
                 "input2": Optional[str],
                 "input3": str,
-            },  # type: Dict[str, Any]
+            },
             "call_one_enum": {
                 "input1": Numbers,
-            },  # type: Dict[str, Any]
+            },
             "call_optional_enum": {
                 "input1": Optional[Numbers],
-            },  # type: Dict[str, Any]
+            },
             "call_three_enums": {
                 "input1": Numbers,
                 "input2": Numbers,
                 "input3": Optional[Numbers],
-            },  # type: Dict[str, Any]
+            },
             "call_one_struct": {
                 "input1": AllTypes,
-            },  # type: Dict[str, Any]
+            },
             "call_optional_struct": {
                 "input1": AllTypes,
-            },  # type: Dict[str, Any]
+            },
             "call_three_structs": {
                 "input1": AllTypes,
                 "input2": AllTypes,
                 "input3": AllTypes,
-            },  # type: Dict[str, Any]
+            },
             "call_one_date_time": {
                 "input1": datetime,
-            },  # type: Dict[str, Any]
+            },
             "call_optional_date_time": {
                 "input1": Optional[datetime],
-            },  # type: Dict[str, Any]
+            },
             "call_three_date_times": {
                 "input1": datetime,
                 "input2": datetime,
                 "input3": Optional[datetime],
-            },  # type: Dict[str, Any]
+            },
             "call_one_duration": {
                 "input1": timedelta,
-            },  # type: Dict[str, Any]
+            },
             "call_optional_duration": {
                 "input1": Optional[timedelta],
-            },  # type: Dict[str, Any]
+            },
             "call_three_durations": {
                 "input1": timedelta,
                 "input2": timedelta,
                 "input3": Optional[timedelta],
-            },  # type: Dict[str, Any]
+            },
             "call_one_binary": {
                 "input1": bytes,
-            },  # type: Dict[str, Any]
+            },
             "call_optional_binary": {
                 "input1": bytes,
-            },  # type: Dict[str, Any]
+            },
             "call_three_binaries": {
                 "input1": bytes,
                 "input2": bytes,
                 "input3": bytes,
-            },  # type: Dict[str, Any]
+            },
             "call_one_list_of_integers": {
                 "input1": List[int],
-            },  # type: Dict[str, Any]
+            },
             "call_optional_list_of_floats": {
                 "input1": List[float],
-            },  # type: Dict[str, Any]
+            },
             "call_two_lists": {
                 "input1": List[Numbers],
                 "input2": List[str],
-            },  # type: Dict[str, Any]
-        }
+            },
+        }  # type: Dict[str, Dict[str, Any]]
 
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")

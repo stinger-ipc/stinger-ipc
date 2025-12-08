@@ -18,7 +18,6 @@ class SuperAwesomeDoerOfThings:
         self.label = label
         discovery = SignalOnlyClientDiscoverer(connection, client_builder, build_binding=self)  # The build binding will bind all @client_builder decorated methods to this instance.
         self.client = discovery.get_singleton_client().result()
-        threading.Thread(target=self.request_loop, daemon=True).start()
 
     @client_builder.receive_another_signal
     def print_anotherSignal_signal(self, *args, **kwargs):

@@ -89,7 +89,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=None,
+            optional_date_time=datetime.now(UTC),
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -123,7 +123,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -304,7 +304,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -411,7 +411,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -443,7 +443,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -479,7 +479,7 @@ if __name__ == "__main__":
     def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> CallThreeDateTimesMethodResponse:
         """This is an example handler for the 'callThreeDateTimes' method."""
         print(f"--> Running call_three_date_times({input1}, {input2}, {input3})'")
-        return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=datetime.now(UTC))
+        return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=None)
 
     @server.handle_call_one_duration
     def call_one_duration(input1: timedelta) -> timedelta:
@@ -728,7 +728,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -847,7 +847,7 @@ if __name__ == "__main__":
             )
             server.emit_single_date_time(datetime.now(UTC))
             server.emit_single_optional_datetime(datetime.now(UTC))
-            server.emit_three_date_times(datetime.now(UTC), datetime.now(UTC), datetime.now(UTC))
+            server.emit_three_date_times(datetime.now(UTC), datetime.now(UTC), None)
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
             server.emit_three_durations(timedelta(seconds=3536), timedelta(seconds=3536), None)
@@ -961,7 +961,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],

@@ -364,7 +364,7 @@ class ClientScreen(Screen):
         pane = self.query_one("#left_pane", VerticalScroll)
 
         # Define all methods with their parameters
-        methods = {}
+        methods = {}  # type: Dict[str, Dict[str, Any]]
 
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")

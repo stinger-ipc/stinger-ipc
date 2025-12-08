@@ -18,6 +18,7 @@ class SuperAwesomeDoerOfThings:
         self.label = label
         discovery = TestableClientDiscoverer(connection, client_builder, build_binding=self)  # The build binding will bind all @client_builder decorated methods to this instance.
         self.client = discovery.get_singleton_client().result()
+
         threading.Thread(target=self.request_loop, daemon=True).start()
 
     @client_builder.receive_empty
@@ -349,7 +350,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -463,7 +464,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -529,7 +530,7 @@ class SuperAwesomeDoerOfThings:
             sleep(5)
 
             print("Making call to 'call_optional_date_time'")
-            future_resp = self.client.call_optional_date_time(input1=None)
+            future_resp = self.client.call_optional_date_time(input1=datetime.now(UTC))
             try:
                 print(f"RESULT:  {future_resp.result(5)}")
             except futures.TimeoutError:
@@ -537,7 +538,7 @@ class SuperAwesomeDoerOfThings:
             sleep(5)
 
             print("Making call to 'call_three_date_times'")
-            future_resp = self.client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=None)
+            future_resp = self.client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
             try:
                 print(f"RESULT:  {future_resp.result(5)}")
             except futures.TimeoutError:
@@ -648,7 +649,7 @@ class SuperAwesomeDoerOfThings:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -681,7 +682,7 @@ class SuperAwesomeDoerOfThings:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -747,7 +748,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],

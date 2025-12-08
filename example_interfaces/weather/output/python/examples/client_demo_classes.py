@@ -18,6 +18,7 @@ class SuperAwesomeDoerOfThings:
         self.label = label
         discovery = WeatherClientDiscoverer(connection, client_builder, build_binding=self)  # The build binding will bind all @client_builder decorated methods to this instance.
         self.client = discovery.get_singleton_client().result()
+
         threading.Thread(target=self.request_loop, daemon=True).start()
 
     @client_builder.receive_current_time

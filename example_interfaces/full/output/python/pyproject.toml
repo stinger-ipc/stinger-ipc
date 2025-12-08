@@ -27,6 +27,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 
+[project.scripts]
+full-tui = "fullipc.tui.app:main"
+
 
 [tool.setuptools.package-data]
 packages = ["fullipc"]

@@ -463,15 +463,15 @@ class ClientScreen(Screen):
                 "first": int,
                 "second": int,
                 "third": Optional[int],
-            },  # type: Dict[str, Any]
+            },
             "do_something": {
                 "task_to_do": str,
-            },  # type: Dict[str, Any]
-            "what_time_is_it": {},  # type: Dict[str, Any]
+            },
+            "what_time_is_it": {},
             "hold_temperature": {
                 "temperature_celsius": float,
-            },  # type: Dict[str, Any]
-        }
+            },
+        }  # type: Dict[str, Dict[str, Any]]
 
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")

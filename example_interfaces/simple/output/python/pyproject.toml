@@ -27,6 +27,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 
+[project.scripts]
+simple-tui = "simpleipc.tui.app:main"
+
 
 [tool.setuptools.package-data]
 packages = ["simpleipc"]

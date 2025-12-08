@@ -29,7 +29,7 @@ tui = ["textual"]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-{%if config.python.python37%}
+{%if not config.python.python37%}
 [project.scripts]
 {{stinger.name|hyphen_case}}-tui = "{{stinger.name|snake_case}}ipc.tui.app:main"
 {%endif%}
