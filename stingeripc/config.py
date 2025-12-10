@@ -6,6 +6,10 @@ from typing import Optional
 import tomllib
 
 
+class PropertyConfig(BaseModel):
+    """Configuration options for properties."""
+    server_owned_values: bool = Field(default=True, description="Whether server owns property values")
+
 class PythonConfig(BaseModel):
     """Python-specific configuration options."""
     python37: bool = Field(default=False, description="Generate Python 3.7 compatible code")
@@ -14,6 +18,7 @@ class PythonConfig(BaseModel):
 class StingerConfig(BaseModel):
     """Root configuration model for Stinger IPC code generation."""
     python: PythonConfig = Field(default_factory=PythonConfig, description="Python generation options")
+    properties: PropertyConfig = Field(default_factory=PropertyConfig, description="Property generation options")
 
 
 def load_config(config_path: Path) -> StingerConfig:

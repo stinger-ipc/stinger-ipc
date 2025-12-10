@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 import isodate
 import functools
+from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
@@ -24,29 +25,57 @@ from .method_codes import *
 from .interface_types import *
 {%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
 {%if stinger.properties | length > 0 %}
+{%if config.properties.server_owned_values%}
 from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
+{%else%}
+from .property import {{stinger.name|UpperCamelCase}}PropertyAccess
 {%endif%}
+
 
 T = TypeVar('T')
 
 @dataclass
 class PropertyControls(Generic[T]):
+    {%-if config.properties.server_owned_values%}
     value: T
     mutex = threading.Lock()
     version: int = -1
     subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
 
+    def get_value(self) -> T:
+        with self.mutex:
+            return self.value
+
+    def set_value(self, new_value: T) -> T:
+        with self.mutex:
+            self.value = new_value
+            return self.value
+    {%else-%}
+    mutex = threading.Lock()
+    getter: Callable[[], T]
+    setter: Callable[[T], None]
+    version: int = -1
+    subscription_id: Optional[int] = None
+
+    def get_value(self) -> T:
+        return self.getter()
+
+    def set_value(self, new_value: T) -> None:
+        self.setter(new_value)
+    {%endif%}
+{%endif%} {# end any property#}
+{%if stinger.methods|length > 0%}
 @dataclass
 class MethodControls:
     subscription_id: Optional[int] = None
     callback: Optional[Callable] = None
-
+{%endif%} {# end any method #}
 
 
 class {{stinger.python.server_class_name}}:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}):
+    def __init__(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, {%if config.properties.server_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}{%endif%}):
         self._logger = logging.getLogger(f'{{stinger.python.server_class_name}}:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
@@ -56,7 +85,11 @@ class {{stinger.python.server_class_name}}:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
         {%for prop_name, prop in stinger.properties.items()%}
+        {%-if config.properties.server_owned_values%}
         self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}] = PropertyControls(value=initial_property_values.{{prop_name|snake_case}}, version=initial_property_values.{{prop_name|snake_case}}_version)
+        {%else-%}
+        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}] = PropertyControls(getter=property_access.{{prop_name|snake_case}}_getter, {%if not prop.read_only%}setter=property_access.{{prop_name|snake_case}}_setter{%endif%})
+        {%endif-%}
         self._property_{{prop_name|snake_case}}.subscription_id = self._conn.subscribe("{{prop.update_topic}}".format(self._instance_id), self._receive_{{prop_name|snake_case}}_update_request_message)
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()%}
@@ -115,15 +148,31 @@ class {{stinger.python.server_class_name}}:
             self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
 
     {%for prop_name, prop in stinger.properties.items()%}
+    {%if not config.properties.server_owned_values%}
+    def publish_{{prop_name|snake_case}}_value(self, *_, **__) -> Future{%if not config.python.python37%}[None]{%endif%}:
+        """ Server application code should call this method to publish the current value of the '{{prop_name}}' property.
+        Accepts unused args and kwargs to make this a usable callback for application code.
+        """
+        prop_value = self._property_{{prop_name|snake_case}}.getter()
+        {% if prop.arg_list | length == 1%}
+        prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=prop_value)
+        {%else%}
+        prop_obj = prop_value
+        {%endif%}
+        with self._property_{{prop_name|snake_case}}.mutex:
+            self._property_{{prop_name|snake_case}}.version += 1
+            self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), prop_obj, int(self._property_{{prop_name|snake_case}}.version))
+    {%endif%} {# end publish method for application owned properties #}
+    {%if not prop.read_only%}
     def _receive_{{prop_name|snake_case}}_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         user_properties = properties.get('UserProperty', dict()) # type: Optional[Dict[str, str]]
         prop_version = user_properties.get('PropertyVersion', -1) # type: int
         correlation_id = properties.get('CorrelationData', '') # type: Optional[bytes]
         response_topic = properties.get('ResponseTopic') # type: Optional[str]
         {% if prop.arg_list | length == 1%}
-        existing_prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.value)
+        existing_prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
         {%else%}
-        existing_prop_obj = self._property_{{prop_name|snake_case}}.value
+        existing_prop_obj = self._property_{{prop_name|snake_case}}.get_value()
         {%endif%}
 
         try:
@@ -146,46 +195,45 @@ class {{stinger.python.server_class_name}}:
             prop_value = prop_obj.{{prop.arg_list[0].name}}
             {%endif-%}
             with self._property_{{prop_name|snake_case}}.mutex:
-                self._property_{{prop_name|snake_case}}.value = prop_value
                 self._property_{{prop_name|snake_case}}.version += 1
+                self._property_{{prop_name|snake_case}}.set_value(prop_value)
                 {% if prop.arg_list | length == 1%}
-                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.value)
+                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
                 {%else%}
-                prop_obj = self._property_{{prop_name|snake_case}}.value
+                prop_obj = self._property_{{prop_name|snake_case}}.get_value()
                 {%endif%}
                 self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), prop_obj, int(self._property_{{prop_name|snake_case}}.version))
-            
+        
             if response_topic is not None:
                 {% if prop.arg_list | length == 1%}
-                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.value)
+                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
                 {%else%}
-                prop_obj = self._property_{{prop_name|snake_case}}.value
+                prop_obj = self._property_{{prop_name|snake_case}}.get_value()
                 {%endif%}
                 self._logger.debug("Sending property update response for to %s", response_topic)
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SUCCESS, correlation_id)
             else:
                 self._logger.warning("No response topic provided for property update of %s", topic)
 
-
-
+            {%if config.properties.server_owned_values%}
             for callback in self._property_{{prop_name|snake_case}}.callbacks:
                 {%-if prop.arg_list | length > 1%}
-                    callback({%for arg in prop.arg_list %}prop_value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
+                callback({%for arg in prop.arg_list %}prop_value.{{arg.name|snake_case}}, {%endfor%})
                 {%-else%}
                 callback(prop_value)
                 {%-endif%}
+            {%endif%}
         except Exception as e:
             self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
             if response_topic is not None:
                 {% if prop.arg_list | length == 1%}
-                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.value)
+                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
                 {%else%}
                 prop_obj = self._property_{{prop_name|snake_case}}.value
                 {%endif%}
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
-
-
-    {%endfor%}
+    {%endif%}{# not read only#}
+    {%endfor%}{# end property loop #}
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """ This is the callback that is called whenever any message is received on a subscribed topic.

@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 import isodate
 import functools
+from concurrent.futures import Future
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
@@ -23,24 +24,6 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from .connection import IBrokerConnection
 from .method_codes import *
 from .interface_types import *
-
-
-T = TypeVar("T")
-
-
-@dataclass
-class PropertyControls(Generic[T]):
-    value: T
-    mutex = threading.Lock()
-    version: int = -1
-    subscription_id: Optional[int] = None
-    callbacks: List[Callable[[T], None]] = field(default_factory=list)
-
-
-@dataclass
-class MethodControls:
-    subscription_id: Optional[int] = None
-    callback: Optional[Callable] = None
 
 
 class SignalOnlyServer:

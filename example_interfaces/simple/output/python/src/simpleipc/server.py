@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 import isodate
 import functools
+from concurrent.futures import Future
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
@@ -38,6 +39,15 @@ class PropertyControls(Generic[T]):
     version: int = -1
     subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
+
+    def get_value(self) -> T:
+        with self.mutex:
+            return self.value
+
+    def set_value(self, new_value: T) -> T:
+        with self.mutex:
+            self.value = new_value
+            return self.value
 
 
 @dataclass
@@ -110,7 +120,7 @@ class SimpleServer:
         correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
 
-        existing_prop_obj = SchoolProperty(name=self._property_school.value)
+        existing_prop_obj = SchoolProperty(name=self._property_school.get_value())
 
         try:
             if int(prop_version) != int(self._property_school.version):
@@ -135,16 +145,16 @@ class SimpleServer:
                 return
             prop_value = prop_obj.name
             with self._property_school.mutex:
-                self._property_school.value = prop_value
                 self._property_school.version += 1
+                self._property_school.set_value(prop_value)
 
-                prop_obj = SchoolProperty(name=self._property_school.value)
+                prop_obj = SchoolProperty(name=self._property_school.get_value())
 
                 self._conn.publish_property_state("simple/{}/property/school/value".format(self._instance_id), prop_obj, int(self._property_school.version))
 
             if response_topic is not None:
 
-                prop_obj = SchoolProperty(name=self._property_school.value)
+                prop_obj = SchoolProperty(name=self._property_school.get_value())
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS, correlation_id)
@@ -153,11 +163,12 @@ class SimpleServer:
 
             for callback in self._property_school.callbacks:
                 callback(prop_value)
+
         except Exception as e:
             self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
             if response_topic is not None:
 
-                prop_obj = SchoolProperty(name=self._property_school.value)
+                prop_obj = SchoolProperty(name=self._property_school.get_value())
 
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
 

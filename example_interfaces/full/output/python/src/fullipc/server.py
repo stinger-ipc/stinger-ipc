@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 import isodate
 import functools
+from concurrent.futures import Future
 
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
@@ -38,6 +39,15 @@ class PropertyControls(Generic[T]):
     version: int = -1
     subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
+
+    def get_value(self) -> T:
+        with self.mutex:
+            return self.value
+
+    def set_value(self, new_value: T) -> T:
+        with self.mutex:
+            self.value = new_value
+            return self.value
 
 
 @dataclass
@@ -163,7 +173,7 @@ class FullServer:
         correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
 
-        existing_prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.value)
+        existing_prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
 
         try:
             if int(prop_version) != int(self._property_favorite_number.version):
@@ -190,16 +200,16 @@ class FullServer:
                 return
             prop_value = prop_obj.number
             with self._property_favorite_number.mutex:
-                self._property_favorite_number.value = prop_value
                 self._property_favorite_number.version += 1
+                self._property_favorite_number.set_value(prop_value)
 
-                prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.value)
+                prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
 
                 self._conn.publish_property_state("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, int(self._property_favorite_number.version))
 
             if response_topic is not None:
 
-                prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.value)
+                prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SUCCESS, correlation_id)
@@ -208,11 +218,12 @@ class FullServer:
 
             for callback in self._property_favorite_number.callbacks:
                 callback(prop_value)
+
         except Exception as e:
             self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
             if response_topic is not None:
 
-                prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.value)
+                prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
 
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
 
@@ -222,7 +233,7 @@ class FullServer:
         correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
 
-        existing_prop_obj = self._property_favorite_foods.value
+        existing_prop_obj = self._property_favorite_foods.get_value()
 
         try:
             if int(prop_version) != int(self._property_favorite_foods.version):
@@ -249,16 +260,16 @@ class FullServer:
                 return
             prop_value = prop_obj
             with self._property_favorite_foods.mutex:
-                self._property_favorite_foods.value = prop_value
                 self._property_favorite_foods.version += 1
+                self._property_favorite_foods.set_value(prop_value)
 
-                prop_obj = self._property_favorite_foods.value
+                prop_obj = self._property_favorite_foods.get_value()
 
                 self._conn.publish_property_state("full/{}/property/favoriteFoods/value".format(self._instance_id), prop_obj, int(self._property_favorite_foods.version))
 
             if response_topic is not None:
 
-                prop_obj = self._property_favorite_foods.value
+                prop_obj = self._property_favorite_foods.get_value()
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SUCCESS, correlation_id)
@@ -266,7 +277,12 @@ class FullServer:
                 self._logger.warning("No response topic provided for property update of %s", topic)
 
             for callback in self._property_favorite_foods.callbacks:
-                callback(prop_value.drink, prop_value.slices_of_pizza, prop_value.breakfast)
+                callback(
+                    prop_value.drink,
+                    prop_value.slices_of_pizza,
+                    prop_value.breakfast,
+                )
+
         except Exception as e:
             self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
             if response_topic is not None:
@@ -275,72 +291,13 @@ class FullServer:
 
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
 
-    def _receive_lunch_menu_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get("UserProperty", dict())  # type: Optional[Dict[str, str]]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
-        correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
-        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
-
-        existing_prop_obj = self._property_lunch_menu.value
-
-        try:
-            if int(prop_version) != int(self._property_lunch_menu.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", topic, prop_version, self._property_lunch_menu.version)
-                if response_topic is not None:
-                    self._conn.publish_property_response(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_lunch_menu.version),
-                        MethodReturnCode.OUT_OF_SYNC,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_lunch_menu.version}",
-                    )
-                return
-
-            try:
-                prop_obj = LunchMenuProperty.model_validate_json(payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", topic, e)
-                if response_topic is not None:
-                    self._conn.publish_property_response(
-                        response_topic, existing_prop_obj, str(self._property_lunch_menu.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
-                    )
-                return
-            prop_value = prop_obj
-            with self._property_lunch_menu.mutex:
-                self._property_lunch_menu.value = prop_value
-                self._property_lunch_menu.version += 1
-
-                prop_obj = self._property_lunch_menu.value
-
-                self._conn.publish_property_state("full/{}/property/lunchMenu/value".format(self._instance_id), prop_obj, int(self._property_lunch_menu.version))
-
-            if response_topic is not None:
-
-                prop_obj = self._property_lunch_menu.value
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_lunch_menu.version), MethodReturnCode.SUCCESS, correlation_id)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", topic)
-
-            for callback in self._property_lunch_menu.callbacks:
-                callback(prop_value.monday, prop_value.tuesday)
-        except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
-            if response_topic is not None:
-
-                prop_obj = self._property_lunch_menu.value
-
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_lunch_menu.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
-
     def _receive_family_name_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         user_properties = properties.get("UserProperty", dict())  # type: Optional[Dict[str, str]]
         prop_version = user_properties.get("PropertyVersion", -1)  # type: int
         correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
 
-        existing_prop_obj = FamilyNameProperty(family_name=self._property_family_name.value)
+        existing_prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
 
         try:
             if int(prop_version) != int(self._property_family_name.version):
@@ -367,16 +324,16 @@ class FullServer:
                 return
             prop_value = prop_obj.family_name
             with self._property_family_name.mutex:
-                self._property_family_name.value = prop_value
                 self._property_family_name.version += 1
+                self._property_family_name.set_value(prop_value)
 
-                prop_obj = FamilyNameProperty(family_name=self._property_family_name.value)
+                prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
 
                 self._conn.publish_property_state("full/{}/property/familyName/value".format(self._instance_id), prop_obj, int(self._property_family_name.version))
 
             if response_topic is not None:
 
-                prop_obj = FamilyNameProperty(family_name=self._property_family_name.value)
+                prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SUCCESS, correlation_id)
@@ -385,11 +342,12 @@ class FullServer:
 
             for callback in self._property_family_name.callbacks:
                 callback(prop_value)
+
         except Exception as e:
             self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
             if response_topic is not None:
 
-                prop_obj = FamilyNameProperty(family_name=self._property_family_name.value)
+                prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
 
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
 
@@ -399,7 +357,7 @@ class FullServer:
         correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
 
-        existing_prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.value)
+        existing_prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
 
         try:
             if int(prop_version) != int(self._property_last_breakfast_time.version):
@@ -426,16 +384,16 @@ class FullServer:
                 return
             prop_value = prop_obj.timestamp
             with self._property_last_breakfast_time.mutex:
-                self._property_last_breakfast_time.value = prop_value
                 self._property_last_breakfast_time.version += 1
+                self._property_last_breakfast_time.set_value(prop_value)
 
-                prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.value)
+                prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
 
                 self._conn.publish_property_state("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, int(self._property_last_breakfast_time.version))
 
             if response_topic is not None:
 
-                prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.value)
+                prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SUCCESS, correlation_id)
@@ -444,11 +402,12 @@ class FullServer:
 
             for callback in self._property_last_breakfast_time.callbacks:
                 callback(prop_value)
+
         except Exception as e:
             self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
             if response_topic is not None:
 
-                prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.value)
+                prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
 
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
 
@@ -458,7 +417,7 @@ class FullServer:
         correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
         response_topic = properties.get("ResponseTopic")  # type: Optional[str]
 
-        existing_prop_obj = self._property_last_birthdays.value
+        existing_prop_obj = self._property_last_birthdays.get_value()
 
         try:
             if int(prop_version) != int(self._property_last_birthdays.version):
@@ -485,16 +444,16 @@ class FullServer:
                 return
             prop_value = prop_obj
             with self._property_last_birthdays.mutex:
-                self._property_last_birthdays.value = prop_value
                 self._property_last_birthdays.version += 1
+                self._property_last_birthdays.set_value(prop_value)
 
-                prop_obj = self._property_last_birthdays.value
+                prop_obj = self._property_last_birthdays.get_value()
 
                 self._conn.publish_property_state("full/{}/property/lastBirthdays/value".format(self._instance_id), prop_obj, int(self._property_last_birthdays.version))
 
             if response_topic is not None:
 
-                prop_obj = self._property_last_birthdays.value
+                prop_obj = self._property_last_birthdays.get_value()
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SUCCESS, correlation_id)
@@ -502,7 +461,13 @@ class FullServer:
                 self._logger.warning("No response topic provided for property update of %s", topic)
 
             for callback in self._property_last_birthdays.callbacks:
-                callback(prop_value.mom, prop_value.dad, prop_value.sister, prop_value.brothers_age)
+                callback(
+                    prop_value.mom,
+                    prop_value.dad,
+                    prop_value.sister,
+                    prop_value.brothers_age,
+                )
+
         except Exception as e:
             self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
             if response_topic is not None:
