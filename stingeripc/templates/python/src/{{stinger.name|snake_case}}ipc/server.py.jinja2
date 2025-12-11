@@ -126,18 +126,20 @@ class {{stinger.python.server_class_name}}:
         expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
         topic = "{{stinger.interface_info_topic}}".format(self._instance_id)
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
-        self._conn.publish_status(topic, data, expiry)
+        msg = Message.status_message(topic, data, expiry)
+        self._conn.publish(msg)
 
     {%if stinger.properties|length > 0%}
     def _publish_all_properties(self):
         {%for prop_name, prop in stinger.properties.items()%}
         with self._property_{{prop_name|snake_case}}.mutex:
             {% if prop.arg_list | length == 1 -%}
-            prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.value)
+            prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
             {%else%}
-            prop_obj = self._property_{{prop_name|snake_case}}.value
+            prop_obj = self._property_{{prop_name|snake_case}}.get_value()
             {%endif-%}
-            self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), prop_obj, self._property_{{prop_name|snake_case}}.version)
+            state_msg = Message.property_state_message("{{prop.value_topic}}".format(self._instance_id), prop_obj, self._property_{{prop_name|snake_case}}.version)
+            self._conn.publish(state_msg)
         {%endfor%}
     {%endif%}
 
@@ -145,7 +147,8 @@ class {{stinger.python.server_class_name}}:
         correlation_id = request_properties.get('CorrelationData') # type: Optional[bytes]
         response_topic = request_properties.get('ResponseTopic') # type: Optional[str]
         if response_topic is not None:
-            self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
+            err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_info)
+            self._conn.publish(err_msg)
 
     {%for prop_name, prop in stinger.properties.items()%}
     {%if not config.properties.server_owned_values%}
@@ -161,7 +164,8 @@ class {{stinger.python.server_class_name}}:
         {%endif%}
         with self._property_{{prop_name|snake_case}}.mutex:
             self._property_{{prop_name|snake_case}}.version += 1
-            self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), prop_obj, int(self._property_{{prop_name|snake_case}}.version))
+            state_msg = Message.property_state_message("{{prop.value_topic}}".format(self._instance_id), prop_obj, self._property_{{prop_name|snake_case}}.version)
+            self._conn.publish(state_msg)
     {%endif%} {# end publish method for application owned properties #}
     {%if not prop.read_only%}
     def _receive_{{prop_name|snake_case}}_update_request_message(self, message: Message):
@@ -179,7 +183,8 @@ class {{stinger.python.server_class_name}}:
             if int(prop_version) != int(self._property_{{prop_name|snake_case}}.version):
                 self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_{{prop_name|snake_case}}.version)
                 if response_topic is not None:
-                    self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.OUT_OF_SYNC, correlation_id, f"Request version {prop_version} does not match current version {self._property_{{prop_name|snake_case}}.version}")
+                    prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.OUT_OF_SYNC.value, correlation_id, f"Request version {prop_version} does not match current version {self._property_{{prop_name|snake_case}}.version}")
+                    self._conn.publish(prop_resp_msg)
                 return
 
             try:
@@ -187,7 +192,8 @@ class {{stinger.python.server_class_name}}:
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
                 if response_topic is not None:
-                    self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e))
+                    prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e))
+                    self._conn.publish(prop_resp_msg)
                 return
             {% if prop.arg_list | length > 1-%}
             prop_value = prop_obj
@@ -212,7 +218,8 @@ class {{stinger.python.server_class_name}}:
                 prop_obj = self._property_{{prop_name|snake_case}}.get_value()
                 {%endif%}
                 self._logger.debug("Sending property update response for to %s", response_topic)
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SUCCESS, correlation_id)
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(prop_resp_msg)
             else:
                 self._logger.warning("No response topic provided for property update of %s", message.topic)
 
@@ -232,7 +239,8 @@ class {{stinger.python.server_class_name}}:
                 {%else%}
                 prop_obj = self._property_{{prop_name|snake_case}}.value
                 {%endif%}
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                self._conn.publish(prop_resp_msg)
     {%endif%}{# not read only#}
     {%endfor%}{# end property loop #}
 
@@ -254,7 +262,8 @@ class {{stinger.python.server_class_name}}:
         payload = {{sig_name|UpperCamelCase}}SignalPayload({%-for arg in sig.arg_list%}
             {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
         {%endfor%})
-        self._conn.publish("{{sig.topic}}".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        sig_msg = Message.signal_message("{{sig.topic}}".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
 
     {%endfor%}
 
@@ -300,13 +309,16 @@ class {{stinger.python.server_class_name}}:
                     self._logger.warning("StingerMethodException while handling {{method_name}}: %s", sme)
                     return_code = sme.return_code
                     debug_msg = str(sme)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(err_msg)
                 else:
+                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     {%endfor%}
@@ -335,7 +347,8 @@ class {{stinger.python.server_class_name}}:
             with self._property_{{prop_name|snake_case}}.mutex:
                 self._property_{{prop_name|snake_case}}.value = prop_obj
                 self._property_{{prop_name|snake_case}}.version += 1
-                self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), payload, self._property_{{prop_name|snake_case}}.version)
+                state_msg = Message.property_state_message("{{prop.value_topic}}".format(self._instance_id), prop_obj, self._property_{{prop_name|snake_case}}.version)
+                self._conn.publish(state_msg)
             for callback in self._property_{{prop_name|snake_case}}.callbacks:
                 callback(prop_obj.{{arg.name|snake_case}})
     {%else%} {# property with multiple arguments #}
@@ -360,7 +373,8 @@ class {{stinger.python.server_class_name}}:
             with self._property_{{prop_name|snake_case}}.mutex:
                 self._property_{{prop_name|snake_case}}.value = value
                 self._property_{{prop_name|snake_case}}.version += 1
-                self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), payload, self._property_{{prop_name|snake_case}}.version)
+                state_msg = Message.property_state_message("{{prop.value_topic}}".format(self._instance_id), value, self._property_{{prop_name|snake_case}}.version)
+                self._conn.publish(state_msg)
             for callback in self._property_{{prop_name|snake_case}}.callbacks:
                 callback({%for arg in prop.arg_list %}value.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%})
     {%endif%}

@@ -78,6 +78,12 @@ class {{stinger.python.client_class_name}}:
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
         {%endif%}
 
+    @property
+    def service_id(self) -> str:
+        """ The service ID of the connected service instance.
+        """
+        return self._service_id
+
     {%for prop_name, prop_spec in stinger.properties.items()-%}
     @property
     def {{prop_name}}(self) -> {{prop_spec.python_annotation}}:
@@ -99,12 +105,14 @@ class {{stinger.python.client_class_name}}:
         {%endif-%}
         self._logger.debug("Setting '{{prop_name}}' property to %s", property_obj)
         with self._property_{{prop_name|snake_case}}_mutex:
-            self._conn.publish_property_update_request(
-                    "{{prop_spec.update_topic}}".format(self._service_id), 
-                    property_obj, 
-                    str(self._property_{{prop_name|snake_case}}_version), 
-                    self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "{{prop_spec.update_topic}}".format(self._service_id), 
+                property_obj, 
+                str(self._property_{{prop_name|snake_case}}_version), 
+                self._property_response_topic,
+                str(uuid4())
             )
+            self._conn.publish(req_msg)
     {%endif%}
     def {{prop_name | snake_case}}_changed(self, handler: {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType, call_immediately: bool=False):
         """ Sets a callback to be called when the '{{prop_name}}' property changes.
@@ -224,11 +232,10 @@ class {{stinger.python.client_class_name}}:
         payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}
             {{arg.name}}={{arg.name|snake_case}},{%endfor%}
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling '{{method_name}}' method with payload %s", json_payload)
+        self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
         response_topic = f"{{stinger.all_methods_response_topic('{self._conn.client_id}')}}"
-        self._conn.publish("{{method.topic}}".format(self._service_id), json_payload, qos=2, retain=False,
-                           correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("{{method.topic}}".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):

@@ -127,10 +127,12 @@ def main(
         for entry in os.listdir(src_walker):
             src_entry = src_walker / entry
             dest_entry = dest_walker / entry
-            if '{{' in entry and '}}' in entry:
+            if ('{{' in entry and '}}' in entry) or ('{%' in entry and '%}' in entry):
                 rendered_entry_name = code_templator.render_string(entry, **params)
                 if len(rendered_entry_name) > 0:
                     dest_entry = dest_walker / rendered_entry_name
+                else:
+                    continue
             if entry.endswith(".jinja2"):
                 dest_path_str = str(dest_entry)[:-len(".jinja2")]
                 dest_path = Path(dest_path_str).relative_to(outdir)
@@ -153,11 +155,11 @@ def main(
             src_entry = src_walker / entry
             dest_entry = dest_walker / entry
             print(f"🚶  [white]ENTRY[/white]: {src_entry.relative_to(template_dir)}")
-            if '{{' in entry and '}}' in entry:
+            if ('{{' in entry and '}}' in entry) or ('{%' in entry and '%}' in entry):
                 rendered_entry_name = code_templator.render_string(entry, **params)
                 if len(rendered_entry_name) == 0:
                     print(f"👓   [grey]NAME[/grey]: {entry} -> [excluded]")
-                continue
+                    continue
                 dest_entry = dest_walker / rendered_entry_name
                 print(f"👓   [grey]NAME[/grey]: {entry} -> {rendered_entry_name}")
             if entry.endswith(".jinja2"):
