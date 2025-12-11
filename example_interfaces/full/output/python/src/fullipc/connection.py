@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Callable, Optional, Tuple, Any, Union, List
+from typing import Callable, Optional, Tuple, Any, Union, List, Dict
 from paho.mqtt.client import Client as MqttClient, topic_matches_sub
 from paho.mqtt.enums import MQTTProtocolVersion, CallbackAPIVersion
 from paho.mqtt.properties import Properties as MqttProperties
@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
-MessageCallback = Callable[[str, str, dict[str, Any]], None]
+MessageCallback = Callable[[str, str, Dict[str, Any]], None]
 
 
 class IBrokerConnection(ABC):
@@ -63,9 +63,9 @@ class MqttTransport:
     def __init__(
         self,
         transport_type: MqttTransportType,
-        host: str | None = None,
-        port: int | None = None,
-        socket_path: str | None = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        socket_path: Optional[str] = None,
     ):
         self.transport = transport_type
         self.host_or_path = socket_path if transport_type == MqttTransportType.UNIX else host
@@ -79,7 +79,7 @@ class MqttBrokerConnection(IBrokerConnection):
             self.topic = topic
             self.subscription_id = subscription_id
 
-    def __init__(self, transport: MqttTransport, client_id: str | None = None):
+    def __init__(self, transport: MqttTransport, client_id: Optional[str] = None):
         self._logger = logging.getLogger("Connection")
         self._logger.setLevel(logging.DEBUG)
         self._transport = transport
@@ -183,8 +183,8 @@ class MqttBrokerConnection(IBrokerConnection):
         correlation_id: Union[str, bytes, None] = None,
         response_topic: Optional[str] = None,
         content_type: str = "application/json",
-        expiry_seconds: int | None = None,
-        user_properties: dict[str, str] | None = None,
+        expiry_seconds: Optional[int] = None,
+        user_properties: Optional[Dict[str, str]] = None,
     ):
         """Publish a message to mqtt."""
         properties = MqttProperties(PacketTypes.PUBLISH)
@@ -222,7 +222,7 @@ class MqttBrokerConnection(IBrokerConnection):
             response_topic, response_obj.model_dump_json(by_alias=True), qos=1, retain=False, correlation_id=correlation_id, user_properties={"ReturnCode": str(MethodReturnCode.SUCCESS.value)}
         )
 
-    def publish_property_state(self, topic: str, state_obj: BaseModel, state_version: int | None = None):
+    def publish_property_state(self, topic: str, state_obj: BaseModel, state_version: Optional[int] = None):
         props = dict()
         if state_version is not None:
             props["PropertyVersion"] = str(state_version)

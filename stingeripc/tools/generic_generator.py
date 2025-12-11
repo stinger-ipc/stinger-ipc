@@ -129,7 +129,8 @@ def main(
             dest_entry = dest_walker / entry
             if '{{' in entry and '}}' in entry:
                 rendered_entry_name = code_templator.render_string(entry, **params)
-                dest_entry = dest_walker / rendered_entry_name
+                if len(rendered_entry_name) > 0:
+                    dest_entry = dest_walker / rendered_entry_name
             if entry.endswith(".jinja2"):
                 dest_path_str = str(dest_entry)[:-len(".jinja2")]
                 dest_path = Path(dest_path_str).relative_to(outdir)
@@ -154,11 +155,14 @@ def main(
             print(f"🚶  [white]ENTRY[/white]: {src_entry.relative_to(template_dir)}")
             if '{{' in entry and '}}' in entry:
                 rendered_entry_name = code_templator.render_string(entry, **params)
+                if len(rendered_entry_name) == 0:
+                    print(f"👓   [grey]NAME[/grey]: {entry} -> [excluded]")
+                continue
                 dest_entry = dest_walker / rendered_entry_name
                 print(f"👓   [grey]NAME[/grey]: {entry} -> {rendered_entry_name}")
             if entry.endswith(".jinja2"):
                 dest_path_str = str(dest_entry)[:-len(".jinja2")]
-                template = src_entry.relative_to(template_dir)
+                template = str(src_entry.relative_to(template_dir))
                 dest_path = Path(dest_path_str).relative_to(outdir)
                 print(f"✨  [green]GENER[/green]: {dest_path}")
                 if dest_path_str.endswith(".html") or dest_path_str.endswith(".htm"):

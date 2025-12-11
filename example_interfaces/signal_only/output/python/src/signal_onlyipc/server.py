@@ -21,7 +21,8 @@ from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from .connection import IBrokerConnection
+from pyqttier.interface import IBrokerConnection
+from pyqttier.message import Message
 from .method_codes import *
 from .interface_types import *
 

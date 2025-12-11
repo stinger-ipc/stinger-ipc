@@ -5,19 +5,18 @@ description = "NWS weather forecast"
 requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.11.7",
-    "paho-mqtt>=2.0.1",
+    "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
+    "pyqttier>=0.1.1",
 ]
 
-[project.optional-dependencies]
-tui = ["textual"]
+
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[project.scripts]
-weather-tui = "weatheripc.tui.app:main"
+
 
 [tool.setuptools.package-data]
 packages = ["weatheripc"]

@@ -21,7 +21,8 @@ from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from .connection import IBrokerConnection
+from pyqttier.interface import IBrokerConnection
+from pyqttier.message import Message
 from .method_codes import *
 from .interface_types import *
 
@@ -114,17 +115,17 @@ class SimpleServer:
         if response_topic is not None:
             self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
 
-    def _receive_school_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get("UserProperty", dict())  # type: Optional[Dict[str, str]]
+    def _receive_school_update_request_message(self, message: Message):
+        user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version = user_properties.get("PropertyVersion", -1)  # type: int
-        correlation_id = properties.get("CorrelationData", "")  # type: Optional[bytes]
-        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
+        correlation_id = message.correlation_data  # type: Optional[bytes]
+        response_topic = message.response_topic  # type: Optional[str]
 
         existing_prop_obj = SchoolProperty(name=self._property_school.get_value())
 
         try:
             if int(prop_version) != int(self._property_school.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", topic, prop_version, self._property_school.version)
+                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_school.version)
                 if response_topic is not None:
                     self._conn.publish_property_response(
                         response_topic,
@@ -137,9 +138,9 @@ class SimpleServer:
                 return
 
             try:
-                prop_obj = SchoolProperty.model_validate_json(payload)
+                prop_obj = SchoolProperty.model_validate_json(message.payload)
             except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
                 if response_topic is not None:
                     self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_school.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e))
                 return
@@ -150,7 +151,8 @@ class SimpleServer:
 
                 prop_obj = SchoolProperty(name=self._property_school.get_value())
 
-                self._conn.publish_property_state("simple/{}/property/school/value".format(self._instance_id), prop_obj, int(self._property_school.version))
+                state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
+                self._conn.publish(state_msg)
 
             if response_topic is not None:
 
@@ -159,7 +161,7 @@ class SimpleServer:
                 self._logger.debug("Sending property update response for to %s", response_topic)
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS, correlation_id)
             else:
-                self._logger.warning("No response topic provided for property update of %s", topic)
+                self._logger.warning("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_school.callbacks:
                 callback(prop_value)

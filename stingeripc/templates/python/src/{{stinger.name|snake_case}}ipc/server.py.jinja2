@@ -13,14 +13,15 @@ import logging
 import threading
 from time import sleep
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone.utc as UTC{%endif%}
 import isodate
 import functools
 from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from .connection import IBrokerConnection
+from pyqttier.interface import IBrokerConnection
+from pyqttier.message import Message
 from .method_codes import *
 from .interface_types import *
 {%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}None{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
@@ -71,7 +72,6 @@ class MethodControls:
     subscription_id: Optional[int] = None
     callback: Optional[Callable] = None
 {%endif%} {# end any method #}
-
 
 class {{stinger.python.server_class_name}}:
 
@@ -164,11 +164,11 @@ class {{stinger.python.server_class_name}}:
             self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), prop_obj, int(self._property_{{prop_name|snake_case}}.version))
     {%endif%} {# end publish method for application owned properties #}
     {%if not prop.read_only%}
-    def _receive_{{prop_name|snake_case}}_update_request_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get('UserProperty', dict()) # type: Optional[Dict[str, str]]
+    def _receive_{{prop_name|snake_case}}_update_request_message(self, message: Message):
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
         prop_version = user_properties.get('PropertyVersion', -1) # type: int
-        correlation_id = properties.get('CorrelationData', '') # type: Optional[bytes]
-        response_topic = properties.get('ResponseTopic') # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
         {% if prop.arg_list | length == 1%}
         existing_prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
         {%else%}
@@ -177,15 +177,15 @@ class {{stinger.python.server_class_name}}:
 
         try:
             if int(prop_version) != int(self._property_{{prop_name|snake_case}}.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", topic, prop_version, self._property_{{prop_name|snake_case}}.version)
+                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_{{prop_name|snake_case}}.version)
                 if response_topic is not None:
                     self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.OUT_OF_SYNC, correlation_id, f"Request version {prop_version} does not match current version {self._property_{{prop_name|snake_case}}.version}")
                 return
 
             try:
-                prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(payload)
+                prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
             except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", topic, e)
+                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
                 if response_topic is not None:
                     self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e))
                 return
@@ -202,8 +202,9 @@ class {{stinger.python.server_class_name}}:
                 {%else%}
                 prop_obj = self._property_{{prop_name|snake_case}}.get_value()
                 {%endif%}
-                self._conn.publish_property_state("{{prop.value_topic}}".format(self._instance_id), prop_obj, int(self._property_{{prop_name|snake_case}}.version))
-        
+                state_msg = Message.property_state_message("{{prop.value_topic}}".format(self._instance_id), prop_obj, self._property_{{prop_name|snake_case}}.version)
+                self._conn.publish(state_msg)
+            
             if response_topic is not None:
                 {% if prop.arg_list | length == 1%}
                 prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
@@ -213,7 +214,7 @@ class {{stinger.python.server_class_name}}:
                 self._logger.debug("Sending property update response for to %s", response_topic)
                 self._conn.publish_property_response(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SUCCESS, correlation_id)
             else:
-                self._logger.warning("No response topic provided for property update of %s", topic)
+                self._logger.warning("No response topic provided for property update of %s", message.topic)
 
             {%if config.properties.server_owned_values%}
             for callback in self._property_{{prop_name|snake_case}}.callbacks:
