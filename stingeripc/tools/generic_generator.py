@@ -162,7 +162,7 @@ def main(
                     continue
                 dest_entry = dest_walker / rendered_entry_name
                 print(f"👓   [grey]NAME[/grey]: {entry} -> {rendered_entry_name}")
-            if entry.endswith(".jinja2"):
+            if str(dest_entry).endswith(".jinja2") and '.jinja2' in str(src_entry):
                 dest_path_str = str(dest_entry)[:-len(".jinja2")]
                 template = str(src_entry.relative_to(template_dir))
                 dest_path = Path(dest_path_str).relative_to(outdir)

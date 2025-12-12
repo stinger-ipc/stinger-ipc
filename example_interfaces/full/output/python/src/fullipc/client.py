@@ -15,6 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
+from pyqttier.message import Message
 
 import asyncio
 import concurrent.futures as futures
@@ -101,6 +102,11 @@ class FullClient:
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
 
     @property
+    def service_id(self) -> str:
+        """The service ID of the connected service instance."""
+        return self._service_id
+
+    @property
     def favorite_number(self) -> int:
         """Property 'favorite_number' getter."""
         with self._property_favorite_number_mutex:
@@ -114,9 +120,10 @@ class FullClient:
         property_obj = FavoriteNumberProperty(number=value)
         self._logger.debug("Setting 'favorite_number' property to %s", property_obj)
         with self._property_favorite_number_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/favoriteNumber/setValue".format(self._service_id), property_obj, str(self._property_favorite_number_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "full/{}/property/favoriteNumber/setValue".format(self._service_id), property_obj, str(self._property_favorite_number_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def favorite_number_changed(self, handler: FavoriteNumberPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'favorite_number' property changes.
@@ -142,9 +149,10 @@ class FullClient:
         property_obj = value
         self._logger.debug("Setting 'favorite_foods' property to %s", property_obj)
         with self._property_favorite_foods_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/favoriteFoods/setValue".format(self._service_id), property_obj, str(self._property_favorite_foods_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "full/{}/property/favoriteFoods/setValue".format(self._service_id), property_obj, str(self._property_favorite_foods_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def favorite_foods_changed(self, handler: FavoriteFoodsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'favorite_foods' property changes.
@@ -186,9 +194,10 @@ class FullClient:
         property_obj = FamilyNameProperty(family_name=value)
         self._logger.debug("Setting 'family_name' property to %s", property_obj)
         with self._property_family_name_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/familyName/setValue".format(self._service_id), property_obj, str(self._property_family_name_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "full/{}/property/familyName/setValue".format(self._service_id), property_obj, str(self._property_family_name_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def family_name_changed(self, handler: FamilyNamePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'family_name' property changes.
@@ -214,9 +223,10 @@ class FullClient:
         property_obj = LastBreakfastTimeProperty(timestamp=value)
         self._logger.debug("Setting 'last_breakfast_time' property to %s", property_obj)
         with self._property_last_breakfast_time_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/lastBreakfastTime/setValue".format(self._service_id), property_obj, str(self._property_last_breakfast_time_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "full/{}/property/lastBreakfastTime/setValue".format(self._service_id), property_obj, str(self._property_last_breakfast_time_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def last_breakfast_time_changed(self, handler: LastBreakfastTimePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'last_breakfast_time' property changes.
@@ -242,9 +252,10 @@ class FullClient:
         property_obj = value
         self._logger.debug("Setting 'last_birthdays' property to %s", property_obj)
         with self._property_last_birthdays_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/lastBirthdays/setValue".format(self._service_id), property_obj, str(self._property_last_birthdays_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "full/{}/property/lastBirthdays/setValue".format(self._service_id), property_obj, str(self._property_last_birthdays_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def last_birthdays_changed(self, handler: LastBirthdaysPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'last_birthdays' property changes.
@@ -457,10 +468,10 @@ class FullClient:
             second=second,
             third=third,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'addNumbers' method with payload %s", json_payload)
+        self._logger.debug("Calling 'addNumbers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/addNumbers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("full/{}/method/addNumbers".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_add_numbers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -490,10 +501,10 @@ class FullClient:
         payload = DoSomethingMethodRequest(
             task_to_do=task_to_do,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'doSomething' method with payload %s", json_payload)
+        self._logger.debug("Calling 'doSomething' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/doSomething".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("full/{}/method/doSomething".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_do_something_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -523,10 +534,10 @@ class FullClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_what_time_is_it_response, fut)
         payload = WhatTimeIsItMethodRequest()
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'what_time_is_it' method with payload %s", json_payload)
+        self._logger.debug("Calling 'what_time_is_it' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/whatTimeIsIt".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("full/{}/method/whatTimeIsIt".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_what_time_is_it_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -556,10 +567,10 @@ class FullClient:
         payload = HoldTemperatureMethodRequest(
             temperature_celsius=temperature_celsius,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'hold_temperature' method with payload %s", json_payload)
+        self._logger.debug("Calling 'hold_temperature' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/holdTemperature".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("full/{}/method/holdTemperature".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_hold_temperature_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):

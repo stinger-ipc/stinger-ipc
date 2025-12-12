@@ -15,6 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
+from pyqttier.message import Message
 
 from .connection import IBrokerConnection
 
@@ -49,6 +50,11 @@ class SignalOnlyClient:
         self._signal_recv_callbacks_for_maybe_number: List[MaybeNumberSignalCallbackType] = []
         self._signal_recv_callbacks_for_maybe_name: List[MaybeNameSignalCallbackType] = []
         self._signal_recv_callbacks_for_now: List[NowSignalCallbackType] = []
+
+    @property
+    def service_id(self) -> str:
+        """The service ID of the connected service instance."""
+        return self._service_id
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """Call each callback in the callback dictionary with the provided args."""

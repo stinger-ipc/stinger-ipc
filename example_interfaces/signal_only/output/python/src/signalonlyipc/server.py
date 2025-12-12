@@ -65,13 +65,15 @@ class SignalOnlyServer:
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = "signalOnly/{}/interface".format(self._instance_id)
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
-        self._conn.publish_status(topic, data, expiry)
+        msg = Message.status_message(topic, data, expiry)
+        self._conn.publish(msg)
 
     def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
         correlation_id = request_properties.get("CorrelationData")  # type: Optional[bytes]
         response_topic = request_properties.get("ResponseTopic")  # type: Optional[str]
         if response_topic is not None:
-            self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
+            err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_info)
+            self._conn.publish(err_msg)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
@@ -94,7 +96,8 @@ class SignalOnlyServer:
             two=two,
             three=three,
         )
-        self._conn.publish("signalOnly/{}/signal/anotherSignal".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        sig_msg = Message.signal_message("signalOnly/{}/signal/anotherSignal".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
 
     def emit_bark(self, word: str):
         """Server application code should call this method to emit the 'bark' signal.
@@ -107,7 +110,8 @@ class SignalOnlyServer:
         payload = BarkSignalPayload(
             word=word,
         )
-        self._conn.publish("signalOnly/{}/signal/bark".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        sig_msg = Message.signal_message("signalOnly/{}/signal/bark".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
 
     def emit_maybe_number(self, number: Optional[int]):
         """Server application code should call this method to emit the 'maybe_number' signal.
@@ -120,7 +124,8 @@ class SignalOnlyServer:
         payload = MaybeNumberSignalPayload(
             number=number if number is not None else None,
         )
-        self._conn.publish("signalOnly/{}/signal/maybeNumber".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        sig_msg = Message.signal_message("signalOnly/{}/signal/maybeNumber".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
 
     def emit_maybe_name(self, name: Optional[str]):
         """Server application code should call this method to emit the 'maybe_name' signal.
@@ -133,7 +138,8 @@ class SignalOnlyServer:
         payload = MaybeNameSignalPayload(
             name=name if name is not None else None,
         )
-        self._conn.publish("signalOnly/{}/signal/maybeName".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        sig_msg = Message.signal_message("signalOnly/{}/signal/maybeName".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
 
     def emit_now(self, timestamp: datetime):
         """Server application code should call this method to emit the 'now' signal.
@@ -146,7 +152,8 @@ class SignalOnlyServer:
         payload = NowSignalPayload(
             timestamp=timestamp,
         )
-        self._conn.publish("signalOnly/{}/signal/now".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        sig_msg = Message.signal_message("signalOnly/{}/signal/now".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
 
 
 class SignalOnlyServerBuilder:

@@ -131,42 +131,50 @@ class FullServer:
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = "full/{}/interface".format(self._instance_id)
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
-        self._conn.publish_status(topic, data, expiry)
+        msg = Message.status_message(topic, data, expiry)
+        self._conn.publish(msg)
 
     def _publish_all_properties(self):
 
         with self._property_favorite_number.mutex:
-            prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.value)
-            self._conn.publish_property_state("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
+            prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
+            state_msg = Message.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
+            self._conn.publish(state_msg)
 
         with self._property_favorite_foods.mutex:
 
-            prop_obj = self._property_favorite_foods.value
-            self._conn.publish_property_state("full/{}/property/favoriteFoods/value".format(self._instance_id), prop_obj, self._property_favorite_foods.version)
+            prop_obj = self._property_favorite_foods.get_value()
+            state_msg = Message.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), prop_obj, self._property_favorite_foods.version)
+            self._conn.publish(state_msg)
 
         with self._property_lunch_menu.mutex:
 
-            prop_obj = self._property_lunch_menu.value
-            self._conn.publish_property_state("full/{}/property/lunchMenu/value".format(self._instance_id), prop_obj, self._property_lunch_menu.version)
+            prop_obj = self._property_lunch_menu.get_value()
+            state_msg = Message.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), prop_obj, self._property_lunch_menu.version)
+            self._conn.publish(state_msg)
 
         with self._property_family_name.mutex:
-            prop_obj = FamilyNameProperty(family_name=self._property_family_name.value)
-            self._conn.publish_property_state("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
+            prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
+            state_msg = Message.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
+            self._conn.publish(state_msg)
 
         with self._property_last_breakfast_time.mutex:
-            prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.value)
-            self._conn.publish_property_state("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
+            prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
+            state_msg = Message.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
+            self._conn.publish(state_msg)
 
         with self._property_last_birthdays.mutex:
 
-            prop_obj = self._property_last_birthdays.value
-            self._conn.publish_property_state("full/{}/property/lastBirthdays/value".format(self._instance_id), prop_obj, self._property_last_birthdays.version)
+            prop_obj = self._property_last_birthdays.get_value()
+            state_msg = Message.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), prop_obj, self._property_last_birthdays.version)
+            self._conn.publish(state_msg)
 
     def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
         correlation_id = request_properties.get("CorrelationData")  # type: Optional[bytes]
         response_topic = request_properties.get("ResponseTopic")  # type: Optional[str]
         if response_topic is not None:
-            self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
+            err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_info)
+            self._conn.publish(err_msg)
 
     def _receive_favorite_number_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
@@ -180,14 +188,15 @@ class FullServer:
             if int(prop_version) != int(self._property_favorite_number.version):
                 self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_favorite_number.version)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
+                    prop_resp_msg = Message.property_response_message(
                         response_topic,
                         existing_prop_obj,
                         str(self._property_favorite_number.version),
-                        MethodReturnCode.OUT_OF_SYNC,
+                        MethodReturnCode.OUT_OF_SYNC.value,
                         correlation_id,
                         f"Request version {prop_version} does not match current version {self._property_favorite_number.version}",
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
 
             try:
@@ -195,9 +204,10 @@ class FullServer:
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
-                        response_topic, existing_prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    prop_resp_msg = Message.property_response_message(
+                        response_topic, existing_prop_obj, str(self._property_favorite_number.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
             prop_value = prop_obj.number
             with self._property_favorite_number.mutex:
@@ -214,7 +224,8 @@ class FullServer:
                 prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SUCCESS, correlation_id)
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(prop_resp_msg)
             else:
                 self._logger.warning("No response topic provided for property update of %s", message.topic)
 
@@ -227,7 +238,8 @@ class FullServer:
 
                 prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
 
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                self._conn.publish(prop_resp_msg)
 
     def _receive_favorite_foods_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
@@ -241,14 +253,15 @@ class FullServer:
             if int(prop_version) != int(self._property_favorite_foods.version):
                 self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_favorite_foods.version)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
+                    prop_resp_msg = Message.property_response_message(
                         response_topic,
                         existing_prop_obj,
                         str(self._property_favorite_foods.version),
-                        MethodReturnCode.OUT_OF_SYNC,
+                        MethodReturnCode.OUT_OF_SYNC.value,
                         correlation_id,
                         f"Request version {prop_version} does not match current version {self._property_favorite_foods.version}",
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
 
             try:
@@ -256,9 +269,10 @@ class FullServer:
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
-                        response_topic, existing_prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    prop_resp_msg = Message.property_response_message(
+                        response_topic, existing_prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
             prop_value = prop_obj
             with self._property_favorite_foods.mutex:
@@ -275,7 +289,8 @@ class FullServer:
                 prop_obj = self._property_favorite_foods.get_value()
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SUCCESS, correlation_id)
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(prop_resp_msg)
             else:
                 self._logger.warning("No response topic provided for property update of %s", message.topic)
 
@@ -292,67 +307,8 @@ class FullServer:
 
                 prop_obj = self._property_favorite_foods.value
 
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
-
-    def _receive_lunch_menu_update_request_message(self, message: Message):
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-
-        existing_prop_obj = self._property_lunch_menu.value
-
-        try:
-            if int(prop_version) != int(self._property_lunch_menu.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_lunch_menu.version)
-                if response_topic is not None:
-                    self._conn.publish_property_response(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_lunch_menu.version),
-                        MethodReturnCode.OUT_OF_SYNC,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_lunch_menu.version}",
-                    )
-                return
-
-            try:
-                prop_obj = LunchMenuProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    self._conn.publish_property_response(
-                        response_topic, existing_prop_obj, str(self._property_lunch_menu.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
-                    )
-                return
-            prop_value = prop_obj
-            with self._property_lunch_menu.mutex:
-                self._property_lunch_menu.value = prop_value
-                self._property_lunch_menu.version += 1
-
-                prop_obj = self._property_lunch_menu.value
-
-                state_msg = Message.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), prop_obj, self._property_lunch_menu.version)
-                self._conn.publish(state_msg)
-
-            if response_topic is not None:
-
-                prop_obj = self._property_lunch_menu.value
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_lunch_menu.version), MethodReturnCode.SUCCESS, correlation_id)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
-
-            for callback in self._property_lunch_menu.callbacks:
-                callback(prop_value.monday, prop_value.tuesday)
-        except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
-            if response_topic is not None:
-
-                prop_obj = self._property_lunch_menu.value
-
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_lunch_menu.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                self._conn.publish(prop_resp_msg)
 
     def _receive_family_name_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
@@ -366,14 +322,15 @@ class FullServer:
             if int(prop_version) != int(self._property_family_name.version):
                 self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_family_name.version)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
+                    prop_resp_msg = Message.property_response_message(
                         response_topic,
                         existing_prop_obj,
                         str(self._property_family_name.version),
-                        MethodReturnCode.OUT_OF_SYNC,
+                        MethodReturnCode.OUT_OF_SYNC.value,
                         correlation_id,
                         f"Request version {prop_version} does not match current version {self._property_family_name.version}",
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
 
             try:
@@ -381,9 +338,10 @@ class FullServer:
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
-                        response_topic, existing_prop_obj, str(self._property_family_name.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    prop_resp_msg = Message.property_response_message(
+                        response_topic, existing_prop_obj, str(self._property_family_name.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
             prop_value = prop_obj.family_name
             with self._property_family_name.mutex:
@@ -400,7 +358,8 @@ class FullServer:
                 prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SUCCESS, correlation_id)
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(prop_resp_msg)
             else:
                 self._logger.warning("No response topic provided for property update of %s", message.topic)
 
@@ -413,7 +372,8 @@ class FullServer:
 
                 prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
 
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                self._conn.publish(prop_resp_msg)
 
     def _receive_last_breakfast_time_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
@@ -427,14 +387,15 @@ class FullServer:
             if int(prop_version) != int(self._property_last_breakfast_time.version):
                 self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_last_breakfast_time.version)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
+                    prop_resp_msg = Message.property_response_message(
                         response_topic,
                         existing_prop_obj,
                         str(self._property_last_breakfast_time.version),
-                        MethodReturnCode.OUT_OF_SYNC,
+                        MethodReturnCode.OUT_OF_SYNC.value,
                         correlation_id,
                         f"Request version {prop_version} does not match current version {self._property_last_breakfast_time.version}",
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
 
             try:
@@ -442,9 +403,10 @@ class FullServer:
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
-                        response_topic, existing_prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    prop_resp_msg = Message.property_response_message(
+                        response_topic, existing_prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
             prop_value = prop_obj.timestamp
             with self._property_last_breakfast_time.mutex:
@@ -461,7 +423,8 @@ class FullServer:
                 prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SUCCESS, correlation_id)
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(prop_resp_msg)
             else:
                 self._logger.warning("No response topic provided for property update of %s", message.topic)
 
@@ -474,7 +437,10 @@ class FullServer:
 
                 prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
 
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
+                prop_resp_msg = Message.property_response_message(
+                    response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e)
+                )
+                self._conn.publish(prop_resp_msg)
 
     def _receive_last_birthdays_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
@@ -488,14 +454,15 @@ class FullServer:
             if int(prop_version) != int(self._property_last_birthdays.version):
                 self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_last_birthdays.version)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
+                    prop_resp_msg = Message.property_response_message(
                         response_topic,
                         existing_prop_obj,
                         str(self._property_last_birthdays.version),
-                        MethodReturnCode.OUT_OF_SYNC,
+                        MethodReturnCode.OUT_OF_SYNC.value,
                         correlation_id,
                         f"Request version {prop_version} does not match current version {self._property_last_birthdays.version}",
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
 
             try:
@@ -503,9 +470,10 @@ class FullServer:
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
-                        response_topic, existing_prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e)
+                    prop_resp_msg = Message.property_response_message(
+                        response_topic, existing_prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
             prop_value = prop_obj
             with self._property_last_birthdays.mutex:
@@ -522,7 +490,8 @@ class FullServer:
                 prop_obj = self._property_last_birthdays.get_value()
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SUCCESS, correlation_id)
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(prop_resp_msg)
             else:
                 self._logger.warning("No response topic provided for property update of %s", message.topic)
 
@@ -540,7 +509,8 @@ class FullServer:
 
                 prop_obj = self._property_last_birthdays.value
 
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                self._conn.publish(prop_resp_msg)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
@@ -560,7 +530,8 @@ class FullServer:
             day_of_month=day_of_month,
             day_of_week=day_of_week,
         )
-        self._conn.publish("full/{}/signal/todayIs".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        sig_msg = Message.signal_message("full/{}/signal/todayIs".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
 
     def emit_random_word(self, word: str, time: datetime):
         """Server application code should call this method to emit the 'randomWord' signal.
@@ -576,7 +547,8 @@ class FullServer:
             word=word,
             time=time,
         )
-        self._conn.publish("full/{}/signal/randomWord".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        sig_msg = Message.signal_message("full/{}/signal/randomWord".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
 
     def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
         """This is a decorator to decorate a method that will handle the 'addNumbers' method calls."""
@@ -615,13 +587,16 @@ class FullServer:
                     self._logger.warning("StingerMethodException while handling addNumbers: %s", sme)
                     return_code = sme.return_code
                     debug_msg = str(sme)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling addNumbers", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(err_msg)
                 else:
+                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     def handle_do_something(self, handler: Callable[[str], DoSomethingMethodResponse]):
@@ -658,13 +633,16 @@ class FullServer:
                     self._logger.warning("StingerMethodException while handling doSomething: %s", sme)
                     return_code = sme.return_code
                     debug_msg = str(sme)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling doSomething", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(err_msg)
                 else:
+                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     def handle_what_time_is_it(self, handler: Callable[[None], datetime]):
@@ -700,13 +678,16 @@ class FullServer:
                     self._logger.warning("StingerMethodException while handling what_time_is_it: %s", sme)
                     return_code = sme.return_code
                     debug_msg = str(sme)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling what_time_is_it", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(err_msg)
                 else:
+                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     def handle_hold_temperature(self, handler: Callable[[float], bool]):
@@ -744,13 +725,16 @@ class FullServer:
                     self._logger.warning("StingerMethodException while handling hold_temperature: %s", sme)
                     return_code = sme.return_code
                     debug_msg = str(sme)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling hold_temperature", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(err_msg)
                 else:
+                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     @property
@@ -773,7 +757,8 @@ class FullServer:
             with self._property_favorite_number.mutex:
                 self._property_favorite_number.value = prop_obj
                 self._property_favorite_number.version += 1
-                self._conn.publish_property_state("full/{}/property/favoriteNumber/value".format(self._instance_id), payload, self._property_favorite_number.version)
+                state_msg = Message.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
+                self._conn.publish(state_msg)
             for callback in self._property_favorite_number.callbacks:
                 callback(prop_obj.number)
 
@@ -811,7 +796,8 @@ class FullServer:
             with self._property_favorite_foods.mutex:
                 self._property_favorite_foods.value = value
                 self._property_favorite_foods.version += 1
-                self._conn.publish_property_state("full/{}/property/favoriteFoods/value".format(self._instance_id), payload, self._property_favorite_foods.version)
+                state_msg = Message.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), value, self._property_favorite_foods.version)
+                self._conn.publish(state_msg)
             for callback in self._property_favorite_foods.callbacks:
                 callback(value.drink, value.slices_of_pizza, value.breakfast)
 
@@ -857,7 +843,8 @@ class FullServer:
             with self._property_lunch_menu.mutex:
                 self._property_lunch_menu.value = value
                 self._property_lunch_menu.version += 1
-                self._conn.publish_property_state("full/{}/property/lunchMenu/value".format(self._instance_id), payload, self._property_lunch_menu.version)
+                state_msg = Message.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), value, self._property_lunch_menu.version)
+                self._conn.publish(state_msg)
             for callback in self._property_lunch_menu.callbacks:
                 callback(value.monday, value.tuesday)
 
@@ -901,7 +888,8 @@ class FullServer:
             with self._property_family_name.mutex:
                 self._property_family_name.value = prop_obj
                 self._property_family_name.version += 1
-                self._conn.publish_property_state("full/{}/property/familyName/value".format(self._instance_id), payload, self._property_family_name.version)
+                state_msg = Message.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
+                self._conn.publish(state_msg)
             for callback in self._property_family_name.callbacks:
                 callback(prop_obj.family_name)
 
@@ -940,7 +928,8 @@ class FullServer:
             with self._property_last_breakfast_time.mutex:
                 self._property_last_breakfast_time.value = prop_obj
                 self._property_last_breakfast_time.version += 1
-                self._conn.publish_property_state("full/{}/property/lastBreakfastTime/value".format(self._instance_id), payload, self._property_last_breakfast_time.version)
+                state_msg = Message.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
+                self._conn.publish(state_msg)
             for callback in self._property_last_breakfast_time.callbacks:
                 callback(prop_obj.timestamp)
 
@@ -978,7 +967,8 @@ class FullServer:
             with self._property_last_birthdays.mutex:
                 self._property_last_birthdays.value = value
                 self._property_last_birthdays.version += 1
-                self._conn.publish_property_state("full/{}/property/lastBirthdays/value".format(self._instance_id), payload, self._property_last_birthdays.version)
+                state_msg = Message.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), value, self._property_last_birthdays.version)
+                self._conn.publish(state_msg)
             for callback in self._property_last_birthdays.callbacks:
                 callback(value.mom, value.dad, value.sister, value.brothers_age)
 

@@ -15,6 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
+from pyqttier.message import Message
 
 import asyncio
 import concurrent.futures as futures
@@ -66,6 +67,11 @@ class SimpleClient:
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
 
     @property
+    def service_id(self) -> str:
+        """The service ID of the connected service instance."""
+        return self._service_id
+
+    @property
     def school(self) -> str:
         """Property 'school' getter."""
         with self._property_school_mutex:
@@ -79,7 +85,10 @@ class SimpleClient:
         property_obj = SchoolProperty(name=value)
         self._logger.debug("Setting 'school' property to %s", property_obj)
         with self._property_school_mutex:
-            self._conn.publish_property_update_request("simple/{}/property/school/setValue".format(self._service_id), property_obj, str(self._property_school_version), self._property_response_topic)
+            req_msg = Message.property_update_request_message(
+                "simple/{}/property/school/setValue".format(self._service_id), property_obj, str(self._property_school_version), self._property_response_topic, str(uuid4())
+            )
+            self._conn.publish(req_msg)
 
     def school_changed(self, handler: SchoolPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'school' property changes.
@@ -183,10 +192,10 @@ class SimpleClient:
         payload = TradeNumbersMethodRequest(
             your_number=your_number,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'trade_numbers' method with payload %s", json_payload)
+        self._logger.debug("Calling 'trade_numbers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Simple/methodResponse"
-        self._conn.publish("simple/{}/method/tradeNumbers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("simple/{}/method/tradeNumbers".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_trade_numbers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):

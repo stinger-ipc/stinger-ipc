@@ -15,6 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
+from pyqttier.message import Message
 
 import asyncio
 import concurrent.futures as futures
@@ -110,6 +111,11 @@ class WeatherClient:
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
 
     @property
+    def service_id(self) -> str:
+        """The service ID of the connected service instance."""
+        return self._service_id
+
+    @property
     def location(self) -> LocationProperty:
         """Property 'location' getter."""
         with self._property_location_mutex:
@@ -123,9 +129,10 @@ class WeatherClient:
         property_obj = value
         self._logger.debug("Setting 'location' property to %s", property_obj)
         with self._property_location_mutex:
-            self._conn.publish_property_update_request(
-                "weather/{}/property/location/setValue".format(self._service_id), property_obj, str(self._property_location_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "weather/{}/property/location/setValue".format(self._service_id), property_obj, str(self._property_location_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def location_changed(self, handler: LocationPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'location' property changes.
@@ -215,12 +222,14 @@ class WeatherClient:
         property_obj = CurrentConditionRefreshIntervalProperty(seconds=value)
         self._logger.debug("Setting 'current_condition_refresh_interval' property to %s", property_obj)
         with self._property_current_condition_refresh_interval_mutex:
-            self._conn.publish_property_update_request(
+            req_msg = Message.property_update_request_message(
                 "weather/{}/property/currentConditionRefreshInterval/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_current_condition_refresh_interval_version),
                 self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def current_condition_refresh_interval_changed(self, handler: CurrentConditionRefreshIntervalPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'current_condition_refresh_interval' property changes.
@@ -246,12 +255,14 @@ class WeatherClient:
         property_obj = HourlyForecastRefreshIntervalProperty(seconds=value)
         self._logger.debug("Setting 'hourly_forecast_refresh_interval' property to %s", property_obj)
         with self._property_hourly_forecast_refresh_interval_mutex:
-            self._conn.publish_property_update_request(
+            req_msg = Message.property_update_request_message(
                 "weather/{}/property/hourlyForecastRefreshInterval/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_hourly_forecast_refresh_interval_version),
                 self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def hourly_forecast_refresh_interval_changed(self, handler: HourlyForecastRefreshIntervalPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'hourly_forecast_refresh_interval' property changes.
@@ -277,12 +288,14 @@ class WeatherClient:
         property_obj = DailyForecastRefreshIntervalProperty(seconds=value)
         self._logger.debug("Setting 'daily_forecast_refresh_interval' property to %s", property_obj)
         with self._property_daily_forecast_refresh_interval_mutex:
-            self._conn.publish_property_update_request(
+            req_msg = Message.property_update_request_message(
                 "weather/{}/property/dailyForecastRefreshInterval/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_daily_forecast_refresh_interval_version),
                 self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def daily_forecast_refresh_interval_changed(self, handler: DailyForecastRefreshIntervalPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'daily_forecast_refresh_interval' property changes.
@@ -512,10 +525,10 @@ class WeatherClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_daily_forecast_response, fut)
         payload = RefreshDailyForecastMethodRequest()
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'refresh_daily_forecast' method with payload %s", json_payload)
+        self._logger.debug("Calling 'refresh_daily_forecast' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/weather/methodResponse"
-        self._conn.publish("weather/{}/method/refreshDailyForecast".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("weather/{}/method/refreshDailyForecast".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_refresh_daily_forecast_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -546,10 +559,10 @@ class WeatherClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_hourly_forecast_response, fut)
         payload = RefreshHourlyForecastMethodRequest()
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'refresh_hourly_forecast' method with payload %s", json_payload)
+        self._logger.debug("Calling 'refresh_hourly_forecast' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/weather/methodResponse"
-        self._conn.publish("weather/{}/method/refreshHourlyForecast".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("weather/{}/method/refreshHourlyForecast".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_refresh_hourly_forecast_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -580,10 +593,10 @@ class WeatherClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_refresh_current_conditions_response, fut)
         payload = RefreshCurrentConditionsMethodRequest()
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'refresh_current_conditions' method with payload %s", json_payload)
+        self._logger.debug("Calling 'refresh_current_conditions' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/weather/methodResponse"
-        self._conn.publish("weather/{}/method/refreshCurrentConditions".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("weather/{}/method/refreshCurrentConditions".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_refresh_current_conditions_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):

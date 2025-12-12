@@ -15,6 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
+from pyqttier.message import Message
 
 import asyncio
 import concurrent.futures as futures
@@ -288,6 +289,11 @@ class TestableClient:
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
 
     @property
+    def service_id(self) -> str:
+        """The service ID of the connected service instance."""
+        return self._service_id
+
+    @property
     def read_write_integer(self) -> int:
         """Property 'read_write_integer' getter."""
         with self._property_read_write_integer_mutex:
@@ -301,9 +307,10 @@ class TestableClient:
         property_obj = ReadWriteIntegerProperty(value=value)
         self._logger.debug("Setting 'read_write_integer' property to %s", property_obj)
         with self._property_read_write_integer_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_integer_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_integer_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def read_write_integer_changed(self, handler: ReadWriteIntegerPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_integer' property changes.
@@ -345,9 +352,14 @@ class TestableClient:
         property_obj = ReadWriteOptionalIntegerProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_integer' property to %s", property_obj)
         with self._property_read_write_optional_integer_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteOptionalInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_integer_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteOptionalInteger/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_optional_integer_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_optional_integer_changed(self, handler: ReadWriteOptionalIntegerPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_integer' property changes.
@@ -373,9 +385,14 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_integers' property to %s", property_obj)
         with self._property_read_write_two_integers_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteTwoIntegers/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_integers_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteTwoIntegers/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_two_integers_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_two_integers_changed(self, handler: ReadWriteTwoIntegersPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_integers' property changes.
@@ -417,9 +434,10 @@ class TestableClient:
         property_obj = ReadWriteStringProperty(value=value)
         self._logger.debug("Setting 'read_write_string' property to %s", property_obj)
         with self._property_read_write_string_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteString/setValue".format(self._service_id), property_obj, str(self._property_read_write_string_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteString/setValue".format(self._service_id), property_obj, str(self._property_read_write_string_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def read_write_string_changed(self, handler: ReadWriteStringPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_string' property changes.
@@ -445,9 +463,14 @@ class TestableClient:
         property_obj = ReadWriteOptionalStringProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_string' property to %s", property_obj)
         with self._property_read_write_optional_string_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteOptionalString/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_string_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteOptionalString/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_optional_string_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_optional_string_changed(self, handler: ReadWriteOptionalStringPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_string' property changes.
@@ -473,9 +496,14 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_strings' property to %s", property_obj)
         with self._property_read_write_two_strings_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteTwoStrings/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_strings_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteTwoStrings/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_two_strings_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_two_strings_changed(self, handler: ReadWriteTwoStringsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_strings' property changes.
@@ -501,9 +529,10 @@ class TestableClient:
         property_obj = ReadWriteStructProperty(value=value)
         self._logger.debug("Setting 'read_write_struct' property to %s", property_obj)
         with self._property_read_write_struct_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_struct_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_struct_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def read_write_struct_changed(self, handler: ReadWriteStructPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_struct' property changes.
@@ -529,9 +558,14 @@ class TestableClient:
         property_obj = ReadWriteOptionalStructProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_struct' property to %s", property_obj)
         with self._property_read_write_optional_struct_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteOptionalStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_struct_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteOptionalStruct/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_optional_struct_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_optional_struct_changed(self, handler: ReadWriteOptionalStructPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_struct' property changes.
@@ -557,9 +591,14 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_structs' property to %s", property_obj)
         with self._property_read_write_two_structs_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteTwoStructs/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_structs_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteTwoStructs/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_two_structs_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_two_structs_changed(self, handler: ReadWriteTwoStructsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_structs' property changes.
@@ -601,9 +640,10 @@ class TestableClient:
         property_obj = ReadWriteEnumProperty(value=value)
         self._logger.debug("Setting 'read_write_enum' property to %s", property_obj)
         with self._property_read_write_enum_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_enum_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_enum_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def read_write_enum_changed(self, handler: ReadWriteEnumPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_enum' property changes.
@@ -629,9 +669,14 @@ class TestableClient:
         property_obj = ReadWriteOptionalEnumProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_enum' property to %s", property_obj)
         with self._property_read_write_optional_enum_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteOptionalEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_enum_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteOptionalEnum/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_optional_enum_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_optional_enum_changed(self, handler: ReadWriteOptionalEnumPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_enum' property changes.
@@ -657,9 +702,10 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_enums' property to %s", property_obj)
         with self._property_read_write_two_enums_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteTwoEnums/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_enums_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteTwoEnums/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_enums_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def read_write_two_enums_changed(self, handler: ReadWriteTwoEnumsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_enums' property changes.
@@ -685,9 +731,10 @@ class TestableClient:
         property_obj = ReadWriteDatetimeProperty(value=value)
         self._logger.debug("Setting 'read_write_datetime' property to %s", property_obj)
         with self._property_read_write_datetime_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteDatetime/setValue".format(self._service_id), property_obj, str(self._property_read_write_datetime_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteDatetime/setValue".format(self._service_id), property_obj, str(self._property_read_write_datetime_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def read_write_datetime_changed(self, handler: ReadWriteDatetimePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_datetime' property changes.
@@ -713,12 +760,14 @@ class TestableClient:
         property_obj = ReadWriteOptionalDatetimeProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_datetime' property to %s", property_obj)
         with self._property_read_write_optional_datetime_mutex:
-            self._conn.publish_property_update_request(
+            req_msg = Message.property_update_request_message(
                 "testable/{}/property/readWriteOptionalDatetime/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_datetime_version),
                 self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_optional_datetime_changed(self, handler: ReadWriteOptionalDatetimePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_datetime' property changes.
@@ -744,9 +793,14 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_datetimes' property to %s", property_obj)
         with self._property_read_write_two_datetimes_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteTwoDatetimes/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_datetimes_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteTwoDatetimes/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_two_datetimes_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_two_datetimes_changed(self, handler: ReadWriteTwoDatetimesPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_datetimes' property changes.
@@ -772,9 +826,10 @@ class TestableClient:
         property_obj = ReadWriteDurationProperty(value=value)
         self._logger.debug("Setting 'read_write_duration' property to %s", property_obj)
         with self._property_read_write_duration_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteDuration/setValue".format(self._service_id), property_obj, str(self._property_read_write_duration_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteDuration/setValue".format(self._service_id), property_obj, str(self._property_read_write_duration_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def read_write_duration_changed(self, handler: ReadWriteDurationPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_duration' property changes.
@@ -800,12 +855,14 @@ class TestableClient:
         property_obj = ReadWriteOptionalDurationProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_duration' property to %s", property_obj)
         with self._property_read_write_optional_duration_mutex:
-            self._conn.publish_property_update_request(
+            req_msg = Message.property_update_request_message(
                 "testable/{}/property/readWriteOptionalDuration/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_duration_version),
                 self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_optional_duration_changed(self, handler: ReadWriteOptionalDurationPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_duration' property changes.
@@ -831,9 +888,14 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_durations' property to %s", property_obj)
         with self._property_read_write_two_durations_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteTwoDurations/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_durations_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteTwoDurations/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_two_durations_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_two_durations_changed(self, handler: ReadWriteTwoDurationsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_durations' property changes.
@@ -859,9 +921,10 @@ class TestableClient:
         property_obj = ReadWriteBinaryProperty(value=value)
         self._logger.debug("Setting 'read_write_binary' property to %s", property_obj)
         with self._property_read_write_binary_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_binary_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_binary_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def read_write_binary_changed(self, handler: ReadWriteBinaryPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_binary' property changes.
@@ -887,9 +950,14 @@ class TestableClient:
         property_obj = ReadWriteOptionalBinaryProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_binary' property to %s", property_obj)
         with self._property_read_write_optional_binary_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteOptionalBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_optional_binary_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteOptionalBinary/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_optional_binary_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_optional_binary_changed(self, handler: ReadWriteOptionalBinaryPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_optional_binary' property changes.
@@ -915,9 +983,14 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_binaries' property to %s", property_obj)
         with self._property_read_write_two_binaries_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteTwoBinaries/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_binaries_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteTwoBinaries/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_two_binaries_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_two_binaries_changed(self, handler: ReadWriteTwoBinariesPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_two_binaries' property changes.
@@ -943,9 +1016,14 @@ class TestableClient:
         property_obj = ReadWriteListOfStringsProperty(value=value)
         self._logger.debug("Setting 'read_write_list_of_strings' property to %s", property_obj)
         with self._property_read_write_list_of_strings_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteListOfStrings/setValue".format(self._service_id), property_obj, str(self._property_read_write_list_of_strings_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteListOfStrings/setValue".format(self._service_id),
+                property_obj,
+                str(self._property_read_write_list_of_strings_version),
+                self._property_response_topic,
+                str(uuid4()),
             )
+            self._conn.publish(req_msg)
 
     def read_write_list_of_strings_changed(self, handler: ReadWriteListOfStringsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_list_of_strings' property changes.
@@ -971,9 +1049,10 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_lists' property to %s", property_obj)
         with self._property_read_write_lists_mutex:
-            self._conn.publish_property_update_request(
-                "testable/{}/property/readWriteLists/setValue".format(self._service_id), property_obj, str(self._property_read_write_lists_version), self._property_response_topic
+            req_msg = Message.property_update_request_message(
+                "testable/{}/property/readWriteLists/setValue".format(self._service_id), property_obj, str(self._property_read_write_lists_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def read_write_lists_changed(self, handler: ReadWriteListsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'read_write_lists' property changes.
@@ -1935,10 +2014,10 @@ class TestableClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_call_with_nothing_response, fut)
         payload = CallWithNothingMethodRequest()
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callWithNothing' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callWithNothing' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callWithNothing".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callWithNothing".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_with_nothing_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -1969,10 +2048,10 @@ class TestableClient:
         payload = CallOneIntegerMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOneInteger' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOneInteger' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOneInteger".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOneInteger".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_one_integer_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2002,10 +2081,10 @@ class TestableClient:
         payload = CallOptionalIntegerMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOptionalInteger' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOptionalInteger' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOptionalInteger".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOptionalInteger".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_optional_integer_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2037,10 +2116,10 @@ class TestableClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callThreeIntegers' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callThreeIntegers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callThreeIntegers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callThreeIntegers".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_three_integers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2070,10 +2149,10 @@ class TestableClient:
         payload = CallOneStringMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOneString' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOneString' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOneString".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOneString".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_one_string_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2103,10 +2182,10 @@ class TestableClient:
         payload = CallOptionalStringMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOptionalString' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOptionalString' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOptionalString".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOptionalString".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_optional_string_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2138,10 +2217,10 @@ class TestableClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callThreeStrings' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callThreeStrings' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callThreeStrings".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callThreeStrings".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_three_strings_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2171,10 +2250,10 @@ class TestableClient:
         payload = CallOneEnumMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOneEnum' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOneEnum' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOneEnum".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOneEnum".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_one_enum_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2204,10 +2283,10 @@ class TestableClient:
         payload = CallOptionalEnumMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOptionalEnum' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOptionalEnum' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOptionalEnum".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOptionalEnum".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_optional_enum_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2239,10 +2318,10 @@ class TestableClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callThreeEnums' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callThreeEnums' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callThreeEnums".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callThreeEnums".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_three_enums_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2272,10 +2351,10 @@ class TestableClient:
         payload = CallOneStructMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOneStruct' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOneStruct' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOneStruct".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOneStruct".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_one_struct_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2305,10 +2384,10 @@ class TestableClient:
         payload = CallOptionalStructMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOptionalStruct' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOptionalStruct' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOptionalStruct".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOptionalStruct".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_optional_struct_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2340,10 +2419,10 @@ class TestableClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callThreeStructs' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callThreeStructs' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callThreeStructs".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callThreeStructs".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_three_structs_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2373,10 +2452,10 @@ class TestableClient:
         payload = CallOneDateTimeMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOneDateTime' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOneDateTime' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOneDateTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOneDateTime".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_one_date_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2406,10 +2485,10 @@ class TestableClient:
         payload = CallOptionalDateTimeMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOptionalDateTime' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOptionalDateTime' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOptionalDateTime".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOptionalDateTime".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_optional_date_time_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2441,10 +2520,10 @@ class TestableClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callThreeDateTimes' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callThreeDateTimes' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callThreeDateTimes".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callThreeDateTimes".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_three_date_times_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2474,10 +2553,10 @@ class TestableClient:
         payload = CallOneDurationMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOneDuration' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOneDuration' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOneDuration".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOneDuration".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_one_duration_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2507,10 +2586,10 @@ class TestableClient:
         payload = CallOptionalDurationMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOptionalDuration' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOptionalDuration' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOptionalDuration".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOptionalDuration".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_optional_duration_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2542,10 +2621,10 @@ class TestableClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callThreeDurations' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callThreeDurations' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callThreeDurations".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callThreeDurations".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_three_durations_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2575,10 +2654,10 @@ class TestableClient:
         payload = CallOneBinaryMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOneBinary' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOneBinary' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOneBinary".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOneBinary".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_one_binary_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2608,10 +2687,10 @@ class TestableClient:
         payload = CallOptionalBinaryMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOptionalBinary' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOptionalBinary' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOptionalBinary".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOptionalBinary".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_optional_binary_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2643,10 +2722,10 @@ class TestableClient:
             input2=input2,
             input3=input3,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callThreeBinaries' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callThreeBinaries' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callThreeBinaries".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callThreeBinaries".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_three_binaries_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2676,10 +2755,10 @@ class TestableClient:
         payload = CallOneListOfIntegersMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOneListOfIntegers' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOneListOfIntegers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOneListOfIntegers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOneListOfIntegers".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_one_list_of_integers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2709,10 +2788,10 @@ class TestableClient:
         payload = CallOptionalListOfFloatsMethodRequest(
             input1=input1,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callOptionalListOfFloats' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callOptionalListOfFloats' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callOptionalListOfFloats".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callOptionalListOfFloats".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_optional_list_of_floats_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -2743,10 +2822,10 @@ class TestableClient:
             input1=input1,
             input2=input2,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'callTwoLists' method with payload %s", json_payload)
+        self._logger.debug("Calling 'callTwoLists' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        self._conn.publish("testable/{}/method/callTwoLists".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = Message.request_message("testable/{}/method/callTwoLists".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_call_two_lists_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):

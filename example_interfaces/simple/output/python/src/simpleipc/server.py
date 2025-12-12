@@ -101,19 +101,22 @@ class SimpleServer:
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = "simple/{}/interface".format(self._instance_id)
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
-        self._conn.publish_status(topic, data, expiry)
+        msg = Message.status_message(topic, data, expiry)
+        self._conn.publish(msg)
 
     def _publish_all_properties(self):
 
         with self._property_school.mutex:
-            prop_obj = SchoolProperty(name=self._property_school.value)
-            self._conn.publish_property_state("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
+            prop_obj = SchoolProperty(name=self._property_school.get_value())
+            state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
+            self._conn.publish(state_msg)
 
     def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
         correlation_id = request_properties.get("CorrelationData")  # type: Optional[bytes]
         response_topic = request_properties.get("ResponseTopic")  # type: Optional[str]
         if response_topic is not None:
-            self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_info)
+            err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_info)
+            self._conn.publish(err_msg)
 
     def _receive_school_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
@@ -127,14 +130,15 @@ class SimpleServer:
             if int(prop_version) != int(self._property_school.version):
                 self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_school.version)
                 if response_topic is not None:
-                    self._conn.publish_property_response(
+                    prop_resp_msg = Message.property_response_message(
                         response_topic,
                         existing_prop_obj,
                         str(self._property_school.version),
-                        MethodReturnCode.OUT_OF_SYNC,
+                        MethodReturnCode.OUT_OF_SYNC.value,
                         correlation_id,
                         f"Request version {prop_version} does not match current version {self._property_school.version}",
                     )
+                    self._conn.publish(prop_resp_msg)
                 return
 
             try:
@@ -142,7 +146,10 @@ class SimpleServer:
             except ValidationError as e:
                 self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
                 if response_topic is not None:
-                    self._conn.publish_property_response(response_topic, existing_prop_obj, str(self._property_school.version), MethodReturnCode.SERVER_DESERIALIZATION_ERROR, correlation_id, str(e))
+                    prop_resp_msg = Message.property_response_message(
+                        response_topic, existing_prop_obj, str(self._property_school.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
+                    )
+                    self._conn.publish(prop_resp_msg)
                 return
             prop_value = prop_obj.name
             with self._property_school.mutex:
@@ -159,7 +166,8 @@ class SimpleServer:
                 prop_obj = SchoolProperty(name=self._property_school.get_value())
 
                 self._logger.debug("Sending property update response for to %s", response_topic)
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS, correlation_id)
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(prop_resp_msg)
             else:
                 self._logger.warning("No response topic provided for property update of %s", message.topic)
 
@@ -172,7 +180,8 @@ class SimpleServer:
 
                 prop_obj = SchoolProperty(name=self._property_school.get_value())
 
-                self._conn.publish_property_response(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SERVER_ERROR, correlation_id, str(e))
+                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                self._conn.publish(prop_resp_msg)
 
     def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
@@ -189,7 +198,8 @@ class SimpleServer:
         payload = PersonEnteredSignalPayload(
             person=person,
         )
-        self._conn.publish("simple/{}/signal/personEntered".format(self._instance_id), payload.model_dump_json(by_alias=True), qos=1, retain=False)
+        sig_msg = Message.signal_message("simple/{}/signal/personEntered".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
 
     def handle_trade_numbers(self, handler: Callable[[int], int]):
         """This is a decorator to decorate a method that will handle the 'trade_numbers' method calls."""
@@ -226,13 +236,16 @@ class SimpleServer:
                     self._logger.warning("StingerMethodException while handling trade_numbers: %s", sme)
                     return_code = sme.return_code
                     debug_msg = str(sme)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling trade_numbers", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
                     debug_msg = str(e)
-                    self._conn.publish_error_response(response_topic, return_code, correlation_id, debug_info=debug_msg)
+                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                    self._conn.publish(err_msg)
                 else:
+                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
 
     @property
@@ -255,7 +268,8 @@ class SimpleServer:
             with self._property_school.mutex:
                 self._property_school.value = prop_obj
                 self._property_school.version += 1
-                self._conn.publish_property_state("simple/{}/property/school/value".format(self._instance_id), payload, self._property_school.version)
+                state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
+                self._conn.publish(state_msg)
             for callback in self._property_school.callbacks:
                 callback(prop_obj.name)
 
