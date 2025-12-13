@@ -3,7 +3,7 @@ from time import sleep
 import concurrent.futures as futures
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
-from testableipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from testableipc.client import TestableClient, TestableClientBuilder, TestableClientDiscoverer
 from testableipc.interface_types import *
 import threading
@@ -349,7 +349,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -431,7 +431,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -648,7 +648,7 @@ class SuperAwesomeDoerOfThings:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -681,7 +681,7 @@ class SuperAwesomeDoerOfThings:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -715,7 +715,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -816,7 +816,7 @@ class SuperAwesomeDoerOfThings:
 if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport)
+    conn = Mqtt5Connection(transport)
 
     doer1 = SuperAwesomeDoerOfThings("Doer1", conn)
 

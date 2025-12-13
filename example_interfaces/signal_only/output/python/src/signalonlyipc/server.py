@@ -34,6 +34,7 @@ class SignalOnlyServer:
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SignalOnlyServer instance %s", instance_id)
         self._instance_id = instance_id
+        self._service_advert_topic = "signalOnly/{}/interface".format(self._instance_id)
         self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
         self._running = True
@@ -41,29 +42,37 @@ class SignalOnlyServer:
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
-        self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
+        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info)
         self._advertise_thread.start()
 
     def __del__(self):
         self._running = False
-        self._conn.unpublish_retained(self._conn.online_topic)
+        self._conn.unpublish_retained(self._service_advert_topic)
         self._advertise_thread.join()
 
-    def loop_publishing_interface_info(self):
+    @property
+    def instance_id(self) -> str:
+        """The instance ID of this server instance."""
+        return self._instance_id
+
+    def _loop_publishing_interface_info(self):
         """We have a discovery topic separate from the MQTT client discovery topic.
         We publish it periodically, but with a Message Expiry interval."""
-        self._publish_interface_info()
         while self._running:
             if self._conn.is_connected():
-                self._publish_interface_info()
-                sleep(self._re_advertise_server_interval_seconds)
+                self.publish_interface_info()
+                time_left = self._re_advertise_server_interval_seconds
+                while self._running and time_left > 0:
+                    sleep(2)
+                    time_left -= 2
             else:
                 sleep(2)
 
-    def _publish_interface_info(self):
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
+    def publish_interface_info(self):
+        """Publishes the interface info message to the interface info topic with an expiry interval."""
+        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
-        topic = "signalOnly/{}/interface".format(self._instance_id)
+        topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         msg = Message.status_message(topic, data, expiry)
         self._conn.publish(msg)

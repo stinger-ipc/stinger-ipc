@@ -36,7 +36,7 @@ T = TypeVar("T")
 @dataclass
 class PropertyControls(Generic[T]):
     value: T
-    mutex = threading.Lock()
+    mutex = threading.RLock()
     version: int = -1
     subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
@@ -64,6 +64,7 @@ class TestableServer:
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing TestableServer instance %s", instance_id)
         self._instance_id = instance_id
+        self._service_advert_topic = "testable/{}/interface".format(self._instance_id)
         self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
         self._running = True
@@ -316,167 +317,149 @@ class TestableServer:
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
-        self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
+        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info)
         self._advertise_thread.start()
 
     def __del__(self):
         self._running = False
-        self._conn.unpublish_retained(self._conn.online_topic)
+        self._conn.unpublish_retained(self._service_advert_topic)
         self._advertise_thread.join()
 
-    def loop_publishing_interface_info(self):
+    @property
+    def instance_id(self) -> str:
+        """The instance ID of this server instance."""
+        return self._instance_id
+
+    def _loop_publishing_interface_info(self):
         """We have a discovery topic separate from the MQTT client discovery topic.
         We publish it periodically, but with a Message Expiry interval."""
-        self._publish_interface_info()
         while self._running:
             if self._conn.is_connected():
-                self._publish_interface_info()
-                sleep(self._re_advertise_server_interval_seconds)
+                self.publish_interface_info()
+                time_left = self._re_advertise_server_interval_seconds
+                while self._running and time_left > 0:
+                    sleep(2)
+                    time_left -= 2
             else:
                 sleep(2)
 
-    def _publish_interface_info(self):
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
+    def publish_interface_info(self):
+        """Publishes the interface info message to the interface info topic with an expiry interval."""
+        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
-        topic = "testable/{}/interface".format(self._instance_id)
+        topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         msg = Message.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
     def _publish_all_properties(self):
-
         with self._property_read_write_integer.mutex:
             prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteInteger/value".format(self._instance_id), prop_obj, self._property_read_write_integer.version)
             self._conn.publish(state_msg)
-
         with self._property_read_only_integer.mutex:
             prop_obj = ReadOnlyIntegerProperty(value=self._property_read_only_integer.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readOnlyInteger/value".format(self._instance_id), prop_obj, self._property_read_only_integer.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_optional_integer.mutex:
             prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteOptionalInteger/value".format(self._instance_id), prop_obj, self._property_read_write_optional_integer.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_two_integers.mutex:
 
             prop_obj = self._property_read_write_two_integers.get_value()
             state_msg = Message.property_state_message("testable/{}/property/readWriteTwoIntegers/value".format(self._instance_id), prop_obj, self._property_read_write_two_integers.version)
             self._conn.publish(state_msg)
-
         with self._property_read_only_string.mutex:
             prop_obj = ReadOnlyStringProperty(value=self._property_read_only_string.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readOnlyString/value".format(self._instance_id), prop_obj, self._property_read_only_string.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_string.mutex:
             prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteString/value".format(self._instance_id), prop_obj, self._property_read_write_string.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_optional_string.mutex:
             prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteOptionalString/value".format(self._instance_id), prop_obj, self._property_read_write_optional_string.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_two_strings.mutex:
 
             prop_obj = self._property_read_write_two_strings.get_value()
             state_msg = Message.property_state_message("testable/{}/property/readWriteTwoStrings/value".format(self._instance_id), prop_obj, self._property_read_write_two_strings.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_struct.mutex:
             prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteStruct/value".format(self._instance_id), prop_obj, self._property_read_write_struct.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_optional_struct.mutex:
             prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteOptionalStruct/value".format(self._instance_id), prop_obj, self._property_read_write_optional_struct.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_two_structs.mutex:
 
             prop_obj = self._property_read_write_two_structs.get_value()
             state_msg = Message.property_state_message("testable/{}/property/readWriteTwoStructs/value".format(self._instance_id), prop_obj, self._property_read_write_two_structs.version)
             self._conn.publish(state_msg)
-
         with self._property_read_only_enum.mutex:
             prop_obj = ReadOnlyEnumProperty(value=self._property_read_only_enum.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readOnlyEnum/value".format(self._instance_id), prop_obj, self._property_read_only_enum.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_enum.mutex:
             prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteEnum/value".format(self._instance_id), prop_obj, self._property_read_write_enum.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_optional_enum.mutex:
             prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteOptionalEnum/value".format(self._instance_id), prop_obj, self._property_read_write_optional_enum.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_two_enums.mutex:
 
             prop_obj = self._property_read_write_two_enums.get_value()
             state_msg = Message.property_state_message("testable/{}/property/readWriteTwoEnums/value".format(self._instance_id), prop_obj, self._property_read_write_two_enums.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_datetime.mutex:
             prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_datetime.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_optional_datetime.mutex:
             prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_optional_datetime.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_two_datetimes.mutex:
 
             prop_obj = self._property_read_write_two_datetimes.get_value()
             state_msg = Message.property_state_message("testable/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), prop_obj, self._property_read_write_two_datetimes.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_duration.mutex:
             prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteDuration/value".format(self._instance_id), prop_obj, self._property_read_write_duration.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_optional_duration.mutex:
             prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteOptionalDuration/value".format(self._instance_id), prop_obj, self._property_read_write_optional_duration.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_two_durations.mutex:
 
             prop_obj = self._property_read_write_two_durations.get_value()
             state_msg = Message.property_state_message("testable/{}/property/readWriteTwoDurations/value".format(self._instance_id), prop_obj, self._property_read_write_two_durations.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_binary.mutex:
             prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteBinary/value".format(self._instance_id), prop_obj, self._property_read_write_binary.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_optional_binary.mutex:
             prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteOptionalBinary/value".format(self._instance_id), prop_obj, self._property_read_write_optional_binary.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_two_binaries.mutex:
 
             prop_obj = self._property_read_write_two_binaries.get_value()
             state_msg = Message.property_state_message("testable/{}/property/readWriteTwoBinaries/value".format(self._instance_id), prop_obj, self._property_read_write_two_binaries.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_list_of_strings.mutex:
             prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.get_value())
             state_msg = Message.property_state_message("testable/{}/property/readWriteListOfStrings/value".format(self._instance_id), prop_obj, self._property_read_write_list_of_strings.version)
             self._conn.publish(state_msg)
-
         with self._property_read_write_lists.mutex:
 
             prop_obj = self._property_read_write_lists.get_value()
@@ -492,7 +475,8 @@ class TestableServer:
 
     def _receive_read_write_integer_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -557,7 +541,8 @@ class TestableServer:
 
     def _receive_read_write_optional_integer_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -626,7 +611,8 @@ class TestableServer:
 
     def _receive_read_write_two_integers_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -696,7 +682,8 @@ class TestableServer:
 
     def _receive_read_write_string_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -761,7 +748,8 @@ class TestableServer:
 
     def _receive_read_write_optional_string_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -828,7 +816,8 @@ class TestableServer:
 
     def _receive_read_write_two_strings_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -898,7 +887,8 @@ class TestableServer:
 
     def _receive_read_write_struct_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -963,7 +953,8 @@ class TestableServer:
 
     def _receive_read_write_optional_struct_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1030,7 +1021,8 @@ class TestableServer:
 
     def _receive_read_write_two_structs_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1100,7 +1092,8 @@ class TestableServer:
 
     def _receive_read_write_enum_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1165,7 +1158,8 @@ class TestableServer:
 
     def _receive_read_write_optional_enum_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1232,7 +1226,8 @@ class TestableServer:
 
     def _receive_read_write_two_enums_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1302,7 +1297,8 @@ class TestableServer:
 
     def _receive_read_write_datetime_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1369,7 +1365,8 @@ class TestableServer:
 
     def _receive_read_write_optional_datetime_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1438,7 +1435,8 @@ class TestableServer:
 
     def _receive_read_write_two_datetimes_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1508,7 +1506,8 @@ class TestableServer:
 
     def _receive_read_write_duration_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1575,7 +1574,8 @@ class TestableServer:
 
     def _receive_read_write_optional_duration_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1644,7 +1644,8 @@ class TestableServer:
 
     def _receive_read_write_two_durations_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1714,7 +1715,8 @@ class TestableServer:
 
     def _receive_read_write_binary_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1779,7 +1781,8 @@ class TestableServer:
 
     def _receive_read_write_optional_binary_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1846,7 +1849,8 @@ class TestableServer:
 
     def _receive_read_write_two_binaries_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1916,7 +1920,8 @@ class TestableServer:
 
     def _receive_read_write_list_of_strings_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -1983,7 +1988,8 @@ class TestableServer:
 
     def _receive_read_write_lists_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -3654,8 +3660,7 @@ class TestableServer:
     @property
     def read_write_integer(self) -> Optional[int]:
         """This property returns the last received value for the 'read_write_integer' property."""
-        with self._property_read_write_integer_mutex:
-            return self._property_read_write_integer
+        return self._property_read_write_integer.get_value()
 
     @read_write_integer.setter
     def read_write_integer(self, value: int):
@@ -3694,8 +3699,7 @@ class TestableServer:
     @property
     def read_only_integer(self) -> Optional[int]:
         """This property returns the last received value for the 'read_only_integer' property."""
-        with self._property_read_only_integer_mutex:
-            return self._property_read_only_integer
+        return self._property_read_only_integer.get_value()
 
     @read_only_integer.setter
     def read_only_integer(self, value: int):
@@ -3734,8 +3738,7 @@ class TestableServer:
     @property
     def read_write_optional_integer(self) -> Optional[int]:
         """This property returns the last received value for the 'read_write_optional_integer' property."""
-        with self._property_read_write_optional_integer_mutex:
-            return self._property_read_write_optional_integer
+        return self._property_read_write_optional_integer.get_value()
 
     @read_write_optional_integer.setter
     def read_write_optional_integer(self, value: Optional[int]):
@@ -3820,8 +3823,7 @@ class TestableServer:
     @property
     def read_only_string(self) -> Optional[str]:
         """This property returns the last received value for the 'read_only_string' property."""
-        with self._property_read_only_string_mutex:
-            return self._property_read_only_string
+        return self._property_read_only_string.get_value()
 
     @read_only_string.setter
     def read_only_string(self, value: str):
@@ -3860,8 +3862,7 @@ class TestableServer:
     @property
     def read_write_string(self) -> Optional[str]:
         """This property returns the last received value for the 'read_write_string' property."""
-        with self._property_read_write_string_mutex:
-            return self._property_read_write_string
+        return self._property_read_write_string.get_value()
 
     @read_write_string.setter
     def read_write_string(self, value: str):
@@ -3900,8 +3901,7 @@ class TestableServer:
     @property
     def read_write_optional_string(self) -> Optional[str]:
         """This property returns the last received value for the 'read_write_optional_string' property."""
-        with self._property_read_write_optional_string_mutex:
-            return self._property_read_write_optional_string
+        return self._property_read_write_optional_string.get_value()
 
     @read_write_optional_string.setter
     def read_write_optional_string(self, value: Optional[str]):
@@ -3984,8 +3984,7 @@ class TestableServer:
     @property
     def read_write_struct(self) -> Optional[AllTypes]:
         """This property returns the last received value for the 'read_write_struct' property."""
-        with self._property_read_write_struct_mutex:
-            return self._property_read_write_struct
+        return self._property_read_write_struct.get_value()
 
     @read_write_struct.setter
     def read_write_struct(self, value: AllTypes):
@@ -4024,8 +4023,7 @@ class TestableServer:
     @property
     def read_write_optional_struct(self) -> AllTypes:
         """This property returns the last received value for the 'read_write_optional_struct' property."""
-        with self._property_read_write_optional_struct_mutex:
-            return self._property_read_write_optional_struct
+        return self._property_read_write_optional_struct.get_value()
 
     @read_write_optional_struct.setter
     def read_write_optional_struct(self, value: AllTypes):
@@ -4108,8 +4106,7 @@ class TestableServer:
     @property
     def read_only_enum(self) -> Optional[Numbers]:
         """This property returns the last received value for the 'read_only_enum' property."""
-        with self._property_read_only_enum_mutex:
-            return self._property_read_only_enum
+        return self._property_read_only_enum.get_value()
 
     @read_only_enum.setter
     def read_only_enum(self, value: Numbers):
@@ -4148,8 +4145,7 @@ class TestableServer:
     @property
     def read_write_enum(self) -> Optional[Numbers]:
         """This property returns the last received value for the 'read_write_enum' property."""
-        with self._property_read_write_enum_mutex:
-            return self._property_read_write_enum
+        return self._property_read_write_enum.get_value()
 
     @read_write_enum.setter
     def read_write_enum(self, value: Numbers):
@@ -4188,8 +4184,7 @@ class TestableServer:
     @property
     def read_write_optional_enum(self) -> Optional[Numbers]:
         """This property returns the last received value for the 'read_write_optional_enum' property."""
-        with self._property_read_write_optional_enum_mutex:
-            return self._property_read_write_optional_enum
+        return self._property_read_write_optional_enum.get_value()
 
     @read_write_optional_enum.setter
     def read_write_optional_enum(self, value: Optional[Numbers]):
@@ -4272,8 +4267,7 @@ class TestableServer:
     @property
     def read_write_datetime(self) -> Optional[datetime]:
         """This property returns the last received value for the 'read_write_datetime' property."""
-        with self._property_read_write_datetime_mutex:
-            return self._property_read_write_datetime
+        return self._property_read_write_datetime.get_value()
 
     @read_write_datetime.setter
     def read_write_datetime(self, value: datetime):
@@ -4312,8 +4306,7 @@ class TestableServer:
     @property
     def read_write_optional_datetime(self) -> Optional[datetime]:
         """This property returns the last received value for the 'read_write_optional_datetime' property."""
-        with self._property_read_write_optional_datetime_mutex:
-            return self._property_read_write_optional_datetime
+        return self._property_read_write_optional_datetime.get_value()
 
     @read_write_optional_datetime.setter
     def read_write_optional_datetime(self, value: Optional[datetime]):
@@ -4398,8 +4391,7 @@ class TestableServer:
     @property
     def read_write_duration(self) -> Optional[timedelta]:
         """This property returns the last received value for the 'read_write_duration' property."""
-        with self._property_read_write_duration_mutex:
-            return self._property_read_write_duration
+        return self._property_read_write_duration.get_value()
 
     @read_write_duration.setter
     def read_write_duration(self, value: timedelta):
@@ -4438,8 +4430,7 @@ class TestableServer:
     @property
     def read_write_optional_duration(self) -> Optional[timedelta]:
         """This property returns the last received value for the 'read_write_optional_duration' property."""
-        with self._property_read_write_optional_duration_mutex:
-            return self._property_read_write_optional_duration
+        return self._property_read_write_optional_duration.get_value()
 
     @read_write_optional_duration.setter
     def read_write_optional_duration(self, value: Optional[timedelta]):
@@ -4524,8 +4515,7 @@ class TestableServer:
     @property
     def read_write_binary(self) -> Optional[bytes]:
         """This property returns the last received value for the 'read_write_binary' property."""
-        with self._property_read_write_binary_mutex:
-            return self._property_read_write_binary
+        return self._property_read_write_binary.get_value()
 
     @read_write_binary.setter
     def read_write_binary(self, value: bytes):
@@ -4564,8 +4554,7 @@ class TestableServer:
     @property
     def read_write_optional_binary(self) -> bytes:
         """This property returns the last received value for the 'read_write_optional_binary' property."""
-        with self._property_read_write_optional_binary_mutex:
-            return self._property_read_write_optional_binary
+        return self._property_read_write_optional_binary.get_value()
 
     @read_write_optional_binary.setter
     def read_write_optional_binary(self, value: bytes):
@@ -4648,8 +4637,7 @@ class TestableServer:
     @property
     def read_write_list_of_strings(self) -> Optional[List[str]]:
         """This property returns the last received value for the 'read_write_list_of_strings' property."""
-        with self._property_read_write_list_of_strings_mutex:
-            return self._property_read_write_list_of_strings
+        return self._property_read_write_list_of_strings.get_value()
 
     @read_write_list_of_strings.setter
     def read_write_list_of_strings(self, value: List[str]):

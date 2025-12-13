@@ -11,6 +11,7 @@ from weatheripc.client import WeatherClient, DiscoveredInstance
 from weatheripc.property import WeatherInitialPropertyValues
 from weatheripc.interface_types import *
 from pyqttier.mock import MockConnection
+import json
 
 
 @pytest.fixture
@@ -53,15 +54,74 @@ def client(mock_connection):
     )
     client = WeatherClient(
         connection=mock_connection,
-        discovered_instance=mock_discovery,
+        instance_info=mock_discovery,
     )
     return client
 
 
-class TestClientInit:
+class TestClient:
     """Tests for client initialization."""
 
     def test_client_initializes(self, client):
         """Test that client initializes successfully."""
         assert client is not None, "Client failed to initialize"
         assert client.service_id == "test_instance", "Client service_id does not match expected value"
+
+    def test_client_properties_initialization(self, client):
+        """Test that client properties are initialized correctly."""
+
+        assert hasattr(client, "location"), "Client missing property 'location'"
+
+        assert client.location is not None, "Property 'location' not initialized properly"
+
+        assert hasattr(client, "current_temperature"), "Client missing property 'current_temperature'"
+
+        assert client.current_temperature is not None, "Property 'current_temperature' not initialized properly"
+
+        assert hasattr(client, "current_condition"), "Client missing property 'current_condition'"
+
+        assert client.current_condition is not None, "Property 'current_condition' not initialized properly"
+
+        assert hasattr(client, "daily_forecast"), "Client missing property 'daily_forecast'"
+
+        assert client.daily_forecast is not None, "Property 'daily_forecast' not initialized properly"
+
+        assert hasattr(client, "hourly_forecast"), "Client missing property 'hourly_forecast'"
+
+        assert client.hourly_forecast is not None, "Property 'hourly_forecast' not initialized properly"
+
+        assert hasattr(client, "current_condition_refresh_interval"), "Client missing property 'current_condition_refresh_interval'"
+
+        assert client.current_condition_refresh_interval is not None, "Property 'current_condition_refresh_interval' not initialized properly"
+
+        assert hasattr(client, "hourly_forecast_refresh_interval"), "Client missing property 'hourly_forecast_refresh_interval'"
+
+        assert client.hourly_forecast_refresh_interval is not None, "Property 'hourly_forecast_refresh_interval' not initialized properly"
+
+        assert hasattr(client, "daily_forecast_refresh_interval"), "Client missing property 'daily_forecast_refresh_interval'"
+
+        assert client.daily_forecast_refresh_interval is not None, "Property 'daily_forecast_refresh_interval' not initialized properly"
+
+    def test_refresh_daily_forecast_method_call_sends_request(self, mock_connection, client):
+        kwargs = {}
+        client.refresh_daily_forecast(**kwargs)
+        assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_daily_forecast' method call"
+        message = mock_connection.published_messages[0]
+        assert message.topic.endswith("/method/refreshDailyForecast"), "Incorrect topic for 'refresh_daily_forecast' method call: {message.topic}"
+        payload = json.loads(message.payload.decode())
+
+    def test_refresh_hourly_forecast_method_call_sends_request(self, mock_connection, client):
+        kwargs = {}
+        client.refresh_hourly_forecast(**kwargs)
+        assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_hourly_forecast' method call"
+        message = mock_connection.published_messages[0]
+        assert message.topic.endswith("/method/refreshHourlyForecast"), "Incorrect topic for 'refresh_hourly_forecast' method call: {message.topic}"
+        payload = json.loads(message.payload.decode())
+
+    def test_refresh_current_conditions_method_call_sends_request(self, mock_connection, client):
+        kwargs = {}
+        client.refresh_current_conditions(**kwargs)
+        assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_current_conditions' method call"
+        message = mock_connection.published_messages[0]
+        assert message.topic.endswith("/method/refreshCurrentConditions"), "Incorrect topic for 'refresh_current_conditions' method call: {message.topic}"
+        payload = json.loads(message.payload.decode())

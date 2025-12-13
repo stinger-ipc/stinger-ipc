@@ -3,7 +3,7 @@ import signal
 import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
-from {{stinger.python.package_name}}.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}, {{stinger.name|UpperCamelCase}}InitialPropertyValues
 from {{stinger.python.package_name}}.interface_types import *
 
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     )
     {%endif%}
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
+    conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
     server = {{stinger.python.server_class_name}}(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"){%if stinger.properties | length > 0 %}, initial_property_values{%endif%})
 
     {%for method_name, method in stinger.methods.items()%}

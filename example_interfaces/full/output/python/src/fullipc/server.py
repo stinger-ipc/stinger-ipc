@@ -36,7 +36,7 @@ T = TypeVar("T")
 @dataclass
 class PropertyControls(Generic[T]):
     value: T
-    mutex = threading.Lock()
+    mutex = threading.RLock()
     version: int = -1
     subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
@@ -64,6 +64,7 @@ class FullServer:
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing FullServer instance %s", instance_id)
         self._instance_id = instance_id
+        self._service_advert_topic = "full/{}/interface".format(self._instance_id)
         self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
         self._running = True
@@ -107,62 +108,64 @@ class FullServer:
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
-        self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
+        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info)
         self._advertise_thread.start()
 
     def __del__(self):
         self._running = False
-        self._conn.unpublish_retained(self._conn.online_topic)
+        self._conn.unpublish_retained(self._service_advert_topic)
         self._advertise_thread.join()
 
-    def loop_publishing_interface_info(self):
+    @property
+    def instance_id(self) -> str:
+        """The instance ID of this server instance."""
+        return self._instance_id
+
+    def _loop_publishing_interface_info(self):
         """We have a discovery topic separate from the MQTT client discovery topic.
         We publish it periodically, but with a Message Expiry interval."""
-        self._publish_interface_info()
         while self._running:
             if self._conn.is_connected():
-                self._publish_interface_info()
-                sleep(self._re_advertise_server_interval_seconds)
+                self.publish_interface_info()
+                time_left = self._re_advertise_server_interval_seconds
+                while self._running and time_left > 0:
+                    sleep(2)
+                    time_left -= 2
             else:
                 sleep(2)
 
-    def _publish_interface_info(self):
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
+    def publish_interface_info(self):
+        """Publishes the interface info message to the interface info topic with an expiry interval."""
+        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
-        topic = "full/{}/interface".format(self._instance_id)
+        topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         msg = Message.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
     def _publish_all_properties(self):
-
         with self._property_favorite_number.mutex:
             prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
             state_msg = Message.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
             self._conn.publish(state_msg)
-
         with self._property_favorite_foods.mutex:
 
             prop_obj = self._property_favorite_foods.get_value()
             state_msg = Message.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), prop_obj, self._property_favorite_foods.version)
             self._conn.publish(state_msg)
-
         with self._property_lunch_menu.mutex:
 
             prop_obj = self._property_lunch_menu.get_value()
             state_msg = Message.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), prop_obj, self._property_lunch_menu.version)
             self._conn.publish(state_msg)
-
         with self._property_family_name.mutex:
             prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
             state_msg = Message.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
             self._conn.publish(state_msg)
-
         with self._property_last_breakfast_time.mutex:
             prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
             state_msg = Message.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
             self._conn.publish(state_msg)
-
         with self._property_last_birthdays.mutex:
 
             prop_obj = self._property_last_birthdays.get_value()
@@ -178,7 +181,8 @@ class FullServer:
 
     def _receive_favorite_number_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -243,7 +247,8 @@ class FullServer:
 
     def _receive_favorite_foods_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -312,7 +317,8 @@ class FullServer:
 
     def _receive_family_name_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -377,7 +383,8 @@ class FullServer:
 
     def _receive_last_breakfast_time_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -444,7 +451,8 @@ class FullServer:
 
     def _receive_last_birthdays_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -740,8 +748,7 @@ class FullServer:
     @property
     def favorite_number(self) -> Optional[int]:
         """This property returns the last received value for the 'favorite_number' property."""
-        with self._property_favorite_number_mutex:
-            return self._property_favorite_number
+        return self._property_favorite_number.get_value()
 
     @favorite_number.setter
     def favorite_number(self, number: int):
@@ -871,8 +878,7 @@ class FullServer:
     @property
     def family_name(self) -> Optional[str]:
         """This property returns the last received value for the 'family_name' property."""
-        with self._property_family_name_mutex:
-            return self._property_family_name
+        return self._property_family_name.get_value()
 
     @family_name.setter
     def family_name(self, family_name: str):
@@ -911,8 +917,7 @@ class FullServer:
     @property
     def last_breakfast_time(self) -> Optional[datetime]:
         """This property returns the last received value for the 'last_breakfast_time' property."""
-        with self._property_last_breakfast_time_mutex:
-            return self._property_last_breakfast_time
+        return self._property_last_breakfast_time.get_value()
 
     @last_breakfast_time.setter
     def last_breakfast_time(self, timestamp: datetime):

@@ -3,7 +3,7 @@ from time import sleep
 import concurrent.futures as futures
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
-from simpleipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from simpleipc.client import SimpleClient, SimpleClientBuilder, SimpleClientDiscoverer
 from simpleipc.interface_types import *
 import threading
@@ -49,7 +49,7 @@ class SuperAwesomeDoerOfThings:
 if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport)
+    conn = Mqtt5Connection(transport)
 
     doer1 = SuperAwesomeDoerOfThings("Doer1", conn)
 

@@ -36,7 +36,7 @@ T = TypeVar("T")
 @dataclass
 class PropertyControls(Generic[T]):
     value: T
-    mutex = threading.Lock()
+    mutex = threading.RLock()
     version: int = -1
     subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
@@ -64,6 +64,7 @@ class SimpleServer:
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SimpleServer instance %s", instance_id)
         self._instance_id = instance_id
+        self._service_advert_topic = "simple/{}/interface".format(self._instance_id)
         self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
         self._running = True
@@ -77,35 +78,42 @@ class SimpleServer:
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
-        self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
+        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info)
         self._advertise_thread.start()
 
     def __del__(self):
         self._running = False
-        self._conn.unpublish_retained(self._conn.online_topic)
+        self._conn.unpublish_retained(self._service_advert_topic)
         self._advertise_thread.join()
 
-    def loop_publishing_interface_info(self):
+    @property
+    def instance_id(self) -> str:
+        """The instance ID of this server instance."""
+        return self._instance_id
+
+    def _loop_publishing_interface_info(self):
         """We have a discovery topic separate from the MQTT client discovery topic.
         We publish it periodically, but with a Message Expiry interval."""
-        self._publish_interface_info()
         while self._running:
             if self._conn.is_connected():
-                self._publish_interface_info()
-                sleep(self._re_advertise_server_interval_seconds)
+                self.publish_interface_info()
+                time_left = self._re_advertise_server_interval_seconds
+                while self._running and time_left > 0:
+                    sleep(2)
+                    time_left -= 2
             else:
                 sleep(2)
 
-    def _publish_interface_info(self):
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
+    def publish_interface_info(self):
+        """Publishes the interface info message to the interface info topic with an expiry interval."""
+        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
-        topic = "simple/{}/interface".format(self._instance_id)
+        topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         msg = Message.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
     def _publish_all_properties(self):
-
         with self._property_school.mutex:
             prop_obj = SchoolProperty(name=self._property_school.get_value())
             state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
@@ -120,7 +128,8 @@ class SimpleServer:
 
     def _receive_school_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -251,8 +260,7 @@ class SimpleServer:
     @property
     def school(self) -> Optional[str]:
         """This property returns the last received value for the 'school' property."""
-        with self._property_school_mutex:
-            return self._property_school
+        return self._property_school.get_value()
 
     @school.setter
     def school(self, name: str):

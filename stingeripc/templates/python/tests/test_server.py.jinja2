@@ -1,0 +1,57 @@
+"""
+Tests for {{stinger.name}} server.
+"""
+import pytest
+from unittest.mock import Mock, patch, MagicMock
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta, UTC
+from {{stinger.name | snake_case}}ipc.server import {{stinger.name | UpperCamelCase}}Server
+{%if stinger.properties | length > 0 -%}
+from {{stinger.name | snake_case}}ipc.property import {{stinger.name | UpperCamelCase}}InitialPropertyValues
+{%endif-%}
+from {{stinger.name | snake_case}}ipc.interface_types import *
+from pyqttier.mock import MockConnection
+import json
+
+@pytest.fixture
+def mock_connection():
+    """Fixture providing a mock MQTT connection."""
+    conn = MockConnection()
+    return conn
+
+
+@pytest.fixture
+def server(mock_connection):
+    {%if stinger.properties | length > 0 %}
+    initial_property_values={{stinger.name|UpperCamelCase}}InitialPropertyValues(
+        {%-for prop_name, prop in stinger.properties.items()%}
+        {{prop_name|snake_case}}={%if prop.arg_list|length > 1%}{{stinger.name|UpperCamelCase}}{{prop_name|UpperCamelCase}}Property(
+            {%-for arg in prop.arg_list%}
+            {{arg.name|snake_case}}={{arg.get_random_example_value()}},
+            {%-endfor%}
+        ){%else%}{{prop.arg_list[0].get_random_example_value()}}
+        {%-endif%},
+        {%-endfor%}
+    )
+    {%endif%}
+
+    server = {{stinger.python.server_class_name}}(mock_connection, "test_instance"{%if stinger.properties | length > 0 %}, initial_property_values{%endif%})
+    return server
+
+class TestServer:
+    """Tests for server initialization."""
+
+    def test_server_initializes(self, server):
+        """Test that client initializes successfully."""
+        assert server is not None, "server failed to initialize"
+        assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
+
+    def test_server_properties_initialization(self, server):
+        """Test that server properties are initialized correctly."""
+        {%for prop_name, prop in stinger.properties.items()%}
+        assert hasattr(server, '{{prop_name|snake_case}}'), "Server missing property '{{prop_name|snake_case}}'"
+        {%if prop.arg_list|length > 1 or not prop.arg_list[0].optional%}
+        assert server.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
+        {%endif%}
+        {%endfor%}

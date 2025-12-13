@@ -3,7 +3,7 @@ import signal
 import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
-from signalonlyipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from signalonlyipc.server import SignalOnlyServer, SignalOnlyInitialPropertyValues
 from signalonlyipc.interface_types import *
 
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     """
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
+    conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
     server = SignalOnlyServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"))
 
     print("Ctrl-C will stop the program.")

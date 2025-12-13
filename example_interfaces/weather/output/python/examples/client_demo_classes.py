@@ -3,7 +3,7 @@ from time import sleep
 import concurrent.futures as futures
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
-from weatheripc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from weatheripc.client import WeatherClient, WeatherClientBuilder, WeatherClientDiscoverer
 from weatheripc.interface_types import *
 import threading
@@ -102,7 +102,7 @@ class SuperAwesomeDoerOfThings:
 if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport)
+    conn = Mqtt5Connection(transport)
 
     doer1 = SuperAwesomeDoerOfThings("Doer1", conn)
 

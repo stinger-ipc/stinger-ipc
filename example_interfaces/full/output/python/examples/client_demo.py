@@ -3,7 +3,7 @@ from time import sleep
 import concurrent.futures as futures
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
-from fullipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from fullipc.client import FullClient, FullClientBuilder, FullClientDiscoverer
 from fullipc.interface_types import *
 import threading
@@ -60,7 +60,7 @@ def request_loop(client: FullClient):
         client.last_birthdays = LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
-            sister=None,
+            sister=datetime.now(UTC),
             brothers_age=42,
         )
 
@@ -70,7 +70,7 @@ def request_loop(client: FullClient):
 if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport)
+    conn = Mqtt5Connection(transport)
 
     client_builder = FullClientBuilder()
 

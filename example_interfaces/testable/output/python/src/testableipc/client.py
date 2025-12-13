@@ -16,6 +16,7 @@ import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
 from pyqttier.message import Message
+from pyqttier.interface import IBrokerConnection
 
 import asyncio
 import concurrent.futures as futures
@@ -23,7 +24,6 @@ from .method_codes import *
 from .interface_types import *
 import threading
 
-from .connection import IBrokerConnection
 
 from .property import TestableInitialPropertyValues
 

@@ -16,8 +16,8 @@ import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
 from pyqttier.message import Message
+from pyqttier.interface import IBrokerConnection
 
-from .connection import IBrokerConnection
 
 from pydantic import BaseModel
 

@@ -3,7 +3,7 @@ import signal
 import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
-from simpleipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from simpleipc.server import SimpleServer, SimpleInitialPropertyValues
 from simpleipc.interface_types import *
 
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
+    conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
     server = SimpleServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), initial_property_values)
 
     @server.handle_trade_numbers

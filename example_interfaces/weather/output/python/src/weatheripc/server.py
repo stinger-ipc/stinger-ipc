@@ -36,7 +36,7 @@ T = TypeVar("T")
 @dataclass
 class PropertyControls(Generic[T]):
     value: T
-    mutex = threading.Lock()
+    mutex = threading.RLock()
     version: int = -1
     subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
@@ -64,6 +64,7 @@ class WeatherServer:
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing WeatherServer instance %s", instance_id)
         self._instance_id = instance_id
+        self._service_advert_topic = "weather/{}/interface".format(self._instance_id)
         self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
         self._running = True
@@ -130,78 +131,78 @@ class WeatherServer:
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
-        self._advertise_thread = threading.Thread(target=self.loop_publishing_interface_info)
+        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info)
         self._advertise_thread.start()
 
     def __del__(self):
         self._running = False
-        self._conn.unpublish_retained(self._conn.online_topic)
+        self._conn.unpublish_retained(self._service_advert_topic)
         self._advertise_thread.join()
 
-    def loop_publishing_interface_info(self):
+    @property
+    def instance_id(self) -> str:
+        """The instance ID of this server instance."""
+        return self._instance_id
+
+    def _loop_publishing_interface_info(self):
         """We have a discovery topic separate from the MQTT client discovery topic.
         We publish it periodically, but with a Message Expiry interval."""
-        self._publish_interface_info()
         while self._running:
             if self._conn.is_connected():
-                self._publish_interface_info()
-                sleep(self._re_advertise_server_interval_seconds)
+                self.publish_interface_info()
+                time_left = self._re_advertise_server_interval_seconds
+                while self._running and time_left > 0:
+                    sleep(2)
+                    time_left -= 2
             else:
                 sleep(2)
 
-    def _publish_interface_info(self):
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=self._conn.online_topic, timestamp=datetime.now(UTC).isoformat())
+    def publish_interface_info(self):
+        """Publishes the interface info message to the interface info topic with an expiry interval."""
+        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
-        topic = "weather/{}/interface".format(self._instance_id)
+        topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         msg = Message.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
     def _publish_all_properties(self):
-
         with self._property_location.mutex:
 
             prop_obj = self._property_location.get_value()
             state_msg = Message.property_state_message("weather/{}/property/location/value".format(self._instance_id), prop_obj, self._property_location.version)
             self._conn.publish(state_msg)
-
         with self._property_current_temperature.mutex:
             prop_obj = CurrentTemperatureProperty(temperature_f=self._property_current_temperature.get_value())
             state_msg = Message.property_state_message("weather/{}/property/currentTemperature/value".format(self._instance_id), prop_obj, self._property_current_temperature.version)
             self._conn.publish(state_msg)
-
         with self._property_current_condition.mutex:
 
             prop_obj = self._property_current_condition.get_value()
             state_msg = Message.property_state_message("weather/{}/property/currentCondition/value".format(self._instance_id), prop_obj, self._property_current_condition.version)
             self._conn.publish(state_msg)
-
         with self._property_daily_forecast.mutex:
 
             prop_obj = self._property_daily_forecast.get_value()
             state_msg = Message.property_state_message("weather/{}/property/dailyForecast/value".format(self._instance_id), prop_obj, self._property_daily_forecast.version)
             self._conn.publish(state_msg)
-
         with self._property_hourly_forecast.mutex:
 
             prop_obj = self._property_hourly_forecast.get_value()
             state_msg = Message.property_state_message("weather/{}/property/hourlyForecast/value".format(self._instance_id), prop_obj, self._property_hourly_forecast.version)
             self._conn.publish(state_msg)
-
         with self._property_current_condition_refresh_interval.mutex:
             prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
             state_msg = Message.property_state_message(
                 "weather/{}/property/currentConditionRefreshInterval/value".format(self._instance_id), prop_obj, self._property_current_condition_refresh_interval.version
             )
             self._conn.publish(state_msg)
-
         with self._property_hourly_forecast_refresh_interval.mutex:
             prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
             state_msg = Message.property_state_message(
                 "weather/{}/property/hourlyForecastRefreshInterval/value".format(self._instance_id), prop_obj, self._property_hourly_forecast_refresh_interval.version
             )
             self._conn.publish(state_msg)
-
         with self._property_daily_forecast_refresh_interval.mutex:
             prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
             state_msg = Message.property_state_message(
@@ -218,7 +219,8 @@ class WeatherServer:
 
     def _receive_location_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -286,7 +288,8 @@ class WeatherServer:
 
     def _receive_current_condition_refresh_interval_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -357,7 +360,8 @@ class WeatherServer:
 
     def _receive_hourly_forecast_refresh_interval_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -428,7 +432,8 @@ class WeatherServer:
 
     def _receive_daily_forecast_refresh_interval_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version = user_properties.get("PropertyVersion", -1)  # type: int
+        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
 
@@ -686,8 +691,7 @@ class WeatherServer:
     @property
     def current_temperature(self) -> Optional[float]:
         """This property returns the last received value for the 'current_temperature' property."""
-        with self._property_current_temperature_mutex:
-            return self._property_current_temperature
+        return self._property_current_temperature.get_value()
 
     @current_temperature.setter
     def current_temperature(self, temperature_f: float):
@@ -867,8 +871,7 @@ class WeatherServer:
     @property
     def current_condition_refresh_interval(self) -> Optional[int]:
         """This property returns the last received value for the 'current_condition_refresh_interval' property."""
-        with self._property_current_condition_refresh_interval_mutex:
-            return self._property_current_condition_refresh_interval
+        return self._property_current_condition_refresh_interval.get_value()
 
     @current_condition_refresh_interval.setter
     def current_condition_refresh_interval(self, seconds: int):
@@ -909,8 +912,7 @@ class WeatherServer:
     @property
     def hourly_forecast_refresh_interval(self) -> Optional[int]:
         """This property returns the last received value for the 'hourly_forecast_refresh_interval' property."""
-        with self._property_hourly_forecast_refresh_interval_mutex:
-            return self._property_hourly_forecast_refresh_interval
+        return self._property_hourly_forecast_refresh_interval.get_value()
 
     @hourly_forecast_refresh_interval.setter
     def hourly_forecast_refresh_interval(self, seconds: int):
@@ -951,8 +953,7 @@ class WeatherServer:
     @property
     def daily_forecast_refresh_interval(self) -> Optional[int]:
         """This property returns the last received value for the 'daily_forecast_refresh_interval' property."""
-        with self._property_daily_forecast_refresh_interval_mutex:
-            return self._property_daily_forecast_refresh_interval
+        return self._property_daily_forecast_refresh_interval.get_value()
 
     @daily_forecast_refresh_interval.setter
     def daily_forecast_refresh_interval(self, seconds: int):

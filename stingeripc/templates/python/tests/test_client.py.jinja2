@@ -12,7 +12,7 @@ from {{stinger.name | snake_case}}ipc.property import {{stinger.name | UpperCame
 {%endif-%}
 from {{stinger.name | snake_case}}ipc.interface_types import *
 from pyqttier.mock import MockConnection
-
+import json
 
 @pytest.fixture
 def mock_connection():
@@ -41,15 +41,41 @@ def client(mock_connection):
     )
     client = {{stinger.name | UpperCamelCase}}Client(
         connection=mock_connection,
-        discovered_instance=mock_discovery,
+        instance_info=mock_discovery,
     )
     return client
 
 
-class TestClientInit:
+class TestClient:
     """Tests for client initialization."""
 
     def test_client_initializes(self, client):
         """Test that client initializes successfully."""
         assert client is not None, "Client failed to initialize"
         assert client.service_id == "test_instance", "Client service_id does not match expected value"
+
+    def test_client_properties_initialization(self, client):
+        """Test that client properties are initialized correctly."""
+        {%for prop_name, prop in stinger.properties.items()%}
+        assert hasattr(client, '{{prop_name|snake_case}}'), "Client missing property '{{prop_name|snake_case}}'"
+        {%if prop.arg_list|length > 1 or not prop.arg_list[0].optional%}
+        assert client.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
+        {%endif%}
+        {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    def test_{{method_name|snake_case}}_method_call_sends_request(self, mock_connection, client):
+        kwargs = {
+        {%-for arg in method.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value()}},
+        {%endfor-%}
+        }
+        client.{{method_name|snake_case}}(**kwargs)
+        assert len(mock_connection.published_messages) == 1, "No message was published for '{{method_name|snake_case}}' method call"
+        message = mock_connection.published_messages[0]
+        assert message.topic.endswith("/method/{{method_name|lowerCamelCase}}"), "Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
+        payload = json.loads(message.payload.decode())
+        {%-for arg in method.arg_list%}
+        assert payload["{{arg.name|snake_case}}"] == kwargs["{{arg.name|snake_case}}"], "Payload argument '{{arg.name|snake_case}}' does not match expected value"
+        {%-endfor%}
+    {%endfor%}

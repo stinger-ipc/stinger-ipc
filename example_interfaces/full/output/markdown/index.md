@@ -23,11 +23,13 @@ The application code is responsible for creating and managing the connection obj
 <details>
   <summary>Python MQTT Connection Example</summary>
 
+Rather than including connection code in each generated client and server, Stinger-IPC for Python uses the [PYQTtier](https://pypi.org/project/pyqttier/) library to provide MQTT connection objects.  PYQTtier is a wrapper around the [paho-mqtt](https://pypi.org/project/paho-mqtt/) library and handles serialization, message queuing, and acknowledgments.
+
 ```python
-from connection import MqttBrokerConnection, MqttTransportType, MqttTransport
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 
 transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883) # Or: MqttTransport(MqttTransportType.UNIX, socket_path="/path/to/socket")
-connection_object = MqttBrokerConnection(transport)
+connection_object = Mqtt5Connection(transport)
 ```
 
 The `connection_object` will be passed to client and server constructors.
@@ -398,7 +400,7 @@ initial_property_values = FullInitialPropertyValues(
             
             dad=datetime.now(UTC),
             
-            sister=datetime.now(UTC),
+            sister=None,
             
             brothers_age=42,
             
