@@ -15,6 +15,14 @@ import json
 
 
 @pytest.fixture
+def initial_property_values():
+    initial_property_values = SimpleInitialPropertyValues(
+        school="apples",
+    )
+    return initial_property_values
+
+
+@pytest.fixture
 def mock_connection():
     """Fixture providing a mock MQTT connection."""
     conn = MockConnection()
@@ -22,27 +30,24 @@ def mock_connection():
 
 
 @pytest.fixture
-def server(mock_connection):
-
-    initial_property_values = SimpleInitialPropertyValues(
-        school="apples",
-    )
-
+def server(mock_connection, initial_property_values):
     server = SimpleServer(mock_connection, "test_instance", initial_property_values)
-    return server
+    yield server
+    server.shutdown(timeout=0.1)
 
 
 class TestServer:
-    """Tests for server initialization."""
 
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
         assert server is not None, "server failed to initialize"
         assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
 
-    def test_server_properties_initialization(self, server):
-        """Test that server properties are initialized correctly."""
 
+class TestServerProperties:
+
+    def test_server_school_property_initialization(self, server, initial_property_values):
+        """Test that the school server property is initialized correctly."""
         assert hasattr(server, "school"), "Server missing property 'school'"
-
         assert server.school is not None, "Property 'school' not initialized properly"
+        assert server.school == initial_property_values.school, "Property 'school' value does not match expected value"

@@ -15,6 +15,187 @@ import json
 
 
 @pytest.fixture
+def initial_property_values():
+    initial_property_values = TestableInitialPropertyValues(
+        read_write_integer=42,
+        read_only_integer=42,
+        read_write_optional_integer=42,
+        read_write_two_integers=ReadWriteTwoIntegersProperty(
+            first=42,
+            second=42,
+        ),
+        read_only_string="apples",
+        read_write_string="apples",
+        read_write_optional_string="apples",
+        read_write_two_strings=ReadWriteTwoStringsProperty(
+            first="apples",
+            second="apples",
+        ),
+        read_write_struct=AllTypes(
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=Numbers.ONE,
+            an_entry_object=Entry(key=42, value="apples"),
+            date_and_time=datetime.now(UTC),
+            time_duration=timedelta(seconds=3536),
+            data=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=Numbers.ONE,
+            optional_entry_object=Entry(key=42, value="apples"),
+            optional_date_time=datetime.now(UTC),
+            optional_duration=None,
+            optional_binary=b"example binary data",
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
+            array_of_enums=[Numbers.ONE, Numbers.ONE],
+            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+        ),
+        read_write_optional_struct=AllTypes(
+            the_bool=True,
+            the_int=42,
+            the_number=3.14,
+            the_str="apples",
+            the_enum=Numbers.ONE,
+            an_entry_object=Entry(key=42, value="apples"),
+            date_and_time=datetime.now(UTC),
+            time_duration=timedelta(seconds=3536),
+            data=b"example binary data",
+            optional_integer=42,
+            optional_string="apples",
+            optional_enum=Numbers.ONE,
+            optional_entry_object=Entry(key=42, value="apples"),
+            optional_date_time=datetime.now(UTC),
+            optional_duration=None,
+            optional_binary=b"example binary data",
+            array_of_integers=[42, 2022],
+            optional_array_of_integers=[42, 2022],
+            array_of_strings=["apples", "foo"],
+            optional_array_of_strings=["apples", "foo"],
+            array_of_enums=[Numbers.ONE, Numbers.ONE],
+            optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+            array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+            array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+            array_of_binaries=[b"example binary data", b"example binary data"],
+            optional_array_of_binaries=[b"example binary data", b"example binary data"],
+            array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+        ),
+        read_write_two_structs=ReadWriteTwoStructsProperty(
+            first=AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+            second=AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+        ),
+        read_only_enum=Numbers.ONE,
+        read_write_enum=Numbers.ONE,
+        read_write_optional_enum=Numbers.ONE,
+        read_write_two_enums=ReadWriteTwoEnumsProperty(
+            first=Numbers.ONE,
+            second=Numbers.ONE,
+        ),
+        read_write_datetime=datetime.now(UTC),
+        read_write_optional_datetime=None,
+        read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
+            first=datetime.now(UTC),
+            second=datetime.now(UTC),
+        ),
+        read_write_duration=timedelta(seconds=3536),
+        read_write_optional_duration=None,
+        read_write_two_durations=ReadWriteTwoDurationsProperty(
+            first=timedelta(seconds=3536),
+            second=None,
+        ),
+        read_write_binary=b"example binary data",
+        read_write_optional_binary=b"example binary data",
+        read_write_two_binaries=ReadWriteTwoBinariesProperty(
+            first=b"example binary data",
+            second=b"example binary data",
+        ),
+        read_write_list_of_strings=["apples", "foo"],
+        read_write_lists=ReadWriteListsProperty(
+            the_list=[Numbers.ONE, Numbers.ONE],
+            optional_list=[datetime.now(UTC), datetime.now(UTC)],
+        ),
+    )
+    return initial_property_values
+
+
+@pytest.fixture
 def mock_connection():
     """Fixture providing a mock MQTT connection."""
     conn = MockConnection()
@@ -22,186 +203,11 @@ def mock_connection():
 
 
 @pytest.fixture
-def client(mock_connection):
+def client(mock_connection, initial_property_values):
     """Fixture providing a testable client with mocked connection."""
     mock_discovery = DiscoveredInstance(
         instance_id="test_instance",
-        initial_property_values=TestableInitialPropertyValues(
-            read_write_integer=42,
-            read_only_integer=42,
-            read_write_optional_integer=42,
-            read_write_two_integers=TestableReadWriteTwoIntegersProperty(
-                first=42,
-                second=42,
-            ),
-            read_only_string="apples",
-            read_write_string="apples",
-            read_write_optional_string="apples",
-            read_write_two_strings=TestableReadWriteTwoStringsProperty(
-                first="apples",
-                second="apples",
-            ),
-            read_write_struct=AllTypes(
-                the_bool=True,
-                the_int=42,
-                the_number=3.14,
-                the_str="apples",
-                the_enum=Numbers.ONE,
-                an_entry_object=Entry(key=42, value="apples"),
-                date_and_time=datetime.now(UTC),
-                time_duration=timedelta(seconds=3536),
-                data=b"example binary data",
-                optional_integer=42,
-                optional_string="apples",
-                optional_enum=Numbers.ONE,
-                optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
-                optional_duration=None,
-                optional_binary=b"example binary data",
-                array_of_integers=[42, 2022],
-                optional_array_of_integers=[42, 2022],
-                array_of_strings=["apples", "foo"],
-                optional_array_of_strings=["apples", "foo"],
-                array_of_enums=[Numbers.ONE, Numbers.ONE],
-                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                array_of_binaries=[b"example binary data", b"example binary data"],
-                optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            ),
-            read_write_optional_struct=AllTypes(
-                the_bool=True,
-                the_int=42,
-                the_number=3.14,
-                the_str="apples",
-                the_enum=Numbers.ONE,
-                an_entry_object=Entry(key=42, value="apples"),
-                date_and_time=datetime.now(UTC),
-                time_duration=timedelta(seconds=3536),
-                data=b"example binary data",
-                optional_integer=42,
-                optional_string="apples",
-                optional_enum=Numbers.ONE,
-                optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
-                optional_duration=None,
-                optional_binary=b"example binary data",
-                array_of_integers=[42, 2022],
-                optional_array_of_integers=[42, 2022],
-                array_of_strings=["apples", "foo"],
-                optional_array_of_strings=["apples", "foo"],
-                array_of_enums=[Numbers.ONE, Numbers.ONE],
-                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                array_of_binaries=[b"example binary data", b"example binary data"],
-                optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            ),
-            read_write_two_structs=TestableReadWriteTwoStructsProperty(
-                first=AllTypes(
-                    the_bool=True,
-                    the_int=42,
-                    the_number=3.14,
-                    the_str="apples",
-                    the_enum=Numbers.ONE,
-                    an_entry_object=Entry(key=42, value="apples"),
-                    date_and_time=datetime.now(UTC),
-                    time_duration=timedelta(seconds=3536),
-                    data=b"example binary data",
-                    optional_integer=42,
-                    optional_string="apples",
-                    optional_enum=Numbers.ONE,
-                    optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
-                    optional_duration=None,
-                    optional_binary=b"example binary data",
-                    array_of_integers=[42, 2022],
-                    optional_array_of_integers=[42, 2022],
-                    array_of_strings=["apples", "foo"],
-                    optional_array_of_strings=["apples", "foo"],
-                    array_of_enums=[Numbers.ONE, Numbers.ONE],
-                    optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                    array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                    optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                    array_of_binaries=[b"example binary data", b"example binary data"],
-                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                    array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                    optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                ),
-                second=AllTypes(
-                    the_bool=True,
-                    the_int=42,
-                    the_number=3.14,
-                    the_str="apples",
-                    the_enum=Numbers.ONE,
-                    an_entry_object=Entry(key=42, value="apples"),
-                    date_and_time=datetime.now(UTC),
-                    time_duration=timedelta(seconds=3536),
-                    data=b"example binary data",
-                    optional_integer=42,
-                    optional_string="apples",
-                    optional_enum=Numbers.ONE,
-                    optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
-                    optional_duration=None,
-                    optional_binary=b"example binary data",
-                    array_of_integers=[42, 2022],
-                    optional_array_of_integers=[42, 2022],
-                    array_of_strings=["apples", "foo"],
-                    optional_array_of_strings=["apples", "foo"],
-                    array_of_enums=[Numbers.ONE, Numbers.ONE],
-                    optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                    array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                    optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                    array_of_binaries=[b"example binary data", b"example binary data"],
-                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                    array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                    optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                ),
-            ),
-            read_only_enum=Numbers.ONE,
-            read_write_enum=Numbers.ONE,
-            read_write_optional_enum=Numbers.ONE,
-            read_write_two_enums=TestableReadWriteTwoEnumsProperty(
-                first=Numbers.ONE,
-                second=Numbers.ONE,
-            ),
-            read_write_datetime=datetime.now(UTC),
-            read_write_optional_datetime=datetime.now(UTC),
-            read_write_two_datetimes=TestableReadWriteTwoDatetimesProperty(
-                first=datetime.now(UTC),
-                second=datetime.now(UTC),
-            ),
-            read_write_duration=timedelta(seconds=3536),
-            read_write_optional_duration=None,
-            read_write_two_durations=TestableReadWriteTwoDurationsProperty(
-                first=timedelta(seconds=3536),
-                second=None,
-            ),
-            read_write_binary=b"example binary data",
-            read_write_optional_binary=b"example binary data",
-            read_write_two_binaries=TestableReadWriteTwoBinariesProperty(
-                first=b"example binary data",
-                second=b"example binary data",
-            ),
-            read_write_list_of_strings=["apples", "foo"],
-            read_write_lists=TestableReadWriteListsProperty(
-                the_list=[Numbers.ONE, Numbers.ONE],
-                optional_list=[datetime.now(UTC), datetime.now(UTC)],
-            ),
-        ),
+        initial_property_values=initial_property_values,
     )
     client = TestableClient(
         connection=mock_connection,
@@ -218,98 +224,111 @@ class TestClient:
         assert client is not None, "Client failed to initialize"
         assert client.service_id == "test_instance", "Client service_id does not match expected value"
 
-    def test_client_properties_initialization(self, client):
+
+class TestClientProperties:
+
+    def test_client_properties_initialization(self, client, initial_property_values):
         """Test that client properties are initialized correctly."""
 
         assert hasattr(client, "read_write_integer"), "Client missing property 'read_write_integer'"
-
         assert client.read_write_integer is not None, "Property 'read_write_integer' not initialized properly"
+        assert client.read_write_integer == initial_property_values.read_write_integer, "Property 'read_write_integer' value does not match expected value"
 
         assert hasattr(client, "read_only_integer"), "Client missing property 'read_only_integer'"
-
         assert client.read_only_integer is not None, "Property 'read_only_integer' not initialized properly"
+        assert client.read_only_integer == initial_property_values.read_only_integer, "Property 'read_only_integer' value does not match expected value"
 
         assert hasattr(client, "read_write_optional_integer"), "Client missing property 'read_write_optional_integer'"
+        assert client.read_write_optional_integer == initial_property_values.read_write_optional_integer, "Property 'read_write_optional_integer' value does not match expected value"
 
         assert hasattr(client, "read_write_two_integers"), "Client missing property 'read_write_two_integers'"
-
         assert client.read_write_two_integers is not None, "Property 'read_write_two_integers' not initialized properly"
+        assert client.read_write_two_integers == initial_property_values.read_write_two_integers, "Property 'read_write_two_integers' value does not match expected value"
 
         assert hasattr(client, "read_only_string"), "Client missing property 'read_only_string'"
-
         assert client.read_only_string is not None, "Property 'read_only_string' not initialized properly"
+        assert client.read_only_string == initial_property_values.read_only_string, "Property 'read_only_string' value does not match expected value"
 
         assert hasattr(client, "read_write_string"), "Client missing property 'read_write_string'"
-
         assert client.read_write_string is not None, "Property 'read_write_string' not initialized properly"
+        assert client.read_write_string == initial_property_values.read_write_string, "Property 'read_write_string' value does not match expected value"
 
         assert hasattr(client, "read_write_optional_string"), "Client missing property 'read_write_optional_string'"
+        assert client.read_write_optional_string == initial_property_values.read_write_optional_string, "Property 'read_write_optional_string' value does not match expected value"
 
         assert hasattr(client, "read_write_two_strings"), "Client missing property 'read_write_two_strings'"
-
         assert client.read_write_two_strings is not None, "Property 'read_write_two_strings' not initialized properly"
+        assert client.read_write_two_strings == initial_property_values.read_write_two_strings, "Property 'read_write_two_strings' value does not match expected value"
 
         assert hasattr(client, "read_write_struct"), "Client missing property 'read_write_struct'"
-
         assert client.read_write_struct is not None, "Property 'read_write_struct' not initialized properly"
+        assert client.read_write_struct == initial_property_values.read_write_struct, "Property 'read_write_struct' value does not match expected value"
 
         assert hasattr(client, "read_write_optional_struct"), "Client missing property 'read_write_optional_struct'"
+        assert client.read_write_optional_struct == initial_property_values.read_write_optional_struct, "Property 'read_write_optional_struct' value does not match expected value"
 
         assert hasattr(client, "read_write_two_structs"), "Client missing property 'read_write_two_structs'"
-
         assert client.read_write_two_structs is not None, "Property 'read_write_two_structs' not initialized properly"
+        assert client.read_write_two_structs == initial_property_values.read_write_two_structs, "Property 'read_write_two_structs' value does not match expected value"
 
         assert hasattr(client, "read_only_enum"), "Client missing property 'read_only_enum'"
-
         assert client.read_only_enum is not None, "Property 'read_only_enum' not initialized properly"
+        assert client.read_only_enum == initial_property_values.read_only_enum, "Property 'read_only_enum' value does not match expected value"
 
         assert hasattr(client, "read_write_enum"), "Client missing property 'read_write_enum'"
-
         assert client.read_write_enum is not None, "Property 'read_write_enum' not initialized properly"
+        assert client.read_write_enum == initial_property_values.read_write_enum, "Property 'read_write_enum' value does not match expected value"
 
         assert hasattr(client, "read_write_optional_enum"), "Client missing property 'read_write_optional_enum'"
+        assert client.read_write_optional_enum == initial_property_values.read_write_optional_enum, "Property 'read_write_optional_enum' value does not match expected value"
 
         assert hasattr(client, "read_write_two_enums"), "Client missing property 'read_write_two_enums'"
-
         assert client.read_write_two_enums is not None, "Property 'read_write_two_enums' not initialized properly"
+        assert client.read_write_two_enums == initial_property_values.read_write_two_enums, "Property 'read_write_two_enums' value does not match expected value"
 
         assert hasattr(client, "read_write_datetime"), "Client missing property 'read_write_datetime'"
-
         assert client.read_write_datetime is not None, "Property 'read_write_datetime' not initialized properly"
+        assert client.read_write_datetime == initial_property_values.read_write_datetime, "Property 'read_write_datetime' value does not match expected value"
 
         assert hasattr(client, "read_write_optional_datetime"), "Client missing property 'read_write_optional_datetime'"
+        assert client.read_write_optional_datetime == initial_property_values.read_write_optional_datetime, "Property 'read_write_optional_datetime' value does not match expected value"
 
         assert hasattr(client, "read_write_two_datetimes"), "Client missing property 'read_write_two_datetimes'"
-
         assert client.read_write_two_datetimes is not None, "Property 'read_write_two_datetimes' not initialized properly"
+        assert client.read_write_two_datetimes == initial_property_values.read_write_two_datetimes, "Property 'read_write_two_datetimes' value does not match expected value"
 
         assert hasattr(client, "read_write_duration"), "Client missing property 'read_write_duration'"
-
         assert client.read_write_duration is not None, "Property 'read_write_duration' not initialized properly"
+        assert client.read_write_duration == initial_property_values.read_write_duration, "Property 'read_write_duration' value does not match expected value"
 
         assert hasattr(client, "read_write_optional_duration"), "Client missing property 'read_write_optional_duration'"
+        assert client.read_write_optional_duration == initial_property_values.read_write_optional_duration, "Property 'read_write_optional_duration' value does not match expected value"
 
         assert hasattr(client, "read_write_two_durations"), "Client missing property 'read_write_two_durations'"
-
         assert client.read_write_two_durations is not None, "Property 'read_write_two_durations' not initialized properly"
+        assert client.read_write_two_durations == initial_property_values.read_write_two_durations, "Property 'read_write_two_durations' value does not match expected value"
 
         assert hasattr(client, "read_write_binary"), "Client missing property 'read_write_binary'"
-
         assert client.read_write_binary is not None, "Property 'read_write_binary' not initialized properly"
+        assert client.read_write_binary == initial_property_values.read_write_binary, "Property 'read_write_binary' value does not match expected value"
 
         assert hasattr(client, "read_write_optional_binary"), "Client missing property 'read_write_optional_binary'"
+        assert client.read_write_optional_binary == initial_property_values.read_write_optional_binary, "Property 'read_write_optional_binary' value does not match expected value"
 
         assert hasattr(client, "read_write_two_binaries"), "Client missing property 'read_write_two_binaries'"
-
         assert client.read_write_two_binaries is not None, "Property 'read_write_two_binaries' not initialized properly"
+        assert client.read_write_two_binaries == initial_property_values.read_write_two_binaries, "Property 'read_write_two_binaries' value does not match expected value"
 
         assert hasattr(client, "read_write_list_of_strings"), "Client missing property 'read_write_list_of_strings'"
-
         assert client.read_write_list_of_strings is not None, "Property 'read_write_list_of_strings' not initialized properly"
+        assert client.read_write_list_of_strings == initial_property_values.read_write_list_of_strings, "Property 'read_write_list_of_strings' value does not match expected value"
 
         assert hasattr(client, "read_write_lists"), "Client missing property 'read_write_lists'"
-
         assert client.read_write_lists is not None, "Property 'read_write_lists' not initialized properly"
+        assert client.read_write_lists == initial_property_values.read_write_lists, "Property 'read_write_lists' value does not match expected value"
+
+
+class TestClientMethods:
 
     def test_call_with_nothing_method_call_sends_request(self, mock_connection, client):
         kwargs = {}
@@ -446,7 +465,7 @@ class TestClient:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -488,7 +507,7 @@ class TestClient:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -635,7 +654,7 @@ class TestClient:
 
     def test_call_optional_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
-            "input1": datetime.now(UTC),
+            "input1": None,
         }
         client.call_optional_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_date_time' method call"

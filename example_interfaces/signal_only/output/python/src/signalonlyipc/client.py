@@ -70,68 +70,68 @@ class SignalOnlyClient:
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_another_signal_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_another_signal_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'anotherSignal' signal with non-JSON content type")
             return
 
-        model = AnotherSignalSignalPayload.model_validate_json(payload)
+        model = AnotherSignalSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
 
-    def _receive_bark_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_bark_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'bark' signal with non-JSON content type")
             return
 
-        model = BarkSignalPayload.model_validate_json(payload)
+        model = BarkSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_bark, **kwargs)
 
-    def _receive_maybe_number_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_maybe_number_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'maybe_number' signal with non-JSON content type")
             return
 
-        model = MaybeNumberSignalPayload.model_validate_json(payload)
+        model = MaybeNumberSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_number, **kwargs)
 
-    def _receive_maybe_name_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_maybe_name_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'maybe_name' signal with non-JSON content type")
             return
 
-        model = MaybeNameSignalPayload.model_validate_json(payload)
+        model = MaybeNameSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_name, **kwargs)
 
-    def _receive_now_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_now_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'now' signal with non-JSON content type")
             return
 
-        model = NowSignalPayload.model_validate_json(payload)
+        model = NowSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_now, **kwargs)
 
-    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get("UserProperty", {})
+    def _receive_any_property_response_message(self, message: Message):
+        user_properties = message.user_properties
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
             debug_info = user_properties.get("DebugInfo", "")
             self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
 
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_message(self, message: Message):
         """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
-        self._logger.warning("Receiving message sent to %s, but without a handler", topic)
+        self._logger.warning("Receiving message %s, but without a handler", message)
 
     def receive_another_signal(self, handler: AnotherSignalSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""

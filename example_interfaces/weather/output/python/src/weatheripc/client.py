@@ -321,29 +321,29 @@ class WeatherClient:
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_current_time_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_current_time_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'current_time' signal with non-JSON content type")
             return
 
-        model = CurrentTimeSignalPayload.model_validate_json(payload)
+        model = CurrentTimeSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_current_time, **kwargs)
 
-    def _receive_any_method_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_any_method_response_message(self, message: Message):
         # Handle '' method response.
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
-        if "UserProperty" in properties:
-            user_properties = properties["UserProperty"]
+        if message.user_properties:
+            user_properties = message.user_properties
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
             if "ReturnCode" in user_properties:
                 return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
-        if "CorrelationData" in properties:
-            correlation_id = properties["CorrelationData"].decode()
+        if message.correlation_data is not None:
+            correlation_id = message.correlation_data.decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
@@ -353,21 +353,21 @@ class WeatherClient:
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
 
-    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get("UserProperty", {})
+    def _receive_any_property_response_message(self, message: Message):
+        user_properties = message.user_properties
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
             debug_info = user_properties.get("DebugInfo", "")
             self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
 
-    def _receive_location_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_location_property_update_message(self, message: Message):
         # Handle 'location' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'location' property change with non-JSON content type")
             return
         try:
-            prop_obj = LocationProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = LocationProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_location_mutex:
                 self._property_location = prop_obj
@@ -378,14 +378,14 @@ class WeatherClient:
         except Exception as e:
             self._logger.exception("Error processing 'location' property change: %s", exc_info=e)
 
-    def _receive_current_temperature_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_current_temperature_property_update_message(self, message: Message):
         # Handle 'current_temperature' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'current_temperature' property change with non-JSON content type")
             return
         try:
-            prop_obj = CurrentTemperatureProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = CurrentTemperatureProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_temperature_mutex:
                 self._property_current_temperature = prop_obj.temperature_f
@@ -396,14 +396,14 @@ class WeatherClient:
         except Exception as e:
             self._logger.exception("Error processing 'current_temperature' property change: %s", exc_info=e)
 
-    def _receive_current_condition_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_current_condition_property_update_message(self, message: Message):
         # Handle 'current_condition' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'current_condition' property change with non-JSON content type")
             return
         try:
-            prop_obj = CurrentConditionProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = CurrentConditionProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_condition_mutex:
                 self._property_current_condition = prop_obj
@@ -414,14 +414,14 @@ class WeatherClient:
         except Exception as e:
             self._logger.exception("Error processing 'current_condition' property change: %s", exc_info=e)
 
-    def _receive_daily_forecast_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_daily_forecast_property_update_message(self, message: Message):
         # Handle 'daily_forecast' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'daily_forecast' property change with non-JSON content type")
             return
         try:
-            prop_obj = DailyForecastProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = DailyForecastProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_daily_forecast_mutex:
                 self._property_daily_forecast = prop_obj
@@ -432,14 +432,14 @@ class WeatherClient:
         except Exception as e:
             self._logger.exception("Error processing 'daily_forecast' property change: %s", exc_info=e)
 
-    def _receive_hourly_forecast_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_hourly_forecast_property_update_message(self, message: Message):
         # Handle 'hourly_forecast' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'hourly_forecast' property change with non-JSON content type")
             return
         try:
-            prop_obj = HourlyForecastProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = HourlyForecastProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_hourly_forecast_mutex:
                 self._property_hourly_forecast = prop_obj
@@ -450,14 +450,14 @@ class WeatherClient:
         except Exception as e:
             self._logger.exception("Error processing 'hourly_forecast' property change: %s", exc_info=e)
 
-    def _receive_current_condition_refresh_interval_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_current_condition_refresh_interval_property_update_message(self, message: Message):
         # Handle 'current_condition_refresh_interval' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'current_condition_refresh_interval' property change with non-JSON content type")
             return
         try:
-            prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_condition_refresh_interval_mutex:
                 self._property_current_condition_refresh_interval = prop_obj.seconds
@@ -468,14 +468,14 @@ class WeatherClient:
         except Exception as e:
             self._logger.exception("Error processing 'current_condition_refresh_interval' property change: %s", exc_info=e)
 
-    def _receive_hourly_forecast_refresh_interval_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_hourly_forecast_refresh_interval_property_update_message(self, message: Message):
         # Handle 'hourly_forecast_refresh_interval' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'hourly_forecast_refresh_interval' property change with non-JSON content type")
             return
         try:
-            prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_hourly_forecast_refresh_interval_mutex:
                 self._property_hourly_forecast_refresh_interval = prop_obj.seconds
@@ -486,14 +486,14 @@ class WeatherClient:
         except Exception as e:
             self._logger.exception("Error processing 'hourly_forecast_refresh_interval' property change: %s", exc_info=e)
 
-    def _receive_daily_forecast_refresh_interval_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_daily_forecast_refresh_interval_property_update_message(self, message: Message):
         # Handle 'daily_forecast_refresh_interval' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'daily_forecast_refresh_interval' property change with non-JSON content type")
             return
         try:
-            prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_daily_forecast_refresh_interval_mutex:
                 self._property_daily_forecast_refresh_interval = prop_obj.seconds
@@ -504,11 +504,11 @@ class WeatherClient:
         except Exception as e:
             self._logger.exception("Error processing 'daily_forecast_refresh_interval' property change: %s", exc_info=e)
 
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_message(self, message: Message):
         """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
-        self._logger.warning("Receiving message sent to %s, but without a handler", topic)
+        self._logger.warning("Receiving message %s, but without a handler", message)
 
     def receive_current_time(self, handler: CurrentTimeSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""

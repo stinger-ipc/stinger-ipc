@@ -15,6 +15,31 @@ import json
 
 
 @pytest.fixture
+def initial_property_values():
+    initial_property_values = FullInitialPropertyValues(
+        favorite_number=42,
+        favorite_foods=FavoriteFoodsProperty(
+            drink="apples",
+            slices_of_pizza=42,
+            breakfast="apples",
+        ),
+        lunch_menu=LunchMenuProperty(
+            monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+            tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+        ),
+        family_name="apples",
+        last_breakfast_time=datetime.now(UTC),
+        last_birthdays=LastBirthdaysProperty(
+            mom=datetime.now(UTC),
+            dad=datetime.now(UTC),
+            sister=datetime.now(UTC),
+            brothers_age=42,
+        ),
+    )
+    return initial_property_values
+
+
+@pytest.fixture
 def mock_connection():
     """Fixture providing a mock MQTT connection."""
     conn = MockConnection()
@@ -22,30 +47,11 @@ def mock_connection():
 
 
 @pytest.fixture
-def client(mock_connection):
+def client(mock_connection, initial_property_values):
     """Fixture providing a Full client with mocked connection."""
     mock_discovery = DiscoveredInstance(
         instance_id="test_instance",
-        initial_property_values=FullInitialPropertyValues(
-            favorite_number=42,
-            favorite_foods=FullFavoriteFoodsProperty(
-                drink="apples",
-                slices_of_pizza=42,
-                breakfast="apples",
-            ),
-            lunch_menu=FullLunchMenuProperty(
-                monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
-                tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
-            ),
-            family_name="apples",
-            last_breakfast_time=datetime.now(UTC),
-            last_birthdays=FullLastBirthdaysProperty(
-                mom=datetime.now(UTC),
-                dad=datetime.now(UTC),
-                sister=None,
-                brothers_age=42,
-            ),
-        ),
+        initial_property_values=initial_property_values,
     )
     client = FullClient(
         connection=mock_connection,
@@ -62,32 +68,38 @@ class TestClient:
         assert client is not None, "Client failed to initialize"
         assert client.service_id == "test_instance", "Client service_id does not match expected value"
 
-    def test_client_properties_initialization(self, client):
+
+class TestClientProperties:
+
+    def test_client_properties_initialization(self, client, initial_property_values):
         """Test that client properties are initialized correctly."""
 
         assert hasattr(client, "favorite_number"), "Client missing property 'favorite_number'"
-
         assert client.favorite_number is not None, "Property 'favorite_number' not initialized properly"
+        assert client.favorite_number == initial_property_values.favorite_number, "Property 'favorite_number' value does not match expected value"
 
         assert hasattr(client, "favorite_foods"), "Client missing property 'favorite_foods'"
-
         assert client.favorite_foods is not None, "Property 'favorite_foods' not initialized properly"
+        assert client.favorite_foods == initial_property_values.favorite_foods, "Property 'favorite_foods' value does not match expected value"
 
         assert hasattr(client, "lunch_menu"), "Client missing property 'lunch_menu'"
-
         assert client.lunch_menu is not None, "Property 'lunch_menu' not initialized properly"
+        assert client.lunch_menu == initial_property_values.lunch_menu, "Property 'lunch_menu' value does not match expected value"
 
         assert hasattr(client, "family_name"), "Client missing property 'family_name'"
-
         assert client.family_name is not None, "Property 'family_name' not initialized properly"
+        assert client.family_name == initial_property_values.family_name, "Property 'family_name' value does not match expected value"
 
         assert hasattr(client, "last_breakfast_time"), "Client missing property 'last_breakfast_time'"
-
         assert client.last_breakfast_time is not None, "Property 'last_breakfast_time' not initialized properly"
+        assert client.last_breakfast_time == initial_property_values.last_breakfast_time, "Property 'last_breakfast_time' value does not match expected value"
 
         assert hasattr(client, "last_birthdays"), "Client missing property 'last_birthdays'"
-
         assert client.last_birthdays is not None, "Property 'last_birthdays' not initialized properly"
+        assert client.last_birthdays == initial_property_values.last_birthdays, "Property 'last_birthdays' value does not match expected value"
+
+
+class TestClientMethods:
 
     def test_add_numbers_method_call_sends_request(self, mock_connection, client):
         kwargs = {

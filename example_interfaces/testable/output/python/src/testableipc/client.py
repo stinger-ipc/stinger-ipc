@@ -1078,269 +1078,269 @@ class TestableClient:
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_empty_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_empty_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'empty' signal with non-JSON content type")
             return
 
-        model = EmptySignalPayload.model_validate_json(payload)
+        model = EmptySignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_empty, **kwargs)
 
-    def _receive_single_int_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_int_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleInt' signal with non-JSON content type")
             return
 
-        model = SingleIntSignalPayload.model_validate_json(payload)
+        model = SingleIntSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_int, **kwargs)
 
-    def _receive_single_optional_int_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_optional_int_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleOptionalInt' signal with non-JSON content type")
             return
 
-        model = SingleOptionalIntSignalPayload.model_validate_json(payload)
+        model = SingleOptionalIntSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_optional_int, **kwargs)
 
-    def _receive_three_integers_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_three_integers_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'threeIntegers' signal with non-JSON content type")
             return
 
-        model = ThreeIntegersSignalPayload.model_validate_json(payload)
+        model = ThreeIntegersSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_three_integers, **kwargs)
 
-    def _receive_single_string_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_string_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleString' signal with non-JSON content type")
             return
 
-        model = SingleStringSignalPayload.model_validate_json(payload)
+        model = SingleStringSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_string, **kwargs)
 
-    def _receive_single_optional_string_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_optional_string_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleOptionalString' signal with non-JSON content type")
             return
 
-        model = SingleOptionalStringSignalPayload.model_validate_json(payload)
+        model = SingleOptionalStringSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_optional_string, **kwargs)
 
-    def _receive_three_strings_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_three_strings_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'threeStrings' signal with non-JSON content type")
             return
 
-        model = ThreeStringsSignalPayload.model_validate_json(payload)
+        model = ThreeStringsSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_three_strings, **kwargs)
 
-    def _receive_single_enum_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_enum_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleEnum' signal with non-JSON content type")
             return
 
-        model = SingleEnumSignalPayload.model_validate_json(payload)
+        model = SingleEnumSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_enum, **kwargs)
 
-    def _receive_single_optional_enum_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_optional_enum_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleOptionalEnum' signal with non-JSON content type")
             return
 
-        model = SingleOptionalEnumSignalPayload.model_validate_json(payload)
+        model = SingleOptionalEnumSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_optional_enum, **kwargs)
 
-    def _receive_three_enums_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_three_enums_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'threeEnums' signal with non-JSON content type")
             return
 
-        model = ThreeEnumsSignalPayload.model_validate_json(payload)
+        model = ThreeEnumsSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_three_enums, **kwargs)
 
-    def _receive_single_struct_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_struct_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleStruct' signal with non-JSON content type")
             return
 
-        model = SingleStructSignalPayload.model_validate_json(payload)
+        model = SingleStructSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_struct, **kwargs)
 
-    def _receive_single_optional_struct_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_optional_struct_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleOptionalStruct' signal with non-JSON content type")
             return
 
-        model = SingleOptionalStructSignalPayload.model_validate_json(payload)
+        model = SingleOptionalStructSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_optional_struct, **kwargs)
 
-    def _receive_three_structs_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_three_structs_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'threeStructs' signal with non-JSON content type")
             return
 
-        model = ThreeStructsSignalPayload.model_validate_json(payload)
+        model = ThreeStructsSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_three_structs, **kwargs)
 
-    def _receive_single_date_time_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_date_time_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleDateTime' signal with non-JSON content type")
             return
 
-        model = SingleDateTimeSignalPayload.model_validate_json(payload)
+        model = SingleDateTimeSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_date_time, **kwargs)
 
-    def _receive_single_optional_datetime_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_optional_datetime_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleOptionalDatetime' signal with non-JSON content type")
             return
 
-        model = SingleOptionalDatetimeSignalPayload.model_validate_json(payload)
+        model = SingleOptionalDatetimeSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_optional_datetime, **kwargs)
 
-    def _receive_three_date_times_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_three_date_times_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'threeDateTimes' signal with non-JSON content type")
             return
 
-        model = ThreeDateTimesSignalPayload.model_validate_json(payload)
+        model = ThreeDateTimesSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_three_date_times, **kwargs)
 
-    def _receive_single_duration_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_duration_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleDuration' signal with non-JSON content type")
             return
 
-        model = SingleDurationSignalPayload.model_validate_json(payload)
+        model = SingleDurationSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_duration, **kwargs)
 
-    def _receive_single_optional_duration_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_optional_duration_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleOptionalDuration' signal with non-JSON content type")
             return
 
-        model = SingleOptionalDurationSignalPayload.model_validate_json(payload)
+        model = SingleOptionalDurationSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_optional_duration, **kwargs)
 
-    def _receive_three_durations_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_three_durations_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'threeDurations' signal with non-JSON content type")
             return
 
-        model = ThreeDurationsSignalPayload.model_validate_json(payload)
+        model = ThreeDurationsSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_three_durations, **kwargs)
 
-    def _receive_single_binary_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_binary_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleBinary' signal with non-JSON content type")
             return
 
-        model = SingleBinarySignalPayload.model_validate_json(payload)
+        model = SingleBinarySignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_binary, **kwargs)
 
-    def _receive_single_optional_binary_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_optional_binary_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleOptionalBinary' signal with non-JSON content type")
             return
 
-        model = SingleOptionalBinarySignalPayload.model_validate_json(payload)
+        model = SingleOptionalBinarySignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_optional_binary, **kwargs)
 
-    def _receive_three_binaries_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_three_binaries_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'threeBinaries' signal with non-JSON content type")
             return
 
-        model = ThreeBinariesSignalPayload.model_validate_json(payload)
+        model = ThreeBinariesSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_three_binaries, **kwargs)
 
-    def _receive_single_array_of_integers_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_array_of_integers_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleArrayOfIntegers' signal with non-JSON content type")
             return
 
-        model = SingleArrayOfIntegersSignalPayload.model_validate_json(payload)
+        model = SingleArrayOfIntegersSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_array_of_integers, **kwargs)
 
-    def _receive_single_optional_array_of_strings_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_single_optional_array_of_strings_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'singleOptionalArrayOfStrings' signal with non-JSON content type")
             return
 
-        model = SingleOptionalArrayOfStringsSignalPayload.model_validate_json(payload)
+        model = SingleOptionalArrayOfStringsSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_single_optional_array_of_strings, **kwargs)
 
-    def _receive_array_of_every_type_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_array_of_every_type_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'arrayOfEveryType' signal with non-JSON content type")
             return
 
-        model = ArrayOfEveryTypeSignalPayload.model_validate_json(payload)
+        model = ArrayOfEveryTypeSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_array_of_every_type, **kwargs)
 
-    def _receive_any_method_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_any_method_response_message(self, message: Message):
         # Handle '' method response.
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
-        if "UserProperty" in properties:
-            user_properties = properties["UserProperty"]
+        if message.user_properties:
+            user_properties = message.user_properties
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
             if "ReturnCode" in user_properties:
                 return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
-        if "CorrelationData" in properties:
-            correlation_id = properties["CorrelationData"].decode()
+        if message.correlation_data is not None:
+            correlation_id = message.correlation_data.decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
@@ -1350,21 +1350,21 @@ class TestableClient:
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
 
-    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get("UserProperty", {})
+    def _receive_any_property_response_message(self, message: Message):
+        user_properties = message.user_properties
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
             debug_info = user_properties.get("DebugInfo", "")
             self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
 
-    def _receive_read_write_integer_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_integer_property_update_message(self, message: Message):
         # Handle 'read_write_integer' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_integer' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteIntegerProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteIntegerProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_integer_mutex:
                 self._property_read_write_integer = prop_obj.value
@@ -1375,14 +1375,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_integer' property change: %s", exc_info=e)
 
-    def _receive_read_only_integer_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_only_integer_property_update_message(self, message: Message):
         # Handle 'read_only_integer' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_only_integer' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadOnlyIntegerProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadOnlyIntegerProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_integer_mutex:
                 self._property_read_only_integer = prop_obj.value
@@ -1393,14 +1393,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_only_integer' property change: %s", exc_info=e)
 
-    def _receive_read_write_optional_integer_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_optional_integer_property_update_message(self, message: Message):
         # Handle 'read_write_optional_integer' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_optional_integer' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_integer_mutex:
                 self._property_read_write_optional_integer = prop_obj.value
@@ -1411,14 +1411,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_optional_integer' property change: %s", exc_info=e)
 
-    def _receive_read_write_two_integers_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_two_integers_property_update_message(self, message: Message):
         # Handle 'read_write_two_integers' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_two_integers' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_integers_mutex:
                 self._property_read_write_two_integers = prop_obj
@@ -1429,14 +1429,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_two_integers' property change: %s", exc_info=e)
 
-    def _receive_read_only_string_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_only_string_property_update_message(self, message: Message):
         # Handle 'read_only_string' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_only_string' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadOnlyStringProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadOnlyStringProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_string_mutex:
                 self._property_read_only_string = prop_obj.value
@@ -1447,14 +1447,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_only_string' property change: %s", exc_info=e)
 
-    def _receive_read_write_string_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_string_property_update_message(self, message: Message):
         # Handle 'read_write_string' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_string' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteStringProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteStringProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_string_mutex:
                 self._property_read_write_string = prop_obj.value
@@ -1465,14 +1465,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_string' property change: %s", exc_info=e)
 
-    def _receive_read_write_optional_string_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_optional_string_property_update_message(self, message: Message):
         # Handle 'read_write_optional_string' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_optional_string' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteOptionalStringProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteOptionalStringProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_string_mutex:
                 self._property_read_write_optional_string = prop_obj.value
@@ -1483,14 +1483,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_optional_string' property change: %s", exc_info=e)
 
-    def _receive_read_write_two_strings_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_two_strings_property_update_message(self, message: Message):
         # Handle 'read_write_two_strings' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_two_strings' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteTwoStringsProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteTwoStringsProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_strings_mutex:
                 self._property_read_write_two_strings = prop_obj
@@ -1501,14 +1501,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_two_strings' property change: %s", exc_info=e)
 
-    def _receive_read_write_struct_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_struct_property_update_message(self, message: Message):
         # Handle 'read_write_struct' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_struct' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteStructProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteStructProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_struct_mutex:
                 self._property_read_write_struct = prop_obj.value
@@ -1519,14 +1519,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_struct' property change: %s", exc_info=e)
 
-    def _receive_read_write_optional_struct_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_optional_struct_property_update_message(self, message: Message):
         # Handle 'read_write_optional_struct' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_optional_struct' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteOptionalStructProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteOptionalStructProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_struct_mutex:
                 self._property_read_write_optional_struct = prop_obj.value
@@ -1537,14 +1537,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_optional_struct' property change: %s", exc_info=e)
 
-    def _receive_read_write_two_structs_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_two_structs_property_update_message(self, message: Message):
         # Handle 'read_write_two_structs' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_two_structs' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteTwoStructsProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteTwoStructsProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_structs_mutex:
                 self._property_read_write_two_structs = prop_obj
@@ -1555,14 +1555,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_two_structs' property change: %s", exc_info=e)
 
-    def _receive_read_only_enum_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_only_enum_property_update_message(self, message: Message):
         # Handle 'read_only_enum' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_only_enum' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadOnlyEnumProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadOnlyEnumProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_enum_mutex:
                 self._property_read_only_enum = prop_obj.value
@@ -1573,14 +1573,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_only_enum' property change: %s", exc_info=e)
 
-    def _receive_read_write_enum_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_enum_property_update_message(self, message: Message):
         # Handle 'read_write_enum' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_enum' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteEnumProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteEnumProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_enum_mutex:
                 self._property_read_write_enum = prop_obj.value
@@ -1591,14 +1591,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_enum' property change: %s", exc_info=e)
 
-    def _receive_read_write_optional_enum_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_optional_enum_property_update_message(self, message: Message):
         # Handle 'read_write_optional_enum' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_optional_enum' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_enum_mutex:
                 self._property_read_write_optional_enum = prop_obj.value
@@ -1609,14 +1609,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_optional_enum' property change: %s", exc_info=e)
 
-    def _receive_read_write_two_enums_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_two_enums_property_update_message(self, message: Message):
         # Handle 'read_write_two_enums' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_two_enums' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_enums_mutex:
                 self._property_read_write_two_enums = prop_obj
@@ -1627,14 +1627,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_two_enums' property change: %s", exc_info=e)
 
-    def _receive_read_write_datetime_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_datetime_property_update_message(self, message: Message):
         # Handle 'read_write_datetime' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_datetime' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteDatetimeProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteDatetimeProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_datetime_mutex:
                 self._property_read_write_datetime = prop_obj.value
@@ -1645,14 +1645,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_datetime' property change: %s", exc_info=e)
 
-    def _receive_read_write_optional_datetime_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_optional_datetime_property_update_message(self, message: Message):
         # Handle 'read_write_optional_datetime' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_optional_datetime' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_datetime_mutex:
                 self._property_read_write_optional_datetime = prop_obj.value
@@ -1663,14 +1663,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_optional_datetime' property change: %s", exc_info=e)
 
-    def _receive_read_write_two_datetimes_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_two_datetimes_property_update_message(self, message: Message):
         # Handle 'read_write_two_datetimes' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_two_datetimes' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_datetimes_mutex:
                 self._property_read_write_two_datetimes = prop_obj
@@ -1681,14 +1681,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_two_datetimes' property change: %s", exc_info=e)
 
-    def _receive_read_write_duration_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_duration_property_update_message(self, message: Message):
         # Handle 'read_write_duration' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_duration' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteDurationProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteDurationProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_duration_mutex:
                 self._property_read_write_duration = prop_obj.value
@@ -1699,14 +1699,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_duration' property change: %s", exc_info=e)
 
-    def _receive_read_write_optional_duration_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_optional_duration_property_update_message(self, message: Message):
         # Handle 'read_write_optional_duration' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_optional_duration' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_duration_mutex:
                 self._property_read_write_optional_duration = prop_obj.value
@@ -1717,14 +1717,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_optional_duration' property change: %s", exc_info=e)
 
-    def _receive_read_write_two_durations_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_two_durations_property_update_message(self, message: Message):
         # Handle 'read_write_two_durations' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_two_durations' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_durations_mutex:
                 self._property_read_write_two_durations = prop_obj
@@ -1735,14 +1735,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_two_durations' property change: %s", exc_info=e)
 
-    def _receive_read_write_binary_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_binary_property_update_message(self, message: Message):
         # Handle 'read_write_binary' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_binary' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteBinaryProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteBinaryProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_binary_mutex:
                 self._property_read_write_binary = prop_obj.value
@@ -1753,14 +1753,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_binary' property change: %s", exc_info=e)
 
-    def _receive_read_write_optional_binary_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_optional_binary_property_update_message(self, message: Message):
         # Handle 'read_write_optional_binary' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_optional_binary' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_binary_mutex:
                 self._property_read_write_optional_binary = prop_obj.value
@@ -1771,14 +1771,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_optional_binary' property change: %s", exc_info=e)
 
-    def _receive_read_write_two_binaries_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_two_binaries_property_update_message(self, message: Message):
         # Handle 'read_write_two_binaries' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_two_binaries' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_binaries_mutex:
                 self._property_read_write_two_binaries = prop_obj
@@ -1789,14 +1789,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_two_binaries' property change: %s", exc_info=e)
 
-    def _receive_read_write_list_of_strings_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_list_of_strings_property_update_message(self, message: Message):
         # Handle 'read_write_list_of_strings' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_list_of_strings' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteListOfStringsProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteListOfStringsProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_list_of_strings_mutex:
                 self._property_read_write_list_of_strings = prop_obj.value
@@ -1807,14 +1807,14 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_list_of_strings' property change: %s", exc_info=e)
 
-    def _receive_read_write_lists_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_read_write_lists_property_update_message(self, message: Message):
         # Handle 'read_write_lists' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'read_write_lists' property change with non-JSON content type")
             return
         try:
-            prop_obj = ReadWriteListsProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = ReadWriteListsProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_lists_mutex:
                 self._property_read_write_lists = prop_obj
@@ -1825,11 +1825,11 @@ class TestableClient:
         except Exception as e:
             self._logger.exception("Error processing 'read_write_lists' property change: %s", exc_info=e)
 
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_message(self, message: Message):
         """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
-        self._logger.warning("Receiving message sent to %s, but without a handler", topic)
+        self._logger.warning("Receiving message %s, but without a handler", message)
 
     def receive_empty(self, handler: EmptySignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""

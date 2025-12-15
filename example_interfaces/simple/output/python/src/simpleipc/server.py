@@ -78,13 +78,20 @@ class SimpleServer:
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
-        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info)
+        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info, daemon=True)
         self._advertise_thread.start()
 
     def __del__(self):
+        self.shutdown()
+
+    def shutdown(self, timeout: float = 5.0):
+        """Gracefully shutdown the server and stop the advertisement thread."""
+        if not self._running:
+            return
         self._running = False
         self._conn.unpublish_retained(self._service_advert_topic)
-        self._advertise_thread.join()
+        if hasattr(self, "_advertise_thread") and self._advertise_thread.is_alive():
+            self._advertise_thread.join(timeout=timeout)
 
     @property
     def instance_id(self) -> str:
@@ -99,8 +106,8 @@ class SimpleServer:
                 self.publish_interface_info()
                 time_left = self._re_advertise_server_interval_seconds
                 while self._running and time_left > 0:
-                    sleep(2)
-                    time_left -= 2
+                    sleep(4)
+                    time_left -= 4
             else:
                 sleep(2)
 
@@ -115,16 +122,9 @@ class SimpleServer:
 
     def _publish_all_properties(self):
         with self._property_school.mutex:
-            prop_obj = SchoolProperty(name=self._property_school.get_value())
-            state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
+            school_prop_obj = SchoolProperty(name=self._property_school.get_value())
+            state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), school_prop_obj, self._property_school.version)
             self._conn.publish(state_msg)
-
-    def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
-        correlation_id = request_properties.get("CorrelationData")  # type: Optional[bytes]
-        response_topic = request_properties.get("ResponseTopic")  # type: Optional[str]
-        if response_topic is not None:
-            err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_info)
-            self._conn.publish(err_msg)
 
     def _receive_school_update_request_message(self, message: Message):
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
@@ -184,17 +184,15 @@ class SimpleServer:
                 callback(prop_value)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", topic, exc_info=e)
+            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
             if response_topic is not None:
-
                 prop_obj = SchoolProperty(name=self._property_school.get_value())
-
                 prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_message(self, message: Message):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
-        self._logger.warning("Received unexpected message to %s", topic)
+        self._logger.warning("Received unexpected message: %s", message)
 
     def emit_person_entered(self, person: Person):
         """Server application code should call this method to emit the 'person_entered' signal.
@@ -217,18 +215,18 @@ class SimpleServer:
         else:
             raise Exception("Method handler already set")
 
-    def _process_trade_numbers_call(self, topic: str, payload_str: str, properties: Dict[str, Any]):
+    def _process_trade_numbers_call(self, message: Message):
         """This processes a call to the 'trade_numbers' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = TradeNumbersMethodRequest.model_validate_json(payload_str)
-        correlation_id = properties.get("CorrelationData")  # type: Optional[bytes]
-        response_topic = properties.get("ResponseTopic")  # type: Optional[str]
+        payload = TradeNumbersMethodRequest.model_validate_json(message.payload)
+        correlation_id = message.correlation_data
+        response_topic = message.response_topic
         self._logger.debug("Correlation data for 'trade_numbers' request: %s", correlation_id)
         if self._method_trade_numbers.callback is not None:
             method_args = [
                 payload.your_number,
-            ]
+            ]  # type: List[Any]
 
             if response_topic is not None:
                 return_json = ""
@@ -246,7 +244,7 @@ class SimpleServer:
                     return_code = sme.return_code
                     debug_msg = str(sme)
                     err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                    self._conn.publish(msg)
+                    self._conn.publish(err_msg)
                 except Exception as e:
                     self._logger.exception("Exception while handling trade_numbers", exc_info=e)
                     return_code = MethodReturnCode.SERVER_ERROR
@@ -255,7 +253,7 @@ class SimpleServer:
                     self._conn.publish(err_msg)
                 else:
                     msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
-                    self._conn.publish(response_topic, return_json, qos=1, retain=False, correlation_id=correlation_id)
+                    self._conn.publish(msg)
 
     @property
     def school(self) -> Optional[str]:
@@ -272,14 +270,14 @@ class SimpleServer:
         prop_obj = SchoolProperty(name=name)
         payload = prop_obj.model_dump_json(by_alias=True)
 
-        if self._property_school.value is None or name != self._property_school.value.name:
-            with self._property_school.mutex:
-                self._property_school.value = prop_obj
+        with self._property_school.mutex:
+            if name != self._property_school.value:
+                self._property_school.value = name
                 self._property_school.version += 1
                 state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
                 self._conn.publish(state_msg)
-            for callback in self._property_school.callbacks:
-                callback(prop_obj.name)
+        for callback in self._property_school.callbacks:
+            callback(prop_obj.name)
 
     def set_school(self, name: str):
         """This method sets (publishes) a new value for the 'school' property."""
@@ -294,6 +292,10 @@ class SimpleServer:
     def on_school_updates(self, handler: Callable[[str], None]):
         """This method registers a callback to be called whenever a new 'school' property update is received."""
         if handler is not None:
+
+            def wrapper(value: SchoolProperty):
+                handler(value.name)
+
             self._property_school.callbacks.append(handler)
 
 

@@ -22,18 +22,14 @@ def mock_connection():
 
 @pytest.fixture
 def server(mock_connection):
-
     server = SignalOnlyServer(mock_connection, "test_instance")
-    return server
+    yield server
+    server.shutdown(timeout=0.1)
 
 
 class TestServer:
-    """Tests for server initialization."""
 
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
         assert server is not None, "server failed to initialize"
         assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
-
-    def test_server_properties_initialization(self, server):
-        """Test that server properties are initialized correctly."""

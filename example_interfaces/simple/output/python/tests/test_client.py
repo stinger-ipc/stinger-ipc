@@ -15,6 +15,14 @@ import json
 
 
 @pytest.fixture
+def initial_property_values():
+    initial_property_values = SimpleInitialPropertyValues(
+        school="apples",
+    )
+    return initial_property_values
+
+
+@pytest.fixture
 def mock_connection():
     """Fixture providing a mock MQTT connection."""
     conn = MockConnection()
@@ -22,13 +30,11 @@ def mock_connection():
 
 
 @pytest.fixture
-def client(mock_connection):
+def client(mock_connection, initial_property_values):
     """Fixture providing a Simple client with mocked connection."""
     mock_discovery = DiscoveredInstance(
         instance_id="test_instance",
-        initial_property_values=SimpleInitialPropertyValues(
-            school="apples",
-        ),
+        initial_property_values=initial_property_values,
     )
     client = SimpleClient(
         connection=mock_connection,
@@ -45,12 +51,18 @@ class TestClient:
         assert client is not None, "Client failed to initialize"
         assert client.service_id == "test_instance", "Client service_id does not match expected value"
 
-    def test_client_properties_initialization(self, client):
+
+class TestClientProperties:
+
+    def test_client_properties_initialization(self, client, initial_property_values):
         """Test that client properties are initialized correctly."""
 
         assert hasattr(client, "school"), "Client missing property 'school'"
-
         assert client.school is not None, "Property 'school' not initialized properly"
+        assert client.school == initial_property_values.school, "Property 'school' value does not match expected value"
+
+
+class TestClientMethods:
 
     def test_trade_numbers_method_call_sends_request(self, mock_connection, client):
         kwargs = {

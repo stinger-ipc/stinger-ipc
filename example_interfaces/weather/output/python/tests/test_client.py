@@ -15,6 +15,36 @@ import json
 
 
 @pytest.fixture
+def initial_property_values():
+    initial_property_values = WeatherInitialPropertyValues(
+        location=LocationProperty(
+            latitude=3.14,
+            longitude=3.14,
+        ),
+        current_temperature=3.14,
+        current_condition=CurrentConditionProperty(
+            condition=WeatherCondition.SNOWY,
+            description="apples",
+        ),
+        daily_forecast=DailyForecastProperty(
+            monday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+            tuesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+            wednesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
+        ),
+        hourly_forecast=HourlyForecastProperty(
+            hour_0=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            hour_1=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            hour_2=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+            hour_3=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
+        ),
+        current_condition_refresh_interval=42,
+        hourly_forecast_refresh_interval=42,
+        daily_forecast_refresh_interval=42,
+    )
+    return initial_property_values
+
+
+@pytest.fixture
 def mock_connection():
     """Fixture providing a mock MQTT connection."""
     conn = MockConnection()
@@ -22,35 +52,11 @@ def mock_connection():
 
 
 @pytest.fixture
-def client(mock_connection):
+def client(mock_connection, initial_property_values):
     """Fixture providing a weather client with mocked connection."""
     mock_discovery = DiscoveredInstance(
         instance_id="test_instance",
-        initial_property_values=WeatherInitialPropertyValues(
-            location=WeatherLocationProperty(
-                latitude=3.14,
-                longitude=3.14,
-            ),
-            current_temperature=3.14,
-            current_condition=WeatherCurrentConditionProperty(
-                condition=WeatherCondition.SNOWY,
-                description="apples",
-            ),
-            daily_forecast=WeatherDailyForecastProperty(
-                monday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
-                tuesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
-                wednesday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
-            ),
-            hourly_forecast=WeatherHourlyForecastProperty(
-                hour_0=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
-                hour_1=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
-                hour_2=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
-                hour_3=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
-            ),
-            current_condition_refresh_interval=42,
-            hourly_forecast_refresh_interval=42,
-            daily_forecast_refresh_interval=42,
-        ),
+        initial_property_values=initial_property_values,
     )
     client = WeatherClient(
         connection=mock_connection,
@@ -67,40 +73,48 @@ class TestClient:
         assert client is not None, "Client failed to initialize"
         assert client.service_id == "test_instance", "Client service_id does not match expected value"
 
-    def test_client_properties_initialization(self, client):
+
+class TestClientProperties:
+
+    def test_client_properties_initialization(self, client, initial_property_values):
         """Test that client properties are initialized correctly."""
 
         assert hasattr(client, "location"), "Client missing property 'location'"
-
         assert client.location is not None, "Property 'location' not initialized properly"
+        assert client.location == initial_property_values.location, "Property 'location' value does not match expected value"
 
         assert hasattr(client, "current_temperature"), "Client missing property 'current_temperature'"
-
         assert client.current_temperature is not None, "Property 'current_temperature' not initialized properly"
+        assert client.current_temperature == initial_property_values.current_temperature, "Property 'current_temperature' value does not match expected value"
 
         assert hasattr(client, "current_condition"), "Client missing property 'current_condition'"
-
         assert client.current_condition is not None, "Property 'current_condition' not initialized properly"
+        assert client.current_condition == initial_property_values.current_condition, "Property 'current_condition' value does not match expected value"
 
         assert hasattr(client, "daily_forecast"), "Client missing property 'daily_forecast'"
-
         assert client.daily_forecast is not None, "Property 'daily_forecast' not initialized properly"
+        assert client.daily_forecast == initial_property_values.daily_forecast, "Property 'daily_forecast' value does not match expected value"
 
         assert hasattr(client, "hourly_forecast"), "Client missing property 'hourly_forecast'"
-
         assert client.hourly_forecast is not None, "Property 'hourly_forecast' not initialized properly"
+        assert client.hourly_forecast == initial_property_values.hourly_forecast, "Property 'hourly_forecast' value does not match expected value"
 
         assert hasattr(client, "current_condition_refresh_interval"), "Client missing property 'current_condition_refresh_interval'"
-
         assert client.current_condition_refresh_interval is not None, "Property 'current_condition_refresh_interval' not initialized properly"
+        assert (
+            client.current_condition_refresh_interval == initial_property_values.current_condition_refresh_interval
+        ), "Property 'current_condition_refresh_interval' value does not match expected value"
 
         assert hasattr(client, "hourly_forecast_refresh_interval"), "Client missing property 'hourly_forecast_refresh_interval'"
-
         assert client.hourly_forecast_refresh_interval is not None, "Property 'hourly_forecast_refresh_interval' not initialized properly"
+        assert client.hourly_forecast_refresh_interval == initial_property_values.hourly_forecast_refresh_interval, "Property 'hourly_forecast_refresh_interval' value does not match expected value"
 
         assert hasattr(client, "daily_forecast_refresh_interval"), "Client missing property 'daily_forecast_refresh_interval'"
-
         assert client.daily_forecast_refresh_interval is not None, "Property 'daily_forecast_refresh_interval' not initialized properly"
+        assert client.daily_forecast_refresh_interval == initial_property_values.daily_forecast_refresh_interval, "Property 'daily_forecast_refresh_interval' value does not match expected value"
+
+
+class TestClientMethods:
 
     def test_refresh_daily_forecast_method_call_sends_request(self, mock_connection, client):
         kwargs = {}

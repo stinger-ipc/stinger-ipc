@@ -281,39 +281,39 @@ class FullClient:
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_today_is_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_today_is_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'todayIs' signal with non-JSON content type")
             return
 
-        model = TodayIsSignalPayload.model_validate_json(payload)
+        model = TodayIsSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_today_is, **kwargs)
 
-    def _receive_random_word_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_random_word_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'randomWord' signal with non-JSON content type")
             return
 
-        model = RandomWordSignalPayload.model_validate_json(payload)
+        model = RandomWordSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_random_word, **kwargs)
 
-    def _receive_any_method_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_any_method_response_message(self, message: Message):
         # Handle '' method response.
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
-        if "UserProperty" in properties:
-            user_properties = properties["UserProperty"]
+        if message.user_properties:
+            user_properties = message.user_properties
             if "DebugInfo" in user_properties:
                 self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
             if "ReturnCode" in user_properties:
                 return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
-        if "CorrelationData" in properties:
-            correlation_id = properties["CorrelationData"].decode()
+        if message.correlation_data is not None:
+            correlation_id = message.correlation_data.decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
@@ -323,21 +323,21 @@ class FullClient:
         else:
             self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
 
-    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get("UserProperty", {})
+    def _receive_any_property_response_message(self, message: Message):
+        user_properties = message.user_properties
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
             debug_info = user_properties.get("DebugInfo", "")
             self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
 
-    def _receive_favorite_number_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_favorite_number_property_update_message(self, message: Message):
         # Handle 'favorite_number' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'favorite_number' property change with non-JSON content type")
             return
         try:
-            prop_obj = FavoriteNumberProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = FavoriteNumberProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_favorite_number_mutex:
                 self._property_favorite_number = prop_obj.number
@@ -348,14 +348,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'favorite_number' property change: %s", exc_info=e)
 
-    def _receive_favorite_foods_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_favorite_foods_property_update_message(self, message: Message):
         # Handle 'favorite_foods' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'favorite_foods' property change with non-JSON content type")
             return
         try:
-            prop_obj = FavoriteFoodsProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = FavoriteFoodsProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_favorite_foods_mutex:
                 self._property_favorite_foods = prop_obj
@@ -366,14 +366,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'favorite_foods' property change: %s", exc_info=e)
 
-    def _receive_lunch_menu_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_lunch_menu_property_update_message(self, message: Message):
         # Handle 'lunch_menu' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'lunch_menu' property change with non-JSON content type")
             return
         try:
-            prop_obj = LunchMenuProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = LunchMenuProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_lunch_menu_mutex:
                 self._property_lunch_menu = prop_obj
@@ -384,14 +384,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'lunch_menu' property change: %s", exc_info=e)
 
-    def _receive_family_name_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_family_name_property_update_message(self, message: Message):
         # Handle 'family_name' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'family_name' property change with non-JSON content type")
             return
         try:
-            prop_obj = FamilyNameProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = FamilyNameProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_family_name_mutex:
                 self._property_family_name = prop_obj.family_name
@@ -402,14 +402,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'family_name' property change: %s", exc_info=e)
 
-    def _receive_last_breakfast_time_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_last_breakfast_time_property_update_message(self, message: Message):
         # Handle 'last_breakfast_time' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'last_breakfast_time' property change with non-JSON content type")
             return
         try:
-            prop_obj = LastBreakfastTimeProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = LastBreakfastTimeProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_last_breakfast_time_mutex:
                 self._property_last_breakfast_time = prop_obj.timestamp
@@ -420,14 +420,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'last_breakfast_time' property change: %s", exc_info=e)
 
-    def _receive_last_birthdays_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_last_birthdays_property_update_message(self, message: Message):
         # Handle 'last_birthdays' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'last_birthdays' property change with non-JSON content type")
             return
         try:
-            prop_obj = LastBirthdaysProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = LastBirthdaysProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_last_birthdays_mutex:
                 self._property_last_birthdays = prop_obj
@@ -438,11 +438,11 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'last_birthdays' property change: %s", exc_info=e)
 
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_message(self, message: Message):
         """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
-        self._logger.warning("Receiving message sent to %s, but without a handler", topic)
+        self._logger.warning("Receiving message %s, but without a handler", message)
 
     def receive_today_is(self, handler: TodayIsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""

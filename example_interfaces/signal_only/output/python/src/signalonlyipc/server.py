@@ -42,13 +42,20 @@ class SignalOnlyServer:
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
-        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info)
+        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info, daemon=True)
         self._advertise_thread.start()
 
     def __del__(self):
+        self.shutdown()
+
+    def shutdown(self, timeout: float = 5.0):
+        """Gracefully shutdown the server and stop the advertisement thread."""
+        if not self._running:
+            return
         self._running = False
         self._conn.unpublish_retained(self._service_advert_topic)
-        self._advertise_thread.join()
+        if hasattr(self, "_advertise_thread") and self._advertise_thread.is_alive():
+            self._advertise_thread.join(timeout=timeout)
 
     @property
     def instance_id(self) -> str:
@@ -63,8 +70,8 @@ class SignalOnlyServer:
                 self.publish_interface_info()
                 time_left = self._re_advertise_server_interval_seconds
                 while self._running and time_left > 0:
-                    sleep(2)
-                    time_left -= 2
+                    sleep(4)
+                    time_left -= 4
             else:
                 sleep(2)
 
@@ -77,16 +84,9 @@ class SignalOnlyServer:
         msg = Message.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
-    def _send_reply_error_message(self, return_code: MethodReturnCode, request_properties: Dict[str, Any], debug_info: Optional[str] = None):
-        correlation_id = request_properties.get("CorrelationData")  # type: Optional[bytes]
-        response_topic = request_properties.get("ResponseTopic")  # type: Optional[str]
-        if response_topic is not None:
-            err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_info)
-            self._conn.publish(err_msg)
-
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_message(self, message: Message):
         """This is the callback that is called whenever any message is received on a subscribed topic."""
-        self._logger.warning("Received unexpected message to %s", topic)
+        self._logger.warning("Received unexpected message: %s", message)
 
     def emit_another_signal(self, one: float, two: bool, three: str):
         """Server application code should call this method to emit the 'anotherSignal' signal.

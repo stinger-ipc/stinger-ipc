@@ -40,6 +40,3 @@ class TestClient:
         """Test that client initializes successfully."""
         assert client is not None, "Client failed to initialize"
         assert client.service_id == "test_instance", "Client service_id does not match expected value"
-
-    def test_client_properties_initialization(self, client):
-        """Test that client properties are initialized correctly."""
