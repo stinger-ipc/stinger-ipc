@@ -1,11 +1,11 @@
-{%if not config.properties.server_owned_values%}
+{%if not config.properties.stinger_owned_values%}
 from typing import Callable, Optional
 {%endif%}
 from pydantic import BaseModel
 from .interface_types import *
 
 {%if stinger.properties | length > 0 %}
-{%if config.properties.server_owned_values%}
+{%if config.properties.stinger_owned_values%}
 class {{stinger.name|UpperCamelCase}}InitialPropertyValues(BaseModel):
     {%for prop_name, prop in stinger.properties.items()%}
     {{prop_name | snake_case}}: {{prop.python_annotation}}

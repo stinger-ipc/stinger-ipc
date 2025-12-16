@@ -69,42 +69,42 @@ if __name__ == "__main__":
         print(f"--> Running refresh_current_conditions()'")
         return None
 
-    @server.on_location_updates
+    @server.on_location_updated
     def on_location_update(latitude: float, longitude: float):
         """Example callback for when the 'location' property is updated."""
         print(f"~~> Received update for 'location' property: { latitude= }, { longitude= }")
 
-    @server.on_current_temperature_updates
+    @server.on_current_temperature_updated
     def on_current_temperature_update(temperature_f: float):
         """Example callback for when the 'current_temperature' property is updated."""
         print(f"~~> Received update for 'current_temperature' property: { temperature_f= }")
 
-    @server.on_current_condition_updates
+    @server.on_current_condition_updated
     def on_current_condition_update(condition: WeatherCondition, description: str):
         """Example callback for when the 'current_condition' property is updated."""
         print(f"~~> Received update for 'current_condition' property: { condition= }, { description= }")
 
-    @server.on_daily_forecast_updates
+    @server.on_daily_forecast_updated
     def on_daily_forecast_update(monday: ForecastForDay, tuesday: ForecastForDay, wednesday: ForecastForDay):
         """Example callback for when the 'daily_forecast' property is updated."""
         print(f"~~> Received update for 'daily_forecast' property: { monday= }, { tuesday= }, { wednesday= }")
 
-    @server.on_hourly_forecast_updates
+    @server.on_hourly_forecast_updated
     def on_hourly_forecast_update(hour_0: ForecastForHour, hour_1: ForecastForHour, hour_2: ForecastForHour, hour_3: ForecastForHour):
         """Example callback for when the 'hourly_forecast' property is updated."""
         print(f"~~> Received update for 'hourly_forecast' property: { hour_0= }, { hour_1= }, { hour_2= }, { hour_3= }")
 
-    @server.on_current_condition_refresh_interval_updates
+    @server.on_current_condition_refresh_interval_updated
     def on_current_condition_refresh_interval_update(seconds: int):
         """Example callback for when the 'current_condition_refresh_interval' property is updated."""
         print(f"~~> Received update for 'current_condition_refresh_interval' property: { seconds= }")
 
-    @server.on_hourly_forecast_refresh_interval_updates
+    @server.on_hourly_forecast_refresh_interval_updated
     def on_hourly_forecast_refresh_interval_update(seconds: int):
         """Example callback for when the 'hourly_forecast_refresh_interval' property is updated."""
         print(f"~~> Received update for 'hourly_forecast_refresh_interval' property: { seconds= }")
 
-    @server.on_daily_forecast_refresh_interval_updates
+    @server.on_daily_forecast_refresh_interval_updated
     def on_daily_forecast_refresh_interval_update(seconds: int):
         """Example callback for when the 'daily_forecast_refresh_interval' property is updated."""
         print(f"~~> Received update for 'daily_forecast_refresh_interval' property: { seconds= }")

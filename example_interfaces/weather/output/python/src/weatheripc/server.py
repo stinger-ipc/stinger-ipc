@@ -35,6 +35,10 @@ T = TypeVar("T")
 
 @dataclass
 class PropertyControls(Generic[T]):
+    """
+    Controls for a server property.  Generic[T] must be a single value or a pydantic BaseModel for multi-argument properties.
+    """
+
     value: T
     mutex = threading.RLock()
     version: int = -1
@@ -161,30 +165,100 @@ class WeatherServer:
         msg = Message.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
-    def _publish_all_properties(self):
+    def publish_location_value(self, *_, **__):
+        """Publishes the current value of the 'location' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_location.mutex:
+            self._property_location.version += 1
             location_prop_obj = self._property_location.get_value()
             state_msg = Message.property_state_message("weather/{}/property/location/value".format(self._instance_id), location_prop_obj, self._property_location.version)
             self._conn.publish(state_msg)
+
+    def publish_current_temperature_value(self, *_, **__):
+        """Publishes the current value of the 'current_temperature' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_current_temperature.mutex:
+            self._property_current_temperature.version += 1
             current_temperature_prop_obj = CurrentTemperatureProperty(temperature_f=self._property_current_temperature.get_value())
             state_msg = Message.property_state_message(
                 "weather/{}/property/currentTemperature/value".format(self._instance_id), current_temperature_prop_obj, self._property_current_temperature.version
             )
             self._conn.publish(state_msg)
+
+    def publish_current_condition_value(self, *_, **__):
+        """Publishes the current value of the 'current_condition' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_current_condition.mutex:
+            self._property_current_condition.version += 1
             current_condition_prop_obj = self._property_current_condition.get_value()
             state_msg = Message.property_state_message("weather/{}/property/currentCondition/value".format(self._instance_id), current_condition_prop_obj, self._property_current_condition.version)
             self._conn.publish(state_msg)
+
+    def publish_daily_forecast_value(self, *_, **__):
+        """Publishes the current value of the 'daily_forecast' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_daily_forecast.mutex:
+            self._property_daily_forecast.version += 1
             daily_forecast_prop_obj = self._property_daily_forecast.get_value()
             state_msg = Message.property_state_message("weather/{}/property/dailyForecast/value".format(self._instance_id), daily_forecast_prop_obj, self._property_daily_forecast.version)
             self._conn.publish(state_msg)
+
+    def publish_hourly_forecast_value(self, *_, **__):
+        """Publishes the current value of the 'hourly_forecast' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_hourly_forecast.mutex:
+            self._property_hourly_forecast.version += 1
             hourly_forecast_prop_obj = self._property_hourly_forecast.get_value()
             state_msg = Message.property_state_message("weather/{}/property/hourlyForecast/value".format(self._instance_id), hourly_forecast_prop_obj, self._property_hourly_forecast.version)
             self._conn.publish(state_msg)
+
+    def publish_current_condition_refresh_interval_value(self, *_, **__):
+        """Publishes the current value of the 'current_condition_refresh_interval' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_current_condition_refresh_interval.mutex:
+            self._property_current_condition_refresh_interval.version += 1
             current_condition_refresh_interval_prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
             state_msg = Message.property_state_message(
                 "weather/{}/property/currentConditionRefreshInterval/value".format(self._instance_id),
@@ -192,120 +266,120 @@ class WeatherServer:
                 self._property_current_condition_refresh_interval.version,
             )
             self._conn.publish(state_msg)
+
+    def publish_hourly_forecast_refresh_interval_value(self, *_, **__):
+        """Publishes the current value of the 'hourly_forecast_refresh_interval' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_hourly_forecast_refresh_interval.mutex:
+            self._property_hourly_forecast_refresh_interval.version += 1
             hourly_forecast_refresh_interval_prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
             state_msg = Message.property_state_message(
                 "weather/{}/property/hourlyForecastRefreshInterval/value".format(self._instance_id), hourly_forecast_refresh_interval_prop_obj, self._property_hourly_forecast_refresh_interval.version
             )
             self._conn.publish(state_msg)
+
+    def publish_daily_forecast_refresh_interval_value(self, *_, **__):
+        """Publishes the current value of the 'daily_forecast_refresh_interval' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_daily_forecast_refresh_interval.mutex:
+            self._property_daily_forecast_refresh_interval.version += 1
             daily_forecast_refresh_interval_prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
             state_msg = Message.property_state_message(
                 "weather/{}/property/dailyForecastRefreshInterval/value".format(self._instance_id), daily_forecast_refresh_interval_prop_obj, self._property_daily_forecast_refresh_interval.version
             )
             self._conn.publish(state_msg)
 
+    def _publish_all_properties(self):
+        """Publishes the current value of all properties."""
+        self.publish_location_value()
+        self.publish_current_temperature_value()
+        self.publish_current_condition_value()
+        self.publish_daily_forecast_value()
+        self.publish_hourly_forecast_value()
+        self.publish_current_condition_refresh_interval_value()
+        self.publish_hourly_forecast_refresh_interval_value()
+        self.publish_daily_forecast_refresh_interval_value()
+
     def _receive_location_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `weather/{}/property/location/setValue` topic
+        in order to update the `location` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = self._property_location.get_value()
-
         try:
             if int(prop_version) != int(self._property_location.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_location.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_location.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_location.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_location.version}' of the 'location' property")
 
-            try:
-                prop_obj = LocationProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_location.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
-            prop_value = prop_obj
+            prop_obj = LocationProperty.model_validate_json(message.payload)
+
+            prop_value = prop_obj  # type: LocationProperty
             with self._property_location.mutex:
                 self._property_location.version += 1
                 self._property_location.set_value(prop_value)
 
-                prop_obj = self._property_location.get_value()
+                prop_obj = self._property_location.get_value()  # type: LocationProperty
 
                 state_msg = Message.property_state_message("weather/{}/property/location/value".format(self._instance_id), prop_obj, self._property_location.version)
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = self._property_location.get_value()
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_location.version), MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_location.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_location.callbacks:
-                callback(
-                    prop_value.latitude,
-                    prop_value.longitude,
-                )
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = self._property_location.get_value()
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_location.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_location.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_current_condition_refresh_interval_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `weather/{}/property/currentConditionRefreshInterval/setValue` topic
+        in order to update the `current_condition_refresh_interval` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
-
         try:
             if int(prop_version) != int(self._property_current_condition_refresh_interval.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_current_condition_refresh_interval.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_current_condition_refresh_interval.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_current_condition_refresh_interval.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(
+                    f"Request version '{prop_version}'' does not match current version '{self._property_current_condition_refresh_interval.version}' of the 'current_condition_refresh_interval' property"
+                )
 
-            try:
-                prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_current_condition_refresh_interval.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+            prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(message.payload)
+
             prop_value = prop_obj.seconds
             with self._property_current_condition_refresh_interval.mutex:
                 self._property_current_condition_refresh_interval.version += 1
@@ -318,64 +392,49 @@ class WeatherServer:
                 )
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(
-                    response_topic, prop_obj, str(self._property_current_condition_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
-                )
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(
+                        response_topic, prop_obj, str(self._property_current_condition_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_current_condition_refresh_interval.callbacks:
-                callback(prop_value)
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = Message.property_response_message(
-                    response_topic, prop_obj, str(self._property_current_condition_refresh_interval.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e)
+                    response_topic, existing_prop_obj, str(self._property_current_condition_refresh_interval.version), return_code.value, correlation_id, str(e)
                 )
                 self._conn.publish(prop_resp_msg)
 
     def _receive_hourly_forecast_refresh_interval_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `weather/{}/property/hourlyForecastRefreshInterval/setValue` topic
+        in order to update the `hourly_forecast_refresh_interval` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
-
         try:
             if int(prop_version) != int(self._property_hourly_forecast_refresh_interval.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_hourly_forecast_refresh_interval.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_hourly_forecast_refresh_interval.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_hourly_forecast_refresh_interval.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(
+                    f"Request version '{prop_version}'' does not match current version '{self._property_hourly_forecast_refresh_interval.version}' of the 'hourly_forecast_refresh_interval' property"
+                )
 
-            try:
-                prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_hourly_forecast_refresh_interval.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+            prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(message.payload)
+
             prop_value = prop_obj.seconds
             with self._property_hourly_forecast_refresh_interval.mutex:
                 self._property_hourly_forecast_refresh_interval.version += 1
@@ -388,64 +447,49 @@ class WeatherServer:
                 )
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(
-                    response_topic, prop_obj, str(self._property_hourly_forecast_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
-                )
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(
+                        response_topic, prop_obj, str(self._property_hourly_forecast_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_hourly_forecast_refresh_interval.callbacks:
-                callback(prop_value)
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = Message.property_response_message(
-                    response_topic, prop_obj, str(self._property_hourly_forecast_refresh_interval.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e)
+                    response_topic, existing_prop_obj, str(self._property_hourly_forecast_refresh_interval.version), return_code.value, correlation_id, str(e)
                 )
                 self._conn.publish(prop_resp_msg)
 
     def _receive_daily_forecast_refresh_interval_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `weather/{}/property/dailyForecastRefreshInterval/setValue` topic
+        in order to update the `daily_forecast_refresh_interval` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
-
         try:
             if int(prop_version) != int(self._property_daily_forecast_refresh_interval.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_daily_forecast_refresh_interval.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_daily_forecast_refresh_interval.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_daily_forecast_refresh_interval.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(
+                    f"Request version '{prop_version}'' does not match current version '{self._property_daily_forecast_refresh_interval.version}' of the 'daily_forecast_refresh_interval' property"
+                )
 
-            try:
-                prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_daily_forecast_refresh_interval.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+            prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(message.payload)
+
             prop_value = prop_obj.seconds
             with self._property_daily_forecast_refresh_interval.mutex:
                 self._property_daily_forecast_refresh_interval.version += 1
@@ -458,25 +502,27 @@ class WeatherServer:
                 )
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_daily_forecast_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(
+                        response_topic, prop_obj, str(self._property_daily_forecast_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_daily_forecast_refresh_interval.callbacks:
-                callback(prop_value)
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = Message.property_response_message(
-                    response_topic, prop_obj, str(self._property_daily_forecast_refresh_interval.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e)
+                    response_topic, existing_prop_obj, str(self._property_daily_forecast_refresh_interval.version), return_code.value, correlation_id, str(e)
                 )
                 self._conn.publish(prop_resp_msg)
 
@@ -626,26 +672,31 @@ class WeatherServer:
 
     @property
     def location(self) -> LocationProperty:
-        """This property returns the last received value for the 'location' property."""
+        """This property returns the last received value for the 'location' property.
+        The 'location' property contains multiple values, so we operate on the full
+        `LocationProperty` structure.
+
+        """
         return self._property_location.get_value()
 
     @location.setter
     def location(self, value: LocationProperty):
         """This property sets (publishes) a new value structure for the 'location' property."""
-
         if not isinstance(value, LocationProperty):
             raise ValueError(f"The value must be LocationProperty.")
 
-        payload = value.model_dump_json(by_alias=True)
-
-        if value != self._property_location.value:
+            value_updated = False
             with self._property_location.mutex:
-                self._property_location.value = value
-                self._property_location.version += 1
-                state_msg = Message.property_state_message("weather/{}/property/location/value".format(self._instance_id), value, self._property_location.version)
-                self._conn.publish(state_msg)
-            for callback in self._property_location.callbacks:
-                callback(value.latitude, value.longitude)
+                if value != self._property_location.get_value():
+                    value_updated = True
+                    self._property_location.set_value(value)
+                    self._property_location.version += 1
+                    state_msg = Message.property_state_message("weather/{}/property/location/value".format(self._instance_id), self._property_location.get_value(), self._property_location.version)
+                    self._conn.publish(state_msg)
+
+            if value_updated:
+                for callback in self._property_location.callbacks:
+                    callback(self._property_location.get_value())
 
     def set_location(self, latitude: float, longitude: float):
         """This method sets (publishes) a new value for the 'location' property."""
@@ -662,38 +713,41 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.location = obj
 
-    def on_location_updates(self, handler: Callable[[float, float], None]):
+    def on_location_updated(self, handler: Callable[[float, float], None]):
         """This method registers a callback to be called whenever a new 'location' property update is received."""
-        if handler is not None:
 
-            def wrapper(value: LocationProperty):
-                handler(value.latitude, value.longitude)
+        def wrapper(value: LocationProperty):
+            handler(
+                value.latitude,
+                value.longitude,
+            )
 
-            self._property_location.callbacks.append(handler)
+        self._property_location.callbacks.append(wrapper)
 
     @property
     def current_temperature(self) -> Optional[float]:
-        """This property returns the last received value for the 'current_temperature' property."""
+        """This property returns the last received (float) value for the 'current_temperature' property."""
         return self._property_current_temperature.get_value()
 
     @current_temperature.setter
     def current_temperature(self, temperature_f: float):
-        """This property sets (publishes) a new value for the 'current_temperature' property."""
-
+        """This property sets (publishes) a new float value for the 'current_temperature' property."""
         if not isinstance(temperature_f, float):
             raise ValueError(f"The value must be float .")
 
-        prop_obj = CurrentTemperatureProperty(temperature_f=temperature_f)
-        payload = prop_obj.model_dump_json(by_alias=True)
-
+        value_updated = False
         with self._property_current_temperature.mutex:
-            if temperature_f != self._property_current_temperature.value:
-                self._property_current_temperature.value = temperature_f
+            if temperature_f != self._property_current_temperature.get_value():
+                value_updated = True
+                self._property_current_temperature.set_value(temperature_f)
                 self._property_current_temperature.version += 1
+                prop_obj = CurrentTemperatureProperty(temperature_f=self._property_current_temperature.get_value())
                 state_msg = Message.property_state_message("weather/{}/property/currentTemperature/value".format(self._instance_id), prop_obj, self._property_current_temperature.version)
                 self._conn.publish(state_msg)
-        for callback in self._property_current_temperature.callbacks:
-            callback(prop_obj.temperature_f)
+
+        if value_updated:
+            for callback in self._property_current_temperature.callbacks:
+                callback(prop_obj.temperature_f)
 
     def set_current_temperature(self, temperature_f: float):
         """This method sets (publishes) a new value for the 'current_temperature' property."""
@@ -705,37 +759,39 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.current_temperature = obj
 
-    def on_current_temperature_updates(self, handler: Callable[[float], None]):
+    def on_current_temperature_updated(self, handler: Callable[[float], None]):
         """This method registers a callback to be called whenever a new 'current_temperature' property update is received."""
-        if handler is not None:
-
-            def wrapper(value: CurrentTemperatureProperty):
-                handler(value.temperature_f)
-
-            self._property_current_temperature.callbacks.append(handler)
+        self._property_current_temperature.callbacks.append(handler)
 
     @property
     def current_condition(self) -> CurrentConditionProperty:
-        """This property returns the last received value for the 'current_condition' property."""
+        """This property returns the last received value for the 'current_condition' property.
+        The 'current_condition' property contains multiple values, so we operate on the full
+        `CurrentConditionProperty` structure.
+
+        """
         return self._property_current_condition.get_value()
 
     @current_condition.setter
     def current_condition(self, value: CurrentConditionProperty):
         """This property sets (publishes) a new value structure for the 'current_condition' property."""
-
         if not isinstance(value, CurrentConditionProperty):
             raise ValueError(f"The value must be CurrentConditionProperty.")
 
-        payload = value.model_dump_json(by_alias=True)
-
-        if value != self._property_current_condition.value:
+            value_updated = False
             with self._property_current_condition.mutex:
-                self._property_current_condition.value = value
-                self._property_current_condition.version += 1
-                state_msg = Message.property_state_message("weather/{}/property/currentCondition/value".format(self._instance_id), value, self._property_current_condition.version)
-                self._conn.publish(state_msg)
-            for callback in self._property_current_condition.callbacks:
-                callback(value.condition, value.description)
+                if value != self._property_current_condition.get_value():
+                    value_updated = True
+                    self._property_current_condition.set_value(value)
+                    self._property_current_condition.version += 1
+                    state_msg = Message.property_state_message(
+                        "weather/{}/property/currentCondition/value".format(self._instance_id), self._property_current_condition.get_value(), self._property_current_condition.version
+                    )
+                    self._conn.publish(state_msg)
+
+            if value_updated:
+                for callback in self._property_current_condition.callbacks:
+                    callback(self._property_current_condition.get_value())
 
     def set_current_condition(self, condition: WeatherCondition, description: str):
         """This method sets (publishes) a new value for the 'current_condition' property."""
@@ -752,37 +808,46 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.current_condition = obj
 
-    def on_current_condition_updates(self, handler: Callable[[WeatherCondition, str], None]):
+    def on_current_condition_updated(self, handler: Callable[[WeatherCondition, str], None]):
         """This method registers a callback to be called whenever a new 'current_condition' property update is received."""
-        if handler is not None:
 
-            def wrapper(value: CurrentConditionProperty):
-                handler(value.condition, value.description)
+        def wrapper(value: CurrentConditionProperty):
+            handler(
+                value.condition,
+                value.description,
+            )
 
-            self._property_current_condition.callbacks.append(handler)
+        self._property_current_condition.callbacks.append(wrapper)
 
     @property
     def daily_forecast(self) -> DailyForecastProperty:
-        """This property returns the last received value for the 'daily_forecast' property."""
+        """This property returns the last received value for the 'daily_forecast' property.
+        The 'daily_forecast' property contains multiple values, so we operate on the full
+        `DailyForecastProperty` structure.
+
+        """
         return self._property_daily_forecast.get_value()
 
     @daily_forecast.setter
     def daily_forecast(self, value: DailyForecastProperty):
         """This property sets (publishes) a new value structure for the 'daily_forecast' property."""
-
         if not isinstance(value, DailyForecastProperty):
             raise ValueError(f"The value must be DailyForecastProperty.")
 
-        payload = value.model_dump_json(by_alias=True)
-
-        if value != self._property_daily_forecast.value:
+            value_updated = False
             with self._property_daily_forecast.mutex:
-                self._property_daily_forecast.value = value
-                self._property_daily_forecast.version += 1
-                state_msg = Message.property_state_message("weather/{}/property/dailyForecast/value".format(self._instance_id), value, self._property_daily_forecast.version)
-                self._conn.publish(state_msg)
-            for callback in self._property_daily_forecast.callbacks:
-                callback(value.monday, value.tuesday, value.wednesday)
+                if value != self._property_daily_forecast.get_value():
+                    value_updated = True
+                    self._property_daily_forecast.set_value(value)
+                    self._property_daily_forecast.version += 1
+                    state_msg = Message.property_state_message(
+                        "weather/{}/property/dailyForecast/value".format(self._instance_id), self._property_daily_forecast.get_value(), self._property_daily_forecast.version
+                    )
+                    self._conn.publish(state_msg)
+
+            if value_updated:
+                for callback in self._property_daily_forecast.callbacks:
+                    callback(self._property_daily_forecast.get_value())
 
     def set_daily_forecast(self, monday: ForecastForDay, tuesday: ForecastForDay, wednesday: ForecastForDay):
         """This method sets (publishes) a new value for the 'daily_forecast' property."""
@@ -802,37 +867,47 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.daily_forecast = obj
 
-    def on_daily_forecast_updates(self, handler: Callable[[ForecastForDay, ForecastForDay, ForecastForDay], None]):
+    def on_daily_forecast_updated(self, handler: Callable[[ForecastForDay, ForecastForDay, ForecastForDay], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast' property update is received."""
-        if handler is not None:
 
-            def wrapper(value: DailyForecastProperty):
-                handler(value.monday, value.tuesday, value.wednesday)
+        def wrapper(value: DailyForecastProperty):
+            handler(
+                value.monday,
+                value.tuesday,
+                value.wednesday,
+            )
 
-            self._property_daily_forecast.callbacks.append(handler)
+        self._property_daily_forecast.callbacks.append(wrapper)
 
     @property
     def hourly_forecast(self) -> HourlyForecastProperty:
-        """This property returns the last received value for the 'hourly_forecast' property."""
+        """This property returns the last received value for the 'hourly_forecast' property.
+        The 'hourly_forecast' property contains multiple values, so we operate on the full
+        `HourlyForecastProperty` structure.
+
+        """
         return self._property_hourly_forecast.get_value()
 
     @hourly_forecast.setter
     def hourly_forecast(self, value: HourlyForecastProperty):
         """This property sets (publishes) a new value structure for the 'hourly_forecast' property."""
-
         if not isinstance(value, HourlyForecastProperty):
             raise ValueError(f"The value must be HourlyForecastProperty.")
 
-        payload = value.model_dump_json(by_alias=True)
-
-        if value != self._property_hourly_forecast.value:
+            value_updated = False
             with self._property_hourly_forecast.mutex:
-                self._property_hourly_forecast.value = value
-                self._property_hourly_forecast.version += 1
-                state_msg = Message.property_state_message("weather/{}/property/hourlyForecast/value".format(self._instance_id), value, self._property_hourly_forecast.version)
-                self._conn.publish(state_msg)
-            for callback in self._property_hourly_forecast.callbacks:
-                callback(value.hour_0, value.hour_1, value.hour_2, value.hour_3)
+                if value != self._property_hourly_forecast.get_value():
+                    value_updated = True
+                    self._property_hourly_forecast.set_value(value)
+                    self._property_hourly_forecast.version += 1
+                    state_msg = Message.property_state_message(
+                        "weather/{}/property/hourlyForecast/value".format(self._instance_id), self._property_hourly_forecast.get_value(), self._property_hourly_forecast.version
+                    )
+                    self._conn.publish(state_msg)
+
+            if value_updated:
+                for callback in self._property_hourly_forecast.callbacks:
+                    callback(self._property_hourly_forecast.get_value())
 
     def set_hourly_forecast(self, hour_0: ForecastForHour, hour_1: ForecastForHour, hour_2: ForecastForHour, hour_3: ForecastForHour):
         """This method sets (publishes) a new value for the 'hourly_forecast' property."""
@@ -855,40 +930,45 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.hourly_forecast = obj
 
-    def on_hourly_forecast_updates(self, handler: Callable[[ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour], None]):
+    def on_hourly_forecast_updated(self, handler: Callable[[ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast' property update is received."""
-        if handler is not None:
 
-            def wrapper(value: HourlyForecastProperty):
-                handler(value.hour_0, value.hour_1, value.hour_2, value.hour_3)
+        def wrapper(value: HourlyForecastProperty):
+            handler(
+                value.hour_0,
+                value.hour_1,
+                value.hour_2,
+                value.hour_3,
+            )
 
-            self._property_hourly_forecast.callbacks.append(handler)
+        self._property_hourly_forecast.callbacks.append(wrapper)
 
     @property
     def current_condition_refresh_interval(self) -> Optional[int]:
-        """This property returns the last received value for the 'current_condition_refresh_interval' property."""
+        """This property returns the last received (int) value for the 'current_condition_refresh_interval' property."""
         return self._property_current_condition_refresh_interval.get_value()
 
     @current_condition_refresh_interval.setter
     def current_condition_refresh_interval(self, seconds: int):
-        """This property sets (publishes) a new value for the 'current_condition_refresh_interval' property."""
-
+        """This property sets (publishes) a new int value for the 'current_condition_refresh_interval' property."""
         if not isinstance(seconds, int):
             raise ValueError(f"The value must be int .")
 
-        prop_obj = CurrentConditionRefreshIntervalProperty(seconds=seconds)
-        payload = prop_obj.model_dump_json(by_alias=True)
-
+        value_updated = False
         with self._property_current_condition_refresh_interval.mutex:
-            if seconds != self._property_current_condition_refresh_interval.value:
-                self._property_current_condition_refresh_interval.value = seconds
+            if seconds != self._property_current_condition_refresh_interval.get_value():
+                value_updated = True
+                self._property_current_condition_refresh_interval.set_value(seconds)
                 self._property_current_condition_refresh_interval.version += 1
+                prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
                 state_msg = Message.property_state_message(
                     "weather/{}/property/currentConditionRefreshInterval/value".format(self._instance_id), prop_obj, self._property_current_condition_refresh_interval.version
                 )
                 self._conn.publish(state_msg)
-        for callback in self._property_current_condition_refresh_interval.callbacks:
-            callback(prop_obj.seconds)
+
+        if value_updated:
+            for callback in self._property_current_condition_refresh_interval.callbacks:
+                callback(prop_obj.seconds)
 
     def set_current_condition_refresh_interval(self, seconds: int):
         """This method sets (publishes) a new value for the 'current_condition_refresh_interval' property."""
@@ -900,40 +980,36 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.current_condition_refresh_interval = obj
 
-    def on_current_condition_refresh_interval_updates(self, handler: Callable[[int], None]):
+    def on_current_condition_refresh_interval_updated(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'current_condition_refresh_interval' property update is received."""
-        if handler is not None:
-
-            def wrapper(value: CurrentConditionRefreshIntervalProperty):
-                handler(value.seconds)
-
-            self._property_current_condition_refresh_interval.callbacks.append(handler)
+        self._property_current_condition_refresh_interval.callbacks.append(handler)
 
     @property
     def hourly_forecast_refresh_interval(self) -> Optional[int]:
-        """This property returns the last received value for the 'hourly_forecast_refresh_interval' property."""
+        """This property returns the last received (int) value for the 'hourly_forecast_refresh_interval' property."""
         return self._property_hourly_forecast_refresh_interval.get_value()
 
     @hourly_forecast_refresh_interval.setter
     def hourly_forecast_refresh_interval(self, seconds: int):
-        """This property sets (publishes) a new value for the 'hourly_forecast_refresh_interval' property."""
-
+        """This property sets (publishes) a new int value for the 'hourly_forecast_refresh_interval' property."""
         if not isinstance(seconds, int):
             raise ValueError(f"The value must be int .")
 
-        prop_obj = HourlyForecastRefreshIntervalProperty(seconds=seconds)
-        payload = prop_obj.model_dump_json(by_alias=True)
-
+        value_updated = False
         with self._property_hourly_forecast_refresh_interval.mutex:
-            if seconds != self._property_hourly_forecast_refresh_interval.value:
-                self._property_hourly_forecast_refresh_interval.value = seconds
+            if seconds != self._property_hourly_forecast_refresh_interval.get_value():
+                value_updated = True
+                self._property_hourly_forecast_refresh_interval.set_value(seconds)
                 self._property_hourly_forecast_refresh_interval.version += 1
+                prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
                 state_msg = Message.property_state_message(
                     "weather/{}/property/hourlyForecastRefreshInterval/value".format(self._instance_id), prop_obj, self._property_hourly_forecast_refresh_interval.version
                 )
                 self._conn.publish(state_msg)
-        for callback in self._property_hourly_forecast_refresh_interval.callbacks:
-            callback(prop_obj.seconds)
+
+        if value_updated:
+            for callback in self._property_hourly_forecast_refresh_interval.callbacks:
+                callback(prop_obj.seconds)
 
     def set_hourly_forecast_refresh_interval(self, seconds: int):
         """This method sets (publishes) a new value for the 'hourly_forecast_refresh_interval' property."""
@@ -945,40 +1021,36 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.hourly_forecast_refresh_interval = obj
 
-    def on_hourly_forecast_refresh_interval_updates(self, handler: Callable[[int], None]):
+    def on_hourly_forecast_refresh_interval_updated(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast_refresh_interval' property update is received."""
-        if handler is not None:
-
-            def wrapper(value: HourlyForecastRefreshIntervalProperty):
-                handler(value.seconds)
-
-            self._property_hourly_forecast_refresh_interval.callbacks.append(handler)
+        self._property_hourly_forecast_refresh_interval.callbacks.append(handler)
 
     @property
     def daily_forecast_refresh_interval(self) -> Optional[int]:
-        """This property returns the last received value for the 'daily_forecast_refresh_interval' property."""
+        """This property returns the last received (int) value for the 'daily_forecast_refresh_interval' property."""
         return self._property_daily_forecast_refresh_interval.get_value()
 
     @daily_forecast_refresh_interval.setter
     def daily_forecast_refresh_interval(self, seconds: int):
-        """This property sets (publishes) a new value for the 'daily_forecast_refresh_interval' property."""
-
+        """This property sets (publishes) a new int value for the 'daily_forecast_refresh_interval' property."""
         if not isinstance(seconds, int):
             raise ValueError(f"The value must be int .")
 
-        prop_obj = DailyForecastRefreshIntervalProperty(seconds=seconds)
-        payload = prop_obj.model_dump_json(by_alias=True)
-
+        value_updated = False
         with self._property_daily_forecast_refresh_interval.mutex:
-            if seconds != self._property_daily_forecast_refresh_interval.value:
-                self._property_daily_forecast_refresh_interval.value = seconds
+            if seconds != self._property_daily_forecast_refresh_interval.get_value():
+                value_updated = True
+                self._property_daily_forecast_refresh_interval.set_value(seconds)
                 self._property_daily_forecast_refresh_interval.version += 1
+                prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
                 state_msg = Message.property_state_message(
                     "weather/{}/property/dailyForecastRefreshInterval/value".format(self._instance_id), prop_obj, self._property_daily_forecast_refresh_interval.version
                 )
                 self._conn.publish(state_msg)
-        for callback in self._property_daily_forecast_refresh_interval.callbacks:
-            callback(prop_obj.seconds)
+
+        if value_updated:
+            for callback in self._property_daily_forecast_refresh_interval.callbacks:
+                callback(prop_obj.seconds)
 
     def set_daily_forecast_refresh_interval(self, seconds: int):
         """This method sets (publishes) a new value for the 'daily_forecast_refresh_interval' property."""
@@ -990,14 +1062,9 @@ class WeatherServer:
         # Use the property.setter to do that actual work.
         self.daily_forecast_refresh_interval = obj
 
-    def on_daily_forecast_refresh_interval_updates(self, handler: Callable[[int], None]):
+    def on_daily_forecast_refresh_interval_updated(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast_refresh_interval' property update is received."""
-        if handler is not None:
-
-            def wrapper(value: DailyForecastRefreshIntervalProperty):
-                handler(value.seconds)
-
-            self._property_daily_forecast_refresh_interval.callbacks.append(handler)
+        self._property_daily_forecast_refresh_interval.callbacks.append(handler)
 
 
 class WeatherServerBuilder:
@@ -1053,7 +1120,7 @@ class WeatherServerBuilder:
             raise Exception("Method handler already set")
         return wrapper
 
-    def on_location_updates(self, handler: Callable[[float, float], None]):
+    def on_location_updated(self, handler: Callable[[float, float], None]):
         """This method registers a callback to be called whenever a new 'location' property update is received."""
 
         @functools.wraps(handler)
@@ -1063,7 +1130,7 @@ class WeatherServerBuilder:
         self._location_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_current_temperature_updates(self, handler: Callable[[float], None]):
+    def on_current_temperature_updated(self, handler: Callable[[float], None]):
         """This method registers a callback to be called whenever a new 'current_temperature' property update is received."""
 
         @functools.wraps(handler)
@@ -1073,7 +1140,7 @@ class WeatherServerBuilder:
         self._current_temperature_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_current_condition_updates(self, handler: Callable[[WeatherCondition, str], None]):
+    def on_current_condition_updated(self, handler: Callable[[WeatherCondition, str], None]):
         """This method registers a callback to be called whenever a new 'current_condition' property update is received."""
 
         @functools.wraps(handler)
@@ -1083,7 +1150,7 @@ class WeatherServerBuilder:
         self._current_condition_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_daily_forecast_updates(self, handler: Callable[[ForecastForDay, ForecastForDay, ForecastForDay], None]):
+    def on_daily_forecast_updated(self, handler: Callable[[ForecastForDay, ForecastForDay, ForecastForDay], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast' property update is received."""
 
         @functools.wraps(handler)
@@ -1093,7 +1160,7 @@ class WeatherServerBuilder:
         self._daily_forecast_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_hourly_forecast_updates(self, handler: Callable[[ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour], None]):
+    def on_hourly_forecast_updated(self, handler: Callable[[ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast' property update is received."""
 
         @functools.wraps(handler)
@@ -1103,7 +1170,7 @@ class WeatherServerBuilder:
         self._hourly_forecast_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_current_condition_refresh_interval_updates(self, handler: Callable[[int], None]):
+    def on_current_condition_refresh_interval_updated(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'current_condition_refresh_interval' property update is received."""
 
         @functools.wraps(handler)
@@ -1113,7 +1180,7 @@ class WeatherServerBuilder:
         self._current_condition_refresh_interval_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_hourly_forecast_refresh_interval_updates(self, handler: Callable[[int], None]):
+    def on_hourly_forecast_refresh_interval_updated(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'hourly_forecast_refresh_interval' property update is received."""
 
         @functools.wraps(handler)
@@ -1123,7 +1190,7 @@ class WeatherServerBuilder:
         self._hourly_forecast_refresh_interval_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_daily_forecast_refresh_interval_updates(self, handler: Callable[[int], None]):
+    def on_daily_forecast_refresh_interval_updated(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'daily_forecast_refresh_interval' property update is received."""
 
         @functools.wraps(handler)
@@ -1157,58 +1224,50 @@ class WeatherServerBuilder:
 
         for callback in self._location_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_location_updates(binding_cb)
+                new_server.on_location_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_location_updates(callback)
+                new_server.on_location_updated(callback)
 
         for callback in self._current_temperature_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_current_temperature_updates(binding_cb)
+                new_server.on_current_temperature_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_current_temperature_updates(callback)
+                new_server.on_current_temperature_updated(callback)
 
         for callback in self._current_condition_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_current_condition_updates(binding_cb)
+                new_server.on_current_condition_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_current_condition_updates(callback)
+                new_server.on_current_condition_updated(callback)
 
         for callback in self._daily_forecast_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_daily_forecast_updates(binding_cb)
+                new_server.on_daily_forecast_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_daily_forecast_updates(callback)
+                new_server.on_daily_forecast_updated(callback)
 
         for callback in self._hourly_forecast_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_hourly_forecast_updates(binding_cb)
+                new_server.on_hourly_forecast_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_hourly_forecast_updates(callback)
+                new_server.on_hourly_forecast_updated(callback)
 
         for callback in self._current_condition_refresh_interval_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_current_condition_refresh_interval_updates(binding_cb)
+                new_server.on_current_condition_refresh_interval_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_current_condition_refresh_interval_updates(callback)
+                new_server.on_current_condition_refresh_interval_updated(callback)
 
         for callback in self._hourly_forecast_refresh_interval_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_hourly_forecast_refresh_interval_updates(binding_cb)
+                new_server.on_hourly_forecast_refresh_interval_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_hourly_forecast_refresh_interval_updates(callback)
+                new_server.on_hourly_forecast_refresh_interval_updated(callback)
 
         for callback in self._daily_forecast_refresh_interval_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_daily_forecast_refresh_interval_updates(binding_cb)
+                new_server.on_daily_forecast_refresh_interval_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_daily_forecast_refresh_interval_updates(callback)
+                new_server.on_daily_forecast_refresh_interval_updated(callback)
 
         return new_server

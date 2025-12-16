@@ -35,6 +35,10 @@ T = TypeVar("T")
 
 @dataclass
 class PropertyControls(Generic[T]):
+    """
+    Controls for a server property.  Generic[T] must be a single value or a pydantic BaseModel for multi-argument properties.
+    """
+
     value: T
     mutex = threading.RLock()
     version: int = -1
@@ -149,66 +153,128 @@ class FullServer:
         msg = Message.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
-    def _publish_all_properties(self):
+    def publish_favorite_number_value(self, *_, **__):
+        """Publishes the current value of the 'favorite_number' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_favorite_number.mutex:
+            self._property_favorite_number.version += 1
             favorite_number_prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
             state_msg = Message.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), favorite_number_prop_obj, self._property_favorite_number.version)
             self._conn.publish(state_msg)
+
+    def publish_favorite_foods_value(self, *_, **__):
+        """Publishes the current value of the 'favorite_foods' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_favorite_foods.mutex:
+            self._property_favorite_foods.version += 1
             favorite_foods_prop_obj = self._property_favorite_foods.get_value()
             state_msg = Message.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), favorite_foods_prop_obj, self._property_favorite_foods.version)
             self._conn.publish(state_msg)
+
+    def publish_lunch_menu_value(self, *_, **__):
+        """Publishes the current value of the 'lunch_menu' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_lunch_menu.mutex:
+            self._property_lunch_menu.version += 1
             lunch_menu_prop_obj = self._property_lunch_menu.get_value()
             state_msg = Message.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), lunch_menu_prop_obj, self._property_lunch_menu.version)
             self._conn.publish(state_msg)
+
+    def publish_family_name_value(self, *_, **__):
+        """Publishes the current value of the 'family_name' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_family_name.mutex:
+            self._property_family_name.version += 1
             family_name_prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
             state_msg = Message.property_state_message("full/{}/property/familyName/value".format(self._instance_id), family_name_prop_obj, self._property_family_name.version)
             self._conn.publish(state_msg)
+
+    def publish_last_breakfast_time_value(self, *_, **__):
+        """Publishes the current value of the 'last_breakfast_time' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_last_breakfast_time.mutex:
+            self._property_last_breakfast_time.version += 1
             last_breakfast_time_prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
             state_msg = Message.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), last_breakfast_time_prop_obj, self._property_last_breakfast_time.version)
             self._conn.publish(state_msg)
+
+    def publish_last_birthdays_value(self, *_, **__):
+        """Publishes the current value of the 'last_birthdays' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_last_birthdays.mutex:
+            self._property_last_birthdays.version += 1
             last_birthdays_prop_obj = self._property_last_birthdays.get_value()
             state_msg = Message.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), last_birthdays_prop_obj, self._property_last_birthdays.version)
             self._conn.publish(state_msg)
 
+    def _publish_all_properties(self):
+        """Publishes the current value of all properties."""
+        self.publish_favorite_number_value()
+        self.publish_favorite_foods_value()
+        self.publish_lunch_menu_value()
+        self.publish_family_name_value()
+        self.publish_last_breakfast_time_value()
+        self.publish_last_birthdays_value()
+
     def _receive_favorite_number_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `full/{}/property/favoriteNumber/setValue` topic
+        in order to update the `favorite_number` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-
         try:
             if int(prop_version) != int(self._property_favorite_number.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_favorite_number.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_favorite_number.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_favorite_number.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_favorite_number.version}' of the 'favorite_number' property")
 
-            try:
-                prop_obj = FavoriteNumberProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_favorite_number.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+            prop_obj = FavoriteNumberProperty.model_validate_json(message.payload)
+
             prop_value = prop_obj.number
             with self._property_favorite_number.mutex:
                 self._property_favorite_number.version += 1
@@ -219,128 +285,90 @@ class FullServer:
                 state_msg = Message.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_favorite_number.callbacks:
-                callback(prop_value)
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_favorite_number.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_favorite_foods_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `full/{}/property/favoriteFoods/setValue` topic
+        in order to update the `favorite_foods` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = self._property_favorite_foods.get_value()
-
         try:
             if int(prop_version) != int(self._property_favorite_foods.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_favorite_foods.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_favorite_foods.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_favorite_foods.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_favorite_foods.version}' of the 'favorite_foods' property")
 
-            try:
-                prop_obj = FavoriteFoodsProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
-            prop_value = prop_obj
+            prop_obj = FavoriteFoodsProperty.model_validate_json(message.payload)
+
+            prop_value = prop_obj  # type: FavoriteFoodsProperty
             with self._property_favorite_foods.mutex:
                 self._property_favorite_foods.version += 1
                 self._property_favorite_foods.set_value(prop_value)
 
-                prop_obj = self._property_favorite_foods.get_value()
+                prop_obj = self._property_favorite_foods.get_value()  # type: FavoriteFoodsProperty
 
                 state_msg = Message.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), prop_obj, self._property_favorite_foods.version)
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = self._property_favorite_foods.get_value()
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_favorite_foods.callbacks:
-                callback(
-                    prop_value.drink,
-                    prop_value.slices_of_pizza,
-                    prop_value.breakfast,
-                )
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = self._property_favorite_foods.get_value()
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_favorite_foods.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_family_name_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `full/{}/property/familyName/setValue` topic
+        in order to update the `family_name` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-
         try:
             if int(prop_version) != int(self._property_family_name.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_family_name.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_family_name.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_family_name.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_family_name.version}' of the 'family_name' property")
 
-            try:
-                prop_obj = FamilyNameProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_family_name.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+            prop_obj = FamilyNameProperty.model_validate_json(message.payload)
+
             prop_value = prop_obj.family_name
             with self._property_family_name.mutex:
                 self._property_family_name.version += 1
@@ -351,60 +379,45 @@ class FullServer:
                 state_msg = Message.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_family_name.callbacks:
-                callback(prop_value)
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_family_name.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_last_breakfast_time_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `full/{}/property/lastBreakfastTime/setValue` topic
+        in order to update the `last_breakfast_time` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
-
         try:
             if int(prop_version) != int(self._property_last_breakfast_time.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_last_breakfast_time.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_last_breakfast_time.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_last_breakfast_time.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(
+                    f"Request version '{prop_version}'' does not match current version '{self._property_last_breakfast_time.version}' of the 'last_breakfast_time' property"
+                )
 
-            try:
-                prop_obj = LastBreakfastTimeProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+            prop_obj = LastBreakfastTimeProperty.model_validate_json(message.payload)
+
             prop_value = prop_obj.timestamp
             with self._property_last_breakfast_time.mutex:
                 self._property_last_breakfast_time.version += 1
@@ -415,95 +428,71 @@ class FullServer:
                 state_msg = Message.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_last_breakfast_time.callbacks:
-                callback(prop_value)
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
-                prop_resp_msg = Message.property_response_message(
-                    response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e)
-                )
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_last_breakfast_time.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_last_birthdays_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `full/{}/property/lastBirthdays/setValue` topic
+        in order to update the `last_birthdays` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = self._property_last_birthdays.get_value()
-
         try:
             if int(prop_version) != int(self._property_last_birthdays.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_last_birthdays.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_last_birthdays.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_last_birthdays.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_last_birthdays.version}' of the 'last_birthdays' property")
 
-            try:
-                prop_obj = LastBirthdaysProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
-            prop_value = prop_obj
+            prop_obj = LastBirthdaysProperty.model_validate_json(message.payload)
+
+            prop_value = prop_obj  # type: LastBirthdaysProperty
             with self._property_last_birthdays.mutex:
                 self._property_last_birthdays.version += 1
                 self._property_last_birthdays.set_value(prop_value)
 
-                prop_obj = self._property_last_birthdays.get_value()
+                prop_obj = self._property_last_birthdays.get_value()  # type: LastBirthdaysProperty
 
                 state_msg = Message.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), prop_obj, self._property_last_birthdays.version)
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = self._property_last_birthdays.get_value()
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_last_birthdays.callbacks:
-                callback(
-                    prop_value.mom,
-                    prop_value.dad,
-                    prop_value.sister,
-                    prop_value.brothers_age,
-                )
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = self._property_last_birthdays.get_value()
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_last_birthdays.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_message(self, message: Message):
@@ -733,27 +722,28 @@ class FullServer:
 
     @property
     def favorite_number(self) -> Optional[int]:
-        """This property returns the last received value for the 'favorite_number' property."""
+        """This property returns the last received (int) value for the 'favorite_number' property."""
         return self._property_favorite_number.get_value()
 
     @favorite_number.setter
     def favorite_number(self, number: int):
-        """This property sets (publishes) a new value for the 'favorite_number' property."""
-
+        """This property sets (publishes) a new int value for the 'favorite_number' property."""
         if not isinstance(number, int):
             raise ValueError(f"The value must be int .")
 
-        prop_obj = FavoriteNumberProperty(number=number)
-        payload = prop_obj.model_dump_json(by_alias=True)
-
+        value_updated = False
         with self._property_favorite_number.mutex:
-            if number != self._property_favorite_number.value:
-                self._property_favorite_number.value = number
+            if number != self._property_favorite_number.get_value():
+                value_updated = True
+                self._property_favorite_number.set_value(number)
                 self._property_favorite_number.version += 1
+                prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
                 state_msg = Message.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
                 self._conn.publish(state_msg)
-        for callback in self._property_favorite_number.callbacks:
-            callback(prop_obj.number)
+
+        if value_updated:
+            for callback in self._property_favorite_number.callbacks:
+                callback(prop_obj.number)
 
     def set_favorite_number(self, number: int):
         """This method sets (publishes) a new value for the 'favorite_number' property."""
@@ -765,37 +755,39 @@ class FullServer:
         # Use the property.setter to do that actual work.
         self.favorite_number = obj
 
-    def on_favorite_number_updates(self, handler: Callable[[int], None]):
+    def on_favorite_number_updated(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'favorite_number' property update is received."""
-        if handler is not None:
-
-            def wrapper(value: FavoriteNumberProperty):
-                handler(value.number)
-
-            self._property_favorite_number.callbacks.append(handler)
+        self._property_favorite_number.callbacks.append(handler)
 
     @property
     def favorite_foods(self) -> FavoriteFoodsProperty:
-        """This property returns the last received value for the 'favorite_foods' property."""
+        """This property returns the last received value for the 'favorite_foods' property.
+        The 'favorite_foods' property contains multiple values, so we operate on the full
+        `FavoriteFoodsProperty` structure.
+
+        """
         return self._property_favorite_foods.get_value()
 
     @favorite_foods.setter
     def favorite_foods(self, value: FavoriteFoodsProperty):
         """This property sets (publishes) a new value structure for the 'favorite_foods' property."""
-
         if not isinstance(value, FavoriteFoodsProperty):
             raise ValueError(f"The value must be FavoriteFoodsProperty.")
 
-        payload = value.model_dump_json(by_alias=True)
-
-        if value != self._property_favorite_foods.value:
+            value_updated = False
             with self._property_favorite_foods.mutex:
-                self._property_favorite_foods.value = value
-                self._property_favorite_foods.version += 1
-                state_msg = Message.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), value, self._property_favorite_foods.version)
-                self._conn.publish(state_msg)
-            for callback in self._property_favorite_foods.callbacks:
-                callback(value.drink, value.slices_of_pizza, value.breakfast)
+                if value != self._property_favorite_foods.get_value():
+                    value_updated = True
+                    self._property_favorite_foods.set_value(value)
+                    self._property_favorite_foods.version += 1
+                    state_msg = Message.property_state_message(
+                        "full/{}/property/favoriteFoods/value".format(self._instance_id), self._property_favorite_foods.get_value(), self._property_favorite_foods.version
+                    )
+                    self._conn.publish(state_msg)
+
+            if value_updated:
+                for callback in self._property_favorite_foods.callbacks:
+                    callback(self._property_favorite_foods.get_value())
 
     def set_favorite_foods(self, drink: str, slices_of_pizza: int, breakfast: Optional[str]):
         """This method sets (publishes) a new value for the 'favorite_foods' property."""
@@ -815,37 +807,45 @@ class FullServer:
         # Use the property.setter to do that actual work.
         self.favorite_foods = obj
 
-    def on_favorite_foods_updates(self, handler: Callable[[str, int, Optional[str]], None]):
+    def on_favorite_foods_updated(self, handler: Callable[[str, int, Optional[str]], None]):
         """This method registers a callback to be called whenever a new 'favorite_foods' property update is received."""
-        if handler is not None:
 
-            def wrapper(value: FavoriteFoodsProperty):
-                handler(value.drink, value.slices_of_pizza, value.breakfast)
+        def wrapper(value: FavoriteFoodsProperty):
+            handler(
+                value.drink,
+                value.slices_of_pizza,
+                value.breakfast,
+            )
 
-            self._property_favorite_foods.callbacks.append(handler)
+        self._property_favorite_foods.callbacks.append(wrapper)
 
     @property
     def lunch_menu(self) -> LunchMenuProperty:
-        """This property returns the last received value for the 'lunch_menu' property."""
+        """This property returns the last received value for the 'lunch_menu' property.
+        The 'lunch_menu' property contains multiple values, so we operate on the full
+        `LunchMenuProperty` structure.
+
+        """
         return self._property_lunch_menu.get_value()
 
     @lunch_menu.setter
     def lunch_menu(self, value: LunchMenuProperty):
         """This property sets (publishes) a new value structure for the 'lunch_menu' property."""
-
         if not isinstance(value, LunchMenuProperty):
             raise ValueError(f"The value must be LunchMenuProperty.")
 
-        payload = value.model_dump_json(by_alias=True)
-
-        if value != self._property_lunch_menu.value:
+            value_updated = False
             with self._property_lunch_menu.mutex:
-                self._property_lunch_menu.value = value
-                self._property_lunch_menu.version += 1
-                state_msg = Message.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), value, self._property_lunch_menu.version)
-                self._conn.publish(state_msg)
-            for callback in self._property_lunch_menu.callbacks:
-                callback(value.monday, value.tuesday)
+                if value != self._property_lunch_menu.get_value():
+                    value_updated = True
+                    self._property_lunch_menu.set_value(value)
+                    self._property_lunch_menu.version += 1
+                    state_msg = Message.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), self._property_lunch_menu.get_value(), self._property_lunch_menu.version)
+                    self._conn.publish(state_msg)
+
+            if value_updated:
+                for callback in self._property_lunch_menu.callbacks:
+                    callback(self._property_lunch_menu.get_value())
 
     def set_lunch_menu(self, monday: Lunch, tuesday: Lunch):
         """This method sets (publishes) a new value for the 'lunch_menu' property."""
@@ -862,38 +862,41 @@ class FullServer:
         # Use the property.setter to do that actual work.
         self.lunch_menu = obj
 
-    def on_lunch_menu_updates(self, handler: Callable[[Lunch, Lunch], None]):
+    def on_lunch_menu_updated(self, handler: Callable[[Lunch, Lunch], None]):
         """This method registers a callback to be called whenever a new 'lunch_menu' property update is received."""
-        if handler is not None:
 
-            def wrapper(value: LunchMenuProperty):
-                handler(value.monday, value.tuesday)
+        def wrapper(value: LunchMenuProperty):
+            handler(
+                value.monday,
+                value.tuesday,
+            )
 
-            self._property_lunch_menu.callbacks.append(handler)
+        self._property_lunch_menu.callbacks.append(wrapper)
 
     @property
     def family_name(self) -> Optional[str]:
-        """This property returns the last received value for the 'family_name' property."""
+        """This property returns the last received (str) value for the 'family_name' property."""
         return self._property_family_name.get_value()
 
     @family_name.setter
     def family_name(self, family_name: str):
-        """This property sets (publishes) a new value for the 'family_name' property."""
-
+        """This property sets (publishes) a new str value for the 'family_name' property."""
         if not isinstance(family_name, str):
             raise ValueError(f"The value must be str .")
 
-        prop_obj = FamilyNameProperty(family_name=family_name)
-        payload = prop_obj.model_dump_json(by_alias=True)
-
+        value_updated = False
         with self._property_family_name.mutex:
-            if family_name != self._property_family_name.value:
-                self._property_family_name.value = family_name
+            if family_name != self._property_family_name.get_value():
+                value_updated = True
+                self._property_family_name.set_value(family_name)
                 self._property_family_name.version += 1
+                prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
                 state_msg = Message.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
                 self._conn.publish(state_msg)
-        for callback in self._property_family_name.callbacks:
-            callback(prop_obj.family_name)
+
+        if value_updated:
+            for callback in self._property_family_name.callbacks:
+                callback(prop_obj.family_name)
 
     def set_family_name(self, family_name: str):
         """This method sets (publishes) a new value for the 'family_name' property."""
@@ -905,38 +908,34 @@ class FullServer:
         # Use the property.setter to do that actual work.
         self.family_name = obj
 
-    def on_family_name_updates(self, handler: Callable[[str], None]):
+    def on_family_name_updated(self, handler: Callable[[str], None]):
         """This method registers a callback to be called whenever a new 'family_name' property update is received."""
-        if handler is not None:
-
-            def wrapper(value: FamilyNameProperty):
-                handler(value.family_name)
-
-            self._property_family_name.callbacks.append(handler)
+        self._property_family_name.callbacks.append(handler)
 
     @property
     def last_breakfast_time(self) -> Optional[datetime]:
-        """This property returns the last received value for the 'last_breakfast_time' property."""
+        """This property returns the last received (datetime) value for the 'last_breakfast_time' property."""
         return self._property_last_breakfast_time.get_value()
 
     @last_breakfast_time.setter
     def last_breakfast_time(self, timestamp: datetime):
-        """This property sets (publishes) a new value for the 'last_breakfast_time' property."""
-
+        """This property sets (publishes) a new datetime value for the 'last_breakfast_time' property."""
         if not isinstance(timestamp, datetime):
             raise ValueError(f"The value must be datetime .")
 
-        prop_obj = LastBreakfastTimeProperty(timestamp=timestamp)
-        payload = prop_obj.model_dump_json(by_alias=True)
-
+        value_updated = False
         with self._property_last_breakfast_time.mutex:
-            if timestamp != self._property_last_breakfast_time.value:
-                self._property_last_breakfast_time.value = timestamp
+            if timestamp != self._property_last_breakfast_time.get_value():
+                value_updated = True
+                self._property_last_breakfast_time.set_value(timestamp)
                 self._property_last_breakfast_time.version += 1
+                prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
                 state_msg = Message.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
                 self._conn.publish(state_msg)
-        for callback in self._property_last_breakfast_time.callbacks:
-            callback(prop_obj.timestamp)
+
+        if value_updated:
+            for callback in self._property_last_breakfast_time.callbacks:
+                callback(prop_obj.timestamp)
 
     def set_last_breakfast_time(self, timestamp: datetime):
         """This method sets (publishes) a new value for the 'last_breakfast_time' property."""
@@ -948,37 +947,39 @@ class FullServer:
         # Use the property.setter to do that actual work.
         self.last_breakfast_time = obj
 
-    def on_last_breakfast_time_updates(self, handler: Callable[[datetime], None]):
+    def on_last_breakfast_time_updated(self, handler: Callable[[datetime], None]):
         """This method registers a callback to be called whenever a new 'last_breakfast_time' property update is received."""
-        if handler is not None:
-
-            def wrapper(value: LastBreakfastTimeProperty):
-                handler(value.timestamp)
-
-            self._property_last_breakfast_time.callbacks.append(handler)
+        self._property_last_breakfast_time.callbacks.append(handler)
 
     @property
     def last_birthdays(self) -> LastBirthdaysProperty:
-        """This property returns the last received value for the 'last_birthdays' property."""
+        """This property returns the last received value for the 'last_birthdays' property.
+        The 'last_birthdays' property contains multiple values, so we operate on the full
+        `LastBirthdaysProperty` structure.
+
+        """
         return self._property_last_birthdays.get_value()
 
     @last_birthdays.setter
     def last_birthdays(self, value: LastBirthdaysProperty):
         """This property sets (publishes) a new value structure for the 'last_birthdays' property."""
-
         if not isinstance(value, LastBirthdaysProperty):
             raise ValueError(f"The value must be LastBirthdaysProperty.")
 
-        payload = value.model_dump_json(by_alias=True)
-
-        if value != self._property_last_birthdays.value:
+            value_updated = False
             with self._property_last_birthdays.mutex:
-                self._property_last_birthdays.value = value
-                self._property_last_birthdays.version += 1
-                state_msg = Message.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), value, self._property_last_birthdays.version)
-                self._conn.publish(state_msg)
-            for callback in self._property_last_birthdays.callbacks:
-                callback(value.mom, value.dad, value.sister, value.brothers_age)
+                if value != self._property_last_birthdays.get_value():
+                    value_updated = True
+                    self._property_last_birthdays.set_value(value)
+                    self._property_last_birthdays.version += 1
+                    state_msg = Message.property_state_message(
+                        "full/{}/property/lastBirthdays/value".format(self._instance_id), self._property_last_birthdays.get_value(), self._property_last_birthdays.version
+                    )
+                    self._conn.publish(state_msg)
+
+            if value_updated:
+                for callback in self._property_last_birthdays.callbacks:
+                    callback(self._property_last_birthdays.get_value())
 
     def set_last_birthdays(self, mom: datetime, dad: datetime, sister: Optional[datetime], brothers_age: Optional[int]):
         """This method sets (publishes) a new value for the 'last_birthdays' property."""
@@ -1001,14 +1002,18 @@ class FullServer:
         # Use the property.setter to do that actual work.
         self.last_birthdays = obj
 
-    def on_last_birthdays_updates(self, handler: Callable[[datetime, datetime, Optional[datetime], Optional[int]], None]):
+    def on_last_birthdays_updated(self, handler: Callable[[datetime, datetime, Optional[datetime], Optional[int]], None]):
         """This method registers a callback to be called whenever a new 'last_birthdays' property update is received."""
-        if handler is not None:
 
-            def wrapper(value: LastBirthdaysProperty):
-                handler(value.mom, value.dad, value.sister, value.brothers_age)
+        def wrapper(value: LastBirthdaysProperty):
+            handler(
+                value.mom,
+                value.dad,
+                value.sister,
+                value.brothers_age,
+            )
 
-            self._property_last_birthdays.callbacks.append(handler)
+        self._property_last_birthdays.callbacks.append(wrapper)
 
 
 class FullServerBuilder:
@@ -1074,7 +1079,7 @@ class FullServerBuilder:
             raise Exception("Method handler already set")
         return wrapper
 
-    def on_favorite_number_updates(self, handler: Callable[[int], None]):
+    def on_favorite_number_updated(self, handler: Callable[[int], None]):
         """This method registers a callback to be called whenever a new 'favorite_number' property update is received."""
 
         @functools.wraps(handler)
@@ -1084,7 +1089,7 @@ class FullServerBuilder:
         self._favorite_number_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_favorite_foods_updates(self, handler: Callable[[str, int, Optional[str]], None]):
+    def on_favorite_foods_updated(self, handler: Callable[[str, int, Optional[str]], None]):
         """This method registers a callback to be called whenever a new 'favorite_foods' property update is received."""
 
         @functools.wraps(handler)
@@ -1094,7 +1099,7 @@ class FullServerBuilder:
         self._favorite_foods_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_lunch_menu_updates(self, handler: Callable[[Lunch, Lunch], None]):
+    def on_lunch_menu_updated(self, handler: Callable[[Lunch, Lunch], None]):
         """This method registers a callback to be called whenever a new 'lunch_menu' property update is received."""
 
         @functools.wraps(handler)
@@ -1104,7 +1109,7 @@ class FullServerBuilder:
         self._lunch_menu_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_family_name_updates(self, handler: Callable[[str], None]):
+    def on_family_name_updated(self, handler: Callable[[str], None]):
         """This method registers a callback to be called whenever a new 'family_name' property update is received."""
 
         @functools.wraps(handler)
@@ -1114,7 +1119,7 @@ class FullServerBuilder:
         self._family_name_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_last_breakfast_time_updates(self, handler: Callable[[datetime], None]):
+    def on_last_breakfast_time_updated(self, handler: Callable[[datetime], None]):
         """This method registers a callback to be called whenever a new 'last_breakfast_time' property update is received."""
 
         @functools.wraps(handler)
@@ -1124,7 +1129,7 @@ class FullServerBuilder:
         self._last_breakfast_time_property_callbacks.append(wrapper)
         return wrapper
 
-    def on_last_birthdays_updates(self, handler: Callable[[datetime, datetime, Optional[datetime], Optional[int]], None]):
+    def on_last_birthdays_updated(self, handler: Callable[[datetime, datetime, Optional[datetime], Optional[int]], None]):
         """This method registers a callback to be called whenever a new 'last_birthdays' property update is received."""
 
         @functools.wraps(handler)
@@ -1164,44 +1169,38 @@ class FullServerBuilder:
 
         for callback in self._favorite_number_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_favorite_number_updates(binding_cb)
+                new_server.on_favorite_number_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_favorite_number_updates(callback)
+                new_server.on_favorite_number_updated(callback)
 
         for callback in self._favorite_foods_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_favorite_foods_updates(binding_cb)
+                new_server.on_favorite_foods_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_favorite_foods_updates(callback)
+                new_server.on_favorite_foods_updated(callback)
 
         for callback in self._lunch_menu_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_lunch_menu_updates(binding_cb)
+                new_server.on_lunch_menu_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_lunch_menu_updates(callback)
+                new_server.on_lunch_menu_updated(callback)
 
         for callback in self._family_name_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_family_name_updates(binding_cb)
+                new_server.on_family_name_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_family_name_updates(callback)
+                new_server.on_family_name_updated(callback)
 
         for callback in self._last_breakfast_time_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_last_breakfast_time_updates(binding_cb)
+                new_server.on_last_breakfast_time_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_last_breakfast_time_updates(callback)
+                new_server.on_last_breakfast_time_updated(callback)
 
         for callback in self._last_birthdays_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_last_birthdays_updates(binding_cb)
+                new_server.on_last_birthdays_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_last_birthdays_updates(callback)
+                new_server.on_last_birthdays_updated(callback)
 
         return new_server

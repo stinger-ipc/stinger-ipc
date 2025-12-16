@@ -35,6 +35,10 @@ T = TypeVar("T")
 
 @dataclass
 class PropertyControls(Generic[T]):
+    """
+    Controls for a server property.  Generic[T] must be a single value or a pydantic BaseModel for multi-argument properties.
+    """
+
     value: T
     mutex = threading.RLock()
     version: int = -1
@@ -120,46 +124,43 @@ class SimpleServer:
         msg = Message.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
-    def _publish_all_properties(self):
+    def publish_school_value(self, *_, **__):
+        """Publishes the current value of the 'school' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+
+        """
         with self._property_school.mutex:
+            self._property_school.version += 1
             school_prop_obj = SchoolProperty(name=self._property_school.get_value())
             state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), school_prop_obj, self._property_school.version)
             self._conn.publish(state_msg)
 
+    def _publish_all_properties(self):
+        """Publishes the current value of all properties."""
+        self.publish_school_value()
+
     def _receive_school_update_request_message(self, message: Message):
+        """When the MQTT client receives a message to the `simple/{}/property/school/setValue` topic
+        in order to update the `school` property, this method is called to process that message
+        and update the value of the property.
+        """
         user_properties = message.user_properties or dict()  # type: Dict[str, str]
         prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-
         existing_prop_obj = SchoolProperty(name=self._property_school.get_value())
-
         try:
             if int(prop_version) != int(self._property_school.version):
-                self._logger.warning("Received out-of-date update for %s (version %s, current version %s)", message.topic, prop_version, self._property_school.version)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic,
-                        existing_prop_obj,
-                        str(self._property_school.version),
-                        MethodReturnCode.OUT_OF_SYNC.value,
-                        correlation_id,
-                        f"Request version {prop_version} does not match current version {self._property_school.version}",
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_school.version}' of the 'school' property")
 
-            try:
-                prop_obj = SchoolProperty.model_validate_json(message.payload)
-            except ValidationError as e:
-                self._logger.error("Failed to validate payload for %s: %s", message.topic, e)
-                if response_topic is not None:
-                    prop_resp_msg = Message.property_response_message(
-                        response_topic, existing_prop_obj, str(self._property_school.version), MethodReturnCode.CLIENT_DESERIALIZATION_ERROR.value, correlation_id, str(e)
-                    )
-                    self._conn.publish(prop_resp_msg)
-                return
+            prop_obj = SchoolProperty.model_validate_json(message.payload)
+
             prop_value = prop_obj.name
             with self._property_school.mutex:
                 self._property_school.version += 1
@@ -170,24 +171,24 @@ class SimpleServer:
                 state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
                 self._conn.publish(state_msg)
 
-            if response_topic is not None:
-
-                prop_obj = SchoolProperty(name=self._property_school.get_value())
-
-                self._logger.debug("Sending property update response for to %s", response_topic)
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(prop_resp_msg)
-            else:
-                self._logger.warning("No response topic provided for property update of %s", message.topic)
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             for callback in self._property_school.callbacks:
-                callback(prop_value)
+                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
+                # are extracted there for the actual callback.
+                callback(prop_obj)
 
         except Exception as e:
-            self._logger.exception("Exception while processing property update for %s", message.topic, exc_info=e)
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = SchoolProperty(name=self._property_school.get_value())
-                prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SERVER_ERROR.value, correlation_id, str(e))
+                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_school.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_message(self, message: Message):
@@ -257,27 +258,28 @@ class SimpleServer:
 
     @property
     def school(self) -> Optional[str]:
-        """This property returns the last received value for the 'school' property."""
+        """This property returns the last received (str) value for the 'school' property."""
         return self._property_school.get_value()
 
     @school.setter
     def school(self, name: str):
-        """This property sets (publishes) a new value for the 'school' property."""
-
+        """This property sets (publishes) a new str value for the 'school' property."""
         if not isinstance(name, str):
             raise ValueError(f"The value must be str .")
 
-        prop_obj = SchoolProperty(name=name)
-        payload = prop_obj.model_dump_json(by_alias=True)
-
+        value_updated = False
         with self._property_school.mutex:
-            if name != self._property_school.value:
-                self._property_school.value = name
+            if name != self._property_school.get_value():
+                value_updated = True
+                self._property_school.set_value(name)
                 self._property_school.version += 1
+                prop_obj = SchoolProperty(name=self._property_school.get_value())
                 state_msg = Message.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
                 self._conn.publish(state_msg)
-        for callback in self._property_school.callbacks:
-            callback(prop_obj.name)
+
+        if value_updated:
+            for callback in self._property_school.callbacks:
+                callback(prop_obj.name)
 
     def set_school(self, name: str):
         """This method sets (publishes) a new value for the 'school' property."""
@@ -289,14 +291,9 @@ class SimpleServer:
         # Use the property.setter to do that actual work.
         self.school = obj
 
-    def on_school_updates(self, handler: Callable[[str], None]):
+    def on_school_updated(self, handler: Callable[[str], None]):
         """This method registers a callback to be called whenever a new 'school' property update is received."""
-        if handler is not None:
-
-            def wrapper(value: SchoolProperty):
-                handler(value.name)
-
-            self._property_school.callbacks.append(handler)
+        self._property_school.callbacks.append(handler)
 
 
 class SimpleServerBuilder:
@@ -321,7 +318,7 @@ class SimpleServerBuilder:
             raise Exception("Method handler already set")
         return wrapper
 
-    def on_school_updates(self, handler: Callable[[str], None]):
+    def on_school_updated(self, handler: Callable[[str], None]):
         """This method registers a callback to be called whenever a new 'school' property update is received."""
 
         @functools.wraps(handler)
@@ -343,9 +340,8 @@ class SimpleServerBuilder:
 
         for callback in self._school_property_callbacks:
             if binding:
-                binding_cb = callback.__get__(binding, binding.__class__)
-                new_server.on_school_updates(binding_cb)
+                new_server.on_school_updated(callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_school_updates(callback)
+                new_server.on_school_updated(callback)
 
         return new_server

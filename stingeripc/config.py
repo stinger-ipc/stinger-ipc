@@ -8,7 +8,7 @@ import tomllib
 
 class PropertyConfig(BaseModel):
     """Configuration options for properties."""
-    server_owned_values: bool = Field(default=True, description="Whether server owns property values")
+    stinger_owned_values: bool = Field(default=True, description="Whether the stinger-server owns property values")
 
 class PythonConfig(BaseModel):
     """Python-specific configuration options."""

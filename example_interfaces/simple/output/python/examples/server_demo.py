@@ -28,7 +28,7 @@ if __name__ == "__main__":
         print(f"--> Running trade_numbers({your_number})'")
         return 42
 
-    @server.on_school_updates
+    @server.on_school_updated
     def on_school_update(name: str):
         """Example callback for when the 'school' property is updated."""
         print(f"~~> Received update for 'school' property: { name= }")

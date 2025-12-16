@@ -12,6 +12,7 @@ from {{stinger.name | snake_case}}ipc.property import {{stinger.name | UpperCame
 {%endif-%}
 from {{stinger.name | snake_case}}ipc.interface_types import *
 from pyqttier.mock import MockConnection
+from pyqttier.message import Message
 import json
 
 {%if stinger.properties | length > 0 %}
@@ -50,6 +51,40 @@ class TestServer:
         assert server is not None, "server failed to initialize"
         assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
 
+{%-macro eval_payload(arg_list, msg, data, obj_name) %}
+payload_dict = json.loads({{msg}}.payload.decode('utf-8'))
+payload_obj = {{obj_name}}.model_validate_json({{msg}}.payload.decode('utf-8'))
+{%-for arg in arg_list%}
+{%-if arg.arg_type.name.lower() == 'enum'%}
+assert payload_dict.get("{{arg.name|snake_case}}") == {{data}}["{{arg.name|snake_case}}"].value, f"Payload '{{arg.name|snake_case}}' does not match expected enum of '{ {{data}}["{{arg.name|snake_case}}"]}'"
+{%-elif arg.arg_type.name.lower() == 'struct'%}
+assert payload_obj.{{arg.name|snake_case}} == {{data}}["{{arg.name|snake_case}}"], f"Payload '{{arg.name|snake_case}}' does not match expected struct value of '{ {{data}}["{{arg.name|snake_case}}"]}'"
+{%-else%}
+assert payload_dict.get("{{arg.name|snake_case}}") == {{data}}["{{arg.name|snake_case}}"], f"Payload '{{arg.name|snake_case}}' does not match expected value of '{ {{data}}["{{arg.name|snake_case}}"]}'"
+{%-endif%}
+{%-endfor%}
+{%endmacro-%}
+
+{%-macro eval_value(arg, msg, value, obj_name) %}
+payload_dict = json.loads({{msg}}.payload.decode('utf-8'))
+payload_obj = {{obj_name}}.model_validate_json({{msg}}.payload.decode('utf-8'))
+{%-if arg.arg_type.name.lower() == 'enum'%}
+assert payload_dict.get("{{arg.name|snake_case}}") == {{value}}.value, f"Payload '{{arg.name|snake_case}}' does not match expected enum of '{ {{value}} }'"
+{%-elif arg.arg_type.name.lower() == 'struct'%}
+assert payload_obj.{{arg.name|snake_case}} == {{value}}, f"Payload '{{arg.name|snake_case}}' does not match expected struct value of '{ {{value}} }'"
+{%-else%}
+assert payload_dict.get("{{arg.name|snake_case}}") == {{value}}, f"Payload '{{arg.name|snake_case}}' does not match expected value of '{ {{value}} }'"
+{%-endif%}
+{%endmacro-%}
+
+{%if not config.properties.stinger_owned_values %}
+{%if stinger.properties | length > 0 %}
+class TestServerProperties:
+    pass
+{%else%}
+# No (application-owned) properties to test
+{%endif%}
+{%else%}{# stinger owned properties #}
 {%if stinger.properties | length > 0 %}
 class TestServerProperties:
     {%for prop_name, prop in stinger.properties.items()%}
@@ -60,5 +95,83 @@ class TestServerProperties:
         assert server.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
         {%endif-%}
         assert server.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
+
+    def test_{{prop_name|snake_case}}_property_publish(self, server, mock_connection, initial_property_values):
+        """Test that setting the '{{prop_name|snake_case}}' property publishes the correct message."""
+        mock_connection.clear_published_messages()
+        server.publish_{{prop_name|snake_case}}_value()
+
+        published_list = mock_connection.find_published("{{prop.value_topic}}".format('+'))
+        assert len(published_list) == 1, f"No message was published for property '{{prop_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
+
+        msg = published_list[0]
+        expected_topic = "{{prop.value_topic}}".format(server.instance_id)
+        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
+        
+        # Verify payload
+        {%-if prop.arg_list | length == 1%}
+        {{ eval_value(prop.arg_list[0], 'msg', 'initial_property_values.' + prop_name|snake_case, prop_name|UpperCamelCase + "Property") | indent(8) }}
+        {%-else%}
+        {{ eval_payload(prop.arg_list, 'msg', 'initial_property_values.' + prop_name|snake_case, prop_name|UpperCamelCase + "Property") | indent(8) }}
+        {%-endif%}
+
+    def test_{{prop_name|snake_case}}_property_receive(self, server, mock_connection):
+        """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
+        received_data = None
+        def callback({%for arg in prop.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}):
+            nonlocal received_data
+            received_data = {
+                {%-for arg in prop.arg_list%}
+                "{{arg.name|snake_case}}": {{arg.name|snake_case}},
+                {%-endfor%}
+            }
+        server.on_{{prop_name|snake_case}}_updated(callback)
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            {%-for arg in prop.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        }
+        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data)
+        incoming_msg = Message(
+            topic="{{prop.update_topic}}".format(server.instance_id),
+            payload=prop_obj.model_dump_json().encode('utf-8'),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is not None, "Callback for property '{{prop_name|snake_case}}' was not called"
+    {%endfor%}
+{%else%}
+# No (stinger-owned) properties to test
+{%endif%}
+{%endif%}{# stinger owned properties #}
+
+{%if stinger.signals | length > 0 %}
+class TestServerSignals:
+    {%for signal_name, signal in stinger.signals.items()%}
+    def test_server_emit_{{signal_name|snake_case}}(self, server, mock_connection):
+        """Test that the server can emit the '{{signal_name|snake_case}}' signal."""
+        signal_data = {
+            {%-for arg in signal.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value()}},
+            {%endfor%}
+        }
+        server.emit_{{signal_name|snake_case}}(**signal_data)
+        
+        # Verify that a message was published
+        published_list = mock_connection.find_published("{{signal.topic}}".format('+'))
+        assert len(published_list) == 1, "No message was published for signal '{{signal_name|snake_case}}'"
+        
+        msg = published_list[0]
+        expected_topic = "{{signal.topic}}".format(server.instance_id)
+        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
+        
+        # Verify payload
+        {{ eval_payload(signal.arg_list, 'msg', 'signal_data', signal_name|UpperCamelCase + "SignalPayload") | indent(8) }}
     {%endfor%}
 {%endif%}
