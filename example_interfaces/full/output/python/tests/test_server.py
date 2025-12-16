@@ -13,6 +13,14 @@ from fullipc.interface_types import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
+from pydantic import BaseModel
+from typing import Any, Dict
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture
@@ -33,7 +41,7 @@ def initial_property_values():
         last_birthdays=LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
-            sister=None,
+            sister=datetime.now(UTC),
             brothers_age=42,
         ),
     )
@@ -83,10 +91,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = FavoriteNumberProperty(number=initial_property_values.favorite_number)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = FavoriteNumberProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("number") == initial_property_values.favorite_number, f"Payload 'number' does not match expected value of '{ initial_property_values.favorite_number }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_favorite_number_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'favorite_number' updates the server property and calls callbacks."""
@@ -107,7 +115,7 @@ class TestServerProperties:
         prop_obj = FavoriteNumberProperty(**prop_data)
         incoming_msg = Message(
             topic="full/{}/property/favoriteNumber/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -115,6 +123,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'favorite_number' was not called"
 
     def test_server_favorite_foods_property_initialization(self, server, initial_property_values):
@@ -136,16 +145,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.favorite_foods
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = FavoriteFoodsProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("drink") == initial_property_values.favorite_foods["drink"], f"Payload 'drink' does not match expected value of '{ initial_property_values.favorite_foods["drink"]}'"
-        assert (
-            payload_dict.get("slices_of_pizza") == initial_property_values.favorite_foods["slices_of_pizza"]
-        ), f"Payload 'slices_of_pizza' does not match expected value of '{ initial_property_values.favorite_foods["slices_of_pizza"]}'"
-        assert (
-            payload_dict.get("breakfast") == initial_property_values.favorite_foods["breakfast"]
-        ), f"Payload 'breakfast' does not match expected value of '{ initial_property_values.favorite_foods["breakfast"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_favorite_foods_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'favorite_foods' updates the server property and calls callbacks."""
@@ -170,7 +173,7 @@ class TestServerProperties:
         prop_obj = FavoriteFoodsProperty(**prop_data)
         incoming_msg = Message(
             topic="full/{}/property/favoriteFoods/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -178,6 +181,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'favorite_foods' was not called"
 
     def test_server_lunch_menu_property_initialization(self, server, initial_property_values):
@@ -199,11 +203,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.lunch_menu
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = LunchMenuProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_obj.monday == initial_property_values.lunch_menu["monday"], f"Payload 'monday' does not match expected struct value of '{ initial_property_values.lunch_menu["monday"]}'"
-        assert payload_obj.tuesday == initial_property_values.lunch_menu["tuesday"], f"Payload 'tuesday' does not match expected struct value of '{ initial_property_values.lunch_menu["tuesday"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_lunch_menu_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'lunch_menu' updates the server property and calls callbacks."""
@@ -226,7 +229,7 @@ class TestServerProperties:
         prop_obj = LunchMenuProperty(**prop_data)
         incoming_msg = Message(
             topic="full/{}/property/lunchMenu/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -234,7 +237,8 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
-        assert received_data is not None, "Callback for property 'lunch_menu' was not called"
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property 'lunch_menu' should not be updated"
 
     def test_server_family_name_property_initialization(self, server, initial_property_values):
         """Test that the family_name server property is initialized correctly."""
@@ -255,10 +259,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = FamilyNameProperty(family_name=initial_property_values.family_name)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = FamilyNameProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("family_name") == initial_property_values.family_name, f"Payload 'family_name' does not match expected value of '{ initial_property_values.family_name }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_family_name_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'family_name' updates the server property and calls callbacks."""
@@ -279,7 +283,7 @@ class TestServerProperties:
         prop_obj = FamilyNameProperty(**prop_data)
         incoming_msg = Message(
             topic="full/{}/property/familyName/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -287,6 +291,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'family_name' was not called"
 
     def test_server_last_breakfast_time_property_initialization(self, server, initial_property_values):
@@ -308,10 +313,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = LastBreakfastTimeProperty(timestamp=initial_property_values.last_breakfast_time)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = LastBreakfastTimeProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("timestamp") == initial_property_values.last_breakfast_time, f"Payload 'timestamp' does not match expected value of '{ initial_property_values.last_breakfast_time }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_last_breakfast_time_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'last_breakfast_time' updates the server property and calls callbacks."""
@@ -332,7 +337,7 @@ class TestServerProperties:
         prop_obj = LastBreakfastTimeProperty(**prop_data)
         incoming_msg = Message(
             topic="full/{}/property/lastBreakfastTime/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -340,6 +345,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'last_breakfast_time' was not called"
 
     def test_server_last_birthdays_property_initialization(self, server, initial_property_values):
@@ -361,17 +367,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.last_birthdays
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = LastBirthdaysProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("mom") == initial_property_values.last_birthdays["mom"], f"Payload 'mom' does not match expected value of '{ initial_property_values.last_birthdays["mom"]}'"
-        assert payload_dict.get("dad") == initial_property_values.last_birthdays["dad"], f"Payload 'dad' does not match expected value of '{ initial_property_values.last_birthdays["dad"]}'"
-        assert (
-            payload_dict.get("sister") == initial_property_values.last_birthdays["sister"]
-        ), f"Payload 'sister' does not match expected value of '{ initial_property_values.last_birthdays["sister"]}'"
-        assert (
-            payload_dict.get("brothers_age") == initial_property_values.last_birthdays["brothers_age"]
-        ), f"Payload 'brothers_age' does not match expected value of '{ initial_property_values.last_birthdays["brothers_age"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_last_birthdays_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'last_birthdays' updates the server property and calls callbacks."""
@@ -392,13 +391,13 @@ class TestServerProperties:
         prop_data = {
             "mom": datetime.now(UTC),
             "dad": datetime.now(UTC),
-            "sister": datetime.now(UTC),
+            "sister": None,
             "brothers_age": 2022,
         }
         prop_obj = LastBirthdaysProperty(**prop_data)
         incoming_msg = Message(
             topic="full/{}/property/lastBirthdays/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -406,6 +405,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'last_birthdays' was not called"
 
 
@@ -428,11 +428,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = TodayIsSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = TodayIsSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("day_of_month") == signal_data["day_of_month"], f"Payload 'day_of_month' does not match expected value of '{ signal_data["day_of_month"]}'"
-        assert payload_dict.get("day_of_week") == signal_data["day_of_week"].value, f"Payload 'day_of_week' does not match expected enum of '{ signal_data["day_of_week"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_random_word(self, server, mock_connection):
         """Test that the server can emit the 'random_word' signal."""
@@ -451,8 +450,7 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = RandomWordSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = RandomWordSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("word") == signal_data["word"], f"Payload 'word' does not match expected value of '{ signal_data["word"]}'"
-        assert payload_dict.get("time") == signal_data["time"], f"Payload 'time' does not match expected value of '{ signal_data["time"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"

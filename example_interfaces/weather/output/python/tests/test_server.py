@@ -13,6 +13,14 @@ from weatheripc.interface_types import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
+from pydantic import BaseModel
+from typing import Any, Dict
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture
@@ -88,13 +96,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.location
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = LocationProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("latitude") == initial_property_values.location["latitude"], f"Payload 'latitude' does not match expected value of '{ initial_property_values.location["latitude"]}'"
-        assert (
-            payload_dict.get("longitude") == initial_property_values.location["longitude"]
-        ), f"Payload 'longitude' does not match expected value of '{ initial_property_values.location["longitude"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_location_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'location' updates the server property and calls callbacks."""
@@ -117,7 +122,7 @@ class TestServerProperties:
         prop_obj = LocationProperty(**prop_data)
         incoming_msg = Message(
             topic="weather/{}/property/location/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -125,6 +130,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'location' was not called"
 
     def test_server_current_temperature_property_initialization(self, server, initial_property_values):
@@ -146,12 +152,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = CurrentTemperatureProperty(temperature_f=initial_property_values.current_temperature)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = CurrentTemperatureProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("temperature_f") == initial_property_values.current_temperature
-        ), f"Payload 'temperature_f' does not match expected value of '{ initial_property_values.current_temperature }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_current_temperature_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'current_temperature' updates the server property and calls callbacks."""
@@ -172,7 +176,7 @@ class TestServerProperties:
         prop_obj = CurrentTemperatureProperty(**prop_data)
         incoming_msg = Message(
             topic="weather/{}/property/currentTemperature/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -180,7 +184,8 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
-        assert received_data is not None, "Callback for property 'current_temperature' was not called"
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property 'current_temperature' should not be updated"
 
     def test_server_current_condition_property_initialization(self, server, initial_property_values):
         """Test that the current_condition server property is initialized correctly."""
@@ -201,15 +206,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.current_condition
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = CurrentConditionProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("condition") == initial_property_values.current_condition["condition"].value
-        ), f"Payload 'condition' does not match expected enum of '{ initial_property_values.current_condition["condition"]}'"
-        assert (
-            payload_dict.get("description") == initial_property_values.current_condition["description"]
-        ), f"Payload 'description' does not match expected value of '{ initial_property_values.current_condition["description"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_current_condition_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'current_condition' updates the server property and calls callbacks."""
@@ -232,7 +232,7 @@ class TestServerProperties:
         prop_obj = CurrentConditionProperty(**prop_data)
         incoming_msg = Message(
             topic="weather/{}/property/currentCondition/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -240,7 +240,8 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
-        assert received_data is not None, "Callback for property 'current_condition' was not called"
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property 'current_condition' should not be updated"
 
     def test_server_daily_forecast_property_initialization(self, server, initial_property_values):
         """Test that the daily_forecast server property is initialized correctly."""
@@ -261,16 +262,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.daily_forecast
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = DailyForecastProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_obj.monday == initial_property_values.daily_forecast["monday"], f"Payload 'monday' does not match expected struct value of '{ initial_property_values.daily_forecast["monday"]}'"
-        assert (
-            payload_obj.tuesday == initial_property_values.daily_forecast["tuesday"]
-        ), f"Payload 'tuesday' does not match expected struct value of '{ initial_property_values.daily_forecast["tuesday"]}'"
-        assert (
-            payload_obj.wednesday == initial_property_values.daily_forecast["wednesday"]
-        ), f"Payload 'wednesday' does not match expected struct value of '{ initial_property_values.daily_forecast["wednesday"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_daily_forecast_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'daily_forecast' updates the server property and calls callbacks."""
@@ -295,7 +290,7 @@ class TestServerProperties:
         prop_obj = DailyForecastProperty(**prop_data)
         incoming_msg = Message(
             topic="weather/{}/property/dailyForecast/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -303,7 +298,8 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
-        assert received_data is not None, "Callback for property 'daily_forecast' was not called"
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property 'daily_forecast' should not be updated"
 
     def test_server_hourly_forecast_property_initialization(self, server, initial_property_values):
         """Test that the hourly_forecast server property is initialized correctly."""
@@ -324,21 +320,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.hourly_forecast
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = HourlyForecastProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_obj.hour_0 == initial_property_values.hourly_forecast["hour_0"]
-        ), f"Payload 'hour_0' does not match expected struct value of '{ initial_property_values.hourly_forecast["hour_0"]}'"
-        assert (
-            payload_obj.hour_1 == initial_property_values.hourly_forecast["hour_1"]
-        ), f"Payload 'hour_1' does not match expected struct value of '{ initial_property_values.hourly_forecast["hour_1"]}'"
-        assert (
-            payload_obj.hour_2 == initial_property_values.hourly_forecast["hour_2"]
-        ), f"Payload 'hour_2' does not match expected struct value of '{ initial_property_values.hourly_forecast["hour_2"]}'"
-        assert (
-            payload_obj.hour_3 == initial_property_values.hourly_forecast["hour_3"]
-        ), f"Payload 'hour_3' does not match expected struct value of '{ initial_property_values.hourly_forecast["hour_3"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_hourly_forecast_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'hourly_forecast' updates the server property and calls callbacks."""
@@ -365,7 +350,7 @@ class TestServerProperties:
         prop_obj = HourlyForecastProperty(**prop_data)
         incoming_msg = Message(
             topic="weather/{}/property/hourlyForecast/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -373,7 +358,8 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
-        assert received_data is not None, "Callback for property 'hourly_forecast' was not called"
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property 'hourly_forecast' should not be updated"
 
     def test_server_current_condition_refresh_interval_property_initialization(self, server, initial_property_values):
         """Test that the current_condition_refresh_interval server property is initialized correctly."""
@@ -396,12 +382,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = CurrentConditionRefreshIntervalProperty(seconds=initial_property_values.current_condition_refresh_interval)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("seconds") == initial_property_values.current_condition_refresh_interval
-        ), f"Payload 'seconds' does not match expected value of '{ initial_property_values.current_condition_refresh_interval }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_current_condition_refresh_interval_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'current_condition_refresh_interval' updates the server property and calls callbacks."""
@@ -422,7 +406,7 @@ class TestServerProperties:
         prop_obj = CurrentConditionRefreshIntervalProperty(**prop_data)
         incoming_msg = Message(
             topic="weather/{}/property/currentConditionRefreshInterval/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -430,6 +414,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'current_condition_refresh_interval' was not called"
 
     def test_server_hourly_forecast_refresh_interval_property_initialization(self, server, initial_property_values):
@@ -451,12 +436,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = HourlyForecastRefreshIntervalProperty(seconds=initial_property_values.hourly_forecast_refresh_interval)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("seconds") == initial_property_values.hourly_forecast_refresh_interval
-        ), f"Payload 'seconds' does not match expected value of '{ initial_property_values.hourly_forecast_refresh_interval }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_hourly_forecast_refresh_interval_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'hourly_forecast_refresh_interval' updates the server property and calls callbacks."""
@@ -477,7 +460,7 @@ class TestServerProperties:
         prop_obj = HourlyForecastRefreshIntervalProperty(**prop_data)
         incoming_msg = Message(
             topic="weather/{}/property/hourlyForecastRefreshInterval/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -485,6 +468,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'hourly_forecast_refresh_interval' was not called"
 
     def test_server_daily_forecast_refresh_interval_property_initialization(self, server, initial_property_values):
@@ -506,12 +490,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = DailyForecastRefreshIntervalProperty(seconds=initial_property_values.daily_forecast_refresh_interval)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = DailyForecastRefreshIntervalProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("seconds") == initial_property_values.daily_forecast_refresh_interval
-        ), f"Payload 'seconds' does not match expected value of '{ initial_property_values.daily_forecast_refresh_interval }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_daily_forecast_refresh_interval_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'daily_forecast_refresh_interval' updates the server property and calls callbacks."""
@@ -532,7 +514,7 @@ class TestServerProperties:
         prop_obj = DailyForecastRefreshIntervalProperty(**prop_data)
         incoming_msg = Message(
             topic="weather/{}/property/dailyForecastRefreshInterval/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -540,6 +522,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'daily_forecast_refresh_interval' was not called"
 
 
@@ -561,7 +544,7 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = CurrentTimeSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = CurrentTimeSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("current_time") == signal_data["current_time"], f"Payload 'current_time' does not match expected value of '{ signal_data["current_time"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"

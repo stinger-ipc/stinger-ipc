@@ -13,6 +13,14 @@ from testableipc.interface_types import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
+from pydantic import BaseModel
+from typing import Any, Dict
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture
@@ -173,7 +181,7 @@ def initial_property_values():
         read_write_optional_datetime=datetime.now(UTC),
         read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
             first=datetime.now(UTC),
-            second=datetime.now(UTC),
+            second=None,
         ),
         read_write_duration=timedelta(seconds=3536),
         read_write_optional_duration=None,
@@ -239,10 +247,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteIntegerProperty(value=initial_property_values.read_write_integer)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteIntegerProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == initial_property_values.read_write_integer, f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_integer }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_integer_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_integer' updates the server property and calls callbacks."""
@@ -263,7 +271,7 @@ class TestServerProperties:
         prop_obj = ReadWriteIntegerProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteInteger/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -271,6 +279,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_integer' was not called"
 
     def test_server_read_only_integer_property_initialization(self, server, initial_property_values):
@@ -292,10 +301,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadOnlyIntegerProperty(value=initial_property_values.read_only_integer)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadOnlyIntegerProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == initial_property_values.read_only_integer, f"Payload 'value' does not match expected value of '{ initial_property_values.read_only_integer }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_only_integer_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_only_integer' updates the server property and calls callbacks."""
@@ -316,7 +325,7 @@ class TestServerProperties:
         prop_obj = ReadOnlyIntegerProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readOnlyInteger/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -324,7 +333,8 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
-        assert received_data is not None, "Callback for property 'read_only_integer' was not called"
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property 'read_only_integer' should not be updated"
 
     def test_server_read_write_optional_integer_property_initialization(self, server, initial_property_values):
         """Test that the read_write_optional_integer server property is initialized correctly."""
@@ -344,12 +354,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteOptionalIntegerProperty(value=initial_property_values.read_write_optional_integer)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteOptionalIntegerProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("value") == initial_property_values.read_write_optional_integer
-        ), f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_optional_integer }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_optional_integer_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_optional_integer' updates the server property and calls callbacks."""
@@ -370,7 +378,7 @@ class TestServerProperties:
         prop_obj = ReadWriteOptionalIntegerProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteOptionalInteger/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -378,6 +386,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_optional_integer' was not called"
 
     def test_server_read_write_two_integers_property_initialization(self, server, initial_property_values):
@@ -399,15 +408,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.read_write_two_integers
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteTwoIntegersProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("first") == initial_property_values.read_write_two_integers["first"]
-        ), f"Payload 'first' does not match expected value of '{ initial_property_values.read_write_two_integers["first"]}'"
-        assert (
-            payload_dict.get("second") == initial_property_values.read_write_two_integers["second"]
-        ), f"Payload 'second' does not match expected value of '{ initial_property_values.read_write_two_integers["second"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_two_integers_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_two_integers' updates the server property and calls callbacks."""
@@ -430,7 +434,7 @@ class TestServerProperties:
         prop_obj = ReadWriteTwoIntegersProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteTwoIntegers/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -438,6 +442,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_two_integers' was not called"
 
     def test_server_read_only_string_property_initialization(self, server, initial_property_values):
@@ -459,10 +464,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadOnlyStringProperty(value=initial_property_values.read_only_string)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadOnlyStringProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == initial_property_values.read_only_string, f"Payload 'value' does not match expected value of '{ initial_property_values.read_only_string }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_only_string_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_only_string' updates the server property and calls callbacks."""
@@ -483,7 +488,7 @@ class TestServerProperties:
         prop_obj = ReadOnlyStringProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readOnlyString/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -491,7 +496,8 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
-        assert received_data is not None, "Callback for property 'read_only_string' was not called"
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property 'read_only_string' should not be updated"
 
     def test_server_read_write_string_property_initialization(self, server, initial_property_values):
         """Test that the read_write_string server property is initialized correctly."""
@@ -512,10 +518,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteStringProperty(value=initial_property_values.read_write_string)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteStringProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == initial_property_values.read_write_string, f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_string }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_string_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_string' updates the server property and calls callbacks."""
@@ -536,7 +542,7 @@ class TestServerProperties:
         prop_obj = ReadWriteStringProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteString/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -544,6 +550,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_string' was not called"
 
     def test_server_read_write_optional_string_property_initialization(self, server, initial_property_values):
@@ -564,12 +571,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteOptionalStringProperty(value=initial_property_values.read_write_optional_string)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteOptionalStringProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("value") == initial_property_values.read_write_optional_string
-        ), f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_optional_string }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_optional_string_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_optional_string' updates the server property and calls callbacks."""
@@ -590,7 +595,7 @@ class TestServerProperties:
         prop_obj = ReadWriteOptionalStringProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteOptionalString/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -598,6 +603,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_optional_string' was not called"
 
     def test_server_read_write_two_strings_property_initialization(self, server, initial_property_values):
@@ -619,15 +625,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.read_write_two_strings
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteTwoStringsProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("first") == initial_property_values.read_write_two_strings["first"]
-        ), f"Payload 'first' does not match expected value of '{ initial_property_values.read_write_two_strings["first"]}'"
-        assert (
-            payload_dict.get("second") == initial_property_values.read_write_two_strings["second"]
-        ), f"Payload 'second' does not match expected value of '{ initial_property_values.read_write_two_strings["second"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_two_strings_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_two_strings' updates the server property and calls callbacks."""
@@ -650,7 +651,7 @@ class TestServerProperties:
         prop_obj = ReadWriteTwoStringsProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteTwoStrings/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -658,6 +659,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_two_strings' was not called"
 
     def test_server_read_write_struct_property_initialization(self, server, initial_property_values):
@@ -679,10 +681,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteStructProperty(value=initial_property_values.read_write_struct)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteStructProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_obj.value == initial_property_values.read_write_struct, f"Payload 'value' does not match expected struct value of '{ initial_property_values.read_write_struct }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_struct_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_struct' updates the server property and calls callbacks."""
@@ -695,6 +697,90 @@ class TestServerProperties:
             }
 
         server.on_read_write_struct_updated(callback)
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            "value": AllTypes(
+                the_bool=True,
+                the_int=2020,
+                the_number=1.0,
+                the_str="example",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=2020, value="example"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=551),
+                data=b"example binary data",
+                optional_integer=2020,
+                optional_string="example",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=2020, value="example"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=timedelta(seconds=2332),
+                optional_binary=b"example binary data",
+                array_of_integers=[2020, 42],
+                optional_array_of_integers=[2020, 42],
+                array_of_strings=["example", "apples"],
+                optional_array_of_strings=["example", "apples"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=551), timedelta(seconds=3536)],
+                optional_array_of_durations=[timedelta(seconds=551), timedelta(seconds=3536)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
+                optional_array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
+            ),
+        }
+        prop_obj = ReadWriteStructProperty(**prop_data)
+        incoming_msg = Message(
+            topic="testable/{}/property/readWriteStruct/setValue".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            user_properties={"PropertyVersion": str(server._property_read_write_struct.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # Verify that server property was updated
+        assert received_data is not None, "Callback for property 'read_write_struct' was not called"
+
+    def test_server_read_write_optional_struct_property_initialization(self, server, initial_property_values):
+        """Test that the read_write_optional_struct server property is initialized correctly."""
+        assert hasattr(server, "read_write_optional_struct"), "Server missing property 'read_write_optional_struct'"
+        assert server.read_write_optional_struct == initial_property_values.read_write_optional_struct, "Property 'read_write_optional_struct' value does not match expected value"
+
+    def test_read_write_optional_struct_property_publish(self, server, mock_connection, initial_property_values):
+        """Test that setting the 'read_write_optional_struct' property publishes the correct message."""
+        mock_connection.clear_published_messages()
+        server.publish_read_write_optional_struct_value()
+
+        published_list = mock_connection.find_published("testable/{}/property/readWriteOptionalStruct/value".format("+"))
+        assert len(published_list) == 1, f"No message was published for property 'read_write_optional_struct'.  Messages: {mock_connection.published_messages}"
+
+        msg = published_list[0]
+        expected_topic = "testable/{}/property/readWriteOptionalStruct/value".format(server.instance_id)
+        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
+
+        # Verify payload
+        expected_obj = ReadWriteOptionalStructProperty(value=initial_property_values.read_write_optional_struct)
+        expected_dict = to_jsonified_dict(expected_obj)
+        payload_dict = json.loads(msg.payload.decode("utf-8"))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+
+    def test_read_write_optional_struct_property_receive(self, server, mock_connection):
+        """Test that receiving a property update for 'read_write_optional_struct' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(value):
+            nonlocal received_data
+            received_data = {
+                "value": value,
+            }
+
+        server.on_read_write_optional_struct_updated(callback)
 
         # Create and simulate receiving a property update message
         prop_data = {
@@ -731,95 +817,10 @@ class TestServerProperties:
                 optional_array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
             ),
         }
-        prop_obj = ReadWriteStructProperty(**prop_data)
-        incoming_msg = Message(
-            topic="testable/{}/property/readWriteStruct/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
-            qos=1,
-            retain=False,
-            content_type="application/json",
-            user_properties={"PropertyVersion": str(server._property_read_write_struct.version)},
-        )
-        mock_connection.simulate_message(incoming_msg)
-
-        assert received_data is not None, "Callback for property 'read_write_struct' was not called"
-
-    def test_server_read_write_optional_struct_property_initialization(self, server, initial_property_values):
-        """Test that the read_write_optional_struct server property is initialized correctly."""
-        assert hasattr(server, "read_write_optional_struct"), "Server missing property 'read_write_optional_struct'"
-        assert server.read_write_optional_struct == initial_property_values.read_write_optional_struct, "Property 'read_write_optional_struct' value does not match expected value"
-
-    def test_read_write_optional_struct_property_publish(self, server, mock_connection, initial_property_values):
-        """Test that setting the 'read_write_optional_struct' property publishes the correct message."""
-        mock_connection.clear_published_messages()
-        server.publish_read_write_optional_struct_value()
-
-        published_list = mock_connection.find_published("testable/{}/property/readWriteOptionalStruct/value".format("+"))
-        assert len(published_list) == 1, f"No message was published for property 'read_write_optional_struct'.  Messages: {mock_connection.published_messages}"
-
-        msg = published_list[0]
-        expected_topic = "testable/{}/property/readWriteOptionalStruct/value".format(server.instance_id)
-        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
-
-        # Verify payload
-
-        payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteOptionalStructProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_obj.value == initial_property_values.read_write_optional_struct
-        ), f"Payload 'value' does not match expected struct value of '{ initial_property_values.read_write_optional_struct }'"
-
-    def test_read_write_optional_struct_property_receive(self, server, mock_connection):
-        """Test that receiving a property update for 'read_write_optional_struct' updates the server property and calls callbacks."""
-        received_data = None
-
-        def callback(value):
-            nonlocal received_data
-            received_data = {
-                "value": value,
-            }
-
-        server.on_read_write_optional_struct_updated(callback)
-
-        # Create and simulate receiving a property update message
-        prop_data = {
-            "value": AllTypes(
-                the_bool=True,
-                the_int=2020,
-                the_number=1.0,
-                the_str="example",
-                the_enum=Numbers.ONE,
-                an_entry_object=Entry(key=2020, value="example"),
-                date_and_time=datetime.now(UTC),
-                time_duration=timedelta(seconds=551),
-                data=b"example binary data",
-                optional_integer=2020,
-                optional_string="example",
-                optional_enum=Numbers.ONE,
-                optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=datetime.now(UTC),
-                optional_duration=timedelta(seconds=2332),
-                optional_binary=b"example binary data",
-                array_of_integers=[2020, 42],
-                optional_array_of_integers=[2020, 42],
-                array_of_strings=["example", "apples"],
-                optional_array_of_strings=["example", "apples"],
-                array_of_enums=[Numbers.ONE, Numbers.ONE],
-                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                array_of_durations=[timedelta(seconds=551), timedelta(seconds=3536)],
-                optional_array_of_durations=[timedelta(seconds=551), timedelta(seconds=3536)],
-                array_of_binaries=[b"example binary data", b"example binary data"],
-                optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
-                optional_array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
-            ),
-        }
         prop_obj = ReadWriteOptionalStructProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteOptionalStruct/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -827,6 +828,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_optional_struct' was not called"
 
     def test_server_read_write_two_structs_property_initialization(self, server, initial_property_values):
@@ -848,15 +850,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.read_write_two_structs
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteTwoStructsProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_obj.first == initial_property_values.read_write_two_structs["first"]
-        ), f"Payload 'first' does not match expected struct value of '{ initial_property_values.read_write_two_structs["first"]}'"
-        assert (
-            payload_obj.second == initial_property_values.read_write_two_structs["second"]
-        ), f"Payload 'second' does not match expected struct value of '{ initial_property_values.read_write_two_structs["second"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_two_structs_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_two_structs' updates the server property and calls callbacks."""
@@ -887,7 +884,7 @@ class TestServerProperties:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -919,7 +916,7 @@ class TestServerProperties:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -941,7 +938,7 @@ class TestServerProperties:
         prop_obj = ReadWriteTwoStructsProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteTwoStructs/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -949,6 +946,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_two_structs' was not called"
 
     def test_server_read_only_enum_property_initialization(self, server, initial_property_values):
@@ -970,10 +968,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadOnlyEnumProperty(value=initial_property_values.read_only_enum)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadOnlyEnumProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == initial_property_values.read_only_enum.value, f"Payload 'value' does not match expected enum of '{ initial_property_values.read_only_enum }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_only_enum_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_only_enum' updates the server property and calls callbacks."""
@@ -994,7 +992,7 @@ class TestServerProperties:
         prop_obj = ReadOnlyEnumProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readOnlyEnum/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1002,7 +1000,8 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
-        assert received_data is not None, "Callback for property 'read_only_enum' was not called"
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property 'read_only_enum' should not be updated"
 
     def test_server_read_write_enum_property_initialization(self, server, initial_property_values):
         """Test that the read_write_enum server property is initialized correctly."""
@@ -1023,10 +1022,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteEnumProperty(value=initial_property_values.read_write_enum)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteEnumProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == initial_property_values.read_write_enum.value, f"Payload 'value' does not match expected enum of '{ initial_property_values.read_write_enum }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_enum_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_enum' updates the server property and calls callbacks."""
@@ -1047,7 +1046,7 @@ class TestServerProperties:
         prop_obj = ReadWriteEnumProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteEnum/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1055,6 +1054,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_enum' was not called"
 
     def test_server_read_write_optional_enum_property_initialization(self, server, initial_property_values):
@@ -1075,12 +1075,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteOptionalEnumProperty(value=initial_property_values.read_write_optional_enum)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteOptionalEnumProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("value") == initial_property_values.read_write_optional_enum.value
-        ), f"Payload 'value' does not match expected enum of '{ initial_property_values.read_write_optional_enum }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_optional_enum_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_optional_enum' updates the server property and calls callbacks."""
@@ -1101,7 +1099,7 @@ class TestServerProperties:
         prop_obj = ReadWriteOptionalEnumProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteOptionalEnum/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1109,6 +1107,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_optional_enum' was not called"
 
     def test_server_read_write_two_enums_property_initialization(self, server, initial_property_values):
@@ -1130,15 +1129,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.read_write_two_enums
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteTwoEnumsProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("first") == initial_property_values.read_write_two_enums["first"].value
-        ), f"Payload 'first' does not match expected enum of '{ initial_property_values.read_write_two_enums["first"]}'"
-        assert (
-            payload_dict.get("second") == initial_property_values.read_write_two_enums["second"].value
-        ), f"Payload 'second' does not match expected enum of '{ initial_property_values.read_write_two_enums["second"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_two_enums_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_two_enums' updates the server property and calls callbacks."""
@@ -1161,7 +1155,7 @@ class TestServerProperties:
         prop_obj = ReadWriteTwoEnumsProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteTwoEnums/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1169,6 +1163,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_two_enums' was not called"
 
     def test_server_read_write_datetime_property_initialization(self, server, initial_property_values):
@@ -1190,10 +1185,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteDatetimeProperty(value=initial_property_values.read_write_datetime)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteDatetimeProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == initial_property_values.read_write_datetime, f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_datetime }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_datetime_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_datetime' updates the server property and calls callbacks."""
@@ -1214,7 +1209,7 @@ class TestServerProperties:
         prop_obj = ReadWriteDatetimeProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteDatetime/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1222,6 +1217,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_datetime' was not called"
 
     def test_server_read_write_optional_datetime_property_initialization(self, server, initial_property_values):
@@ -1242,12 +1238,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteOptionalDatetimeProperty(value=initial_property_values.read_write_optional_datetime)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("value") == initial_property_values.read_write_optional_datetime
-        ), f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_optional_datetime }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_optional_datetime_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_optional_datetime' updates the server property and calls callbacks."""
@@ -1268,7 +1262,7 @@ class TestServerProperties:
         prop_obj = ReadWriteOptionalDatetimeProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteOptionalDatetime/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1276,6 +1270,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_optional_datetime' was not called"
 
     def test_server_read_write_two_datetimes_property_initialization(self, server, initial_property_values):
@@ -1297,15 +1292,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.read_write_two_datetimes
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteTwoDatetimesProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("first") == initial_property_values.read_write_two_datetimes["first"]
-        ), f"Payload 'first' does not match expected value of '{ initial_property_values.read_write_two_datetimes["first"]}'"
-        assert (
-            payload_dict.get("second") == initial_property_values.read_write_two_datetimes["second"]
-        ), f"Payload 'second' does not match expected value of '{ initial_property_values.read_write_two_datetimes["second"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_two_datetimes_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_two_datetimes' updates the server property and calls callbacks."""
@@ -1328,7 +1318,7 @@ class TestServerProperties:
         prop_obj = ReadWriteTwoDatetimesProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteTwoDatetimes/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1336,6 +1326,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_two_datetimes' was not called"
 
     def test_server_read_write_duration_property_initialization(self, server, initial_property_values):
@@ -1357,10 +1348,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteDurationProperty(value=initial_property_values.read_write_duration)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteDurationProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == initial_property_values.read_write_duration, f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_duration }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_duration_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_duration' updates the server property and calls callbacks."""
@@ -1381,7 +1372,7 @@ class TestServerProperties:
         prop_obj = ReadWriteDurationProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteDuration/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1389,6 +1380,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_duration' was not called"
 
     def test_server_read_write_optional_duration_property_initialization(self, server, initial_property_values):
@@ -1409,12 +1401,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteOptionalDurationProperty(value=initial_property_values.read_write_optional_duration)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteOptionalDurationProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("value") == initial_property_values.read_write_optional_duration
-        ), f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_optional_duration }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_optional_duration_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_optional_duration' updates the server property and calls callbacks."""
@@ -1435,7 +1425,7 @@ class TestServerProperties:
         prop_obj = ReadWriteOptionalDurationProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteOptionalDuration/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1443,6 +1433,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_optional_duration' was not called"
 
     def test_server_read_write_two_durations_property_initialization(self, server, initial_property_values):
@@ -1464,15 +1455,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.read_write_two_durations
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteTwoDurationsProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("first") == initial_property_values.read_write_two_durations["first"]
-        ), f"Payload 'first' does not match expected value of '{ initial_property_values.read_write_two_durations["first"]}'"
-        assert (
-            payload_dict.get("second") == initial_property_values.read_write_two_durations["second"]
-        ), f"Payload 'second' does not match expected value of '{ initial_property_values.read_write_two_durations["second"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_two_durations_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_two_durations' updates the server property and calls callbacks."""
@@ -1495,7 +1481,7 @@ class TestServerProperties:
         prop_obj = ReadWriteTwoDurationsProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteTwoDurations/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1503,6 +1489,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_two_durations' was not called"
 
     def test_server_read_write_binary_property_initialization(self, server, initial_property_values):
@@ -1524,10 +1511,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteBinaryProperty(value=initial_property_values.read_write_binary)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteBinaryProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == initial_property_values.read_write_binary, f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_binary }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_binary_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_binary' updates the server property and calls callbacks."""
@@ -1548,7 +1535,7 @@ class TestServerProperties:
         prop_obj = ReadWriteBinaryProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteBinary/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1556,6 +1543,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_binary' was not called"
 
     def test_server_read_write_optional_binary_property_initialization(self, server, initial_property_values):
@@ -1576,12 +1564,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteOptionalBinaryProperty(value=initial_property_values.read_write_optional_binary)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteOptionalBinaryProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("value") == initial_property_values.read_write_optional_binary
-        ), f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_optional_binary }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_optional_binary_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_optional_binary' updates the server property and calls callbacks."""
@@ -1602,7 +1588,7 @@ class TestServerProperties:
         prop_obj = ReadWriteOptionalBinaryProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteOptionalBinary/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1610,6 +1596,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_optional_binary' was not called"
 
     def test_server_read_write_two_binaries_property_initialization(self, server, initial_property_values):
@@ -1631,15 +1618,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.read_write_two_binaries
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteTwoBinariesProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("first") == initial_property_values.read_write_two_binaries["first"]
-        ), f"Payload 'first' does not match expected value of '{ initial_property_values.read_write_two_binaries["first"]}'"
-        assert (
-            payload_dict.get("second") == initial_property_values.read_write_two_binaries["second"]
-        ), f"Payload 'second' does not match expected value of '{ initial_property_values.read_write_two_binaries["second"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_two_binaries_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_two_binaries' updates the server property and calls callbacks."""
@@ -1662,7 +1644,7 @@ class TestServerProperties:
         prop_obj = ReadWriteTwoBinariesProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteTwoBinaries/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1670,6 +1652,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_two_binaries' was not called"
 
     def test_server_read_write_list_of_strings_property_initialization(self, server, initial_property_values):
@@ -1691,12 +1674,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ReadWriteListOfStringsProperty(value=initial_property_values.read_write_list_of_strings)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteListOfStringsProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("value") == initial_property_values.read_write_list_of_strings
-        ), f"Payload 'value' does not match expected value of '{ initial_property_values.read_write_list_of_strings }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_list_of_strings_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_list_of_strings' updates the server property and calls callbacks."""
@@ -1717,7 +1698,7 @@ class TestServerProperties:
         prop_obj = ReadWriteListOfStringsProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteListOfStrings/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1725,6 +1706,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_list_of_strings' was not called"
 
     def test_server_read_write_lists_property_initialization(self, server, initial_property_values):
@@ -1746,15 +1728,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = initial_property_values.read_write_lists
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ReadWriteListsProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert (
-            payload_dict.get("the_list") == initial_property_values.read_write_lists["the_list"]
-        ), f"Payload 'the_list' does not match expected value of '{ initial_property_values.read_write_lists["the_list"]}'"
-        assert (
-            payload_dict.get("optional_list") == initial_property_values.read_write_lists["optional_list"]
-        ), f"Payload 'optional_list' does not match expected value of '{ initial_property_values.read_write_lists["optional_list"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_read_write_lists_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'read_write_lists' updates the server property and calls callbacks."""
@@ -1777,7 +1754,7 @@ class TestServerProperties:
         prop_obj = ReadWriteListsProperty(**prop_data)
         incoming_msg = Message(
             topic="testable/{}/property/readWriteLists/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -1785,6 +1762,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'read_write_lists' was not called"
 
 
@@ -1804,9 +1782,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = EmptySignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = EmptySignalPayload.model_validate_json(msg.payload.decode("utf-8"))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_int(self, server, mock_connection):
         """Test that the server can emit the 'single_int' signal."""
@@ -1824,10 +1803,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleIntSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleIntSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_optional_int(self, server, mock_connection):
         """Test that the server can emit the 'single_optional_int' signal."""
@@ -1845,10 +1824,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleOptionalIntSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleOptionalIntSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_three_integers(self, server, mock_connection):
         """Test that the server can emit the 'three_integers' signal."""
@@ -1868,12 +1847,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ThreeIntegersSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ThreeIntegersSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("first") == signal_data["first"], f"Payload 'first' does not match expected value of '{ signal_data["first"]}'"
-        assert payload_dict.get("second") == signal_data["second"], f"Payload 'second' does not match expected value of '{ signal_data["second"]}'"
-        assert payload_dict.get("third") == signal_data["third"], f"Payload 'third' does not match expected value of '{ signal_data["third"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_string(self, server, mock_connection):
         """Test that the server can emit the 'single_string' signal."""
@@ -1891,10 +1868,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleStringSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleStringSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_optional_string(self, server, mock_connection):
         """Test that the server can emit the 'single_optional_string' signal."""
@@ -1912,10 +1889,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleOptionalStringSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleOptionalStringSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_three_strings(self, server, mock_connection):
         """Test that the server can emit the 'three_strings' signal."""
@@ -1935,12 +1912,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ThreeStringsSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ThreeStringsSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("first") == signal_data["first"], f"Payload 'first' does not match expected value of '{ signal_data["first"]}'"
-        assert payload_dict.get("second") == signal_data["second"], f"Payload 'second' does not match expected value of '{ signal_data["second"]}'"
-        assert payload_dict.get("third") == signal_data["third"], f"Payload 'third' does not match expected value of '{ signal_data["third"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_enum(self, server, mock_connection):
         """Test that the server can emit the 'single_enum' signal."""
@@ -1958,10 +1933,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleEnumSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleEnumSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"].value, f"Payload 'value' does not match expected enum of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_optional_enum(self, server, mock_connection):
         """Test that the server can emit the 'single_optional_enum' signal."""
@@ -1979,10 +1954,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleOptionalEnumSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleOptionalEnumSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"].value, f"Payload 'value' does not match expected enum of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_three_enums(self, server, mock_connection):
         """Test that the server can emit the 'three_enums' signal."""
@@ -2002,12 +1977,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ThreeEnumsSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ThreeEnumsSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("first") == signal_data["first"].value, f"Payload 'first' does not match expected enum of '{ signal_data["first"]}'"
-        assert payload_dict.get("second") == signal_data["second"].value, f"Payload 'second' does not match expected enum of '{ signal_data["second"]}'"
-        assert payload_dict.get("third") == signal_data["third"].value, f"Payload 'third' does not match expected enum of '{ signal_data["third"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_struct(self, server, mock_connection):
         """Test that the server can emit the 'single_struct' signal."""
@@ -2056,10 +2029,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleStructSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleStructSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_obj.value == signal_data["value"], f"Payload 'value' does not match expected struct value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_optional_struct(self, server, mock_connection):
         """Test that the server can emit the 'single_optional_struct' signal."""
@@ -2108,10 +2081,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleOptionalStructSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleOptionalStructSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_obj.value == signal_data["value"], f"Payload 'value' does not match expected struct value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_three_structs(self, server, mock_connection):
         """Test that the server can emit the 'three_structs' signal."""
@@ -2194,7 +2167,7 @@ class TestServerSignals:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -2224,12 +2197,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ThreeStructsSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ThreeStructsSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_obj.first == signal_data["first"], f"Payload 'first' does not match expected struct value of '{ signal_data["first"]}'"
-        assert payload_obj.second == signal_data["second"], f"Payload 'second' does not match expected struct value of '{ signal_data["second"]}'"
-        assert payload_obj.third == signal_data["third"], f"Payload 'third' does not match expected struct value of '{ signal_data["third"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_date_time(self, server, mock_connection):
         """Test that the server can emit the 'single_date_time' signal."""
@@ -2247,15 +2218,15 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleDateTimeSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleDateTimeSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_optional_datetime(self, server, mock_connection):
         """Test that the server can emit the 'single_optional_datetime' signal."""
         signal_data = {
-            "value": None,
+            "value": datetime.now(UTC),
         }
         server.emit_single_optional_datetime(**signal_data)
 
@@ -2268,10 +2239,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleOptionalDatetimeSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleOptionalDatetimeSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_three_date_times(self, server, mock_connection):
         """Test that the server can emit the 'three_date_times' signal."""
@@ -2291,12 +2262,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ThreeDateTimesSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ThreeDateTimesSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("first") == signal_data["first"], f"Payload 'first' does not match expected value of '{ signal_data["first"]}'"
-        assert payload_dict.get("second") == signal_data["second"], f"Payload 'second' does not match expected value of '{ signal_data["second"]}'"
-        assert payload_dict.get("third") == signal_data["third"], f"Payload 'third' does not match expected value of '{ signal_data["third"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_duration(self, server, mock_connection):
         """Test that the server can emit the 'single_duration' signal."""
@@ -2314,10 +2283,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleDurationSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleDurationSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_optional_duration(self, server, mock_connection):
         """Test that the server can emit the 'single_optional_duration' signal."""
@@ -2335,10 +2304,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleOptionalDurationSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleOptionalDurationSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_three_durations(self, server, mock_connection):
         """Test that the server can emit the 'three_durations' signal."""
@@ -2358,12 +2327,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ThreeDurationsSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ThreeDurationsSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("first") == signal_data["first"], f"Payload 'first' does not match expected value of '{ signal_data["first"]}'"
-        assert payload_dict.get("second") == signal_data["second"], f"Payload 'second' does not match expected value of '{ signal_data["second"]}'"
-        assert payload_dict.get("third") == signal_data["third"], f"Payload 'third' does not match expected value of '{ signal_data["third"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_binary(self, server, mock_connection):
         """Test that the server can emit the 'single_binary' signal."""
@@ -2381,10 +2348,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleBinarySignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleBinarySignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_optional_binary(self, server, mock_connection):
         """Test that the server can emit the 'single_optional_binary' signal."""
@@ -2402,10 +2369,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleOptionalBinarySignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleOptionalBinarySignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("value") == signal_data["value"], f"Payload 'value' does not match expected value of '{ signal_data["value"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_three_binaries(self, server, mock_connection):
         """Test that the server can emit the 'three_binaries' signal."""
@@ -2425,12 +2392,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ThreeBinariesSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ThreeBinariesSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("first") == signal_data["first"], f"Payload 'first' does not match expected value of '{ signal_data["first"]}'"
-        assert payload_dict.get("second") == signal_data["second"], f"Payload 'second' does not match expected value of '{ signal_data["second"]}'"
-        assert payload_dict.get("third") == signal_data["third"], f"Payload 'third' does not match expected value of '{ signal_data["third"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_array_of_integers(self, server, mock_connection):
         """Test that the server can emit the 'single_array_of_integers' signal."""
@@ -2448,10 +2413,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleArrayOfIntegersSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleArrayOfIntegersSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("values") == signal_data["values"], f"Payload 'values' does not match expected value of '{ signal_data["values"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_single_optional_array_of_strings(self, server, mock_connection):
         """Test that the server can emit the 'single_optional_array_of_strings' signal."""
@@ -2469,10 +2434,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SingleOptionalArrayOfStringsSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SingleOptionalArrayOfStringsSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("values") == signal_data["values"], f"Payload 'values' does not match expected value of '{ signal_data["values"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_array_of_every_type(self, server, mock_connection):
         """Test that the server can emit the 'array_of_every_type' signal."""
@@ -2497,16 +2462,7 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = ArrayOfEveryTypeSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = ArrayOfEveryTypeSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("first_of_integers") == signal_data["first_of_integers"], f"Payload 'first_of_integers' does not match expected value of '{ signal_data["first_of_integers"]}'"
-        assert payload_dict.get("second_of_floats") == signal_data["second_of_floats"], f"Payload 'second_of_floats' does not match expected value of '{ signal_data["second_of_floats"]}'"
-        assert payload_dict.get("third_of_strings") == signal_data["third_of_strings"], f"Payload 'third_of_strings' does not match expected value of '{ signal_data["third_of_strings"]}'"
-        assert payload_dict.get("fourth_of_enums") == signal_data["fourth_of_enums"], f"Payload 'fourth_of_enums' does not match expected value of '{ signal_data["fourth_of_enums"]}'"
-        assert payload_dict.get("fifth_of_structs") == signal_data["fifth_of_structs"], f"Payload 'fifth_of_structs' does not match expected value of '{ signal_data["fifth_of_structs"]}'"
-        assert payload_dict.get("sixth_of_datetimes") == signal_data["sixth_of_datetimes"], f"Payload 'sixth_of_datetimes' does not match expected value of '{ signal_data["sixth_of_datetimes"]}'"
-        assert (
-            payload_dict.get("seventh_of_durations") == signal_data["seventh_of_durations"]
-        ), f"Payload 'seventh_of_durations' does not match expected value of '{ signal_data["seventh_of_durations"]}'"
-        assert payload_dict.get("eighth_of_binaries") == signal_data["eighth_of_binaries"], f"Payload 'eighth_of_binaries' does not match expected value of '{ signal_data["eighth_of_binaries"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"

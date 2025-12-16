@@ -14,6 +14,13 @@ from {{stinger.name | snake_case}}ipc.interface_types import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
+from pydantic import BaseModel
+from typing import Any, Dict
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 {%if stinger.properties | length > 0 %}
 @pytest.fixture
@@ -51,31 +58,6 @@ class TestServer:
         assert server is not None, "server failed to initialize"
         assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
 
-{%-macro eval_payload(arg_list, msg, data, obj_name) %}
-payload_dict = json.loads({{msg}}.payload.decode('utf-8'))
-payload_obj = {{obj_name}}.model_validate_json({{msg}}.payload.decode('utf-8'))
-{%-for arg in arg_list%}
-{%-if arg.arg_type.name.lower() == 'enum'%}
-assert payload_dict.get("{{arg.name|snake_case}}") == {{data}}["{{arg.name|snake_case}}"].value, f"Payload '{{arg.name|snake_case}}' does not match expected enum of '{ {{data}}["{{arg.name|snake_case}}"]}'"
-{%-elif arg.arg_type.name.lower() == 'struct'%}
-assert payload_obj.{{arg.name|snake_case}} == {{data}}["{{arg.name|snake_case}}"], f"Payload '{{arg.name|snake_case}}' does not match expected struct value of '{ {{data}}["{{arg.name|snake_case}}"]}'"
-{%-else%}
-assert payload_dict.get("{{arg.name|snake_case}}") == {{data}}["{{arg.name|snake_case}}"], f"Payload '{{arg.name|snake_case}}' does not match expected value of '{ {{data}}["{{arg.name|snake_case}}"]}'"
-{%-endif%}
-{%-endfor%}
-{%endmacro-%}
-
-{%-macro eval_value(arg, msg, value, obj_name) %}
-payload_dict = json.loads({{msg}}.payload.decode('utf-8'))
-payload_obj = {{obj_name}}.model_validate_json({{msg}}.payload.decode('utf-8'))
-{%-if arg.arg_type.name.lower() == 'enum'%}
-assert payload_dict.get("{{arg.name|snake_case}}") == {{value}}.value, f"Payload '{{arg.name|snake_case}}' does not match expected enum of '{ {{value}} }'"
-{%-elif arg.arg_type.name.lower() == 'struct'%}
-assert payload_obj.{{arg.name|snake_case}} == {{value}}, f"Payload '{{arg.name|snake_case}}' does not match expected struct value of '{ {{value}} }'"
-{%-else%}
-assert payload_dict.get("{{arg.name|snake_case}}") == {{value}}, f"Payload '{{arg.name|snake_case}}' does not match expected value of '{ {{value}} }'"
-{%-endif%}
-{%endmacro-%}
 
 {%if not config.properties.stinger_owned_values %}
 {%if stinger.properties | length > 0 %}
@@ -110,10 +92,13 @@ class TestServerProperties:
         
         # Verify payload
         {%-if prop.arg_list | length == 1%}
-        {{ eval_value(prop.arg_list[0], 'msg', 'initial_property_values.' + prop_name|snake_case, prop_name|UpperCamelCase + "Property") | indent(8) }}
+        expected_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=initial_property_values.{{prop_name|snake_case}})
         {%-else%}
-        {{ eval_payload(prop.arg_list, 'msg', 'initial_property_values.' + prop_name|snake_case, prop_name|UpperCamelCase + "Property") | indent(8) }}
+        expected_obj = initial_property_values.{{prop_name|snake_case}}
         {%-endif%}
+        expected_dict = to_jsonified_dict(expected_obj)
+        payload_dict = json.loads(msg.payload.decode('utf-8'))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_{{prop_name|snake_case}}_property_receive(self, server, mock_connection):
         """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
@@ -136,15 +121,20 @@ class TestServerProperties:
         prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data)
         incoming_msg = Message(
             topic="{{prop.update_topic}}".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode('utf-8'),
+            payload=prop_obj.model_dump_json(by_alias=True).encode('utf-8'),
             qos=1,
             retain=False,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
         )
         mock_connection.simulate_message(incoming_msg)
-
+        {%if prop.read_only%}
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property '{{prop_name|snake_case}}' should not be updated"
+        {%else%}
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property '{{prop_name|snake_case}}' was not called"
+        {%endif%}
     {%endfor%}
 {%else%}
 # No (stinger-owned) properties to test
@@ -172,6 +162,9 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
         
         # Verify payload
-        {{ eval_payload(signal.arg_list, 'msg', 'signal_data', signal_name|UpperCamelCase + "SignalPayload") | indent(8) }}
+        expected_obj = {{signal_name|UpperCamelCase}}SignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
+        payload_dict = json.loads(msg.payload.decode('utf-8'))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
     {%endfor%}
 {%endif%}

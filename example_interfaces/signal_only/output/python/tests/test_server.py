@@ -12,6 +12,14 @@ from signal_onlyipc.interface_types import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
+from pydantic import BaseModel
+from typing import Any, Dict
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture
@@ -59,12 +67,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = AnotherSignalSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = AnotherSignalSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("one") == signal_data["one"], f"Payload 'one' does not match expected value of '{ signal_data["one"]}'"
-        assert payload_dict.get("two") == signal_data["two"], f"Payload 'two' does not match expected value of '{ signal_data["two"]}'"
-        assert payload_dict.get("three") == signal_data["three"], f"Payload 'three' does not match expected value of '{ signal_data["three"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_bark(self, server, mock_connection):
         """Test that the server can emit the 'bark' signal."""
@@ -82,10 +88,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = BarkSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = BarkSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("word") == signal_data["word"], f"Payload 'word' does not match expected value of '{ signal_data["word"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_maybe_number(self, server, mock_connection):
         """Test that the server can emit the 'maybe_number' signal."""
@@ -103,10 +109,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = MaybeNumberSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = MaybeNumberSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("number") == signal_data["number"], f"Payload 'number' does not match expected value of '{ signal_data["number"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_maybe_name(self, server, mock_connection):
         """Test that the server can emit the 'maybe_name' signal."""
@@ -124,10 +130,10 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = MaybeNameSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = MaybeNameSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("name") == signal_data["name"], f"Payload 'name' does not match expected value of '{ signal_data["name"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_server_emit_now(self, server, mock_connection):
         """Test that the server can emit the 'now' signal."""
@@ -145,7 +151,7 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = NowSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = NowSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("timestamp") == signal_data["timestamp"], f"Payload 'timestamp' does not match expected value of '{ signal_data["timestamp"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"

@@ -13,6 +13,14 @@ from simpleipc.interface_types import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
+from pydantic import BaseModel
+from typing import Any, Dict
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture
@@ -66,10 +74,10 @@ class TestServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = SchoolProperty(name=initial_property_values.school)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = SchoolProperty.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_dict.get("name") == initial_property_values.school, f"Payload 'name' does not match expected value of '{ initial_property_values.school }'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
     def test_school_property_receive(self, server, mock_connection):
         """Test that receiving a property update for 'school' updates the server property and calls callbacks."""
@@ -90,7 +98,7 @@ class TestServerProperties:
         prop_obj = SchoolProperty(**prop_data)
         incoming_msg = Message(
             topic="simple/{}/property/school/setValue".format(server.instance_id),
-            payload=prop_obj.model_dump_json().encode("utf-8"),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
             content_type="application/json",
@@ -98,6 +106,7 @@ class TestServerProperties:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # Verify that server property was updated
         assert received_data is not None, "Callback for property 'school' was not called"
 
 
@@ -119,7 +128,7 @@ class TestServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-
+        expected_obj = PersonEnteredSignalPayload(**signal_data)
+        expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
-        payload_obj = PersonEnteredSignalPayload.model_validate_json(msg.payload.decode("utf-8"))
-        assert payload_obj.person == signal_data["person"], f"Payload 'person' does not match expected struct value of '{ signal_data["person"]}'"
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
