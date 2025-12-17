@@ -4206,8 +4206,8 @@ class TestableServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_read_write_two_integers.callbacks:
-                    callback(self._property_read_write_two_integers.get_value())
+                for read_write_two_integers_callback in self._property_read_write_two_integers.callbacks:
+                    read_write_two_integers_callback(self._property_read_write_two_integers.get_value())
 
     def set_read_write_two_integers(self, first: int, second: Optional[int]):
         """This method sets (publishes) a new value for the 'read_write_two_integers' property."""
@@ -4381,8 +4381,8 @@ class TestableServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_read_write_two_strings.callbacks:
-                    callback(self._property_read_write_two_strings.get_value())
+                for read_write_two_strings_callback in self._property_read_write_two_strings.callbacks:
+                    read_write_two_strings_callback(self._property_read_write_two_strings.get_value())
 
     def set_read_write_two_strings(self, first: str, second: Optional[str]):
         """This method sets (publishes) a new value for the 'read_write_two_strings' property."""
@@ -4517,8 +4517,8 @@ class TestableServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_read_write_two_structs.callbacks:
-                    callback(self._property_read_write_two_structs.get_value())
+                for read_write_two_structs_callback in self._property_read_write_two_structs.callbacks:
+                    read_write_two_structs_callback(self._property_read_write_two_structs.get_value())
 
     def set_read_write_two_structs(self, first: AllTypes, second: AllTypes):
         """This method sets (publishes) a new value for the 'read_write_two_structs' property."""
@@ -4692,8 +4692,8 @@ class TestableServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_read_write_two_enums.callbacks:
-                    callback(self._property_read_write_two_enums.get_value())
+                for read_write_two_enums_callback in self._property_read_write_two_enums.callbacks:
+                    read_write_two_enums_callback(self._property_read_write_two_enums.get_value())
 
     def set_read_write_two_enums(self, first: Numbers, second: Optional[Numbers]):
         """This method sets (publishes) a new value for the 'read_write_two_enums' property."""
@@ -4830,8 +4830,8 @@ class TestableServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_read_write_two_datetimes.callbacks:
-                    callback(self._property_read_write_two_datetimes.get_value())
+                for read_write_two_datetimes_callback in self._property_read_write_two_datetimes.callbacks:
+                    read_write_two_datetimes_callback(self._property_read_write_two_datetimes.get_value())
 
     def set_read_write_two_datetimes(self, first: datetime, second: Optional[datetime]):
         """This method sets (publishes) a new value for the 'read_write_two_datetimes' property."""
@@ -4968,8 +4968,8 @@ class TestableServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_read_write_two_durations.callbacks:
-                    callback(self._property_read_write_two_durations.get_value())
+                for read_write_two_durations_callback in self._property_read_write_two_durations.callbacks:
+                    read_write_two_durations_callback(self._property_read_write_two_durations.get_value())
 
     def set_read_write_two_durations(self, first: timedelta, second: Optional[timedelta]):
         """This method sets (publishes) a new value for the 'read_write_two_durations' property."""
@@ -5104,8 +5104,8 @@ class TestableServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_read_write_two_binaries.callbacks:
-                    callback(self._property_read_write_two_binaries.get_value())
+                for read_write_two_binaries_callback in self._property_read_write_two_binaries.callbacks:
+                    read_write_two_binaries_callback(self._property_read_write_two_binaries.get_value())
 
     def set_read_write_two_binaries(self, first: bytes, second: bytes):
         """This method sets (publishes) a new value for the 'read_write_two_binaries' property."""
@@ -5201,8 +5201,8 @@ class TestableServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_read_write_lists.callbacks:
-                    callback(self._property_read_write_lists.get_value())
+                for read_write_lists_callback in self._property_read_write_lists.callbacks:
+                    read_write_lists_callback(self._property_read_write_lists.get_value())
 
     def set_read_write_lists(self, the_list: List[Numbers], optional_list: List[datetime]):
         """This method sets (publishes) a new value for the 'read_write_lists' property."""
@@ -5831,309 +5831,284 @@ class TestableServerBuilder:
 
         if self._call_with_nothing_method_handler is not None:
             if binding:
-                binding_cb = self._call_with_nothing_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_with_nothing(binding_cb)
+                new_server.handle_call_with_nothing(self._call_with_nothing_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_with_nothing(self._call_with_nothing_method_handler)
         if self._call_one_integer_method_handler is not None:
             if binding:
-                binding_cb = self._call_one_integer_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_one_integer(binding_cb)
+                new_server.handle_call_one_integer(self._call_one_integer_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_one_integer(self._call_one_integer_method_handler)
         if self._call_optional_integer_method_handler is not None:
             if binding:
-                binding_cb = self._call_optional_integer_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_optional_integer(binding_cb)
+                new_server.handle_call_optional_integer(self._call_optional_integer_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_optional_integer(self._call_optional_integer_method_handler)
         if self._call_three_integers_method_handler is not None:
             if binding:
-                binding_cb = self._call_three_integers_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_three_integers(binding_cb)
+                new_server.handle_call_three_integers(self._call_three_integers_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_three_integers(self._call_three_integers_method_handler)
         if self._call_one_string_method_handler is not None:
             if binding:
-                binding_cb = self._call_one_string_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_one_string(binding_cb)
+                new_server.handle_call_one_string(self._call_one_string_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_one_string(self._call_one_string_method_handler)
         if self._call_optional_string_method_handler is not None:
             if binding:
-                binding_cb = self._call_optional_string_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_optional_string(binding_cb)
+                new_server.handle_call_optional_string(self._call_optional_string_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_optional_string(self._call_optional_string_method_handler)
         if self._call_three_strings_method_handler is not None:
             if binding:
-                binding_cb = self._call_three_strings_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_three_strings(binding_cb)
+                new_server.handle_call_three_strings(self._call_three_strings_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_three_strings(self._call_three_strings_method_handler)
         if self._call_one_enum_method_handler is not None:
             if binding:
-                binding_cb = self._call_one_enum_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_one_enum(binding_cb)
+                new_server.handle_call_one_enum(self._call_one_enum_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_one_enum(self._call_one_enum_method_handler)
         if self._call_optional_enum_method_handler is not None:
             if binding:
-                binding_cb = self._call_optional_enum_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_optional_enum(binding_cb)
+                new_server.handle_call_optional_enum(self._call_optional_enum_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_optional_enum(self._call_optional_enum_method_handler)
         if self._call_three_enums_method_handler is not None:
             if binding:
-                binding_cb = self._call_three_enums_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_three_enums(binding_cb)
+                new_server.handle_call_three_enums(self._call_three_enums_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_three_enums(self._call_three_enums_method_handler)
         if self._call_one_struct_method_handler is not None:
             if binding:
-                binding_cb = self._call_one_struct_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_one_struct(binding_cb)
+                new_server.handle_call_one_struct(self._call_one_struct_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_one_struct(self._call_one_struct_method_handler)
         if self._call_optional_struct_method_handler is not None:
             if binding:
-                binding_cb = self._call_optional_struct_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_optional_struct(binding_cb)
+                new_server.handle_call_optional_struct(self._call_optional_struct_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_optional_struct(self._call_optional_struct_method_handler)
         if self._call_three_structs_method_handler is not None:
             if binding:
-                binding_cb = self._call_three_structs_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_three_structs(binding_cb)
+                new_server.handle_call_three_structs(self._call_three_structs_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_three_structs(self._call_three_structs_method_handler)
         if self._call_one_date_time_method_handler is not None:
             if binding:
-                binding_cb = self._call_one_date_time_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_one_date_time(binding_cb)
+                new_server.handle_call_one_date_time(self._call_one_date_time_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_one_date_time(self._call_one_date_time_method_handler)
         if self._call_optional_date_time_method_handler is not None:
             if binding:
-                binding_cb = self._call_optional_date_time_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_optional_date_time(binding_cb)
+                new_server.handle_call_optional_date_time(self._call_optional_date_time_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_optional_date_time(self._call_optional_date_time_method_handler)
         if self._call_three_date_times_method_handler is not None:
             if binding:
-                binding_cb = self._call_three_date_times_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_three_date_times(binding_cb)
+                new_server.handle_call_three_date_times(self._call_three_date_times_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_three_date_times(self._call_three_date_times_method_handler)
         if self._call_one_duration_method_handler is not None:
             if binding:
-                binding_cb = self._call_one_duration_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_one_duration(binding_cb)
+                new_server.handle_call_one_duration(self._call_one_duration_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_one_duration(self._call_one_duration_method_handler)
         if self._call_optional_duration_method_handler is not None:
             if binding:
-                binding_cb = self._call_optional_duration_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_optional_duration(binding_cb)
+                new_server.handle_call_optional_duration(self._call_optional_duration_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_optional_duration(self._call_optional_duration_method_handler)
         if self._call_three_durations_method_handler is not None:
             if binding:
-                binding_cb = self._call_three_durations_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_three_durations(binding_cb)
+                new_server.handle_call_three_durations(self._call_three_durations_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_three_durations(self._call_three_durations_method_handler)
         if self._call_one_binary_method_handler is not None:
             if binding:
-                binding_cb = self._call_one_binary_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_one_binary(binding_cb)
+                new_server.handle_call_one_binary(self._call_one_binary_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_one_binary(self._call_one_binary_method_handler)
         if self._call_optional_binary_method_handler is not None:
             if binding:
-                binding_cb = self._call_optional_binary_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_optional_binary(binding_cb)
+                new_server.handle_call_optional_binary(self._call_optional_binary_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_optional_binary(self._call_optional_binary_method_handler)
         if self._call_three_binaries_method_handler is not None:
             if binding:
-                binding_cb = self._call_three_binaries_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_three_binaries(binding_cb)
+                new_server.handle_call_three_binaries(self._call_three_binaries_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_three_binaries(self._call_three_binaries_method_handler)
         if self._call_one_list_of_integers_method_handler is not None:
             if binding:
-                binding_cb = self._call_one_list_of_integers_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_one_list_of_integers(binding_cb)
+                new_server.handle_call_one_list_of_integers(self._call_one_list_of_integers_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_one_list_of_integers(self._call_one_list_of_integers_method_handler)
         if self._call_optional_list_of_floats_method_handler is not None:
             if binding:
-                binding_cb = self._call_optional_list_of_floats_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_optional_list_of_floats(binding_cb)
+                new_server.handle_call_optional_list_of_floats(self._call_optional_list_of_floats_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_optional_list_of_floats(self._call_optional_list_of_floats_method_handler)
         if self._call_two_lists_method_handler is not None:
             if binding:
-                binding_cb = self._call_two_lists_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_call_two_lists(binding_cb)
+                new_server.handle_call_two_lists(self._call_two_lists_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_two_lists(self._call_two_lists_method_handler)
 
-        for callback in self._read_write_integer_property_callbacks:
+        for read_write_integer_callback in self._read_write_integer_property_callbacks:
             if binding:
-                new_server.on_read_write_integer_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_integer_updated(read_write_integer_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_integer_updated(callback)
+                new_server.on_read_write_integer_updated(read_write_integer_callback)
 
-        for callback in self._read_only_integer_property_callbacks:
+        for read_only_integer_callback in self._read_only_integer_property_callbacks:
             if binding:
-                new_server.on_read_only_integer_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_only_integer_updated(read_only_integer_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_only_integer_updated(callback)
+                new_server.on_read_only_integer_updated(read_only_integer_callback)
 
-        for callback in self._read_write_optional_integer_property_callbacks:
+        for read_write_optional_integer_callback in self._read_write_optional_integer_property_callbacks:
             if binding:
-                new_server.on_read_write_optional_integer_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_optional_integer_updated(read_write_optional_integer_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_optional_integer_updated(callback)
+                new_server.on_read_write_optional_integer_updated(read_write_optional_integer_callback)
 
-        for callback in self._read_write_two_integers_property_callbacks:
+        for read_write_two_integers_callback in self._read_write_two_integers_property_callbacks:
             if binding:
-                new_server.on_read_write_two_integers_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_two_integers_updated(read_write_two_integers_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_two_integers_updated(callback)
+                new_server.on_read_write_two_integers_updated(read_write_two_integers_callback)
 
-        for callback in self._read_only_string_property_callbacks:
+        for read_only_string_callback in self._read_only_string_property_callbacks:
             if binding:
-                new_server.on_read_only_string_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_only_string_updated(read_only_string_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_only_string_updated(callback)
+                new_server.on_read_only_string_updated(read_only_string_callback)
 
-        for callback in self._read_write_string_property_callbacks:
+        for read_write_string_callback in self._read_write_string_property_callbacks:
             if binding:
-                new_server.on_read_write_string_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_string_updated(read_write_string_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_string_updated(callback)
+                new_server.on_read_write_string_updated(read_write_string_callback)
 
-        for callback in self._read_write_optional_string_property_callbacks:
+        for read_write_optional_string_callback in self._read_write_optional_string_property_callbacks:
             if binding:
-                new_server.on_read_write_optional_string_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_optional_string_updated(read_write_optional_string_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_optional_string_updated(callback)
+                new_server.on_read_write_optional_string_updated(read_write_optional_string_callback)
 
-        for callback in self._read_write_two_strings_property_callbacks:
+        for read_write_two_strings_callback in self._read_write_two_strings_property_callbacks:
             if binding:
-                new_server.on_read_write_two_strings_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_two_strings_updated(read_write_two_strings_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_two_strings_updated(callback)
+                new_server.on_read_write_two_strings_updated(read_write_two_strings_callback)
 
-        for callback in self._read_write_struct_property_callbacks:
+        for read_write_struct_callback in self._read_write_struct_property_callbacks:
             if binding:
-                new_server.on_read_write_struct_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_struct_updated(read_write_struct_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_struct_updated(callback)
+                new_server.on_read_write_struct_updated(read_write_struct_callback)
 
-        for callback in self._read_write_optional_struct_property_callbacks:
+        for read_write_optional_struct_callback in self._read_write_optional_struct_property_callbacks:
             if binding:
-                new_server.on_read_write_optional_struct_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_optional_struct_updated(read_write_optional_struct_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_optional_struct_updated(callback)
+                new_server.on_read_write_optional_struct_updated(read_write_optional_struct_callback)
 
-        for callback in self._read_write_two_structs_property_callbacks:
+        for read_write_two_structs_callback in self._read_write_two_structs_property_callbacks:
             if binding:
-                new_server.on_read_write_two_structs_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_two_structs_updated(read_write_two_structs_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_two_structs_updated(callback)
+                new_server.on_read_write_two_structs_updated(read_write_two_structs_callback)
 
-        for callback in self._read_only_enum_property_callbacks:
+        for read_only_enum_callback in self._read_only_enum_property_callbacks:
             if binding:
-                new_server.on_read_only_enum_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_only_enum_updated(read_only_enum_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_only_enum_updated(callback)
+                new_server.on_read_only_enum_updated(read_only_enum_callback)
 
-        for callback in self._read_write_enum_property_callbacks:
+        for read_write_enum_callback in self._read_write_enum_property_callbacks:
             if binding:
-                new_server.on_read_write_enum_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_enum_updated(read_write_enum_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_enum_updated(callback)
+                new_server.on_read_write_enum_updated(read_write_enum_callback)
 
-        for callback in self._read_write_optional_enum_property_callbacks:
+        for read_write_optional_enum_callback in self._read_write_optional_enum_property_callbacks:
             if binding:
-                new_server.on_read_write_optional_enum_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_optional_enum_updated(read_write_optional_enum_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_optional_enum_updated(callback)
+                new_server.on_read_write_optional_enum_updated(read_write_optional_enum_callback)
 
-        for callback in self._read_write_two_enums_property_callbacks:
+        for read_write_two_enums_callback in self._read_write_two_enums_property_callbacks:
             if binding:
-                new_server.on_read_write_two_enums_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_two_enums_updated(read_write_two_enums_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_two_enums_updated(callback)
+                new_server.on_read_write_two_enums_updated(read_write_two_enums_callback)
 
-        for callback in self._read_write_datetime_property_callbacks:
+        for read_write_datetime_callback in self._read_write_datetime_property_callbacks:
             if binding:
-                new_server.on_read_write_datetime_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_datetime_updated(read_write_datetime_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_datetime_updated(callback)
+                new_server.on_read_write_datetime_updated(read_write_datetime_callback)
 
-        for callback in self._read_write_optional_datetime_property_callbacks:
+        for read_write_optional_datetime_callback in self._read_write_optional_datetime_property_callbacks:
             if binding:
-                new_server.on_read_write_optional_datetime_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_optional_datetime_updated(read_write_optional_datetime_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_optional_datetime_updated(callback)
+                new_server.on_read_write_optional_datetime_updated(read_write_optional_datetime_callback)
 
-        for callback in self._read_write_two_datetimes_property_callbacks:
+        for read_write_two_datetimes_callback in self._read_write_two_datetimes_property_callbacks:
             if binding:
-                new_server.on_read_write_two_datetimes_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_two_datetimes_updated(read_write_two_datetimes_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_two_datetimes_updated(callback)
+                new_server.on_read_write_two_datetimes_updated(read_write_two_datetimes_callback)
 
-        for callback in self._read_write_duration_property_callbacks:
+        for read_write_duration_callback in self._read_write_duration_property_callbacks:
             if binding:
-                new_server.on_read_write_duration_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_duration_updated(read_write_duration_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_duration_updated(callback)
+                new_server.on_read_write_duration_updated(read_write_duration_callback)
 
-        for callback in self._read_write_optional_duration_property_callbacks:
+        for read_write_optional_duration_callback in self._read_write_optional_duration_property_callbacks:
             if binding:
-                new_server.on_read_write_optional_duration_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_optional_duration_updated(read_write_optional_duration_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_optional_duration_updated(callback)
+                new_server.on_read_write_optional_duration_updated(read_write_optional_duration_callback)
 
-        for callback in self._read_write_two_durations_property_callbacks:
+        for read_write_two_durations_callback in self._read_write_two_durations_property_callbacks:
             if binding:
-                new_server.on_read_write_two_durations_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_two_durations_updated(read_write_two_durations_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_two_durations_updated(callback)
+                new_server.on_read_write_two_durations_updated(read_write_two_durations_callback)
 
-        for callback in self._read_write_binary_property_callbacks:
+        for read_write_binary_callback in self._read_write_binary_property_callbacks:
             if binding:
-                new_server.on_read_write_binary_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_binary_updated(read_write_binary_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_binary_updated(callback)
+                new_server.on_read_write_binary_updated(read_write_binary_callback)
 
-        for callback in self._read_write_optional_binary_property_callbacks:
+        for read_write_optional_binary_callback in self._read_write_optional_binary_property_callbacks:
             if binding:
-                new_server.on_read_write_optional_binary_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_optional_binary_updated(read_write_optional_binary_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_optional_binary_updated(callback)
+                new_server.on_read_write_optional_binary_updated(read_write_optional_binary_callback)
 
-        for callback in self._read_write_two_binaries_property_callbacks:
+        for read_write_two_binaries_callback in self._read_write_two_binaries_property_callbacks:
             if binding:
-                new_server.on_read_write_two_binaries_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_two_binaries_updated(read_write_two_binaries_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_two_binaries_updated(callback)
+                new_server.on_read_write_two_binaries_updated(read_write_two_binaries_callback)
 
-        for callback in self._read_write_list_of_strings_property_callbacks:
+        for read_write_list_of_strings_callback in self._read_write_list_of_strings_property_callbacks:
             if binding:
-                new_server.on_read_write_list_of_strings_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_list_of_strings_updated(read_write_list_of_strings_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_list_of_strings_updated(callback)
+                new_server.on_read_write_list_of_strings_updated(read_write_list_of_strings_callback)
 
-        for callback in self._read_write_lists_property_callbacks:
+        for read_write_lists_callback in self._read_write_lists_property_callbacks:
             if binding:
-                new_server.on_read_write_lists_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_read_write_lists_updated(read_write_lists_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_read_write_lists_updated(callback)
+                new_server.on_read_write_lists_updated(read_write_lists_callback)
 
         return new_server

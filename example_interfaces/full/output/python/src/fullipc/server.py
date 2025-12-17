@@ -865,8 +865,8 @@ class FullServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_favorite_foods.callbacks:
-                    callback(self._property_favorite_foods.get_value())
+                for favorite_foods_callback in self._property_favorite_foods.callbacks:
+                    favorite_foods_callback(self._property_favorite_foods.get_value())
 
     def set_favorite_foods(self, drink: str, slices_of_pizza: int, breakfast: Optional[str]):
         """This method sets (publishes) a new value for the 'favorite_foods' property."""
@@ -925,8 +925,8 @@ class FullServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_lunch_menu.callbacks:
-                    callback(self._property_lunch_menu.get_value())
+                for lunch_menu_callback in self._property_lunch_menu.callbacks:
+                    lunch_menu_callback(self._property_lunch_menu.get_value())
 
     def set_lunch_menu(self, monday: Lunch, tuesday: Lunch):
         """This method sets (publishes) a new value for the 'lunch_menu' property."""
@@ -1059,8 +1059,8 @@ class FullServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_last_birthdays.callbacks:
-                    callback(self._property_last_birthdays.get_value())
+                for last_birthdays_callback in self._property_last_birthdays.callbacks:
+                    last_birthdays_callback(self._property_last_birthdays.get_value())
 
     def set_last_birthdays(self, mom: datetime, dad: datetime, sister: Optional[datetime], brothers_age: Optional[int]):
         """This method sets (publishes) a new value for the 'last_birthdays' property."""
@@ -1225,63 +1225,59 @@ class FullServerBuilder:
 
         if self._add_numbers_method_handler is not None:
             if binding:
-                binding_cb = self._add_numbers_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_add_numbers(binding_cb)
+                new_server.handle_add_numbers(self._add_numbers_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_add_numbers(self._add_numbers_method_handler)
         if self._do_something_method_handler is not None:
             if binding:
-                binding_cb = self._do_something_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_do_something(binding_cb)
+                new_server.handle_do_something(self._do_something_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_do_something(self._do_something_method_handler)
         if self._what_time_is_it_method_handler is not None:
             if binding:
-                binding_cb = self._what_time_is_it_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_what_time_is_it(binding_cb)
+                new_server.handle_what_time_is_it(self._what_time_is_it_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_what_time_is_it(self._what_time_is_it_method_handler)
         if self._hold_temperature_method_handler is not None:
             if binding:
-                binding_cb = self._hold_temperature_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_hold_temperature(binding_cb)
+                new_server.handle_hold_temperature(self._hold_temperature_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_hold_temperature(self._hold_temperature_method_handler)
 
-        for callback in self._favorite_number_property_callbacks:
+        for favorite_number_callback in self._favorite_number_property_callbacks:
             if binding:
-                new_server.on_favorite_number_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_favorite_number_updated(favorite_number_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_favorite_number_updated(callback)
+                new_server.on_favorite_number_updated(favorite_number_callback)
 
-        for callback in self._favorite_foods_property_callbacks:
+        for favorite_foods_callback in self._favorite_foods_property_callbacks:
             if binding:
-                new_server.on_favorite_foods_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_favorite_foods_updated(favorite_foods_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_favorite_foods_updated(callback)
+                new_server.on_favorite_foods_updated(favorite_foods_callback)
 
-        for callback in self._lunch_menu_property_callbacks:
+        for lunch_menu_callback in self._lunch_menu_property_callbacks:
             if binding:
-                new_server.on_lunch_menu_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_lunch_menu_updated(lunch_menu_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_lunch_menu_updated(callback)
+                new_server.on_lunch_menu_updated(lunch_menu_callback)
 
-        for callback in self._family_name_property_callbacks:
+        for family_name_callback in self._family_name_property_callbacks:
             if binding:
-                new_server.on_family_name_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_family_name_updated(family_name_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_family_name_updated(callback)
+                new_server.on_family_name_updated(family_name_callback)
 
-        for callback in self._last_breakfast_time_property_callbacks:
+        for last_breakfast_time_callback in self._last_breakfast_time_property_callbacks:
             if binding:
-                new_server.on_last_breakfast_time_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_last_breakfast_time_updated(last_breakfast_time_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_last_breakfast_time_updated(callback)
+                new_server.on_last_breakfast_time_updated(last_breakfast_time_callback)
 
-        for callback in self._last_birthdays_property_callbacks:
+        for last_birthdays_callback in self._last_birthdays_property_callbacks:
             if binding:
-                new_server.on_last_birthdays_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_last_birthdays_updated(last_birthdays_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_last_birthdays_updated(callback)
+                new_server.on_last_birthdays_updated(last_birthdays_callback)
 
         return new_server

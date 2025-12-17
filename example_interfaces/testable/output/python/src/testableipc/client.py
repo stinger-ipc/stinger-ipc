@@ -1364,7 +1364,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteIntegerProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_integer_mutex:
                 self._property_read_write_integer = prop_obj.value
@@ -1382,7 +1382,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadOnlyIntegerProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_integer_mutex:
                 self._property_read_only_integer = prop_obj.value
@@ -1400,7 +1400,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_integer_mutex:
                 self._property_read_write_optional_integer = prop_obj.value
@@ -1418,7 +1418,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_integers_mutex:
                 self._property_read_write_two_integers = prop_obj
@@ -1436,7 +1436,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadOnlyStringProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_string_mutex:
                 self._property_read_only_string = prop_obj.value
@@ -1454,7 +1454,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteStringProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_string_mutex:
                 self._property_read_write_string = prop_obj.value
@@ -1472,7 +1472,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteOptionalStringProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_string_mutex:
                 self._property_read_write_optional_string = prop_obj.value
@@ -1490,7 +1490,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteTwoStringsProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_strings_mutex:
                 self._property_read_write_two_strings = prop_obj
@@ -1508,7 +1508,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteStructProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_struct_mutex:
                 self._property_read_write_struct = prop_obj.value
@@ -1526,7 +1526,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteOptionalStructProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_struct_mutex:
                 self._property_read_write_optional_struct = prop_obj.value
@@ -1544,7 +1544,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteTwoStructsProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_structs_mutex:
                 self._property_read_write_two_structs = prop_obj
@@ -1562,7 +1562,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadOnlyEnumProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_only_enum_mutex:
                 self._property_read_only_enum = prop_obj.value
@@ -1580,7 +1580,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteEnumProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_enum_mutex:
                 self._property_read_write_enum = prop_obj.value
@@ -1598,7 +1598,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_enum_mutex:
                 self._property_read_write_optional_enum = prop_obj.value
@@ -1616,7 +1616,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_enums_mutex:
                 self._property_read_write_two_enums = prop_obj
@@ -1634,7 +1634,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteDatetimeProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_datetime_mutex:
                 self._property_read_write_datetime = prop_obj.value
@@ -1652,7 +1652,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_datetime_mutex:
                 self._property_read_write_optional_datetime = prop_obj.value
@@ -1670,7 +1670,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_datetimes_mutex:
                 self._property_read_write_two_datetimes = prop_obj
@@ -1688,7 +1688,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteDurationProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_duration_mutex:
                 self._property_read_write_duration = prop_obj.value
@@ -1706,7 +1706,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_duration_mutex:
                 self._property_read_write_optional_duration = prop_obj.value
@@ -1724,7 +1724,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_durations_mutex:
                 self._property_read_write_two_durations = prop_obj
@@ -1742,7 +1742,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteBinaryProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_binary_mutex:
                 self._property_read_write_binary = prop_obj.value
@@ -1760,7 +1760,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_optional_binary_mutex:
                 self._property_read_write_optional_binary = prop_obj.value
@@ -1778,7 +1778,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_two_binaries_mutex:
                 self._property_read_write_two_binaries = prop_obj
@@ -1796,7 +1796,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteListOfStringsProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_list_of_strings_mutex:
                 self._property_read_write_list_of_strings = prop_obj.value
@@ -1814,7 +1814,7 @@ class TestableClient:
             return
         try:
             prop_obj = ReadWriteListsProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_read_write_lists_mutex:
                 self._property_read_write_lists = prop_obj

@@ -192,7 +192,7 @@ class {{stinger.python.client_class_name}}:
             return
         try:
             prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_{{prop_name|snake_case}}_mutex:
                 self._property_{{prop_name|snake_case}} = prop_obj{% if prop_spec.arg_list | length == 1 %}.{{prop_spec.arg_list[0].name|snake_case}}{% endif %}

@@ -160,7 +160,7 @@ class SimpleClient:
             return
         try:
             prop_obj = SchoolProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_school_mutex:
                 self._property_school = prop_obj.name

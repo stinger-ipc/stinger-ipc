@@ -337,7 +337,7 @@ class FullClient:
             return
         try:
             prop_obj = FavoriteNumberProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_favorite_number_mutex:
                 self._property_favorite_number = prop_obj.number
@@ -355,7 +355,7 @@ class FullClient:
             return
         try:
             prop_obj = FavoriteFoodsProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_favorite_foods_mutex:
                 self._property_favorite_foods = prop_obj
@@ -373,7 +373,7 @@ class FullClient:
             return
         try:
             prop_obj = LunchMenuProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_lunch_menu_mutex:
                 self._property_lunch_menu = prop_obj
@@ -391,7 +391,7 @@ class FullClient:
             return
         try:
             prop_obj = FamilyNameProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_family_name_mutex:
                 self._property_family_name = prop_obj.family_name
@@ -409,7 +409,7 @@ class FullClient:
             return
         try:
             prop_obj = LastBreakfastTimeProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_last_breakfast_time_mutex:
                 self._property_last_breakfast_time = prop_obj.timestamp
@@ -427,7 +427,7 @@ class FullClient:
             return
         try:
             prop_obj = LastBirthdaysProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_last_birthdays_mutex:
                 self._property_last_birthdays = prop_obj

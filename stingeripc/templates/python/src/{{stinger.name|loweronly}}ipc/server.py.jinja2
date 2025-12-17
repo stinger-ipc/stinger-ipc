@@ -404,8 +404,8 @@ class {{stinger.python.server_class_name}}:
                     self._conn.publish(state_msg)
             {%if config.properties.stinger_owned_values%}{# only call callbacks if it is a stinger-owned value#}
             if value_updated:
-                for callback in self._property_{{prop_name|snake_case}}.callbacks:
-                    callback(self._property_{{prop_name|snake_case}}.get_value())
+                for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
+                    {{prop_name|snake_case}}_callback(self._property_{{prop_name|snake_case}}.get_value())
             {%endif%}
     {%endif%}
 
@@ -480,17 +480,16 @@ class {{stinger.python.server_class_name}}Builder:
         {%for method_name, method in stinger.methods.items()%}
         if self._{{method_name|snake_case}}_method_handler is not None:
             if binding:
-                binding_cb = self._{{method_name|snake_case}}_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_{{method_name|snake_case}}(binding_cb)
+                new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler)
         {%-endfor%}
         {%for prop_name, prop in stinger.properties.items()%}
-        for callback in self._{{prop_name|snake_case}}_property_callbacks:
+        for {{prop_name|snake_case}}_callback in self._{{prop_name|snake_case}}_property_callbacks:
             if binding:
-                new_server.on_{{prop_name|snake_case}}_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_{{prop_name|snake_case}}_updated({{prop_name|snake_case}}_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_{{prop_name|snake_case}}_updated(callback)
+                new_server.on_{{prop_name|snake_case}}_updated({{prop_name|snake_case}}_callback)
         {%endfor%}
         return new_server
 

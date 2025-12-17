@@ -116,7 +116,7 @@ def initial_property_values():
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -148,7 +148,7 @@ def initial_property_values():
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -175,10 +175,10 @@ def initial_property_values():
             second=Numbers.ONE,
         ),
         read_write_datetime=datetime.now(UTC),
-        read_write_optional_datetime=None,
+        read_write_optional_datetime=datetime.now(UTC),
         read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
             first=datetime.now(UTC),
-            second=datetime.now(UTC),
+            second=None,
         ),
         read_write_duration=timedelta(seconds=3536),
         read_write_optional_duration=None,
@@ -526,7 +526,7 @@ class TestClientMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -590,7 +590,7 @@ class TestClientMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -636,7 +636,7 @@ class TestClientMethods:
         kwargs = {
             "input1": datetime.now(UTC),
             "input2": datetime.now(UTC),
-            "input3": datetime.now(UTC),
+            "input3": None,
         }
         client.call_three_date_times(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_date_times' method call"

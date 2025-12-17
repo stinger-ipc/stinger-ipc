@@ -345,15 +345,14 @@ class SimpleServerBuilder:
 
         if self._trade_numbers_method_handler is not None:
             if binding:
-                binding_cb = self._trade_numbers_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_trade_numbers(binding_cb)
+                new_server.handle_trade_numbers(self._trade_numbers_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_trade_numbers(self._trade_numbers_method_handler)
 
-        for callback in self._school_property_callbacks:
+        for school_callback in self._school_property_callbacks:
             if binding:
-                new_server.on_school_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_school_updated(school_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_school_updated(callback)
+                new_server.on_school_updated(school_callback)
 
         return new_server

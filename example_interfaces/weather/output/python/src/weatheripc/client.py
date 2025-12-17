@@ -367,7 +367,7 @@ class WeatherClient:
             return
         try:
             prop_obj = LocationProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_location_mutex:
                 self._property_location = prop_obj
@@ -385,7 +385,7 @@ class WeatherClient:
             return
         try:
             prop_obj = CurrentTemperatureProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_temperature_mutex:
                 self._property_current_temperature = prop_obj.temperature_f
@@ -403,7 +403,7 @@ class WeatherClient:
             return
         try:
             prop_obj = CurrentConditionProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_condition_mutex:
                 self._property_current_condition = prop_obj
@@ -421,7 +421,7 @@ class WeatherClient:
             return
         try:
             prop_obj = DailyForecastProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_daily_forecast_mutex:
                 self._property_daily_forecast = prop_obj
@@ -439,7 +439,7 @@ class WeatherClient:
             return
         try:
             prop_obj = HourlyForecastProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_hourly_forecast_mutex:
                 self._property_hourly_forecast = prop_obj
@@ -457,7 +457,7 @@ class WeatherClient:
             return
         try:
             prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_current_condition_refresh_interval_mutex:
                 self._property_current_condition_refresh_interval = prop_obj.seconds
@@ -475,7 +475,7 @@ class WeatherClient:
             return
         try:
             prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_hourly_forecast_refresh_interval_mutex:
                 self._property_hourly_forecast_refresh_interval = prop_obj.seconds
@@ -493,7 +493,7 @@ class WeatherClient:
             return
         try:
             prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(message.payload)
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_daily_forecast_refresh_interval_mutex:
                 self._property_daily_forecast_refresh_interval = prop_obj.seconds

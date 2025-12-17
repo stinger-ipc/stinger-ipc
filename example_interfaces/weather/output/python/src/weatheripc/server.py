@@ -745,8 +745,8 @@ class WeatherServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_location.callbacks:
-                    callback(self._property_location.get_value())
+                for location_callback in self._property_location.callbacks:
+                    location_callback(self._property_location.get_value())
 
     def set_location(self, latitude: float, longitude: float):
         """This method sets (publishes) a new value for the 'location' property."""
@@ -840,8 +840,8 @@ class WeatherServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_current_condition.callbacks:
-                    callback(self._property_current_condition.get_value())
+                for current_condition_callback in self._property_current_condition.callbacks:
+                    current_condition_callback(self._property_current_condition.get_value())
 
     def set_current_condition(self, condition: WeatherCondition, description: str):
         """This method sets (publishes) a new value for the 'current_condition' property."""
@@ -896,8 +896,8 @@ class WeatherServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_daily_forecast.callbacks:
-                    callback(self._property_daily_forecast.get_value())
+                for daily_forecast_callback in self._property_daily_forecast.callbacks:
+                    daily_forecast_callback(self._property_daily_forecast.get_value())
 
     def set_daily_forecast(self, monday: ForecastForDay, tuesday: ForecastForDay, wednesday: ForecastForDay):
         """This method sets (publishes) a new value for the 'daily_forecast' property."""
@@ -956,8 +956,8 @@ class WeatherServer:
                     self._conn.publish(state_msg)
 
             if value_updated:
-                for callback in self._property_hourly_forecast.callbacks:
-                    callback(self._property_hourly_forecast.get_value())
+                for hourly_forecast_callback in self._property_hourly_forecast.callbacks:
+                    hourly_forecast_callback(self._property_hourly_forecast.get_value())
 
     def set_hourly_forecast(self, hour_0: ForecastForHour, hour_1: ForecastForHour, hour_2: ForecastForHour, hour_3: ForecastForHour):
         """This method sets (publishes) a new value for the 'hourly_forecast' property."""
@@ -1255,69 +1255,66 @@ class WeatherServerBuilder:
 
         if self._refresh_daily_forecast_method_handler is not None:
             if binding:
-                binding_cb = self._refresh_daily_forecast_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_refresh_daily_forecast(binding_cb)
+                new_server.handle_refresh_daily_forecast(self._refresh_daily_forecast_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_refresh_daily_forecast(self._refresh_daily_forecast_method_handler)
         if self._refresh_hourly_forecast_method_handler is not None:
             if binding:
-                binding_cb = self._refresh_hourly_forecast_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_refresh_hourly_forecast(binding_cb)
+                new_server.handle_refresh_hourly_forecast(self._refresh_hourly_forecast_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_refresh_hourly_forecast(self._refresh_hourly_forecast_method_handler)
         if self._refresh_current_conditions_method_handler is not None:
             if binding:
-                binding_cb = self._refresh_current_conditions_method_handler.__get__(binding, binding.__class__)
-                new_server.handle_refresh_current_conditions(binding_cb)
+                new_server.handle_refresh_current_conditions(self._refresh_current_conditions_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_refresh_current_conditions(self._refresh_current_conditions_method_handler)
 
-        for callback in self._location_property_callbacks:
+        for location_callback in self._location_property_callbacks:
             if binding:
-                new_server.on_location_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_location_updated(location_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_location_updated(callback)
+                new_server.on_location_updated(location_callback)
 
-        for callback in self._current_temperature_property_callbacks:
+        for current_temperature_callback in self._current_temperature_property_callbacks:
             if binding:
-                new_server.on_current_temperature_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_current_temperature_updated(current_temperature_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_current_temperature_updated(callback)
+                new_server.on_current_temperature_updated(current_temperature_callback)
 
-        for callback in self._current_condition_property_callbacks:
+        for current_condition_callback in self._current_condition_property_callbacks:
             if binding:
-                new_server.on_current_condition_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_current_condition_updated(current_condition_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_current_condition_updated(callback)
+                new_server.on_current_condition_updated(current_condition_callback)
 
-        for callback in self._daily_forecast_property_callbacks:
+        for daily_forecast_callback in self._daily_forecast_property_callbacks:
             if binding:
-                new_server.on_daily_forecast_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_daily_forecast_updated(daily_forecast_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_daily_forecast_updated(callback)
+                new_server.on_daily_forecast_updated(daily_forecast_callback)
 
-        for callback in self._hourly_forecast_property_callbacks:
+        for hourly_forecast_callback in self._hourly_forecast_property_callbacks:
             if binding:
-                new_server.on_hourly_forecast_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_hourly_forecast_updated(hourly_forecast_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_hourly_forecast_updated(callback)
+                new_server.on_hourly_forecast_updated(hourly_forecast_callback)
 
-        for callback in self._current_condition_refresh_interval_property_callbacks:
+        for current_condition_refresh_interval_callback in self._current_condition_refresh_interval_property_callbacks:
             if binding:
-                new_server.on_current_condition_refresh_interval_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_current_condition_refresh_interval_updated(current_condition_refresh_interval_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_current_condition_refresh_interval_updated(callback)
+                new_server.on_current_condition_refresh_interval_updated(current_condition_refresh_interval_callback)
 
-        for callback in self._hourly_forecast_refresh_interval_property_callbacks:
+        for hourly_forecast_refresh_interval_callback in self._hourly_forecast_refresh_interval_property_callbacks:
             if binding:
-                new_server.on_hourly_forecast_refresh_interval_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_hourly_forecast_refresh_interval_updated(hourly_forecast_refresh_interval_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_hourly_forecast_refresh_interval_updated(callback)
+                new_server.on_hourly_forecast_refresh_interval_updated(hourly_forecast_refresh_interval_callback)
 
-        for callback in self._daily_forecast_refresh_interval_property_callbacks:
+        for daily_forecast_refresh_interval_callback in self._daily_forecast_refresh_interval_property_callbacks:
             if binding:
-                new_server.on_daily_forecast_refresh_interval_updated(callback.__get__(binding, binding.__class__))
+                new_server.on_daily_forecast_refresh_interval_updated(daily_forecast_refresh_interval_callback.__get__(binding, binding.__class__))
             else:
-                new_server.on_daily_forecast_refresh_interval_updated(callback)
+                new_server.on_daily_forecast_refresh_interval_updated(daily_forecast_refresh_interval_callback)
 
         return new_server
