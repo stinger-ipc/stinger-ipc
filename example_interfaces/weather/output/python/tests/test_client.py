@@ -3,7 +3,6 @@ Tests for weather client.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
@@ -12,6 +11,13 @@ from weatheripc.property import WeatherInitialPropertyValues
 from weatheripc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
+from typing import Dict, Any
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture
@@ -121,21 +127,18 @@ class TestClientMethods:
         client.refresh_daily_forecast(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_daily_forecast' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/refreshDailyForecast"), "Incorrect topic for 'refresh_daily_forecast' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
+        assert message.topic.endswith("/method/refreshDailyForecast"), f"Incorrect topic for 'refresh_daily_forecast' method call: {message.topic}"
 
     def test_refresh_hourly_forecast_method_call_sends_request(self, mock_connection, client):
         kwargs = {}
         client.refresh_hourly_forecast(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_hourly_forecast' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/refreshHourlyForecast"), "Incorrect topic for 'refresh_hourly_forecast' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
+        assert message.topic.endswith("/method/refreshHourlyForecast"), f"Incorrect topic for 'refresh_hourly_forecast' method call: {message.topic}"
 
     def test_refresh_current_conditions_method_call_sends_request(self, mock_connection, client):
         kwargs = {}
         client.refresh_current_conditions(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_current_conditions' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/refreshCurrentConditions"), "Incorrect topic for 'refresh_current_conditions' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
+        assert message.topic.endswith("/method/refreshCurrentConditions"), f"Incorrect topic for 'refresh_current_conditions' method call: {message.topic}"

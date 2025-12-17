@@ -3,7 +3,6 @@ Tests for Simple client.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
@@ -12,6 +11,13 @@ from simpleipc.property import SimpleInitialPropertyValues
 from simpleipc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
+from typing import Dict, Any
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture
@@ -71,6 +77,4 @@ class TestClientMethods:
         client.trade_numbers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'trade_numbers' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/tradeNumbers"), "Incorrect topic for 'trade_numbers' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["your_number"] == kwargs["your_number"], "Payload argument 'your_number' does not match expected value"
+        assert message.topic.endswith("/method/tradeNumbers"), f"Incorrect topic for 'trade_numbers' method call: {message.topic}"

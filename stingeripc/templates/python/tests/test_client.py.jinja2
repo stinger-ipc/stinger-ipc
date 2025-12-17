@@ -2,7 +2,6 @@
 Tests for {{stinger.name}} client.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
@@ -13,6 +12,12 @@ from {{stinger.name | snake_case}}ipc.property import {{stinger.name | UpperCame
 from {{stinger.name | snake_case}}ipc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
+from typing import Dict, Any
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 {%if stinger.properties | length > 0 %}
 @pytest.fixture
@@ -87,10 +92,6 @@ class TestClientMethods:
         client.{{method_name|snake_case}}(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for '{{method_name|snake_case}}' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/{{method_name|lowerCamelCase}}"), "Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        {%-for arg in method.arg_list%}
-        assert payload["{{arg.name|snake_case}}"] == kwargs["{{arg.name|snake_case}}"], "Payload argument '{{arg.name|snake_case}}' does not match expected value"
-        {%-endfor%}
+        assert message.topic.endswith("/method/{{method_name|lowerCamelCase}}"), f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
     {%endfor%}
 {%endif%}

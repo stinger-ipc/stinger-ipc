@@ -22,8 +22,8 @@ logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from pyqttier.interface import IBrokerConnection
-from pyqttier.message import Message
-from .method_codes import *
+from stinger_python_utils.message_creator import MessageCreator
+from stinger_python_utils.return_codes import *
 from .interface_types import *
 
 
@@ -42,7 +42,6 @@ class PropertyControls(Generic[T]):
     value: T
     mutex = threading.RLock()
     version: int = -1
-    subscription_id: Optional[int] = None
     callbacks: List[Callable[[T], None]] = field(default_factory=list)
 
     def get_value(self) -> T:
@@ -53,12 +52,6 @@ class PropertyControls(Generic[T]):
         with self.mutex:
             self.value = new_value
             return self.value
-
-
-@dataclass
-class MethodControls:
-    subscription_id: Optional[int] = None
-    callback: Optional[Callable] = None
 
 
 class FullServer:
@@ -75,39 +68,35 @@ class FullServer:
         self._conn.add_message_callback(self._receive_message)
 
         self._property_favorite_number: PropertyControls[int] = PropertyControls(value=initial_property_values.favorite_number, version=initial_property_values.favorite_number_version)
-        self._property_favorite_number.subscription_id = self._conn.subscribe(
-            "full/{}/property/favoriteNumber/setValue".format(self._instance_id), self._receive_favorite_number_update_request_message
-        )
+        self._conn.subscribe("full/{}/property/favoriteNumber/setValue".format(self._instance_id), self._receive_favorite_number_update_request_message)
 
         self._property_favorite_foods: PropertyControls[FavoriteFoodsProperty] = PropertyControls(value=initial_property_values.favorite_foods, version=initial_property_values.favorite_foods_version)
-        self._property_favorite_foods.subscription_id = self._conn.subscribe("full/{}/property/favoriteFoods/setValue".format(self._instance_id), self._receive_favorite_foods_update_request_message)
+        self._conn.subscribe("full/{}/property/favoriteFoods/setValue".format(self._instance_id), self._receive_favorite_foods_update_request_message)
 
         self._property_lunch_menu: PropertyControls[LunchMenuProperty] = PropertyControls(value=initial_property_values.lunch_menu, version=initial_property_values.lunch_menu_version)
 
         self._property_family_name: PropertyControls[str] = PropertyControls(value=initial_property_values.family_name, version=initial_property_values.family_name_version)
-        self._property_family_name.subscription_id = self._conn.subscribe("full/{}/property/familyName/setValue".format(self._instance_id), self._receive_family_name_update_request_message)
+        self._conn.subscribe("full/{}/property/familyName/setValue".format(self._instance_id), self._receive_family_name_update_request_message)
 
         self._property_last_breakfast_time: PropertyControls[datetime] = PropertyControls(
             value=initial_property_values.last_breakfast_time, version=initial_property_values.last_breakfast_time_version
         )
-        self._property_last_breakfast_time.subscription_id = self._conn.subscribe(
-            "full/{}/property/lastBreakfastTime/setValue".format(self._instance_id), self._receive_last_breakfast_time_update_request_message
-        )
+        self._conn.subscribe("full/{}/property/lastBreakfastTime/setValue".format(self._instance_id), self._receive_last_breakfast_time_update_request_message)
 
         self._property_last_birthdays: PropertyControls[LastBirthdaysProperty] = PropertyControls(value=initial_property_values.last_birthdays, version=initial_property_values.last_birthdays_version)
-        self._property_last_birthdays.subscription_id = self._conn.subscribe("full/{}/property/lastBirthdays/setValue".format(self._instance_id), self._receive_last_birthdays_update_request_message)
+        self._conn.subscribe("full/{}/property/lastBirthdays/setValue".format(self._instance_id), self._receive_last_birthdays_update_request_message)
 
-        self._method_add_numbers = MethodControls()
-        self._method_add_numbers.subscription_id = self._conn.subscribe("full/{}/method/addNumbers".format(self._instance_id), self._process_add_numbers_call)
+        self._conn.subscribe("full/{}/method/addNumbers".format(self._instance_id), self._process_add_numbers_call)
+        self._method_add_numbers_handler = None  # type: Optional[Callable[[int, int, Optional[int]], int]]
 
-        self._method_do_something = MethodControls()
-        self._method_do_something.subscription_id = self._conn.subscribe("full/{}/method/doSomething".format(self._instance_id), self._process_do_something_call)
+        self._conn.subscribe("full/{}/method/doSomething".format(self._instance_id), self._process_do_something_call)
+        self._method_do_something_handler = None  # type: Optional[Callable[[str], DoSomethingMethodResponse]]
 
-        self._method_what_time_is_it = MethodControls()
-        self._method_what_time_is_it.subscription_id = self._conn.subscribe("full/{}/method/whatTimeIsIt".format(self._instance_id), self._process_what_time_is_it_call)
+        self._conn.subscribe("full/{}/method/whatTimeIsIt".format(self._instance_id), self._process_what_time_is_it_call)
+        self._method_what_time_is_it_handler = None  # type: Optional[Callable[[None], datetime]]
 
-        self._method_hold_temperature = MethodControls()
-        self._method_hold_temperature.subscription_id = self._conn.subscribe("full/{}/method/holdTemperature".format(self._instance_id), self._process_hold_temperature_call)
+        self._conn.subscribe("full/{}/method/holdTemperature".format(self._instance_id), self._process_hold_temperature_call)
+        self._method_hold_temperature_handler = None  # type: Optional[Callable[[float], bool]]
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
@@ -150,7 +139,7 @@ class FullServer:
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
-        msg = Message.status_message(topic, data, expiry)
+        msg = MessageCreator.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
     def publish_favorite_number_value(self, *_, **__):
@@ -166,7 +155,7 @@ class FullServer:
         with self._property_favorite_number.mutex:
             self._property_favorite_number.version += 1
             favorite_number_prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-            state_msg = Message.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), favorite_number_prop_obj, self._property_favorite_number.version)
+            state_msg = MessageCreator.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), favorite_number_prop_obj, self._property_favorite_number.version)
             self._conn.publish(state_msg)
 
     def publish_favorite_foods_value(self, *_, **__):
@@ -182,7 +171,7 @@ class FullServer:
         with self._property_favorite_foods.mutex:
             self._property_favorite_foods.version += 1
             favorite_foods_prop_obj = self._property_favorite_foods.get_value()
-            state_msg = Message.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), favorite_foods_prop_obj, self._property_favorite_foods.version)
+            state_msg = MessageCreator.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), favorite_foods_prop_obj, self._property_favorite_foods.version)
             self._conn.publish(state_msg)
 
     def publish_lunch_menu_value(self, *_, **__):
@@ -198,7 +187,7 @@ class FullServer:
         with self._property_lunch_menu.mutex:
             self._property_lunch_menu.version += 1
             lunch_menu_prop_obj = self._property_lunch_menu.get_value()
-            state_msg = Message.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), lunch_menu_prop_obj, self._property_lunch_menu.version)
+            state_msg = MessageCreator.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), lunch_menu_prop_obj, self._property_lunch_menu.version)
             self._conn.publish(state_msg)
 
     def publish_family_name_value(self, *_, **__):
@@ -214,7 +203,7 @@ class FullServer:
         with self._property_family_name.mutex:
             self._property_family_name.version += 1
             family_name_prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-            state_msg = Message.property_state_message("full/{}/property/familyName/value".format(self._instance_id), family_name_prop_obj, self._property_family_name.version)
+            state_msg = MessageCreator.property_state_message("full/{}/property/familyName/value".format(self._instance_id), family_name_prop_obj, self._property_family_name.version)
             self._conn.publish(state_msg)
 
     def publish_last_breakfast_time_value(self, *_, **__):
@@ -230,7 +219,9 @@ class FullServer:
         with self._property_last_breakfast_time.mutex:
             self._property_last_breakfast_time.version += 1
             last_breakfast_time_prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
-            state_msg = Message.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), last_breakfast_time_prop_obj, self._property_last_breakfast_time.version)
+            state_msg = MessageCreator.property_state_message(
+                "full/{}/property/lastBreakfastTime/value".format(self._instance_id), last_breakfast_time_prop_obj, self._property_last_breakfast_time.version
+            )
             self._conn.publish(state_msg)
 
     def publish_last_birthdays_value(self, *_, **__):
@@ -246,7 +237,7 @@ class FullServer:
         with self._property_last_birthdays.mutex:
             self._property_last_birthdays.version += 1
             last_birthdays_prop_obj = self._property_last_birthdays.get_value()
-            state_msg = Message.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), last_birthdays_prop_obj, self._property_last_birthdays.version)
+            state_msg = MessageCreator.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), last_birthdays_prop_obj, self._property_last_birthdays.version)
             self._conn.publish(state_msg)
 
     def _publish_all_properties(self):
@@ -282,12 +273,12 @@ class FullServer:
 
                 prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
 
-                state_msg = Message.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
+                state_msg = MessageCreator.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
@@ -301,8 +292,13 @@ class FullServer:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_favorite_number.version), return_code.value, correlation_id, str(e))
+                if isinstance(e, (json.JSONDecodeError, ValidationError)):
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                elif isinstance(e, StingerMethodException):
+                    return_code = e.return_code
+                else:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_favorite_number.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_favorite_foods_update_request_message(self, message: Message):
@@ -329,12 +325,12 @@ class FullServer:
 
                 prop_obj = self._property_favorite_foods.get_value()  # type: FavoriteFoodsProperty
 
-                state_msg = Message.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), prop_obj, self._property_favorite_foods.version)
+                state_msg = MessageCreator.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), prop_obj, self._property_favorite_foods.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
@@ -348,8 +344,13 @@ class FullServer:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = self._property_favorite_foods.get_value()
-                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_favorite_foods.version), return_code.value, correlation_id, str(e))
+                if isinstance(e, (json.JSONDecodeError, ValidationError)):
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                elif isinstance(e, StingerMethodException):
+                    return_code = e.return_code
+                else:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_favorite_foods.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_family_name_update_request_message(self, message: Message):
@@ -376,12 +377,12 @@ class FullServer:
 
                 prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
 
-                state_msg = Message.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
+                state_msg = MessageCreator.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_family_name.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
@@ -395,8 +396,13 @@ class FullServer:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_family_name.version), return_code.value, correlation_id, str(e))
+                if isinstance(e, (json.JSONDecodeError, ValidationError)):
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                elif isinstance(e, StingerMethodException):
+                    return_code = e.return_code
+                else:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_family_name.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_last_breakfast_time_update_request_message(self, message: Message):
@@ -425,12 +431,12 @@ class FullServer:
 
                 prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
 
-                state_msg = Message.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
+                state_msg = MessageCreator.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
@@ -444,8 +450,13 @@ class FullServer:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
-                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_last_breakfast_time.version), return_code.value, correlation_id, str(e))
+                if isinstance(e, (json.JSONDecodeError, ValidationError)):
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                elif isinstance(e, StingerMethodException):
+                    return_code = e.return_code
+                else:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_last_breakfast_time.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_last_birthdays_update_request_message(self, message: Message):
@@ -472,12 +483,12 @@ class FullServer:
 
                 prop_obj = self._property_last_birthdays.get_value()  # type: LastBirthdaysProperty
 
-                state_msg = Message.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), prop_obj, self._property_last_birthdays.version)
+                state_msg = MessageCreator.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), prop_obj, self._property_last_birthdays.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = Message.property_response_message(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
@@ -491,8 +502,13 @@ class FullServer:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
                 prop_obj = self._property_last_birthdays.get_value()
-                return_code = e.return_code if isinstance(e, StingerMethodException) else MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = Message.property_response_message(response_topic, existing_prop_obj, str(self._property_last_birthdays.version), return_code.value, correlation_id, str(e))
+                if isinstance(e, (json.JSONDecodeError, ValidationError)):
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                elif isinstance(e, StingerMethodException):
+                    return_code = e.return_code
+                else:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_last_birthdays.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_message(self, message: Message):
@@ -513,7 +529,7 @@ class FullServer:
             day_of_month=day_of_month,
             day_of_week=day_of_week,
         )
-        sig_msg = Message.signal_message("full/{}/signal/todayIs".format(self._instance_id), payload)
+        sig_msg = MessageCreator.signal_message("full/{}/signal/todayIs".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
     def emit_random_word(self, word: str, time: datetime):
@@ -530,13 +546,13 @@ class FullServer:
             word=word,
             time=time,
         )
-        sig_msg = Message.signal_message("full/{}/signal/randomWord".format(self._instance_id), payload)
+        sig_msg = MessageCreator.signal_message("full/{}/signal/randomWord".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
     def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
         """This is a decorator to decorate a method that will handle the 'addNumbers' method calls."""
-        if self._method_add_numbers.callback is None and handler is not None:
-            self._method_add_numbers.callback = handler
+        if self._method_add_numbers_handler is None and handler is not None:
+            self._method_add_numbers_handler = handler
         else:
             raise Exception("Method handler already set")
 
@@ -544,48 +560,64 @@ class FullServer:
         """This processes a call to the 'addNumbers' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = AddNumbersMethodRequest.model_validate_json(message.payload)
+        try:
+            payload = AddNumbersMethodRequest.model_validate_json(message.payload)
+        except (json.JSONDecodeError, ValidationError) as e:
+            self._logger.warning("Deserialization error while handling addNumbers: %s", e)
+            correlation_id = message.correlation_data
+            response_topic = message.response_topic
+            return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+            debug_msg = str(e)
+            if response_topic:
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            return
         correlation_id = message.correlation_data
         response_topic = message.response_topic
-        self._logger.debug("Correlation data for 'addNumbers' request: %s", correlation_id)
-        if self._method_add_numbers.callback is not None:
+
+        if self._method_add_numbers_handler is not None:
             method_args = [
                 payload.first,
                 payload.second,
                 payload.third,
             ]  # type: List[Any]
 
-            if response_topic is not None:
-                return_json = ""
-                debug_msg = None  # type: Optional[str]
-                try:
-                    return_values = self._method_add_numbers.callback(*method_args)
+            return_json = ""
+            debug_msg = None  # type: Optional[str]
+            try:
+                return_values = self._method_add_numbers_handler(*method_args)
 
-                    if not isinstance(return_values, int):
-                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
-                    ret_obj = AddNumbersMethodResponse(sum=return_values)
-                    return_json = ret_obj.model_dump_json(by_alias=True)
+                if not isinstance(return_values, int):
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
+                ret_obj = AddNumbersMethodResponse(sum=return_values)
+                return_data = ret_obj
 
-                except StingerMethodException as sme:
-                    self._logger.warning("StingerMethodException while handling addNumbers: %s", sme)
-                    return_code = sme.return_code
-                    debug_msg = str(sme)
-                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                    self._conn.publish(err_msg)
-                except Exception as e:
-                    self._logger.exception("Exception while handling addNumbers", exc_info=e)
-                    return_code = MethodReturnCode.SERVER_ERROR
-                    debug_msg = str(e)
-                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                    self._conn.publish(err_msg)
-                else:
-                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
-                    self._conn.publish(msg)
+            except (json.JSONDecodeError, ValidationError) as e:
+                self._logger.warning("Deserialization error while handling addNumbers: %s", e)
+                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                debug_msg = str(e)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            except StingerMethodException as sme:
+                self._logger.warning("StingerMethodException while handling addNumbers: %s", sme)
+                return_code = sme.return_code
+                debug_msg = str(sme)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            except Exception as e:
+                self._logger.exception("Exception while handling addNumbers", exc_info=e)
+                return_code = MethodReturnCode.SERVER_ERROR
+                debug_msg = str(e)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            else:
+                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(msg)
 
     def handle_do_something(self, handler: Callable[[str], DoSomethingMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'doSomething' method calls."""
-        if self._method_do_something.callback is None and handler is not None:
-            self._method_do_something.callback = handler
+        if self._method_do_something_handler is None and handler is not None:
+            self._method_do_something_handler = handler
         else:
             raise Exception("Method handler already set")
 
@@ -593,45 +625,61 @@ class FullServer:
         """This processes a call to the 'doSomething' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = DoSomethingMethodRequest.model_validate_json(message.payload)
+        try:
+            payload = DoSomethingMethodRequest.model_validate_json(message.payload)
+        except (json.JSONDecodeError, ValidationError) as e:
+            self._logger.warning("Deserialization error while handling doSomething: %s", e)
+            correlation_id = message.correlation_data
+            response_topic = message.response_topic
+            return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+            debug_msg = str(e)
+            if response_topic:
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            return
         correlation_id = message.correlation_data
         response_topic = message.response_topic
-        self._logger.debug("Correlation data for 'doSomething' request: %s", correlation_id)
-        if self._method_do_something.callback is not None:
+
+        if self._method_do_something_handler is not None:
             method_args = [
                 payload.task_to_do,
             ]  # type: List[Any]
 
-            if response_topic is not None:
-                return_json = ""
-                debug_msg = None  # type: Optional[str]
-                try:
-                    return_values = self._method_do_something.callback(*method_args)
+            return_json = ""
+            debug_msg = None  # type: Optional[str]
+            try:
+                return_values = self._method_do_something_handler(*method_args)
 
-                    if not isinstance(return_values, DoSomethingMethodResponse):
-                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type DoSomethingMethodResponse, but was {type(return_values)}")
-                    return_json = return_values.model_dump_json(by_alias=True)
+                if not isinstance(return_values, DoSomethingMethodResponse):
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type DoSomethingMethodResponse, but was {type(return_values)}")
+                return_data = return_values
 
-                except StingerMethodException as sme:
-                    self._logger.warning("StingerMethodException while handling doSomething: %s", sme)
-                    return_code = sme.return_code
-                    debug_msg = str(sme)
-                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                    self._conn.publish(err_msg)
-                except Exception as e:
-                    self._logger.exception("Exception while handling doSomething", exc_info=e)
-                    return_code = MethodReturnCode.SERVER_ERROR
-                    debug_msg = str(e)
-                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                    self._conn.publish(err_msg)
-                else:
-                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
-                    self._conn.publish(msg)
+            except (json.JSONDecodeError, ValidationError) as e:
+                self._logger.warning("Deserialization error while handling doSomething: %s", e)
+                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                debug_msg = str(e)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            except StingerMethodException as sme:
+                self._logger.warning("StingerMethodException while handling doSomething: %s", sme)
+                return_code = sme.return_code
+                debug_msg = str(sme)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            except Exception as e:
+                self._logger.exception("Exception while handling doSomething", exc_info=e)
+                return_code = MethodReturnCode.SERVER_ERROR
+                debug_msg = str(e)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            else:
+                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(msg)
 
     def handle_what_time_is_it(self, handler: Callable[[None], datetime]):
         """This is a decorator to decorate a method that will handle the 'what_time_is_it' method calls."""
-        if self._method_what_time_is_it.callback is None and handler is not None:
-            self._method_what_time_is_it.callback = handler
+        if self._method_what_time_is_it_handler is None and handler is not None:
+            self._method_what_time_is_it_handler = handler
         else:
             raise Exception("Method handler already set")
 
@@ -639,44 +687,60 @@ class FullServer:
         """This processes a call to the 'what_time_is_it' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = WhatTimeIsItMethodRequest.model_validate_json(message.payload)
+        try:
+            payload = WhatTimeIsItMethodRequest.model_validate_json(message.payload)
+        except (json.JSONDecodeError, ValidationError) as e:
+            self._logger.warning("Deserialization error while handling what_time_is_it: %s", e)
+            correlation_id = message.correlation_data
+            response_topic = message.response_topic
+            return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+            debug_msg = str(e)
+            if response_topic:
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            return
         correlation_id = message.correlation_data
         response_topic = message.response_topic
-        self._logger.debug("Correlation data for 'what_time_is_it' request: %s", correlation_id)
-        if self._method_what_time_is_it.callback is not None:
+
+        if self._method_what_time_is_it_handler is not None:
             method_args = []  # type: List[Any]
 
-            if response_topic is not None:
-                return_json = ""
-                debug_msg = None  # type: Optional[str]
-                try:
-                    return_values = self._method_what_time_is_it.callback(*method_args)
+            return_json = ""
+            debug_msg = None  # type: Optional[str]
+            try:
+                return_values = self._method_what_time_is_it_handler(*method_args)
 
-                    if not isinstance(return_values, datetime):
-                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime, but was {type(return_values)}")
-                    ret_obj = WhatTimeIsItMethodResponse(timestamp=return_values)
-                    return_json = ret_obj.model_dump_json(by_alias=True)
+                if not isinstance(return_values, datetime):
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime, but was {type(return_values)}")
+                ret_obj = WhatTimeIsItMethodResponse(timestamp=return_values)
+                return_data = ret_obj
 
-                except StingerMethodException as sme:
-                    self._logger.warning("StingerMethodException while handling what_time_is_it: %s", sme)
-                    return_code = sme.return_code
-                    debug_msg = str(sme)
-                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                    self._conn.publish(err_msg)
-                except Exception as e:
-                    self._logger.exception("Exception while handling what_time_is_it", exc_info=e)
-                    return_code = MethodReturnCode.SERVER_ERROR
-                    debug_msg = str(e)
-                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                    self._conn.publish(err_msg)
-                else:
-                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
-                    self._conn.publish(msg)
+            except (json.JSONDecodeError, ValidationError) as e:
+                self._logger.warning("Deserialization error while handling what_time_is_it: %s", e)
+                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                debug_msg = str(e)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            except StingerMethodException as sme:
+                self._logger.warning("StingerMethodException while handling what_time_is_it: %s", sme)
+                return_code = sme.return_code
+                debug_msg = str(sme)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            except Exception as e:
+                self._logger.exception("Exception while handling what_time_is_it", exc_info=e)
+                return_code = MethodReturnCode.SERVER_ERROR
+                debug_msg = str(e)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            else:
+                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(msg)
 
     def handle_hold_temperature(self, handler: Callable[[float], bool]):
         """This is a decorator to decorate a method that will handle the 'hold_temperature' method calls."""
-        if self._method_hold_temperature.callback is None and handler is not None:
-            self._method_hold_temperature.callback = handler
+        if self._method_hold_temperature_handler is None and handler is not None:
+            self._method_hold_temperature_handler = handler
         else:
             raise Exception("Method handler already set")
 
@@ -684,41 +748,57 @@ class FullServer:
         """This processes a call to the 'hold_temperature' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
-        payload = HoldTemperatureMethodRequest.model_validate_json(message.payload)
+        try:
+            payload = HoldTemperatureMethodRequest.model_validate_json(message.payload)
+        except (json.JSONDecodeError, ValidationError) as e:
+            self._logger.warning("Deserialization error while handling hold_temperature: %s", e)
+            correlation_id = message.correlation_data
+            response_topic = message.response_topic
+            return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+            debug_msg = str(e)
+            if response_topic:
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            return
         correlation_id = message.correlation_data
         response_topic = message.response_topic
-        self._logger.debug("Correlation data for 'hold_temperature' request: %s", correlation_id)
-        if self._method_hold_temperature.callback is not None:
+
+        if self._method_hold_temperature_handler is not None:
             method_args = [
                 payload.temperature_celsius,
             ]  # type: List[Any]
 
-            if response_topic is not None:
-                return_json = ""
-                debug_msg = None  # type: Optional[str]
-                try:
-                    return_values = self._method_hold_temperature.callback(*method_args)
+            return_json = ""
+            debug_msg = None  # type: Optional[str]
+            try:
+                return_values = self._method_hold_temperature_handler(*method_args)
 
-                    if not isinstance(return_values, bool):
-                        raise ServerSerializationErrorStingerMethodException(f"The return value must be of type bool, but was {type(return_values)}")
-                    ret_obj = HoldTemperatureMethodResponse(success=return_values)
-                    return_json = ret_obj.model_dump_json(by_alias=True)
+                if not isinstance(return_values, bool):
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type bool, but was {type(return_values)}")
+                ret_obj = HoldTemperatureMethodResponse(success=return_values)
+                return_data = ret_obj
 
-                except StingerMethodException as sme:
-                    self._logger.warning("StingerMethodException while handling hold_temperature: %s", sme)
-                    return_code = sme.return_code
-                    debug_msg = str(sme)
-                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                    self._conn.publish(err_msg)
-                except Exception as e:
-                    self._logger.exception("Exception while handling hold_temperature", exc_info=e)
-                    return_code = MethodReturnCode.SERVER_ERROR
-                    debug_msg = str(e)
-                    err_msg = Message.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                    self._conn.publish(err_msg)
-                else:
-                    msg = Message.response_message(response_topic, return_json, MethodReturnCode.SUCCESS.value, correlation_id)
-                    self._conn.publish(msg)
+            except (json.JSONDecodeError, ValidationError) as e:
+                self._logger.warning("Deserialization error while handling hold_temperature: %s", e)
+                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                debug_msg = str(e)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            except StingerMethodException as sme:
+                self._logger.warning("StingerMethodException while handling hold_temperature: %s", sme)
+                return_code = sme.return_code
+                debug_msg = str(sme)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            except Exception as e:
+                self._logger.exception("Exception while handling hold_temperature", exc_info=e)
+                return_code = MethodReturnCode.SERVER_ERROR
+                debug_msg = str(e)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                self._conn.publish(err_msg)
+            else:
+                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                self._conn.publish(msg)
 
     @property
     def favorite_number(self) -> Optional[int]:
@@ -738,7 +818,7 @@ class FullServer:
                 self._property_favorite_number.set_value(number)
                 self._property_favorite_number.version += 1
                 prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-                state_msg = Message.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
+                state_msg = MessageCreator.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
                 self._conn.publish(state_msg)
 
         if value_updated:
@@ -780,7 +860,7 @@ class FullServer:
                     value_updated = True
                     self._property_favorite_foods.set_value(value)
                     self._property_favorite_foods.version += 1
-                    state_msg = Message.property_state_message(
+                    state_msg = MessageCreator.property_state_message(
                         "full/{}/property/favoriteFoods/value".format(self._instance_id), self._property_favorite_foods.get_value(), self._property_favorite_foods.version
                     )
                     self._conn.publish(state_msg)
@@ -840,7 +920,9 @@ class FullServer:
                     value_updated = True
                     self._property_lunch_menu.set_value(value)
                     self._property_lunch_menu.version += 1
-                    state_msg = Message.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), self._property_lunch_menu.get_value(), self._property_lunch_menu.version)
+                    state_msg = MessageCreator.property_state_message(
+                        "full/{}/property/lunchMenu/value".format(self._instance_id), self._property_lunch_menu.get_value(), self._property_lunch_menu.version
+                    )
                     self._conn.publish(state_msg)
 
             if value_updated:
@@ -891,7 +973,7 @@ class FullServer:
                 self._property_family_name.set_value(family_name)
                 self._property_family_name.version += 1
                 prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-                state_msg = Message.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
+                state_msg = MessageCreator.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
                 self._conn.publish(state_msg)
 
         if value_updated:
@@ -930,7 +1012,7 @@ class FullServer:
                 self._property_last_breakfast_time.set_value(timestamp)
                 self._property_last_breakfast_time.version += 1
                 prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
-                state_msg = Message.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
+                state_msg = MessageCreator.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
                 self._conn.publish(state_msg)
 
         if value_updated:
@@ -972,7 +1054,7 @@ class FullServer:
                     value_updated = True
                     self._property_last_birthdays.set_value(value)
                     self._property_last_birthdays.version += 1
-                    state_msg = Message.property_state_message(
+                    state_msg = MessageCreator.property_state_message(
                         "full/{}/property/lastBirthdays/value".format(self._instance_id), self._property_last_birthdays.get_value(), self._property_last_birthdays.version
                     )
                     self._conn.publish(state_msg)

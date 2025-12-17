@@ -15,12 +15,12 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
-from pyqttier.message import Message
+from stinger_python_utils.message_creator import MessageCreator
 from pyqttier.interface import IBrokerConnection
 
 import asyncio
 import concurrent.futures as futures
-from .method_codes import *
+from stinger_python_utils.return_codes import *
 from .interface_types import *
 import threading
 
@@ -120,7 +120,7 @@ class FullClient:
         property_obj = FavoriteNumberProperty(number=value)
         self._logger.debug("Setting 'favorite_number' property to %s", property_obj)
         with self._property_favorite_number_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "full/{}/property/favoriteNumber/setValue".format(self._service_id), property_obj, str(self._property_favorite_number_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -149,7 +149,7 @@ class FullClient:
         property_obj = value
         self._logger.debug("Setting 'favorite_foods' property to %s", property_obj)
         with self._property_favorite_foods_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "full/{}/property/favoriteFoods/setValue".format(self._service_id), property_obj, str(self._property_favorite_foods_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -194,7 +194,7 @@ class FullClient:
         property_obj = FamilyNameProperty(family_name=value)
         self._logger.debug("Setting 'family_name' property to %s", property_obj)
         with self._property_family_name_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "full/{}/property/familyName/setValue".format(self._service_id), property_obj, str(self._property_family_name_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -223,7 +223,7 @@ class FullClient:
         property_obj = LastBreakfastTimeProperty(timestamp=value)
         self._logger.debug("Setting 'last_breakfast_time' property to %s", property_obj)
         with self._property_last_breakfast_time_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "full/{}/property/lastBreakfastTime/setValue".format(self._service_id), property_obj, str(self._property_last_breakfast_time_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -252,7 +252,7 @@ class FullClient:
         property_obj = value
         self._logger.debug("Setting 'last_birthdays' property to %s", property_obj)
         with self._property_last_birthdays_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "full/{}/property/lastBirthdays/setValue".format(self._service_id), property_obj, str(self._property_last_birthdays_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -470,7 +470,7 @@ class FullClient:
         )
         self._logger.debug("Calling 'addNumbers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        req_msg = Message.request_message("full/{}/method/addNumbers".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("full/{}/method/addNumbers".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -503,7 +503,7 @@ class FullClient:
         )
         self._logger.debug("Calling 'doSomething' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        req_msg = Message.request_message("full/{}/method/doSomething".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("full/{}/method/doSomething".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -536,7 +536,7 @@ class FullClient:
         payload = WhatTimeIsItMethodRequest()
         self._logger.debug("Calling 'what_time_is_it' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        req_msg = Message.request_message("full/{}/method/whatTimeIsIt".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("full/{}/method/whatTimeIsIt".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -569,7 +569,7 @@ class FullClient:
         )
         self._logger.debug("Calling 'hold_temperature' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        req_msg = Message.request_message("full/{}/method/holdTemperature".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("full/{}/method/holdTemperature".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 

@@ -15,12 +15,12 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
-from pyqttier.message import Message
+from stinger_python_utils.message_creator import MessageCreator
 from pyqttier.interface import IBrokerConnection
 {%if stinger.methods | length > 0 %}
 import asyncio
 import concurrent.futures as futures
-from .method_codes import *
+from stinger_python_utils.return_codes import *
 from .interface_types import *
 import threading
 {%endif%}
@@ -40,7 +40,6 @@ logging.basicConfig(level=logging.DEBUG)
 {%for prop_name, prop in stinger.properties.items()-%}
 {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Callable[[{{prop.python_annotation}}], None]
 {%endfor%}
-
 
 class DiscoveredInstance(BaseModel):
     instance_id: str
@@ -106,7 +105,7 @@ class {{stinger.python.client_class_name}}:
         {%endif-%}
         self._logger.debug("Setting '{{prop_name}}' property to %s", property_obj)
         with self._property_{{prop_name|snake_case}}_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "{{prop_spec.update_topic}}".format(self._service_id), 
                 property_obj, 
                 str(self._property_{{prop_name|snake_case}}_version), 
@@ -235,7 +234,7 @@ class {{stinger.python.client_class_name}}:
         )
         self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
         response_topic = f"{{stinger.all_methods_response_topic('{self._conn.client_id}')}}"
-        req_msg = Message.request_message("{{method.topic}}".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("{{method.topic}}".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 

@@ -15,12 +15,12 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
-from pyqttier.message import Message
+from stinger_python_utils.message_creator import MessageCreator
 from pyqttier.interface import IBrokerConnection
 
 import asyncio
 import concurrent.futures as futures
-from .method_codes import *
+from stinger_python_utils.return_codes import *
 from .interface_types import *
 import threading
 
@@ -129,7 +129,7 @@ class WeatherClient:
         property_obj = value
         self._logger.debug("Setting 'location' property to %s", property_obj)
         with self._property_location_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "weather/{}/property/location/setValue".format(self._service_id), property_obj, str(self._property_location_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -222,7 +222,7 @@ class WeatherClient:
         property_obj = CurrentConditionRefreshIntervalProperty(seconds=value)
         self._logger.debug("Setting 'current_condition_refresh_interval' property to %s", property_obj)
         with self._property_current_condition_refresh_interval_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "weather/{}/property/currentConditionRefreshInterval/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_current_condition_refresh_interval_version),
@@ -255,7 +255,7 @@ class WeatherClient:
         property_obj = HourlyForecastRefreshIntervalProperty(seconds=value)
         self._logger.debug("Setting 'hourly_forecast_refresh_interval' property to %s", property_obj)
         with self._property_hourly_forecast_refresh_interval_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "weather/{}/property/hourlyForecastRefreshInterval/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_hourly_forecast_refresh_interval_version),
@@ -288,7 +288,7 @@ class WeatherClient:
         property_obj = DailyForecastRefreshIntervalProperty(seconds=value)
         self._logger.debug("Setting 'daily_forecast_refresh_interval' property to %s", property_obj)
         with self._property_daily_forecast_refresh_interval_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "weather/{}/property/dailyForecastRefreshInterval/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_daily_forecast_refresh_interval_version),
@@ -527,7 +527,7 @@ class WeatherClient:
         payload = RefreshDailyForecastMethodRequest()
         self._logger.debug("Calling 'refresh_daily_forecast' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/weather/methodResponse"
-        req_msg = Message.request_message("weather/{}/method/refreshDailyForecast".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("weather/{}/method/refreshDailyForecast".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -561,7 +561,7 @@ class WeatherClient:
         payload = RefreshHourlyForecastMethodRequest()
         self._logger.debug("Calling 'refresh_hourly_forecast' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/weather/methodResponse"
-        req_msg = Message.request_message("weather/{}/method/refreshHourlyForecast".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("weather/{}/method/refreshHourlyForecast".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -595,7 +595,7 @@ class WeatherClient:
         payload = RefreshCurrentConditionsMethodRequest()
         self._logger.debug("Calling 'refresh_current_conditions' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/weather/methodResponse"
-        req_msg = Message.request_message("weather/{}/method/refreshCurrentConditions".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("weather/{}/method/refreshCurrentConditions".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 

@@ -3,7 +3,6 @@ Tests for testable client.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
@@ -12,6 +11,13 @@ from testableipc.property import TestableInitialPropertyValues
 from testableipc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
+from typing import Dict, Any
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture
@@ -77,7 +83,7 @@ def initial_property_values():
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=None,
+            optional_date_time=datetime.now(UTC),
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -172,7 +178,7 @@ def initial_property_values():
         read_write_optional_datetime=datetime.now(UTC),
         read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
             first=datetime.now(UTC),
-            second=None,
+            second=datetime.now(UTC),
         ),
         read_write_duration=timedelta(seconds=3536),
         read_write_optional_duration=None,
@@ -335,8 +341,7 @@ class TestClientMethods:
         client.call_with_nothing(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_with_nothing' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callWithNothing"), "Incorrect topic for 'call_with_nothing' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
+        assert message.topic.endswith("/method/callWithNothing"), f"Incorrect topic for 'call_with_nothing' method call: {message.topic}"
 
     def test_call_one_integer_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -345,9 +350,7 @@ class TestClientMethods:
         client.call_one_integer(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_integer' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneInteger"), "Incorrect topic for 'call_one_integer' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOneInteger"), f"Incorrect topic for 'call_one_integer' method call: {message.topic}"
 
     def test_call_optional_integer_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -356,9 +359,7 @@ class TestClientMethods:
         client.call_optional_integer(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_integer' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalInteger"), "Incorrect topic for 'call_optional_integer' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOptionalInteger"), f"Incorrect topic for 'call_optional_integer' method call: {message.topic}"
 
     def test_call_three_integers_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -369,11 +370,7 @@ class TestClientMethods:
         client.call_three_integers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_integers' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeIntegers"), "Incorrect topic for 'call_three_integers' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-        assert payload["input2"] == kwargs["input2"], "Payload argument 'input2' does not match expected value"
-        assert payload["input3"] == kwargs["input3"], "Payload argument 'input3' does not match expected value"
+        assert message.topic.endswith("/method/callThreeIntegers"), f"Incorrect topic for 'call_three_integers' method call: {message.topic}"
 
     def test_call_one_string_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -382,9 +379,7 @@ class TestClientMethods:
         client.call_one_string(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_string' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneString"), "Incorrect topic for 'call_one_string' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOneString"), f"Incorrect topic for 'call_one_string' method call: {message.topic}"
 
     def test_call_optional_string_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -393,9 +388,7 @@ class TestClientMethods:
         client.call_optional_string(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_string' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalString"), "Incorrect topic for 'call_optional_string' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOptionalString"), f"Incorrect topic for 'call_optional_string' method call: {message.topic}"
 
     def test_call_three_strings_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -406,11 +399,7 @@ class TestClientMethods:
         client.call_three_strings(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_strings' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeStrings"), "Incorrect topic for 'call_three_strings' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-        assert payload["input2"] == kwargs["input2"], "Payload argument 'input2' does not match expected value"
-        assert payload["input3"] == kwargs["input3"], "Payload argument 'input3' does not match expected value"
+        assert message.topic.endswith("/method/callThreeStrings"), f"Incorrect topic for 'call_three_strings' method call: {message.topic}"
 
     def test_call_one_enum_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -419,9 +408,7 @@ class TestClientMethods:
         client.call_one_enum(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_enum' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneEnum"), "Incorrect topic for 'call_one_enum' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOneEnum"), f"Incorrect topic for 'call_one_enum' method call: {message.topic}"
 
     def test_call_optional_enum_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -430,9 +417,7 @@ class TestClientMethods:
         client.call_optional_enum(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_enum' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalEnum"), "Incorrect topic for 'call_optional_enum' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOptionalEnum"), f"Incorrect topic for 'call_optional_enum' method call: {message.topic}"
 
     def test_call_three_enums_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -443,163 +428,11 @@ class TestClientMethods:
         client.call_three_enums(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_enums' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeEnums"), "Incorrect topic for 'call_three_enums' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-        assert payload["input2"] == kwargs["input2"], "Payload argument 'input2' does not match expected value"
-        assert payload["input3"] == kwargs["input3"], "Payload argument 'input3' does not match expected value"
+        assert message.topic.endswith("/method/callThreeEnums"), f"Incorrect topic for 'call_three_enums' method call: {message.topic}"
 
     def test_call_one_struct_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": AllTypes(
-                the_bool=True,
-                the_int=42,
-                the_number=3.14,
-                the_str="apples",
-                the_enum=Numbers.ONE,
-                an_entry_object=Entry(key=42, value="apples"),
-                date_and_time=datetime.now(UTC),
-                time_duration=timedelta(seconds=3536),
-                data=b"example binary data",
-                optional_integer=42,
-                optional_string="apples",
-                optional_enum=Numbers.ONE,
-                optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
-                optional_duration=None,
-                optional_binary=b"example binary data",
-                array_of_integers=[42, 2022],
-                optional_array_of_integers=[42, 2022],
-                array_of_strings=["apples", "foo"],
-                optional_array_of_strings=["apples", "foo"],
-                array_of_enums=[Numbers.ONE, Numbers.ONE],
-                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                array_of_binaries=[b"example binary data", b"example binary data"],
-                optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            ),
-        }
-        client.call_one_struct(**kwargs)
-        assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_struct' method call"
-        message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneStruct"), "Incorrect topic for 'call_one_struct' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-
-    def test_call_optional_struct_method_call_sends_request(self, mock_connection, client):
-        kwargs = {
-            "input1": AllTypes(
-                the_bool=True,
-                the_int=42,
-                the_number=3.14,
-                the_str="apples",
-                the_enum=Numbers.ONE,
-                an_entry_object=Entry(key=42, value="apples"),
-                date_and_time=datetime.now(UTC),
-                time_duration=timedelta(seconds=3536),
-                data=b"example binary data",
-                optional_integer=42,
-                optional_string="apples",
-                optional_enum=Numbers.ONE,
-                optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
-                optional_duration=None,
-                optional_binary=b"example binary data",
-                array_of_integers=[42, 2022],
-                optional_array_of_integers=[42, 2022],
-                array_of_strings=["apples", "foo"],
-                optional_array_of_strings=["apples", "foo"],
-                array_of_enums=[Numbers.ONE, Numbers.ONE],
-                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                array_of_binaries=[b"example binary data", b"example binary data"],
-                optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            ),
-        }
-        client.call_optional_struct(**kwargs)
-        assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_struct' method call"
-        message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalStruct"), "Incorrect topic for 'call_optional_struct' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-
-    def test_call_three_structs_method_call_sends_request(self, mock_connection, client):
-        kwargs = {
-            "input1": AllTypes(
-                the_bool=True,
-                the_int=42,
-                the_number=3.14,
-                the_str="apples",
-                the_enum=Numbers.ONE,
-                an_entry_object=Entry(key=42, value="apples"),
-                date_and_time=datetime.now(UTC),
-                time_duration=timedelta(seconds=3536),
-                data=b"example binary data",
-                optional_integer=42,
-                optional_string="apples",
-                optional_enum=Numbers.ONE,
-                optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
-                optional_duration=None,
-                optional_binary=b"example binary data",
-                array_of_integers=[42, 2022],
-                optional_array_of_integers=[42, 2022],
-                array_of_strings=["apples", "foo"],
-                optional_array_of_strings=["apples", "foo"],
-                array_of_enums=[Numbers.ONE, Numbers.ONE],
-                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                array_of_binaries=[b"example binary data", b"example binary data"],
-                optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            ),
-            "input2": AllTypes(
-                the_bool=True,
-                the_int=42,
-                the_number=3.14,
-                the_str="apples",
-                the_enum=Numbers.ONE,
-                an_entry_object=Entry(key=42, value="apples"),
-                date_and_time=datetime.now(UTC),
-                time_duration=timedelta(seconds=3536),
-                data=b"example binary data",
-                optional_integer=42,
-                optional_string="apples",
-                optional_enum=Numbers.ONE,
-                optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
-                optional_duration=None,
-                optional_binary=b"example binary data",
-                array_of_integers=[42, 2022],
-                optional_array_of_integers=[42, 2022],
-                array_of_strings=["apples", "foo"],
-                optional_array_of_strings=["apples", "foo"],
-                array_of_enums=[Numbers.ONE, Numbers.ONE],
-                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                array_of_binaries=[b"example binary data", b"example binary data"],
-                optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            ),
-            "input3": AllTypes(
                 the_bool=True,
                 the_int=42,
                 the_number=3.14,
@@ -632,14 +465,154 @@ class TestClientMethods:
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
         }
+        client.call_one_struct(**kwargs)
+        assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_struct' method call"
+        message = mock_connection.published_messages[0]
+        assert message.topic.endswith("/method/callOneStruct"), f"Incorrect topic for 'call_one_struct' method call: {message.topic}"
+
+    def test_call_optional_struct_method_call_sends_request(self, mock_connection, client):
+        kwargs = {
+            "input1": AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=None,
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+        }
+        client.call_optional_struct(**kwargs)
+        assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_struct' method call"
+        message = mock_connection.published_messages[0]
+        assert message.topic.endswith("/method/callOptionalStruct"), f"Incorrect topic for 'call_optional_struct' method call: {message.topic}"
+
+    def test_call_three_structs_method_call_sends_request(self, mock_connection, client):
+        kwargs = {
+            "input1": AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=None,
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+            "input2": AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=None,
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+            "input3": AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+        }
         client.call_three_structs(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_structs' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeStructs"), "Incorrect topic for 'call_three_structs' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-        assert payload["input2"] == kwargs["input2"], "Payload argument 'input2' does not match expected value"
-        assert payload["input3"] == kwargs["input3"], "Payload argument 'input3' does not match expected value"
+        assert message.topic.endswith("/method/callThreeStructs"), f"Incorrect topic for 'call_three_structs' method call: {message.topic}"
 
     def test_call_one_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -648,9 +621,7 @@ class TestClientMethods:
         client.call_one_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_date_time' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneDateTime"), "Incorrect topic for 'call_one_date_time' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOneDateTime"), f"Incorrect topic for 'call_one_date_time' method call: {message.topic}"
 
     def test_call_optional_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -659,9 +630,7 @@ class TestClientMethods:
         client.call_optional_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_date_time' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalDateTime"), "Incorrect topic for 'call_optional_date_time' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOptionalDateTime"), f"Incorrect topic for 'call_optional_date_time' method call: {message.topic}"
 
     def test_call_three_date_times_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -672,11 +641,7 @@ class TestClientMethods:
         client.call_three_date_times(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_date_times' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeDateTimes"), "Incorrect topic for 'call_three_date_times' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-        assert payload["input2"] == kwargs["input2"], "Payload argument 'input2' does not match expected value"
-        assert payload["input3"] == kwargs["input3"], "Payload argument 'input3' does not match expected value"
+        assert message.topic.endswith("/method/callThreeDateTimes"), f"Incorrect topic for 'call_three_date_times' method call: {message.topic}"
 
     def test_call_one_duration_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -685,9 +650,7 @@ class TestClientMethods:
         client.call_one_duration(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_duration' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneDuration"), "Incorrect topic for 'call_one_duration' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOneDuration"), f"Incorrect topic for 'call_one_duration' method call: {message.topic}"
 
     def test_call_optional_duration_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -696,9 +659,7 @@ class TestClientMethods:
         client.call_optional_duration(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_duration' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalDuration"), "Incorrect topic for 'call_optional_duration' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOptionalDuration"), f"Incorrect topic for 'call_optional_duration' method call: {message.topic}"
 
     def test_call_three_durations_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -709,11 +670,7 @@ class TestClientMethods:
         client.call_three_durations(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_durations' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeDurations"), "Incorrect topic for 'call_three_durations' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-        assert payload["input2"] == kwargs["input2"], "Payload argument 'input2' does not match expected value"
-        assert payload["input3"] == kwargs["input3"], "Payload argument 'input3' does not match expected value"
+        assert message.topic.endswith("/method/callThreeDurations"), f"Incorrect topic for 'call_three_durations' method call: {message.topic}"
 
     def test_call_one_binary_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -722,9 +679,7 @@ class TestClientMethods:
         client.call_one_binary(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_binary' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneBinary"), "Incorrect topic for 'call_one_binary' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOneBinary"), f"Incorrect topic for 'call_one_binary' method call: {message.topic}"
 
     def test_call_optional_binary_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -733,9 +688,7 @@ class TestClientMethods:
         client.call_optional_binary(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_binary' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalBinary"), "Incorrect topic for 'call_optional_binary' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOptionalBinary"), f"Incorrect topic for 'call_optional_binary' method call: {message.topic}"
 
     def test_call_three_binaries_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -746,11 +699,7 @@ class TestClientMethods:
         client.call_three_binaries(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_binaries' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeBinaries"), "Incorrect topic for 'call_three_binaries' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-        assert payload["input2"] == kwargs["input2"], "Payload argument 'input2' does not match expected value"
-        assert payload["input3"] == kwargs["input3"], "Payload argument 'input3' does not match expected value"
+        assert message.topic.endswith("/method/callThreeBinaries"), f"Incorrect topic for 'call_three_binaries' method call: {message.topic}"
 
     def test_call_one_list_of_integers_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -759,9 +708,7 @@ class TestClientMethods:
         client.call_one_list_of_integers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_list_of_integers' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneListOfIntegers"), "Incorrect topic for 'call_one_list_of_integers' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOneListOfIntegers"), f"Incorrect topic for 'call_one_list_of_integers' method call: {message.topic}"
 
     def test_call_optional_list_of_floats_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -770,9 +717,7 @@ class TestClientMethods:
         client.call_optional_list_of_floats(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_list_of_floats' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalListOfFloats"), "Incorrect topic for 'call_optional_list_of_floats' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
+        assert message.topic.endswith("/method/callOptionalListOfFloats"), f"Incorrect topic for 'call_optional_list_of_floats' method call: {message.topic}"
 
     def test_call_two_lists_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -782,7 +727,4 @@ class TestClientMethods:
         client.call_two_lists(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_two_lists' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callTwoLists"), "Incorrect topic for 'call_two_lists' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["input1"] == kwargs["input1"], "Payload argument 'input1' does not match expected value"
-        assert payload["input2"] == kwargs["input2"], "Payload argument 'input2' does not match expected value"
+        assert message.topic.endswith("/method/callTwoLists"), f"Incorrect topic for 'call_two_lists' method call: {message.topic}"

@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, UTC
 from simpleipc.server import SimpleServer
 from simpleipc.property import SimpleInitialPropertyValues
 from simpleipc.interface_types import *
+from stinger_python_utils.return_codes import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
@@ -45,7 +46,7 @@ def server(mock_connection, initial_property_values):
     server.shutdown(timeout=0.1)
 
 
-class TestServer:
+class TestSimpleServer:
 
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
@@ -53,7 +54,7 @@ class TestServer:
         assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
 
 
-class TestServerProperties:
+class TestSimpleServerProperties:
 
     def test_server_school_property_initialization(self, server, initial_property_values):
         """Test that the school server property is initialized correctly."""
@@ -96,11 +97,15 @@ class TestServerProperties:
             "name": "example",
         }
         prop_obj = SchoolProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
         incoming_msg = Message(
             topic="simple/{}/property/school/setValue".format(server.instance_id),
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_school.version)},
         )
@@ -109,8 +114,134 @@ class TestServerProperties:
         # Verify that server property was updated
         assert received_data is not None, "Callback for property 'school' was not called"
 
+        # Expect a reply sent back acknowledging the update
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for property 'school'."
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
 
-class TestServerSignals:
+    def test_school_property_receive_out_of_sync(self, server, mock_connection):
+        """Test that receiving a property update for 'school' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(name):
+            nonlocal received_data
+            received_data = {
+                "name": name,
+            }
+
+        server.on_school_updated(callback)
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            "name": "example",
+        }
+        prop_obj = SchoolProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="simple/{}/property/school/setValue".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": "67"},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'school' was called despite out-of-sync version"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for out-of-sync property 'school'."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.OUT_OF_SYNC.value), f"Expected OUT_OF_SYNC return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_school_property_receive_nonsense_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'school' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(name):
+            nonlocal received_data
+            received_data = {
+                "name": name,
+            }
+
+        server.on_school_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="simple/{}/property/school/setValue".format(server.instance_id),
+            payload=b"adsfaf{this is not json}12|false",
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_school.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'school' was called despite bad payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for bad payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_school_property_receive_wrong_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'school' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(name):
+            nonlocal received_data
+            received_data = {
+                "name": name,
+            }
+
+        server.on_school_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="simple/{}/property/school/setValue".format(server.instance_id),
+            payload=b'{"wrong_field": 123, "another_wrong": false}',
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_school.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'school' was called despite wrong payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for wrong payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+
+class TestSimpleServerSignals:
 
     def test_server_emit_person_entered(self, server, mock_connection):
         """Test that the server can emit the 'person_entered' signal."""
@@ -132,3 +263,58 @@ class TestServerSignals:
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+
+
+class TestSimpleServerMethods:
+
+    def test_server_handle_trade_numbers_method(self, server, mock_connection):
+        """Test that the server can handle the 'trade_numbers' method."""
+        handler_callback_data = 42
+        received_args = None
+
+        def handler(your_number) -> int:
+            nonlocal received_args
+            received_args = {
+                "your_number": your_number,
+            }
+            return handler_callback_data
+
+        server.handle_trade_numbers(handler)
+
+        # Create and simulate receiving a method call message
+        method_data = {
+            "your_number": 2020,
+        }
+        method_obj = TradeNumbersMethodRequest(**method_data)
+        print(method_obj)
+        response_topic = "client/test/response"
+        correlation_data = b"method-1234"
+        incoming_msg = Message(
+            topic="simple/{}/method/tradeNumbers".format(server.instance_id),
+            payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # Verify that handler was called with correct arguments
+        assert received_args is not None, "Handler for method 'trade_numbers' was not called"
+        assert method_data == received_args, f"Handler arguments {received_args} do not match expected {method_data}"
+
+        # Verify that a response message was published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for method 'trade_numbers'."
+
+        resp_msg = published_list[0]
+        assert resp_msg.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        assert resp_msg.topic == response_topic, "Response topic does not match expected value"
+
+        # Verify response payload
+        resp_payload = json.loads(resp_msg.payload.decode("utf-8"))
+
+        expected_return_obj = TradeNumbersMethodResponse(my_number=handler_callback_data)
+        expected_resp_dict = to_jsonified_dict(expected_return_obj)
+        assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"

@@ -15,12 +15,12 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
-from pyqttier.message import Message
+from stinger_python_utils.message_creator import MessageCreator
 from pyqttier.interface import IBrokerConnection
 
 import asyncio
 import concurrent.futures as futures
-from .method_codes import *
+from stinger_python_utils.return_codes import *
 from .interface_types import *
 import threading
 
@@ -307,7 +307,7 @@ class TestableClient:
         property_obj = ReadWriteIntegerProperty(value=value)
         self._logger.debug("Setting 'read_write_integer' property to %s", property_obj)
         with self._property_read_write_integer_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteInteger/setValue".format(self._service_id), property_obj, str(self._property_read_write_integer_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -352,7 +352,7 @@ class TestableClient:
         property_obj = ReadWriteOptionalIntegerProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_integer' property to %s", property_obj)
         with self._property_read_write_optional_integer_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteOptionalInteger/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_integer_version),
@@ -385,7 +385,7 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_integers' property to %s", property_obj)
         with self._property_read_write_two_integers_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteTwoIntegers/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_two_integers_version),
@@ -434,7 +434,7 @@ class TestableClient:
         property_obj = ReadWriteStringProperty(value=value)
         self._logger.debug("Setting 'read_write_string' property to %s", property_obj)
         with self._property_read_write_string_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteString/setValue".format(self._service_id), property_obj, str(self._property_read_write_string_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -463,7 +463,7 @@ class TestableClient:
         property_obj = ReadWriteOptionalStringProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_string' property to %s", property_obj)
         with self._property_read_write_optional_string_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteOptionalString/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_string_version),
@@ -496,7 +496,7 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_strings' property to %s", property_obj)
         with self._property_read_write_two_strings_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteTwoStrings/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_two_strings_version),
@@ -529,7 +529,7 @@ class TestableClient:
         property_obj = ReadWriteStructProperty(value=value)
         self._logger.debug("Setting 'read_write_struct' property to %s", property_obj)
         with self._property_read_write_struct_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteStruct/setValue".format(self._service_id), property_obj, str(self._property_read_write_struct_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -558,7 +558,7 @@ class TestableClient:
         property_obj = ReadWriteOptionalStructProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_struct' property to %s", property_obj)
         with self._property_read_write_optional_struct_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteOptionalStruct/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_struct_version),
@@ -591,7 +591,7 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_structs' property to %s", property_obj)
         with self._property_read_write_two_structs_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteTwoStructs/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_two_structs_version),
@@ -640,7 +640,7 @@ class TestableClient:
         property_obj = ReadWriteEnumProperty(value=value)
         self._logger.debug("Setting 'read_write_enum' property to %s", property_obj)
         with self._property_read_write_enum_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteEnum/setValue".format(self._service_id), property_obj, str(self._property_read_write_enum_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -669,7 +669,7 @@ class TestableClient:
         property_obj = ReadWriteOptionalEnumProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_enum' property to %s", property_obj)
         with self._property_read_write_optional_enum_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteOptionalEnum/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_enum_version),
@@ -702,7 +702,7 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_enums' property to %s", property_obj)
         with self._property_read_write_two_enums_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteTwoEnums/setValue".format(self._service_id), property_obj, str(self._property_read_write_two_enums_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -731,7 +731,7 @@ class TestableClient:
         property_obj = ReadWriteDatetimeProperty(value=value)
         self._logger.debug("Setting 'read_write_datetime' property to %s", property_obj)
         with self._property_read_write_datetime_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteDatetime/setValue".format(self._service_id), property_obj, str(self._property_read_write_datetime_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -760,7 +760,7 @@ class TestableClient:
         property_obj = ReadWriteOptionalDatetimeProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_datetime' property to %s", property_obj)
         with self._property_read_write_optional_datetime_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteOptionalDatetime/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_datetime_version),
@@ -793,7 +793,7 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_datetimes' property to %s", property_obj)
         with self._property_read_write_two_datetimes_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteTwoDatetimes/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_two_datetimes_version),
@@ -826,7 +826,7 @@ class TestableClient:
         property_obj = ReadWriteDurationProperty(value=value)
         self._logger.debug("Setting 'read_write_duration' property to %s", property_obj)
         with self._property_read_write_duration_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteDuration/setValue".format(self._service_id), property_obj, str(self._property_read_write_duration_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -855,7 +855,7 @@ class TestableClient:
         property_obj = ReadWriteOptionalDurationProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_duration' property to %s", property_obj)
         with self._property_read_write_optional_duration_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteOptionalDuration/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_duration_version),
@@ -888,7 +888,7 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_durations' property to %s", property_obj)
         with self._property_read_write_two_durations_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteTwoDurations/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_two_durations_version),
@@ -921,7 +921,7 @@ class TestableClient:
         property_obj = ReadWriteBinaryProperty(value=value)
         self._logger.debug("Setting 'read_write_binary' property to %s", property_obj)
         with self._property_read_write_binary_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteBinary/setValue".format(self._service_id), property_obj, str(self._property_read_write_binary_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -950,7 +950,7 @@ class TestableClient:
         property_obj = ReadWriteOptionalBinaryProperty(value=value)
         self._logger.debug("Setting 'read_write_optional_binary' property to %s", property_obj)
         with self._property_read_write_optional_binary_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteOptionalBinary/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_optional_binary_version),
@@ -983,7 +983,7 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_two_binaries' property to %s", property_obj)
         with self._property_read_write_two_binaries_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteTwoBinaries/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_two_binaries_version),
@@ -1016,7 +1016,7 @@ class TestableClient:
         property_obj = ReadWriteListOfStringsProperty(value=value)
         self._logger.debug("Setting 'read_write_list_of_strings' property to %s", property_obj)
         with self._property_read_write_list_of_strings_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteListOfStrings/setValue".format(self._service_id),
                 property_obj,
                 str(self._property_read_write_list_of_strings_version),
@@ -1049,7 +1049,7 @@ class TestableClient:
         property_obj = value
         self._logger.debug("Setting 'read_write_lists' property to %s", property_obj)
         with self._property_read_write_lists_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "testable/{}/property/readWriteLists/setValue".format(self._service_id), property_obj, str(self._property_read_write_lists_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -2016,7 +2016,7 @@ class TestableClient:
         payload = CallWithNothingMethodRequest()
         self._logger.debug("Calling 'callWithNothing' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callWithNothing".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callWithNothing".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2050,7 +2050,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOneInteger' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOneInteger".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOneInteger".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2083,7 +2083,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOptionalInteger' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOptionalInteger".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOptionalInteger".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2118,7 +2118,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callThreeIntegers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callThreeIntegers".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callThreeIntegers".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2151,7 +2151,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOneString' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOneString".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOneString".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2184,7 +2184,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOptionalString' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOptionalString".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOptionalString".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2219,7 +2219,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callThreeStrings' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callThreeStrings".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callThreeStrings".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2252,7 +2252,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOneEnum' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOneEnum".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOneEnum".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2285,7 +2285,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOptionalEnum' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOptionalEnum".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOptionalEnum".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2320,7 +2320,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callThreeEnums' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callThreeEnums".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callThreeEnums".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2353,7 +2353,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOneStruct' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOneStruct".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOneStruct".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2386,7 +2386,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOptionalStruct' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOptionalStruct".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOptionalStruct".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2421,7 +2421,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callThreeStructs' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callThreeStructs".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callThreeStructs".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2454,7 +2454,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOneDateTime' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOneDateTime".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOneDateTime".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2487,7 +2487,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOptionalDateTime' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOptionalDateTime".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOptionalDateTime".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2522,7 +2522,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callThreeDateTimes' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callThreeDateTimes".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callThreeDateTimes".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2555,7 +2555,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOneDuration' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOneDuration".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOneDuration".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2588,7 +2588,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOptionalDuration' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOptionalDuration".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOptionalDuration".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2623,7 +2623,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callThreeDurations' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callThreeDurations".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callThreeDurations".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2656,7 +2656,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOneBinary' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOneBinary".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOneBinary".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2689,7 +2689,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOptionalBinary' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOptionalBinary".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOptionalBinary".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2724,7 +2724,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callThreeBinaries' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callThreeBinaries".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callThreeBinaries".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2757,7 +2757,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOneListOfIntegers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOneListOfIntegers".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOneListOfIntegers".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2790,7 +2790,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callOptionalListOfFloats' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callOptionalListOfFloats".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callOptionalListOfFloats".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -2824,7 +2824,7 @@ class TestableClient:
         )
         self._logger.debug("Calling 'callTwoLists' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/testable/methodResponse"
-        req_msg = Message.request_message("testable/{}/method/callTwoLists".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("testable/{}/method/callTwoLists".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 

@@ -3,7 +3,6 @@ Tests for SignalOnly client.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
@@ -11,6 +10,13 @@ from signal_onlyipc.client import SignalOnlyClient, DiscoveredInstance
 from signal_onlyipc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
+from typing import Dict, Any
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture

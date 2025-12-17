@@ -22,8 +22,8 @@ logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from pyqttier.interface import IBrokerConnection
-from pyqttier.message import Message
-from .method_codes import *
+from stinger_python_utils.message_creator import MessageCreator
+from stinger_python_utils.return_codes import *
 from .interface_types import *
 
 
@@ -81,7 +81,7 @@ class SignalOnlyServer:
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
-        msg = Message.status_message(topic, data, expiry)
+        msg = MessageCreator.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
     def _receive_message(self, message: Message):
@@ -105,7 +105,7 @@ class SignalOnlyServer:
             two=two,
             three=three,
         )
-        sig_msg = Message.signal_message("signalOnly/{}/signal/anotherSignal".format(self._instance_id), payload)
+        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/anotherSignal".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
     def emit_bark(self, word: str):
@@ -119,7 +119,7 @@ class SignalOnlyServer:
         payload = BarkSignalPayload(
             word=word,
         )
-        sig_msg = Message.signal_message("signalOnly/{}/signal/bark".format(self._instance_id), payload)
+        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/bark".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
     def emit_maybe_number(self, number: Optional[int]):
@@ -133,7 +133,7 @@ class SignalOnlyServer:
         payload = MaybeNumberSignalPayload(
             number=number if number is not None else None,
         )
-        sig_msg = Message.signal_message("signalOnly/{}/signal/maybeNumber".format(self._instance_id), payload)
+        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/maybeNumber".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
     def emit_maybe_name(self, name: Optional[str]):
@@ -147,7 +147,7 @@ class SignalOnlyServer:
         payload = MaybeNameSignalPayload(
             name=name if name is not None else None,
         )
-        sig_msg = Message.signal_message("signalOnly/{}/signal/maybeName".format(self._instance_id), payload)
+        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/maybeName".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
     def emit_now(self, timestamp: datetime):
@@ -161,7 +161,7 @@ class SignalOnlyServer:
         payload = NowSignalPayload(
             timestamp=timestamp,
         )
-        sig_msg = Message.signal_message("signalOnly/{}/signal/now".format(self._instance_id), payload)
+        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/now".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
 

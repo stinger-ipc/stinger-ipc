@@ -174,7 +174,7 @@ initial_property_values = FullInitialPropertyValues(
             
             dad=datetime.now(UTC),
             
-            sister=datetime.now(UTC),
+            sister=None,
             
             brothers_age=42,
             

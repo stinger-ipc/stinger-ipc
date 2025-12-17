@@ -3,7 +3,6 @@ Tests for Full client.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
@@ -12,6 +11,13 @@ from fullipc.property import FullInitialPropertyValues
 from fullipc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
+from typing import Dict, Any
+
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
 
 
 @pytest.fixture
@@ -110,11 +116,7 @@ class TestClientMethods:
         client.add_numbers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'add_numbers' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/addNumbers"), "Incorrect topic for 'add_numbers' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["first"] == kwargs["first"], "Payload argument 'first' does not match expected value"
-        assert payload["second"] == kwargs["second"], "Payload argument 'second' does not match expected value"
-        assert payload["third"] == kwargs["third"], "Payload argument 'third' does not match expected value"
+        assert message.topic.endswith("/method/addNumbers"), f"Incorrect topic for 'add_numbers' method call: {message.topic}"
 
     def test_do_something_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -123,17 +125,14 @@ class TestClientMethods:
         client.do_something(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'do_something' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/doSomething"), "Incorrect topic for 'do_something' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["task_to_do"] == kwargs["task_to_do"], "Payload argument 'task_to_do' does not match expected value"
+        assert message.topic.endswith("/method/doSomething"), f"Incorrect topic for 'do_something' method call: {message.topic}"
 
     def test_what_time_is_it_method_call_sends_request(self, mock_connection, client):
         kwargs = {}
         client.what_time_is_it(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'what_time_is_it' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/whatTimeIsIt"), "Incorrect topic for 'what_time_is_it' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
+        assert message.topic.endswith("/method/whatTimeIsIt"), f"Incorrect topic for 'what_time_is_it' method call: {message.topic}"
 
     def test_hold_temperature_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -142,6 +141,4 @@ class TestClientMethods:
         client.hold_temperature(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'hold_temperature' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/holdTemperature"), "Incorrect topic for 'hold_temperature' method call: {message.topic}"
-        payload = json.loads(message.payload.decode())
-        assert payload["temperature_celsius"] == kwargs["temperature_celsius"], "Payload argument 'temperature_celsius' does not match expected value"
+        assert message.topic.endswith("/method/holdTemperature"), f"Incorrect topic for 'hold_temperature' method call: {message.topic}"

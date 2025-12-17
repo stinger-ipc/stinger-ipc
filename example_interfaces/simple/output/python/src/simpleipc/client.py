@@ -15,12 +15,12 @@ import json
 import logging
 from datetime import datetime, timedelta, UTC
 from isodate import parse_duration
-from pyqttier.message import Message
+from stinger_python_utils.message_creator import MessageCreator
 from pyqttier.interface import IBrokerConnection
 
 import asyncio
 import concurrent.futures as futures
-from .method_codes import *
+from stinger_python_utils.return_codes import *
 from .interface_types import *
 import threading
 
@@ -85,7 +85,7 @@ class SimpleClient:
         property_obj = SchoolProperty(name=value)
         self._logger.debug("Setting 'school' property to %s", property_obj)
         with self._property_school_mutex:
-            req_msg = Message.property_update_request_message(
+            req_msg = MessageCreator.property_update_request_message(
                 "simple/{}/property/school/setValue".format(self._service_id), property_obj, str(self._property_school_version), self._property_response_topic, str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -194,7 +194,7 @@ class SimpleClient:
         )
         self._logger.debug("Calling 'trade_numbers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Simple/methodResponse"
-        req_msg = Message.request_message("simple/{}/method/tradeNumbers".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("simple/{}/method/tradeNumbers".format(self._service_id), payload, response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 

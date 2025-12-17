@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime, timedelta, UTC
 from signal_onlyipc.server import SignalOnlyServer
 from signal_onlyipc.interface_types import *
+from stinger_python_utils.return_codes import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
@@ -36,7 +37,7 @@ def server(mock_connection):
     server.shutdown(timeout=0.1)
 
 
-class TestServer:
+class TestSignalOnlyServer:
 
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
@@ -47,7 +48,7 @@ class TestServer:
 # No (stinger-owned) properties to test
 
 
-class TestServerSignals:
+class TestSignalOnlyServerSignals:
 
     def test_server_emit_another_signal(self, server, mock_connection):
         """Test that the server can emit the 'another_signal' signal."""

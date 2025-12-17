@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, UTC
 from weatheripc.server import WeatherServer
 from weatheripc.property import WeatherInitialPropertyValues
 from weatheripc.interface_types import *
+from stinger_python_utils.return_codes import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
@@ -67,7 +68,7 @@ def server(mock_connection, initial_property_values):
     server.shutdown(timeout=0.1)
 
 
-class TestServer:
+class TestWeatherServer:
 
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
@@ -75,7 +76,7 @@ class TestServer:
         assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
 
 
-class TestServerProperties:
+class TestWeatherServerProperties:
 
     def test_server_location_property_initialization(self, server, initial_property_values):
         """Test that the location server property is initialized correctly."""
@@ -120,11 +121,15 @@ class TestServerProperties:
             "longitude": 3.14,
         }
         prop_obj = LocationProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
         incoming_msg = Message(
             topic="weather/{}/property/location/setValue".format(server.instance_id),
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_location.version)},
         )
@@ -132,6 +137,136 @@ class TestServerProperties:
 
         # Verify that server property was updated
         assert received_data is not None, "Callback for property 'location' was not called"
+
+        # Expect a reply sent back acknowledging the update
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for property 'location'."
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_location_property_receive_out_of_sync(self, server, mock_connection):
+        """Test that receiving a property update for 'location' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(latitude, longitude):
+            nonlocal received_data
+            received_data = {
+                "latitude": latitude,
+                "longitude": longitude,
+            }
+
+        server.on_location_updated(callback)
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            "latitude": 1.0,
+            "longitude": 3.14,
+        }
+        prop_obj = LocationProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/location/setValue".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": "67"},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'location' was called despite out-of-sync version"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for out-of-sync property 'location'."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.OUT_OF_SYNC.value), f"Expected OUT_OF_SYNC return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_location_property_receive_nonsense_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'location' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(latitude, longitude):
+            nonlocal received_data
+            received_data = {
+                "latitude": latitude,
+                "longitude": longitude,
+            }
+
+        server.on_location_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/location/setValue".format(server.instance_id),
+            payload=b"adsfaf{this is not json}12|false",
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_location.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'location' was called despite bad payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for bad payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_location_property_receive_wrong_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'location' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(latitude, longitude):
+            nonlocal received_data
+            received_data = {
+                "latitude": latitude,
+                "longitude": longitude,
+            }
+
+        server.on_location_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/location/setValue".format(server.instance_id),
+            payload=b'{"wrong_field": 123, "another_wrong": false}',
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_location.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'location' was called despite wrong payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for wrong payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
 
     def test_server_current_temperature_property_initialization(self, server, initial_property_values):
         """Test that the current_temperature server property is initialized correctly."""
@@ -174,11 +309,15 @@ class TestServerProperties:
             "temperature_f": 1.0,
         }
         prop_obj = CurrentTemperatureProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
         incoming_msg = Message(
             topic="weather/{}/property/currentTemperature/setValue".format(server.instance_id),
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_current_temperature.version)},
         )
@@ -230,11 +369,15 @@ class TestServerProperties:
             "description": "apples",
         }
         prop_obj = CurrentConditionProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
         incoming_msg = Message(
             topic="weather/{}/property/currentCondition/setValue".format(server.instance_id),
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_current_condition.version)},
         )
@@ -288,11 +431,15 @@ class TestServerProperties:
             "wednesday": ForecastForDay(high_temperature=1.0, low_temperature=1.0, condition=WeatherCondition.SUNNY, start_time="foo", end_time="foo"),
         }
         prop_obj = DailyForecastProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
         incoming_msg = Message(
             topic="weather/{}/property/dailyForecast/setValue".format(server.instance_id),
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_daily_forecast.version)},
         )
@@ -348,11 +495,15 @@ class TestServerProperties:
             "hour_3": ForecastForHour(temperature=1.0, starttime=datetime.now(UTC), condition=WeatherCondition.SUNNY),
         }
         prop_obj = HourlyForecastProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
         incoming_msg = Message(
             topic="weather/{}/property/hourlyForecast/setValue".format(server.instance_id),
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_hourly_forecast.version)},
         )
@@ -404,11 +555,15 @@ class TestServerProperties:
             "seconds": 2020,
         }
         prop_obj = CurrentConditionRefreshIntervalProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
         incoming_msg = Message(
             topic="weather/{}/property/currentConditionRefreshInterval/setValue".format(server.instance_id),
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_current_condition_refresh_interval.version)},
         )
@@ -416,6 +571,132 @@ class TestServerProperties:
 
         # Verify that server property was updated
         assert received_data is not None, "Callback for property 'current_condition_refresh_interval' was not called"
+
+        # Expect a reply sent back acknowledging the update
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for property 'current_condition_refresh_interval'."
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_current_condition_refresh_interval_property_receive_out_of_sync(self, server, mock_connection):
+        """Test that receiving a property update for 'current_condition_refresh_interval' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(seconds):
+            nonlocal received_data
+            received_data = {
+                "seconds": seconds,
+            }
+
+        server.on_current_condition_refresh_interval_updated(callback)
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            "seconds": 2020,
+        }
+        prop_obj = CurrentConditionRefreshIntervalProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/currentConditionRefreshInterval/setValue".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": "67"},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'current_condition_refresh_interval' was called despite out-of-sync version"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for out-of-sync property 'current_condition_refresh_interval'."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.OUT_OF_SYNC.value), f"Expected OUT_OF_SYNC return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_current_condition_refresh_interval_property_receive_nonsense_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'current_condition_refresh_interval' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(seconds):
+            nonlocal received_data
+            received_data = {
+                "seconds": seconds,
+            }
+
+        server.on_current_condition_refresh_interval_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/currentConditionRefreshInterval/setValue".format(server.instance_id),
+            payload=b"adsfaf{this is not json}12|false",
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_current_condition_refresh_interval.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'current_condition_refresh_interval' was called despite bad payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for bad payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_current_condition_refresh_interval_property_receive_wrong_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'current_condition_refresh_interval' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(seconds):
+            nonlocal received_data
+            received_data = {
+                "seconds": seconds,
+            }
+
+        server.on_current_condition_refresh_interval_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/currentConditionRefreshInterval/setValue".format(server.instance_id),
+            payload=b'{"wrong_field": 123, "another_wrong": false}',
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_current_condition_refresh_interval.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'current_condition_refresh_interval' was called despite wrong payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for wrong payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
 
     def test_server_hourly_forecast_refresh_interval_property_initialization(self, server, initial_property_values):
         """Test that the hourly_forecast_refresh_interval server property is initialized correctly."""
@@ -458,11 +739,15 @@ class TestServerProperties:
             "seconds": 2020,
         }
         prop_obj = HourlyForecastRefreshIntervalProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
         incoming_msg = Message(
             topic="weather/{}/property/hourlyForecastRefreshInterval/setValue".format(server.instance_id),
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_hourly_forecast_refresh_interval.version)},
         )
@@ -470,6 +755,132 @@ class TestServerProperties:
 
         # Verify that server property was updated
         assert received_data is not None, "Callback for property 'hourly_forecast_refresh_interval' was not called"
+
+        # Expect a reply sent back acknowledging the update
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for property 'hourly_forecast_refresh_interval'."
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_hourly_forecast_refresh_interval_property_receive_out_of_sync(self, server, mock_connection):
+        """Test that receiving a property update for 'hourly_forecast_refresh_interval' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(seconds):
+            nonlocal received_data
+            received_data = {
+                "seconds": seconds,
+            }
+
+        server.on_hourly_forecast_refresh_interval_updated(callback)
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            "seconds": 2020,
+        }
+        prop_obj = HourlyForecastRefreshIntervalProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/hourlyForecastRefreshInterval/setValue".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": "67"},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'hourly_forecast_refresh_interval' was called despite out-of-sync version"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for out-of-sync property 'hourly_forecast_refresh_interval'."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.OUT_OF_SYNC.value), f"Expected OUT_OF_SYNC return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_hourly_forecast_refresh_interval_property_receive_nonsense_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'hourly_forecast_refresh_interval' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(seconds):
+            nonlocal received_data
+            received_data = {
+                "seconds": seconds,
+            }
+
+        server.on_hourly_forecast_refresh_interval_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/hourlyForecastRefreshInterval/setValue".format(server.instance_id),
+            payload=b"adsfaf{this is not json}12|false",
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_hourly_forecast_refresh_interval.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'hourly_forecast_refresh_interval' was called despite bad payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for bad payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_hourly_forecast_refresh_interval_property_receive_wrong_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'hourly_forecast_refresh_interval' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(seconds):
+            nonlocal received_data
+            received_data = {
+                "seconds": seconds,
+            }
+
+        server.on_hourly_forecast_refresh_interval_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/hourlyForecastRefreshInterval/setValue".format(server.instance_id),
+            payload=b'{"wrong_field": 123, "another_wrong": false}',
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_hourly_forecast_refresh_interval.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'hourly_forecast_refresh_interval' was called despite wrong payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for wrong payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
 
     def test_server_daily_forecast_refresh_interval_property_initialization(self, server, initial_property_values):
         """Test that the daily_forecast_refresh_interval server property is initialized correctly."""
@@ -512,11 +923,15 @@ class TestServerProperties:
             "seconds": 2020,
         }
         prop_obj = DailyForecastRefreshIntervalProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
         incoming_msg = Message(
             topic="weather/{}/property/dailyForecastRefreshInterval/setValue".format(server.instance_id),
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
             content_type="application/json",
             user_properties={"PropertyVersion": str(server._property_daily_forecast_refresh_interval.version)},
         )
@@ -525,8 +940,134 @@ class TestServerProperties:
         # Verify that server property was updated
         assert received_data is not None, "Callback for property 'daily_forecast_refresh_interval' was not called"
 
+        # Expect a reply sent back acknowledging the update
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for property 'daily_forecast_refresh_interval'."
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
 
-class TestServerSignals:
+    def test_daily_forecast_refresh_interval_property_receive_out_of_sync(self, server, mock_connection):
+        """Test that receiving a property update for 'daily_forecast_refresh_interval' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(seconds):
+            nonlocal received_data
+            received_data = {
+                "seconds": seconds,
+            }
+
+        server.on_daily_forecast_refresh_interval_updated(callback)
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            "seconds": 2020,
+        }
+        prop_obj = DailyForecastRefreshIntervalProperty(**prop_data)
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/dailyForecastRefreshInterval/setValue".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": "67"},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'daily_forecast_refresh_interval' was called despite out-of-sync version"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for out-of-sync property 'daily_forecast_refresh_interval'."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.OUT_OF_SYNC.value), f"Expected OUT_OF_SYNC return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_daily_forecast_refresh_interval_property_receive_nonsense_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'daily_forecast_refresh_interval' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(seconds):
+            nonlocal received_data
+            received_data = {
+                "seconds": seconds,
+            }
+
+        server.on_daily_forecast_refresh_interval_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/dailyForecastRefreshInterval/setValue".format(server.instance_id),
+            payload=b"adsfaf{this is not json}12|false",
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_daily_forecast_refresh_interval.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'daily_forecast_refresh_interval' was called despite bad payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for bad payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_daily_forecast_refresh_interval_property_receive_wrong_payload(self, server, mock_connection):
+        """Test that receiving a property update for 'daily_forecast_refresh_interval' updates the server property and calls callbacks."""
+        received_data = None
+
+        def callback(seconds):
+            nonlocal received_data
+            received_data = {
+                "seconds": seconds,
+            }
+
+        server.on_daily_forecast_refresh_interval_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="weather/{}/property/dailyForecastRefreshInterval/setValue".format(server.instance_id),
+            payload=b'{"wrong_field": 123, "another_wrong": false}',
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_daily_forecast_refresh_interval.version)},
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property 'daily_forecast_refresh_interval' was called despite wrong payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for wrong payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(
+            MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value
+        ), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+
+class TestWeatherServerSignals:
 
     def test_server_emit_current_time(self, server, mock_connection):
         """Test that the server can emit the 'current_time' signal."""
@@ -548,3 +1089,147 @@ class TestServerSignals:
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+
+
+class TestWeatherServerMethods:
+
+    def test_server_handle_refresh_daily_forecast_method(self, server, mock_connection):
+        """Test that the server can handle the 'refresh_daily_forecast' method."""
+        handler_callback_data = None
+        received_args = None
+
+        def handler() -> None:
+            nonlocal received_args
+            received_args = {}
+            return handler_callback_data
+
+        server.handle_refresh_daily_forecast(handler)
+
+        # Create and simulate receiving a method call message
+        method_data = {}
+        method_obj = RefreshDailyForecastMethodRequest(**method_data)
+        print(method_obj)
+        response_topic = "client/test/response"
+        correlation_data = b"method-1234"
+        incoming_msg = Message(
+            topic="weather/{}/method/refreshDailyForecast".format(server.instance_id),
+            payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # Verify that handler was called with correct arguments
+        assert received_args is not None, "Handler for method 'refresh_daily_forecast' was not called"
+        assert method_data == received_args, f"Handler arguments {received_args} do not match expected {method_data}"
+
+        # Verify that a response message was published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for method 'refresh_daily_forecast'."
+
+        resp_msg = published_list[0]
+        assert resp_msg.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        assert resp_msg.topic == response_topic, "Response topic does not match expected value"
+
+        # Verify response payload
+        resp_payload = json.loads(resp_msg.payload.decode("utf-8"))
+
+        expected_resp_dict = {}
+        assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
+
+    def test_server_handle_refresh_hourly_forecast_method(self, server, mock_connection):
+        """Test that the server can handle the 'refresh_hourly_forecast' method."""
+        handler_callback_data = None
+        received_args = None
+
+        def handler() -> None:
+            nonlocal received_args
+            received_args = {}
+            return handler_callback_data
+
+        server.handle_refresh_hourly_forecast(handler)
+
+        # Create and simulate receiving a method call message
+        method_data = {}
+        method_obj = RefreshHourlyForecastMethodRequest(**method_data)
+        print(method_obj)
+        response_topic = "client/test/response"
+        correlation_data = b"method-1234"
+        incoming_msg = Message(
+            topic="weather/{}/method/refreshHourlyForecast".format(server.instance_id),
+            payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # Verify that handler was called with correct arguments
+        assert received_args is not None, "Handler for method 'refresh_hourly_forecast' was not called"
+        assert method_data == received_args, f"Handler arguments {received_args} do not match expected {method_data}"
+
+        # Verify that a response message was published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for method 'refresh_hourly_forecast'."
+
+        resp_msg = published_list[0]
+        assert resp_msg.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        assert resp_msg.topic == response_topic, "Response topic does not match expected value"
+
+        # Verify response payload
+        resp_payload = json.loads(resp_msg.payload.decode("utf-8"))
+
+        expected_resp_dict = {}
+        assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
+
+    def test_server_handle_refresh_current_conditions_method(self, server, mock_connection):
+        """Test that the server can handle the 'refresh_current_conditions' method."""
+        handler_callback_data = None
+        received_args = None
+
+        def handler() -> None:
+            nonlocal received_args
+            received_args = {}
+            return handler_callback_data
+
+        server.handle_refresh_current_conditions(handler)
+
+        # Create and simulate receiving a method call message
+        method_data = {}
+        method_obj = RefreshCurrentConditionsMethodRequest(**method_data)
+        print(method_obj)
+        response_topic = "client/test/response"
+        correlation_data = b"method-1234"
+        incoming_msg = Message(
+            topic="weather/{}/method/refreshCurrentConditions".format(server.instance_id),
+            payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # Verify that handler was called with correct arguments
+        assert received_args is not None, "Handler for method 'refresh_current_conditions' was not called"
+        assert method_data == received_args, f"Handler arguments {received_args} do not match expected {method_data}"
+
+        # Verify that a response message was published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for method 'refresh_current_conditions'."
+
+        resp_msg = published_list[0]
+        assert resp_msg.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        assert resp_msg.topic == response_topic, "Response topic does not match expected value"
+
+        # Verify response payload
+        resp_payload = json.loads(resp_msg.payload.decode("utf-8"))
+
+        expected_resp_dict = {}
+        assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
