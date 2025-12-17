@@ -781,6 +781,7 @@ class ClientScreen(Screen):
             return handler
 
         # Register all signal handlers
+        assert self.client is not None, "Client must be initialized"
         self.client.receive_empty(make_handler("empty"))
         self.client.receive_single_int(make_handler("single_int"))
         self.client.receive_single_optional_int(make_handler("single_optional_int"))
@@ -842,6 +843,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_integer_changed(on_read_write_integer_updated, call_immediately=True)
 
             elif prop_name == "read_only_integer":
@@ -859,6 +861,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_only_integer_changed(on_read_only_integer_updated, call_immediately=True)
 
             elif prop_name == "read_write_optional_integer":
@@ -876,6 +879,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_optional_integer_changed(on_read_write_optional_integer_updated, call_immediately=True)
 
             elif prop_name == "read_write_two_integers":
@@ -897,6 +901,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_two_integers_changed(on_read_write_two_integers_updated, call_immediately=True)
 
             elif prop_name == "read_only_string":
@@ -914,6 +919,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_only_string_changed(on_read_only_string_updated, call_immediately=True)
 
             elif prop_name == "read_write_string":
@@ -931,6 +937,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_string_changed(on_read_write_string_updated, call_immediately=True)
 
             elif prop_name == "read_write_optional_string":
@@ -948,6 +955,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_optional_string_changed(on_read_write_optional_string_updated, call_immediately=True)
 
             elif prop_name == "read_write_two_strings":
@@ -969,6 +977,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_two_strings_changed(on_read_write_two_strings_updated, call_immediately=True)
 
             elif prop_name == "read_write_struct":
@@ -1044,6 +1053,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_struct_changed(on_read_write_struct_updated, call_immediately=True)
 
             elif prop_name == "read_write_optional_struct":
@@ -1119,6 +1129,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_optional_struct_changed(on_read_write_optional_struct_updated, call_immediately=True)
 
             elif prop_name == "read_write_two_structs":
@@ -1254,6 +1265,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_two_structs_changed(on_read_write_two_structs_updated, call_immediately=True)
 
             elif prop_name == "read_only_enum":
@@ -1271,6 +1283,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_only_enum_changed(on_read_only_enum_updated, call_immediately=True)
 
             elif prop_name == "read_write_enum":
@@ -1288,6 +1301,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_enum_changed(on_read_write_enum_updated, call_immediately=True)
 
             elif prop_name == "read_write_optional_enum":
@@ -1305,6 +1319,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_optional_enum_changed(on_read_write_optional_enum_updated, call_immediately=True)
 
             elif prop_name == "read_write_two_enums":
@@ -1326,6 +1341,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_two_enums_changed(on_read_write_two_enums_updated, call_immediately=True)
 
             elif prop_name == "read_write_datetime":
@@ -1343,6 +1359,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_datetime_changed(on_read_write_datetime_updated, call_immediately=True)
 
             elif prop_name == "read_write_optional_datetime":
@@ -1360,6 +1377,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_optional_datetime_changed(on_read_write_optional_datetime_updated, call_immediately=True)
 
             elif prop_name == "read_write_two_datetimes":
@@ -1381,6 +1399,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_two_datetimes_changed(on_read_write_two_datetimes_updated, call_immediately=True)
 
             elif prop_name == "read_write_duration":
@@ -1398,6 +1417,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_duration_changed(on_read_write_duration_updated, call_immediately=True)
 
             elif prop_name == "read_write_optional_duration":
@@ -1415,6 +1435,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_optional_duration_changed(on_read_write_optional_duration_updated, call_immediately=True)
 
             elif prop_name == "read_write_two_durations":
@@ -1436,6 +1457,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_two_durations_changed(on_read_write_two_durations_updated, call_immediately=True)
 
             elif prop_name == "read_write_binary":
@@ -1453,6 +1475,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_binary_changed(on_read_write_binary_updated, call_immediately=True)
 
             elif prop_name == "read_write_optional_binary":
@@ -1470,6 +1493,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_optional_binary_changed(on_read_write_optional_binary_updated, call_immediately=True)
 
             elif prop_name == "read_write_two_binaries":
@@ -1491,6 +1515,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_two_binaries_changed(on_read_write_two_binaries_updated, call_immediately=True)
 
             elif prop_name == "read_write_list_of_strings":
@@ -1508,6 +1533,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_list_of_strings_changed(on_read_write_list_of_strings_updated, call_immediately=True)
 
             elif prop_name == "read_write_lists":
@@ -1529,6 +1555,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.read_write_lists_changed(on_read_write_lists_updated, call_immediately=True)
 
         # Register all properties
@@ -1561,6 +1588,8 @@ class ClientScreen(Screen):
 
     def on_click(self, event) -> None:
         """Handle clicks on property widgets."""
+        assert self.client is not None, "Client must be initialized"
+
         # Check if the clicked widget is a writable property
         widget = event.widget
         if hasattr(widget, "property_name") and hasattr(widget, "current_value"):

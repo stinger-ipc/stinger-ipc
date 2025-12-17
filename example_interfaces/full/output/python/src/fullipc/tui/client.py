@@ -508,6 +508,7 @@ class ClientScreen(Screen):
             return handler
 
         # Register all signal handlers
+        assert self.client is not None, "Client must be initialized"
         self.client.receive_today_is(make_handler("today_is"))
         self.client.receive_random_word(make_handler("random_word"))
 
@@ -546,6 +547,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.favorite_number_changed(on_favorite_number_updated, call_immediately=True)
 
             elif prop_name == "favorite_foods":
@@ -570,6 +572,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.favorite_foods_changed(on_favorite_foods_updated, call_immediately=True)
 
             elif prop_name == "lunch_menu":
@@ -613,6 +616,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.lunch_menu_changed(on_lunch_menu_updated, call_immediately=True)
 
             elif prop_name == "family_name":
@@ -630,6 +634,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.family_name_changed(on_family_name_updated, call_immediately=True)
 
             elif prop_name == "last_breakfast_time":
@@ -647,6 +652,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.last_breakfast_time_changed(on_last_breakfast_time_updated, call_immediately=True)
 
             elif prop_name == "last_birthdays":
@@ -674,6 +680,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.last_birthdays_changed(on_last_birthdays_updated, call_immediately=True)
 
         # Register all properties
@@ -686,6 +693,8 @@ class ClientScreen(Screen):
 
     def on_click(self, event) -> None:
         """Handle clicks on property widgets."""
+        assert self.client is not None, "Client must be initialized"
+
         # Check if the clicked widget is a writable property
         widget = event.widget
         if hasattr(widget, "property_name") and hasattr(widget, "current_value"):

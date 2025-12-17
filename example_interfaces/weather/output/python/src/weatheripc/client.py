@@ -336,9 +336,9 @@ class WeatherClient:
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if message.user_properties:
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", message.topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
             if "ReturnCode" in user_properties:
                 return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
@@ -347,14 +347,14 @@ class WeatherClient:
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, return_code, debug_message)
+                cb(message.payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
-            self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+            self._logger.warning("No correlation data in properties sent to %s.", message.topic)
 
     def _receive_any_property_response_message(self, message: Message):
-        user_properties = message.user_properties
+        user_properties = message.user_properties or {}
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
             debug_info = user_properties.get("DebugInfo", "")
@@ -735,68 +735,59 @@ class WeatherClientBuilder:
         self._logger.debug("Building WeatherClient for service instance %s", instance_info.instance_id)
         client = WeatherClient(broker, instance_info)
 
-        for cb in self._signal_recv_callbacks_for_current_time:
+        for current_time_cb in self._signal_recv_callbacks_for_current_time:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_current_time(bound_cb)
+                client.receive_current_time(current_time_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_current_time(cb)
+                client.receive_current_time(current_time_cb)
 
-        for cb in self._property_updated_callbacks_for_location:
+        for location_cb in self._property_updated_callbacks_for_location:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.location_changed(bound_cb)
+                client.location_changed(location_cb.__get__(binding, binding.__class__))
             else:
-                client.location_changed(cb)
+                client.location_changed(location_cb)
 
-        for cb in self._property_updated_callbacks_for_current_temperature:
+        for current_temperature_cb in self._property_updated_callbacks_for_current_temperature:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.current_temperature_changed(bound_cb)
+                client.current_temperature_changed(current_temperature_cb.__get__(binding, binding.__class__))
             else:
-                client.current_temperature_changed(cb)
+                client.current_temperature_changed(current_temperature_cb)
 
-        for cb in self._property_updated_callbacks_for_current_condition:
+        for current_condition_cb in self._property_updated_callbacks_for_current_condition:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.current_condition_changed(bound_cb)
+                client.current_condition_changed(current_condition_cb.__get__(binding, binding.__class__))
             else:
-                client.current_condition_changed(cb)
+                client.current_condition_changed(current_condition_cb)
 
-        for cb in self._property_updated_callbacks_for_daily_forecast:
+        for daily_forecast_cb in self._property_updated_callbacks_for_daily_forecast:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.daily_forecast_changed(bound_cb)
+                client.daily_forecast_changed(daily_forecast_cb.__get__(binding, binding.__class__))
             else:
-                client.daily_forecast_changed(cb)
+                client.daily_forecast_changed(daily_forecast_cb)
 
-        for cb in self._property_updated_callbacks_for_hourly_forecast:
+        for hourly_forecast_cb in self._property_updated_callbacks_for_hourly_forecast:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.hourly_forecast_changed(bound_cb)
+                client.hourly_forecast_changed(hourly_forecast_cb.__get__(binding, binding.__class__))
             else:
-                client.hourly_forecast_changed(cb)
+                client.hourly_forecast_changed(hourly_forecast_cb)
 
-        for cb in self._property_updated_callbacks_for_current_condition_refresh_interval:
+        for current_condition_refresh_interval_cb in self._property_updated_callbacks_for_current_condition_refresh_interval:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.current_condition_refresh_interval_changed(bound_cb)
+                client.current_condition_refresh_interval_changed(current_condition_refresh_interval_cb.__get__(binding, binding.__class__))
             else:
-                client.current_condition_refresh_interval_changed(cb)
+                client.current_condition_refresh_interval_changed(current_condition_refresh_interval_cb)
 
-        for cb in self._property_updated_callbacks_for_hourly_forecast_refresh_interval:
+        for hourly_forecast_refresh_interval_cb in self._property_updated_callbacks_for_hourly_forecast_refresh_interval:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.hourly_forecast_refresh_interval_changed(bound_cb)
+                client.hourly_forecast_refresh_interval_changed(hourly_forecast_refresh_interval_cb.__get__(binding, binding.__class__))
             else:
-                client.hourly_forecast_refresh_interval_changed(cb)
+                client.hourly_forecast_refresh_interval_changed(hourly_forecast_refresh_interval_cb)
 
-        for cb in self._property_updated_callbacks_for_daily_forecast_refresh_interval:
+        for daily_forecast_refresh_interval_cb in self._property_updated_callbacks_for_daily_forecast_refresh_interval:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.daily_forecast_refresh_interval_changed(bound_cb)
+                client.daily_forecast_refresh_interval_changed(daily_forecast_refresh_interval_cb.__get__(binding, binding.__class__))
             else:
-                client.daily_forecast_refresh_interval_changed(cb)
+                client.daily_forecast_refresh_interval_changed(daily_forecast_refresh_interval_cb)
 
         return client
 
@@ -888,12 +879,12 @@ class WeatherClientDiscoverer:
                 else:
                     self._logger.debug("Updated info for service: %s", instance_id)
 
-    def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _process_service_discovery_message(self, message: Message):
         """Processes a service discovery message."""
-        self._logger.debug("Processing service discovery message on topic %s", topic)
-        if len(payload) > 0:
+        self._logger.debug("Processing service discovery message on topic %s", message.topic)
+        if len(message.payload) > 0:
             try:
-                service_info = InterfaceInfo.model_validate_json(payload)
+                service_info = InterfaceInfo.model_validate_json(message.payload)
                 with self._mutex:
                     self._discovered_interface_infos[service_info.instance] = service_info
             except Exception as e:
@@ -901,7 +892,7 @@ class WeatherClientDiscoverer:
             self._check_for_fully_discovered(service_info.instance)
 
         else:  # Empty payload means the service is going away
-            instance_id = topic.split("/")[-2]
+            instance_id = message.topic.split("/")[-2]
             with self._mutex:
                 if instance_id in self._discovered_services:
                     self._logger.info("Service %s is going away", instance_id)
@@ -914,15 +905,15 @@ class WeatherClientDiscoverer:
                     for cb in self._removed_service_callbacks:
                         cb(instance_id)
 
-    def _process_property_value_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _process_property_value_message(self, message: Message):
         """Processes a property value message for discovery purposes."""
-        self._logger.debug("Processing property value message on topic %s", topic)
-        instance_id = topic.split("/")[1]
-        property_name = topic.split("/")[3]
-        user_properties = properties.get("UserProperty", {})
-        prop_version = user_properties.get("PropertyVersion", -1)
+        self._logger.debug("Processing property value message on topic %s", message.topic)
+        instance_id = message.topic.split("/")[1]
+        property_name = message.topic.split("/")[3]
+        user_properties = message.user_properties or {}
+        prop_version = user_properties.get("PropertyVersion", "-1")
         try:
-            prop_obj = json.loads(payload)
+            prop_obj = json.loads(message.payload)
             with self._mutex:
                 if instance_id not in self._discovered_properties:
                     self._discovered_properties[instance_id] = dict()

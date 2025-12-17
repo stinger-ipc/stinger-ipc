@@ -404,6 +404,7 @@ class ClientScreen(Screen):
             return handler
 
         # Register all signal handlers
+        assert self.client is not None, "Client must be initialized"
         self.client.receive_another_signal(make_handler("another_signal"))
         self.client.receive_bark(make_handler("bark"))
         self.client.receive_maybe_number(make_handler("maybe_number"))
@@ -434,6 +435,8 @@ class ClientScreen(Screen):
 
     def on_click(self, event) -> None:
         """Handle clicks on property widgets."""
+        assert self.client is not None, "Client must be initialized"
+
         # Check if the clicked widget is a writable property
         widget = event.widget
         if hasattr(widget, "property_name") and hasattr(widget, "current_value"):

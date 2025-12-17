@@ -796,36 +796,37 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_integer.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_integer.version}' of the 'read_write_integer' property"
                 )
 
-            prop_obj = ReadWriteIntegerProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteIntegerProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_integer.mutex:
                 self._property_read_write_integer.version += 1
                 self._property_read_write_integer.set_value(prop_value)
 
-                prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.get_value())
+                current_prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteInteger/value".format(self._instance_id), prop_obj, self._property_read_write_integer.version)
+                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteInteger/value".format(self._instance_id), current_prop_obj, self._property_read_write_integer.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_integer.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(
+                        response_topic, current_prop_obj, str(self._property_read_write_integer.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_integer.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_integer_callback in self._property_read_write_integer.callbacks:
+
+                read_write_integer_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -837,7 +838,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_read_write_integer.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_integer.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_integer_update_request_message(self, message: Message):
@@ -850,40 +851,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_optional_integer.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_integer.version}' of the 'read_write_optional_integer' property"
                 )
 
-            prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_optional_integer.mutex:
                 self._property_read_write_optional_integer.version += 1
                 self._property_read_write_optional_integer.set_value(prop_value)
 
-                prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.get_value())
+                current_prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalInteger/value".format(self._instance_id), prop_obj, self._property_read_write_optional_integer.version
+                    "testable/{}/property/readWriteOptionalInteger/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_integer.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_optional_integer.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_optional_integer.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_optional_integer.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_optional_integer_callback in self._property_read_write_optional_integer.callbacks:
+
+                read_write_optional_integer_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -895,9 +895,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_optional_integer.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_integer.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_integers_update_request_message(self, message: Message):
@@ -910,38 +908,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = self._property_read_write_two_integers.get_value()
+
         try:
             if int(prop_version) != int(self._property_read_write_two_integers.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_integers.version}' of the 'read_write_two_integers' property"
                 )
 
-            prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj  # type: ReadWriteTwoIntegersProperty
+            prop_value = recv_prop_obj  # type: ReadWriteTwoIntegersProperty
             with self._property_read_write_two_integers.mutex:
                 self._property_read_write_two_integers.version += 1
                 self._property_read_write_two_integers.set_value(prop_value)
 
-                prop_obj = self._property_read_write_two_integers.get_value()  # type: ReadWriteTwoIntegersProperty
+                current_prop_obj = self._property_read_write_two_integers.get_value()  # type: ReadWriteTwoIntegersProperty
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteTwoIntegers/value".format(self._instance_id), prop_obj, self._property_read_write_two_integers.version)
+                state_msg = MessageCreator.property_state_message(
+                    "testable/{}/property/readWriteTwoIntegers/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_integers.version
+                )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_two_integers.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_two_integers.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_two_integers.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_two_integers_callback in self._property_read_write_two_integers.callbacks:
+
+                read_write_two_integers_callback(current_prop_obj)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -953,9 +952,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_two_integers.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_integers.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_string_update_request_message(self, message: Message):
@@ -968,36 +965,37 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_string.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_string.version}' of the 'read_write_string' property"
                 )
 
-            prop_obj = ReadWriteStringProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteStringProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_string.mutex:
                 self._property_read_write_string.version += 1
                 self._property_read_write_string.set_value(prop_value)
 
-                prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.get_value())
+                current_prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteString/value".format(self._instance_id), prop_obj, self._property_read_write_string.version)
+                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteString/value".format(self._instance_id), current_prop_obj, self._property_read_write_string.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_string.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(
+                        response_topic, current_prop_obj, str(self._property_read_write_string.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_string.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_string_callback in self._property_read_write_string.callbacks:
+
+                read_write_string_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1009,7 +1007,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_read_write_string.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_string.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_string_update_request_message(self, message: Message):
@@ -1022,40 +1020,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_optional_string.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_string.version}' of the 'read_write_optional_string' property"
                 )
 
-            prop_obj = ReadWriteOptionalStringProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteOptionalStringProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_optional_string.mutex:
                 self._property_read_write_optional_string.version += 1
                 self._property_read_write_optional_string.set_value(prop_value)
 
-                prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.get_value())
+                current_prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalString/value".format(self._instance_id), prop_obj, self._property_read_write_optional_string.version
+                    "testable/{}/property/readWriteOptionalString/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_string.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_optional_string.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_optional_string.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_optional_string.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_optional_string_callback in self._property_read_write_optional_string.callbacks:
+
+                read_write_optional_string_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1067,9 +1064,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_optional_string.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_string.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_strings_update_request_message(self, message: Message):
@@ -1082,38 +1077,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = self._property_read_write_two_strings.get_value()
+
         try:
             if int(prop_version) != int(self._property_read_write_two_strings.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_strings.version}' of the 'read_write_two_strings' property"
                 )
 
-            prop_obj = ReadWriteTwoStringsProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteTwoStringsProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj  # type: ReadWriteTwoStringsProperty
+            prop_value = recv_prop_obj  # type: ReadWriteTwoStringsProperty
             with self._property_read_write_two_strings.mutex:
                 self._property_read_write_two_strings.version += 1
                 self._property_read_write_two_strings.set_value(prop_value)
 
-                prop_obj = self._property_read_write_two_strings.get_value()  # type: ReadWriteTwoStringsProperty
+                current_prop_obj = self._property_read_write_two_strings.get_value()  # type: ReadWriteTwoStringsProperty
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteTwoStrings/value".format(self._instance_id), prop_obj, self._property_read_write_two_strings.version)
+                state_msg = MessageCreator.property_state_message(
+                    "testable/{}/property/readWriteTwoStrings/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_strings.version
+                )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_two_strings.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_two_strings.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_two_strings.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_two_strings_callback in self._property_read_write_two_strings.callbacks:
+
+                read_write_two_strings_callback(current_prop_obj)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1125,9 +1121,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_two_strings.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_strings.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_struct_update_request_message(self, message: Message):
@@ -1140,36 +1134,37 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_struct.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_struct.version}' of the 'read_write_struct' property"
                 )
 
-            prop_obj = ReadWriteStructProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteStructProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_struct.mutex:
                 self._property_read_write_struct.version += 1
                 self._property_read_write_struct.set_value(prop_value)
 
-                prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.get_value())
+                current_prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteStruct/value".format(self._instance_id), prop_obj, self._property_read_write_struct.version)
+                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteStruct/value".format(self._instance_id), current_prop_obj, self._property_read_write_struct.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_struct.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(
+                        response_topic, current_prop_obj, str(self._property_read_write_struct.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_struct.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_struct_callback in self._property_read_write_struct.callbacks:
+
+                read_write_struct_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1181,7 +1176,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_read_write_struct.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_struct.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_struct_update_request_message(self, message: Message):
@@ -1194,40 +1189,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_optional_struct.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_struct.version}' of the 'read_write_optional_struct' property"
                 )
 
-            prop_obj = ReadWriteOptionalStructProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteOptionalStructProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_optional_struct.mutex:
                 self._property_read_write_optional_struct.version += 1
                 self._property_read_write_optional_struct.set_value(prop_value)
 
-                prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.get_value())
+                current_prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalStruct/value".format(self._instance_id), prop_obj, self._property_read_write_optional_struct.version
+                    "testable/{}/property/readWriteOptionalStruct/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_struct.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_optional_struct.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_optional_struct.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_optional_struct.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_optional_struct_callback in self._property_read_write_optional_struct.callbacks:
+
+                read_write_optional_struct_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1239,9 +1233,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_optional_struct.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_struct.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_structs_update_request_message(self, message: Message):
@@ -1254,38 +1246,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = self._property_read_write_two_structs.get_value()
+
         try:
             if int(prop_version) != int(self._property_read_write_two_structs.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_structs.version}' of the 'read_write_two_structs' property"
                 )
 
-            prop_obj = ReadWriteTwoStructsProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteTwoStructsProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj  # type: ReadWriteTwoStructsProperty
+            prop_value = recv_prop_obj  # type: ReadWriteTwoStructsProperty
             with self._property_read_write_two_structs.mutex:
                 self._property_read_write_two_structs.version += 1
                 self._property_read_write_two_structs.set_value(prop_value)
 
-                prop_obj = self._property_read_write_two_structs.get_value()  # type: ReadWriteTwoStructsProperty
+                current_prop_obj = self._property_read_write_two_structs.get_value()  # type: ReadWriteTwoStructsProperty
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteTwoStructs/value".format(self._instance_id), prop_obj, self._property_read_write_two_structs.version)
+                state_msg = MessageCreator.property_state_message(
+                    "testable/{}/property/readWriteTwoStructs/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_structs.version
+                )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_two_structs.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_two_structs.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_two_structs.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_two_structs_callback in self._property_read_write_two_structs.callbacks:
+
+                read_write_two_structs_callback(current_prop_obj)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1297,9 +1290,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_two_structs.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_structs.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_enum_update_request_message(self, message: Message):
@@ -1312,34 +1303,35 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_enum.version):
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_enum.version}' of the 'read_write_enum' property")
 
-            prop_obj = ReadWriteEnumProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteEnumProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_enum.mutex:
                 self._property_read_write_enum.version += 1
                 self._property_read_write_enum.set_value(prop_value)
 
-                prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.get_value())
+                current_prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteEnum/value".format(self._instance_id), prop_obj, self._property_read_write_enum.version)
+                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteEnum/value".format(self._instance_id), current_prop_obj, self._property_read_write_enum.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_enum.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(
+                        response_topic, current_prop_obj, str(self._property_read_write_enum.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_enum.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_enum_callback in self._property_read_write_enum.callbacks:
+
+                read_write_enum_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1351,7 +1343,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_read_write_enum.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_enum.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_enum_update_request_message(self, message: Message):
@@ -1364,40 +1356,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_optional_enum.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_enum.version}' of the 'read_write_optional_enum' property"
                 )
 
-            prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_optional_enum.mutex:
                 self._property_read_write_optional_enum.version += 1
                 self._property_read_write_optional_enum.set_value(prop_value)
 
-                prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.get_value())
+                current_prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalEnum/value".format(self._instance_id), prop_obj, self._property_read_write_optional_enum.version
+                    "testable/{}/property/readWriteOptionalEnum/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_enum.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_optional_enum.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_optional_enum.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_optional_enum.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_optional_enum_callback in self._property_read_write_optional_enum.callbacks:
+
+                read_write_optional_enum_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1409,9 +1400,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_optional_enum.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_enum.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_enums_update_request_message(self, message: Message):
@@ -1424,36 +1413,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = self._property_read_write_two_enums.get_value()
+
         try:
             if int(prop_version) != int(self._property_read_write_two_enums.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_enums.version}' of the 'read_write_two_enums' property"
                 )
 
-            prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj  # type: ReadWriteTwoEnumsProperty
+            prop_value = recv_prop_obj  # type: ReadWriteTwoEnumsProperty
             with self._property_read_write_two_enums.mutex:
                 self._property_read_write_two_enums.version += 1
                 self._property_read_write_two_enums.set_value(prop_value)
 
-                prop_obj = self._property_read_write_two_enums.get_value()  # type: ReadWriteTwoEnumsProperty
+                current_prop_obj = self._property_read_write_two_enums.get_value()  # type: ReadWriteTwoEnumsProperty
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteTwoEnums/value".format(self._instance_id), prop_obj, self._property_read_write_two_enums.version)
+                state_msg = MessageCreator.property_state_message(
+                    "testable/{}/property/readWriteTwoEnums/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_enums.version
+                )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_enums.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(
+                        response_topic, current_prop_obj, str(self._property_read_write_two_enums.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_two_enums.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_two_enums_callback in self._property_read_write_two_enums.callbacks:
+
+                read_write_two_enums_callback(current_prop_obj)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1465,7 +1457,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_read_write_two_enums.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_enums.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_datetime_update_request_message(self, message: Message):
@@ -1478,36 +1470,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_datetime.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_datetime.version}' of the 'read_write_datetime' property"
                 )
 
-            prop_obj = ReadWriteDatetimeProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteDatetimeProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_datetime.mutex:
                 self._property_read_write_datetime.version += 1
                 self._property_read_write_datetime.set_value(prop_value)
 
-                prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.get_value())
+                current_prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_datetime.version)
+                state_msg = MessageCreator.property_state_message(
+                    "testable/{}/property/readWriteDatetime/value".format(self._instance_id), current_prop_obj, self._property_read_write_datetime.version
+                )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_datetime.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(
+                        response_topic, current_prop_obj, str(self._property_read_write_datetime.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_datetime.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_datetime_callback in self._property_read_write_datetime.callbacks:
+
+                read_write_datetime_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1519,7 +1514,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_read_write_datetime.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_datetime.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_datetime_update_request_message(self, message: Message):
@@ -1532,40 +1527,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_optional_datetime.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_datetime.version}' of the 'read_write_optional_datetime' property"
                 )
 
-            prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_optional_datetime.mutex:
                 self._property_read_write_optional_datetime.version += 1
                 self._property_read_write_optional_datetime.set_value(prop_value)
 
-                prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.get_value())
+                current_prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_optional_datetime.version
+                    "testable/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_datetime.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_optional_datetime.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_optional_datetime.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_optional_datetime.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_optional_datetime_callback in self._property_read_write_optional_datetime.callbacks:
+
+                read_write_optional_datetime_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1577,9 +1571,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_optional_datetime.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_datetime.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_datetimes_update_request_message(self, message: Message):
@@ -1592,40 +1584,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = self._property_read_write_two_datetimes.get_value()
+
         try:
             if int(prop_version) != int(self._property_read_write_two_datetimes.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_datetimes.version}' of the 'read_write_two_datetimes' property"
                 )
 
-            prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj  # type: ReadWriteTwoDatetimesProperty
+            prop_value = recv_prop_obj  # type: ReadWriteTwoDatetimesProperty
             with self._property_read_write_two_datetimes.mutex:
                 self._property_read_write_two_datetimes.version += 1
                 self._property_read_write_two_datetimes.set_value(prop_value)
 
-                prop_obj = self._property_read_write_two_datetimes.get_value()  # type: ReadWriteTwoDatetimesProperty
+                current_prop_obj = self._property_read_write_two_datetimes.get_value()  # type: ReadWriteTwoDatetimesProperty
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), prop_obj, self._property_read_write_two_datetimes.version
+                    "testable/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_datetimes.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_two_datetimes.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_two_datetimes.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_two_datetimes.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_two_datetimes_callback in self._property_read_write_two_datetimes.callbacks:
+
+                read_write_two_datetimes_callback(current_prop_obj)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1637,9 +1628,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_two_datetimes.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_datetimes.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_duration_update_request_message(self, message: Message):
@@ -1652,36 +1641,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_duration.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_duration.version}' of the 'read_write_duration' property"
                 )
 
-            prop_obj = ReadWriteDurationProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteDurationProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_duration.mutex:
                 self._property_read_write_duration.version += 1
                 self._property_read_write_duration.set_value(prop_value)
 
-                prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.get_value())
+                current_prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteDuration/value".format(self._instance_id), prop_obj, self._property_read_write_duration.version)
+                state_msg = MessageCreator.property_state_message(
+                    "testable/{}/property/readWriteDuration/value".format(self._instance_id), current_prop_obj, self._property_read_write_duration.version
+                )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_duration.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(
+                        response_topic, current_prop_obj, str(self._property_read_write_duration.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_duration.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_duration_callback in self._property_read_write_duration.callbacks:
+
+                read_write_duration_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1693,7 +1685,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_read_write_duration.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_duration.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_duration_update_request_message(self, message: Message):
@@ -1706,40 +1698,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_optional_duration.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_duration.version}' of the 'read_write_optional_duration' property"
                 )
 
-            prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_optional_duration.mutex:
                 self._property_read_write_optional_duration.version += 1
                 self._property_read_write_optional_duration.set_value(prop_value)
 
-                prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.get_value())
+                current_prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalDuration/value".format(self._instance_id), prop_obj, self._property_read_write_optional_duration.version
+                    "testable/{}/property/readWriteOptionalDuration/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_duration.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_optional_duration.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_optional_duration.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_optional_duration.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_optional_duration_callback in self._property_read_write_optional_duration.callbacks:
+
+                read_write_optional_duration_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1751,9 +1742,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_optional_duration.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_duration.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_durations_update_request_message(self, message: Message):
@@ -1766,40 +1755,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = self._property_read_write_two_durations.get_value()
+
         try:
             if int(prop_version) != int(self._property_read_write_two_durations.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_durations.version}' of the 'read_write_two_durations' property"
                 )
 
-            prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj  # type: ReadWriteTwoDurationsProperty
+            prop_value = recv_prop_obj  # type: ReadWriteTwoDurationsProperty
             with self._property_read_write_two_durations.mutex:
                 self._property_read_write_two_durations.version += 1
                 self._property_read_write_two_durations.set_value(prop_value)
 
-                prop_obj = self._property_read_write_two_durations.get_value()  # type: ReadWriteTwoDurationsProperty
+                current_prop_obj = self._property_read_write_two_durations.get_value()  # type: ReadWriteTwoDurationsProperty
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteTwoDurations/value".format(self._instance_id), prop_obj, self._property_read_write_two_durations.version
+                    "testable/{}/property/readWriteTwoDurations/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_durations.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_two_durations.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_two_durations.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_two_durations.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_two_durations_callback in self._property_read_write_two_durations.callbacks:
+
+                read_write_two_durations_callback(current_prop_obj)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1811,9 +1799,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_two_durations.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_durations.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_binary_update_request_message(self, message: Message):
@@ -1826,36 +1812,37 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_binary.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_binary.version}' of the 'read_write_binary' property"
                 )
 
-            prop_obj = ReadWriteBinaryProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteBinaryProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_binary.mutex:
                 self._property_read_write_binary.version += 1
                 self._property_read_write_binary.set_value(prop_value)
 
-                prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.get_value())
+                current_prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteBinary/value".format(self._instance_id), prop_obj, self._property_read_write_binary.version)
+                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteBinary/value".format(self._instance_id), current_prop_obj, self._property_read_write_binary.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_binary.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(
+                        response_topic, current_prop_obj, str(self._property_read_write_binary.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_binary.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_binary_callback in self._property_read_write_binary.callbacks:
+
+                read_write_binary_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1867,7 +1854,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_read_write_binary.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_binary.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_binary_update_request_message(self, message: Message):
@@ -1880,40 +1867,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_optional_binary.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_binary.version}' of the 'read_write_optional_binary' property"
                 )
 
-            prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_optional_binary.mutex:
                 self._property_read_write_optional_binary.version += 1
                 self._property_read_write_optional_binary.set_value(prop_value)
 
-                prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.get_value())
+                current_prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalBinary/value".format(self._instance_id), prop_obj, self._property_read_write_optional_binary.version
+                    "testable/{}/property/readWriteOptionalBinary/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_binary.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_optional_binary.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_optional_binary.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_optional_binary.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_optional_binary_callback in self._property_read_write_optional_binary.callbacks:
+
+                read_write_optional_binary_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1925,9 +1911,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_optional_binary.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_binary.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_binaries_update_request_message(self, message: Message):
@@ -1940,38 +1924,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = self._property_read_write_two_binaries.get_value()
+
         try:
             if int(prop_version) != int(self._property_read_write_two_binaries.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_binaries.version}' of the 'read_write_two_binaries' property"
                 )
 
-            prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj  # type: ReadWriteTwoBinariesProperty
+            prop_value = recv_prop_obj  # type: ReadWriteTwoBinariesProperty
             with self._property_read_write_two_binaries.mutex:
                 self._property_read_write_two_binaries.version += 1
                 self._property_read_write_two_binaries.set_value(prop_value)
 
-                prop_obj = self._property_read_write_two_binaries.get_value()  # type: ReadWriteTwoBinariesProperty
+                current_prop_obj = self._property_read_write_two_binaries.get_value()  # type: ReadWriteTwoBinariesProperty
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteTwoBinaries/value".format(self._instance_id), prop_obj, self._property_read_write_two_binaries.version)
+                state_msg = MessageCreator.property_state_message(
+                    "testable/{}/property/readWriteTwoBinaries/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_binaries.version
+                )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_two_binaries.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_two_binaries.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_two_binaries.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_two_binaries_callback in self._property_read_write_two_binaries.callbacks:
+
+                read_write_two_binaries_callback(current_prop_obj)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -1983,9 +1968,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_two_binaries.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_binaries.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_list_of_strings_update_request_message(self, message: Message):
@@ -1998,40 +1981,39 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.get_value())
+
         try:
             if int(prop_version) != int(self._property_read_write_list_of_strings.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_list_of_strings.version}' of the 'read_write_list_of_strings' property"
                 )
 
-            prop_obj = ReadWriteListOfStringsProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteListOfStringsProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.value
+            prop_value = recv_prop_obj.value
             with self._property_read_write_list_of_strings.mutex:
                 self._property_read_write_list_of_strings.version += 1
                 self._property_read_write_list_of_strings.set_value(prop_value)
 
-                prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.get_value())
+                current_prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteListOfStrings/value".format(self._instance_id), prop_obj, self._property_read_write_list_of_strings.version
+                    "testable/{}/property/readWriteListOfStrings/value".format(self._instance_id), current_prop_obj, self._property_read_write_list_of_strings.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_read_write_list_of_strings.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_read_write_list_of_strings.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_list_of_strings.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_list_of_strings_callback in self._property_read_write_list_of_strings.callbacks:
+
+                read_write_list_of_strings_callback(current_prop_obj.value)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -2043,9 +2025,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_read_write_list_of_strings.version), return_code.value, correlation_id, str(e)
-                )
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_list_of_strings.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_lists_update_request_message(self, message: Message):
@@ -2058,36 +2038,37 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = self._property_read_write_lists.get_value()
+
         try:
             if int(prop_version) != int(self._property_read_write_lists.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_lists.version}' of the 'read_write_lists' property"
                 )
 
-            prop_obj = ReadWriteListsProperty.model_validate_json(message.payload)
+            recv_prop_obj = ReadWriteListsProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj  # type: ReadWriteListsProperty
+            prop_value = recv_prop_obj  # type: ReadWriteListsProperty
             with self._property_read_write_lists.mutex:
                 self._property_read_write_lists.version += 1
                 self._property_read_write_lists.set_value(prop_value)
 
-                prop_obj = self._property_read_write_lists.get_value()  # type: ReadWriteListsProperty
+                current_prop_obj = self._property_read_write_lists.get_value()  # type: ReadWriteListsProperty
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteLists/value".format(self._instance_id), prop_obj, self._property_read_write_lists.version)
+                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteLists/value".format(self._instance_id), current_prop_obj, self._property_read_write_lists.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_lists.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(
+                        response_topic, current_prop_obj, str(self._property_read_write_lists.version), MethodReturnCode.SUCCESS.value, correlation_id
+                    )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_read_write_lists.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for read_write_lists_callback in self._property_read_write_lists.callbacks:
+
+                read_write_lists_callback(current_prop_obj)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -2099,7 +2080,7 @@ class TestableServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_read_write_lists.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_lists.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_message(self, message: Message):
@@ -2545,9 +2526,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -2603,9 +2583,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -2666,9 +2645,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -2729,9 +2707,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -2793,9 +2770,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -2856,9 +2832,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -2919,9 +2894,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -2983,9 +2957,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3046,9 +3019,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3109,9 +3081,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3173,9 +3144,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3236,9 +3206,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3299,9 +3268,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3363,9 +3331,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3426,9 +3393,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3489,9 +3455,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3553,9 +3518,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3616,9 +3580,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3679,9 +3642,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3743,9 +3705,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3806,9 +3767,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3869,9 +3829,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3933,9 +3892,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -3996,9 +3954,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -4059,9 +4016,8 @@ class TestableServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -4126,8 +4082,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_integer.callbacks:
-                callback(prop_obj.value)
+            for read_write_integer_callback in self._property_read_write_integer.callbacks:
+                read_write_integer_callback(prop_obj.value)
 
     def set_read_write_integer(self, value: int):
         """This method sets (publishes) a new value for the 'read_write_integer' property."""
@@ -4165,8 +4121,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_only_integer.callbacks:
-                callback(prop_obj.value)
+            for read_only_integer_callback in self._property_read_only_integer.callbacks:
+                read_only_integer_callback(prop_obj.value)
 
     def set_read_only_integer(self, value: int):
         """This method sets (publishes) a new value for the 'read_only_integer' property."""
@@ -4206,8 +4162,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_optional_integer.callbacks:
-                callback(prop_obj.value)
+            for read_write_optional_integer_callback in self._property_read_write_optional_integer.callbacks:
+                read_write_optional_integer_callback(prop_obj.value)
 
     def set_read_write_optional_integer(self, value: Optional[int]):
         """This method sets (publishes) a new value for the 'read_write_optional_integer' property."""
@@ -4301,8 +4257,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_only_string.callbacks:
-                callback(prop_obj.value)
+            for read_only_string_callback in self._property_read_only_string.callbacks:
+                read_only_string_callback(prop_obj.value)
 
     def set_read_only_string(self, value: str):
         """This method sets (publishes) a new value for the 'read_only_string' property."""
@@ -4340,8 +4296,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_string.callbacks:
-                callback(prop_obj.value)
+            for read_write_string_callback in self._property_read_write_string.callbacks:
+                read_write_string_callback(prop_obj.value)
 
     def set_read_write_string(self, value: str):
         """This method sets (publishes) a new value for the 'read_write_string' property."""
@@ -4381,8 +4337,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_optional_string.callbacks:
-                callback(prop_obj.value)
+            for read_write_optional_string_callback in self._property_read_write_optional_string.callbacks:
+                read_write_optional_string_callback(prop_obj.value)
 
     def set_read_write_optional_string(self, value: Optional[str]):
         """This method sets (publishes) a new value for the 'read_write_optional_string' property."""
@@ -4476,8 +4432,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_struct.callbacks:
-                callback(prop_obj.value)
+            for read_write_struct_callback in self._property_read_write_struct.callbacks:
+                read_write_struct_callback(prop_obj.value)
 
     def set_read_write_struct(self, value: AllTypes):
         """This method sets (publishes) a new value for the 'read_write_struct' property."""
@@ -4517,8 +4473,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_optional_struct.callbacks:
-                callback(prop_obj.value)
+            for read_write_optional_struct_callback in self._property_read_write_optional_struct.callbacks:
+                read_write_optional_struct_callback(prop_obj.value)
 
     def set_read_write_optional_struct(self, value: AllTypes):
         """This method sets (publishes) a new value for the 'read_write_optional_struct' property."""
@@ -4612,8 +4568,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_only_enum.callbacks:
-                callback(prop_obj.value)
+            for read_only_enum_callback in self._property_read_only_enum.callbacks:
+                read_only_enum_callback(prop_obj.value)
 
     def set_read_only_enum(self, value: Numbers):
         """This method sets (publishes) a new value for the 'read_only_enum' property."""
@@ -4651,8 +4607,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_enum.callbacks:
-                callback(prop_obj.value)
+            for read_write_enum_callback in self._property_read_write_enum.callbacks:
+                read_write_enum_callback(prop_obj.value)
 
     def set_read_write_enum(self, value: Numbers):
         """This method sets (publishes) a new value for the 'read_write_enum' property."""
@@ -4692,8 +4648,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_optional_enum.callbacks:
-                callback(prop_obj.value)
+            for read_write_optional_enum_callback in self._property_read_write_optional_enum.callbacks:
+                read_write_optional_enum_callback(prop_obj.value)
 
     def set_read_write_optional_enum(self, value: Optional[Numbers]):
         """This method sets (publishes) a new value for the 'read_write_optional_enum' property."""
@@ -4787,8 +4743,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_datetime.callbacks:
-                callback(prop_obj.value)
+            for read_write_datetime_callback in self._property_read_write_datetime.callbacks:
+                read_write_datetime_callback(prop_obj.value)
 
     def set_read_write_datetime(self, value: datetime):
         """This method sets (publishes) a new value for the 'read_write_datetime' property."""
@@ -4828,8 +4784,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_optional_datetime.callbacks:
-                callback(prop_obj.value)
+            for read_write_optional_datetime_callback in self._property_read_write_optional_datetime.callbacks:
+                read_write_optional_datetime_callback(prop_obj.value)
 
     def set_read_write_optional_datetime(self, value: Optional[datetime]):
         """This method sets (publishes) a new value for the 'read_write_optional_datetime' property."""
@@ -4925,8 +4881,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_duration.callbacks:
-                callback(prop_obj.value)
+            for read_write_duration_callback in self._property_read_write_duration.callbacks:
+                read_write_duration_callback(prop_obj.value)
 
     def set_read_write_duration(self, value: timedelta):
         """This method sets (publishes) a new value for the 'read_write_duration' property."""
@@ -4966,8 +4922,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_optional_duration.callbacks:
-                callback(prop_obj.value)
+            for read_write_optional_duration_callback in self._property_read_write_optional_duration.callbacks:
+                read_write_optional_duration_callback(prop_obj.value)
 
     def set_read_write_optional_duration(self, value: Optional[timedelta]):
         """This method sets (publishes) a new value for the 'read_write_optional_duration' property."""
@@ -5063,8 +5019,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_binary.callbacks:
-                callback(prop_obj.value)
+            for read_write_binary_callback in self._property_read_write_binary.callbacks:
+                read_write_binary_callback(prop_obj.value)
 
     def set_read_write_binary(self, value: bytes):
         """This method sets (publishes) a new value for the 'read_write_binary' property."""
@@ -5104,8 +5060,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_optional_binary.callbacks:
-                callback(prop_obj.value)
+            for read_write_optional_binary_callback in self._property_read_write_optional_binary.callbacks:
+                read_write_optional_binary_callback(prop_obj.value)
 
     def set_read_write_optional_binary(self, value: bytes):
         """This method sets (publishes) a new value for the 'read_write_optional_binary' property."""
@@ -5201,8 +5157,8 @@ class TestableServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_read_write_list_of_strings.callbacks:
-                callback(prop_obj.value)
+            for read_write_list_of_strings_callback in self._property_read_write_list_of_strings.callbacks:
+                read_write_list_of_strings_callback(prop_obj.value)
 
     def set_read_write_list_of_strings(self, value: List[str]):
         """This method sets (publishes) a new value for the 'read_write_list_of_strings' property."""

@@ -185,45 +185,43 @@ class {{stinger.python.server_class_name}}:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data # type: Optional[bytes]
         response_topic = message.response_topic # type: Optional[str]
-        {%-if prop.arg_list | length == 1%}
-        existing_prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
-        {%-else%}
-        existing_prop_obj = self._property_{{prop_name|snake_case}}.get_value()
-        {%-endif%}
+
         try:
             if int(prop_version) != int(self._property_{{prop_name|snake_case}}.version):
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_{{prop_name|snake_case}}.version}' of the '{{prop_name}}' property")
 
-            prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
+            recv_prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
 
             {% if prop.arg_list | length > 1-%}
-            prop_value = prop_obj # type: {{prop_name|UpperCamelCase}}Property
+            prop_value = recv_prop_obj # type: {{prop_name|UpperCamelCase}}Property
             {%else-%}
-            prop_value = prop_obj.{{prop.arg_list[0].name}}
+            prop_value = recv_prop_obj.{{prop.arg_list[0].name}}
             {%endif-%}
             with self._property_{{prop_name|snake_case}}.mutex:
                 self._property_{{prop_name|snake_case}}.version += 1
                 self._property_{{prop_name|snake_case}}.set_value(prop_value)
                 {% if prop.arg_list | length == 1%}
-                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
+                current_prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
                 {%else%}
-                prop_obj = self._property_{{prop_name|snake_case}}.get_value() # type: {{prop_name|UpperCamelCase}}Property
+                current_prop_obj = self._property_{{prop_name|snake_case}}.get_value() # type: {{prop_name|UpperCamelCase}}Property
                 {%endif%}
-                state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), prop_obj, self._property_{{prop_name|snake_case}}.version)
+                state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), current_prop_obj, self._property_{{prop_name|snake_case}}.version)
                 self._conn.publish(state_msg)
             
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
             {%if config.properties.stinger_owned_values%}{# only call callbacks if we have stinger-owned values#}
-            for callback in self._property_{{prop_name|snake_case}}.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
+                {%if prop.arg_list | length == 1%}
+                {{prop_name|snake_case}}_callback(current_prop_obj.{{prop.arg_list[0].name|snake_case}})
+                {%else%}
+                {{prop_name|snake_case}}_callback(current_prop_obj)
+                {%endif%}
             {%endif%}
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -239,7 +237,7 @@ class {{stinger.python.server_class_name}}:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_{{prop_name|snake_case}}.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
     {%endif%}{# not read only#}
     {%endfor%}{# end property loop #}
@@ -287,9 +285,8 @@ class {{stinger.python.server_class_name}}:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -371,8 +368,8 @@ class {{stinger.python.server_class_name}}:
                 self._conn.publish(state_msg)
         {%if config.properties.stinger_owned_values%}{# only call callbacks if it is a stinger-owned value#}
         if value_updated:
-            for callback in self._property_{{prop_name|snake_case}}.callbacks:
-                callback(prop_obj.{{arg.name|snake_case}})
+            for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
+                {{prop_name|snake_case}}_callback(prop_obj.{{arg.name|snake_case}})
         {%endif%}
 
     {%-else%} {# property with multiple arguments #}

@@ -147,34 +147,33 @@ class SimpleServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = SchoolProperty(name=self._property_school.get_value())
+
         try:
             if int(prop_version) != int(self._property_school.version):
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_school.version}' of the 'school' property")
 
-            prop_obj = SchoolProperty.model_validate_json(message.payload)
+            recv_prop_obj = SchoolProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.name
+            prop_value = recv_prop_obj.name
             with self._property_school.mutex:
                 self._property_school.version += 1
                 self._property_school.set_value(prop_value)
 
-                prop_obj = SchoolProperty(name=self._property_school.get_value())
+                current_prop_obj = SchoolProperty(name=self._property_school.get_value())
 
-                state_msg = MessageCreator.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
+                state_msg = MessageCreator.property_state_message("simple/{}/property/school/value".format(self._instance_id), current_prop_obj, self._property_school.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_school.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for school_callback in self._property_school.callbacks:
+
+                school_callback(current_prop_obj.name)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -186,7 +185,7 @@ class SimpleServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_school.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_school.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_message(self, message: Message):
@@ -225,9 +224,8 @@ class SimpleServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -292,8 +290,8 @@ class SimpleServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_school.callbacks:
-                callback(prop_obj.name)
+            for school_callback in self._property_school.callbacks:
+                school_callback(prop_obj.name)
 
     def set_school(self, name: str):
         """This method sets (publishes) a new value for the 'school' property."""

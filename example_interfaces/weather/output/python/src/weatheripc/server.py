@@ -311,34 +311,33 @@ class WeatherServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = self._property_location.get_value()
+
         try:
             if int(prop_version) != int(self._property_location.version):
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_location.version}' of the 'location' property")
 
-            prop_obj = LocationProperty.model_validate_json(message.payload)
+            recv_prop_obj = LocationProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj  # type: LocationProperty
+            prop_value = recv_prop_obj  # type: LocationProperty
             with self._property_location.mutex:
                 self._property_location.version += 1
                 self._property_location.set_value(prop_value)
 
-                prop_obj = self._property_location.get_value()  # type: LocationProperty
+                current_prop_obj = self._property_location.get_value()  # type: LocationProperty
 
-                state_msg = MessageCreator.property_state_message("weather/{}/property/location/value".format(self._instance_id), prop_obj, self._property_location.version)
+                state_msg = MessageCreator.property_state_message("weather/{}/property/location/value".format(self._instance_id), current_prop_obj, self._property_location.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_location.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_location.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_location.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for location_callback in self._property_location.callbacks:
+
+                location_callback(current_prop_obj)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -350,7 +349,7 @@ class WeatherServer:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = MessageCreator.property_response_message(response_topic, existing_prop_obj, str(self._property_location.version), return_code.value, correlation_id, str(e))
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_location.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
 
     def _receive_current_condition_refresh_interval_update_request_message(self, message: Message):
@@ -363,40 +362,39 @@ class WeatherServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
+
         try:
             if int(prop_version) != int(self._property_current_condition_refresh_interval.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_current_condition_refresh_interval.version}' of the 'current_condition_refresh_interval' property"
                 )
 
-            prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(message.payload)
+            recv_prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.seconds
+            prop_value = recv_prop_obj.seconds
             with self._property_current_condition_refresh_interval.mutex:
                 self._property_current_condition_refresh_interval.version += 1
                 self._property_current_condition_refresh_interval.set_value(prop_value)
 
-                prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
+                current_prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "weather/{}/property/currentConditionRefreshInterval/value".format(self._instance_id), prop_obj, self._property_current_condition_refresh_interval.version
+                    "weather/{}/property/currentConditionRefreshInterval/value".format(self._instance_id), current_prop_obj, self._property_current_condition_refresh_interval.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_current_condition_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_current_condition_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_current_condition_refresh_interval.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for current_condition_refresh_interval_callback in self._property_current_condition_refresh_interval.callbacks:
+
+                current_condition_refresh_interval_callback(current_prop_obj.seconds)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -409,7 +407,7 @@ class WeatherServer:
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_current_condition_refresh_interval.version), return_code.value, correlation_id, str(e)
+                    response_topic, prop_obj, str(self._property_current_condition_refresh_interval.version), return_code.value, correlation_id, str(e)
                 )
                 self._conn.publish(prop_resp_msg)
 
@@ -423,40 +421,39 @@ class WeatherServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
+
         try:
             if int(prop_version) != int(self._property_hourly_forecast_refresh_interval.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_hourly_forecast_refresh_interval.version}' of the 'hourly_forecast_refresh_interval' property"
                 )
 
-            prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(message.payload)
+            recv_prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.seconds
+            prop_value = recv_prop_obj.seconds
             with self._property_hourly_forecast_refresh_interval.mutex:
                 self._property_hourly_forecast_refresh_interval.version += 1
                 self._property_hourly_forecast_refresh_interval.set_value(prop_value)
 
-                prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
+                current_prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "weather/{}/property/hourlyForecastRefreshInterval/value".format(self._instance_id), prop_obj, self._property_hourly_forecast_refresh_interval.version
+                    "weather/{}/property/hourlyForecastRefreshInterval/value".format(self._instance_id), current_prop_obj, self._property_hourly_forecast_refresh_interval.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_hourly_forecast_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_hourly_forecast_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_hourly_forecast_refresh_interval.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for hourly_forecast_refresh_interval_callback in self._property_hourly_forecast_refresh_interval.callbacks:
+
+                hourly_forecast_refresh_interval_callback(current_prop_obj.seconds)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -469,7 +466,7 @@ class WeatherServer:
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_hourly_forecast_refresh_interval.version), return_code.value, correlation_id, str(e)
+                    response_topic, prop_obj, str(self._property_hourly_forecast_refresh_interval.version), return_code.value, correlation_id, str(e)
                 )
                 self._conn.publish(prop_resp_msg)
 
@@ -483,40 +480,39 @@ class WeatherServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
-        existing_prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
+
         try:
             if int(prop_version) != int(self._property_daily_forecast_refresh_interval.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_daily_forecast_refresh_interval.version}' of the 'daily_forecast_refresh_interval' property"
                 )
 
-            prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(message.payload)
+            recv_prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(message.payload)
 
-            prop_value = prop_obj.seconds
+            prop_value = recv_prop_obj.seconds
             with self._property_daily_forecast_refresh_interval.mutex:
                 self._property_daily_forecast_refresh_interval.version += 1
                 self._property_daily_forecast_refresh_interval.set_value(prop_value)
 
-                prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
+                current_prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
 
                 state_msg = MessageCreator.property_state_message(
-                    "weather/{}/property/dailyForecastRefreshInterval/value".format(self._instance_id), prop_obj, self._property_daily_forecast_refresh_interval.version
+                    "weather/{}/property/dailyForecastRefreshInterval/value".format(self._instance_id), current_prop_obj, self._property_daily_forecast_refresh_interval.version
                 )
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, prop_obj, str(self._property_daily_forecast_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
+                        response_topic, current_prop_obj, str(self._property_daily_forecast_refresh_interval.version), MethodReturnCode.SUCCESS.value, correlation_id
                     )
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
-            for callback in self._property_daily_forecast_refresh_interval.callbacks:
-                # Callbacks in this list are wrapped so that we can always pass the structure and if needed the arguments
-                # are extracted there for the actual callback.
-                callback(prop_obj)
+            for daily_forecast_refresh_interval_callback in self._property_daily_forecast_refresh_interval.callbacks:
+
+                daily_forecast_refresh_interval_callback(current_prop_obj.seconds)
 
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -529,7 +525,7 @@ class WeatherServer:
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(
-                    response_topic, existing_prop_obj, str(self._property_daily_forecast_refresh_interval.version), return_code.value, correlation_id, str(e)
+                    response_topic, prop_obj, str(self._property_daily_forecast_refresh_interval.version), return_code.value, correlation_id, str(e)
                 )
                 self._conn.publish(prop_resp_msg)
 
@@ -569,9 +565,8 @@ class WeatherServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -627,9 +622,8 @@ class WeatherServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -685,9 +679,8 @@ class WeatherServer:
             correlation_id = message.correlation_data
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-            debug_msg = str(e)
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -803,8 +796,8 @@ class WeatherServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_current_temperature.callbacks:
-                callback(prop_obj.temperature_f)
+            for current_temperature_callback in self._property_current_temperature.callbacks:
+                current_temperature_callback(prop_obj.temperature_f)
 
     def set_current_temperature(self, temperature_f: float):
         """This method sets (publishes) a new value for the 'current_temperature' property."""
@@ -1024,8 +1017,8 @@ class WeatherServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_current_condition_refresh_interval.callbacks:
-                callback(prop_obj.seconds)
+            for current_condition_refresh_interval_callback in self._property_current_condition_refresh_interval.callbacks:
+                current_condition_refresh_interval_callback(prop_obj.seconds)
 
     def set_current_condition_refresh_interval(self, seconds: int):
         """This method sets (publishes) a new value for the 'current_condition_refresh_interval' property."""
@@ -1065,8 +1058,8 @@ class WeatherServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_hourly_forecast_refresh_interval.callbacks:
-                callback(prop_obj.seconds)
+            for hourly_forecast_refresh_interval_callback in self._property_hourly_forecast_refresh_interval.callbacks:
+                hourly_forecast_refresh_interval_callback(prop_obj.seconds)
 
     def set_hourly_forecast_refresh_interval(self, seconds: int):
         """This method sets (publishes) a new value for the 'hourly_forecast_refresh_interval' property."""
@@ -1106,8 +1099,8 @@ class WeatherServer:
                 self._conn.publish(state_msg)
 
         if value_updated:
-            for callback in self._property_daily_forecast_refresh_interval.callbacks:
-                callback(prop_obj.seconds)
+            for daily_forecast_refresh_interval_callback in self._property_daily_forecast_refresh_interval.callbacks:
+                daily_forecast_refresh_interval_callback(prop_obj.seconds)
 
     def set_daily_forecast_refresh_interval(self, seconds: int):
         """This method sets (publishes) a new value for the 'daily_forecast_refresh_interval' property."""

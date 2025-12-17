@@ -484,6 +484,7 @@ class ClientScreen(Screen):
             return handler
 
         # Register all signal handlers
+        assert self.client is not None, "Client must be initialized"
         self.client.receive_current_time(make_handler("current_time"))
 
     def _register_property_handlers(self) -> None:
@@ -525,6 +526,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.location_changed(on_location_updated, call_immediately=True)
 
             elif prop_name == "current_temperature":
@@ -542,6 +544,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.current_temperature_changed(on_current_temperature_updated, call_immediately=True)
 
             elif prop_name == "current_condition":
@@ -563,6 +566,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.current_condition_changed(on_current_condition_updated, call_immediately=True)
 
             elif prop_name == "daily_forecast":
@@ -608,6 +612,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.daily_forecast_changed(on_daily_forecast_updated, call_immediately=True)
 
             elif prop_name == "hourly_forecast":
@@ -647,6 +652,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.hourly_forecast_changed(on_hourly_forecast_updated, call_immediately=True)
 
             elif prop_name == "current_condition_refresh_interval":
@@ -664,6 +670,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.current_condition_refresh_interval_changed(on_current_condition_refresh_interval_updated, call_immediately=True)
 
             elif prop_name == "hourly_forecast_refresh_interval":
@@ -681,6 +688,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.hourly_forecast_refresh_interval_changed(on_hourly_forecast_refresh_interval_updated, call_immediately=True)
 
             elif prop_name == "daily_forecast_refresh_interval":
@@ -698,6 +706,7 @@ class ClientScreen(Screen):
                     prop_widget.update(f"[bold cyan]{prop_name}[/bold cyan]\n{value_str}")
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.daily_forecast_refresh_interval_changed(on_daily_forecast_refresh_interval_updated, call_immediately=True)
 
         # Register all properties
@@ -712,6 +721,8 @@ class ClientScreen(Screen):
 
     def on_click(self, event) -> None:
         """Handle clicks on property widgets."""
+        assert self.client is not None, "Client must be initialized"
+
         # Check if the clicked widget is a writable property
         widget = event.widget
         if hasattr(widget, "property_name") and hasattr(widget, "current_value"):

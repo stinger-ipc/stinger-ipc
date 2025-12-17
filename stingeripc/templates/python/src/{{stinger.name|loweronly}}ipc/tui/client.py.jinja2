@@ -451,6 +451,7 @@ class ClientScreen(Screen):
             return handler
         
         # Register all signal handlers
+        assert self.client is not None, "Client must be initialized"
         {%-for signal_name, signal in stinger.signals.items()%}
         self.client.receive_{{signal_name|snake_case}}(make_handler("{{signal_name|snake_case}}"))
         {%-endfor%}
@@ -519,6 +520,7 @@ class ClientScreen(Screen):
                     )
 
                 # Register the handler with call_immediately=True
+                assert self.client is not None, "Client must be initialized"
                 self.client.{{prop_name|snake_case}}_changed(on_{{prop_name|snake_case}}_updated, call_immediately=True)
             {%endfor%}
             
@@ -531,6 +533,8 @@ class ClientScreen(Screen):
     
     def on_click(self, event) -> None:
         """Handle clicks on property widgets."""
+        assert self.client is not None, "Client must be initialized"
+
         # Check if the clicked widget is a writable property
         widget = event.widget
         if hasattr(widget, 'property_name') and hasattr(widget, 'current_value'):

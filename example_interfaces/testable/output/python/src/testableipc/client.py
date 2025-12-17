@@ -1333,9 +1333,9 @@ class TestableClient:
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if message.user_properties:
-            user_properties = message.user_properties
+            user_properties = message.user_properties or {}
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", message.topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
             if "ReturnCode" in user_properties:
                 return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
@@ -1344,14 +1344,14 @@ class TestableClient:
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, return_code, debug_message)
+                cb(message.payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
-            self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+            self._logger.warning("No correlation data in properties sent to %s.", message.topic)
 
     def _receive_any_property_response_message(self, message: Message):
-        user_properties = message.user_properties
+        user_properties = message.user_properties or {}
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
             debug_info = user_properties.get("DebugInfo", "")
@@ -3425,362 +3425,311 @@ class TestableClientBuilder:
         self._logger.debug("Building TestableClient for service instance %s", instance_info.instance_id)
         client = TestableClient(broker, instance_info)
 
-        for cb in self._signal_recv_callbacks_for_empty:
+        for empty_cb in self._signal_recv_callbacks_for_empty:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_empty(bound_cb)
+                client.receive_empty(empty_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_empty(cb)
+                client.receive_empty(empty_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_int:
+        for single_int_cb in self._signal_recv_callbacks_for_single_int:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_int(bound_cb)
+                client.receive_single_int(single_int_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_int(cb)
+                client.receive_single_int(single_int_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_optional_int:
+        for single_optional_int_cb in self._signal_recv_callbacks_for_single_optional_int:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_optional_int(bound_cb)
+                client.receive_single_optional_int(single_optional_int_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_optional_int(cb)
+                client.receive_single_optional_int(single_optional_int_cb)
 
-        for cb in self._signal_recv_callbacks_for_three_integers:
+        for three_integers_cb in self._signal_recv_callbacks_for_three_integers:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_three_integers(bound_cb)
+                client.receive_three_integers(three_integers_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_three_integers(cb)
+                client.receive_three_integers(three_integers_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_string:
+        for single_string_cb in self._signal_recv_callbacks_for_single_string:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_string(bound_cb)
+                client.receive_single_string(single_string_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_string(cb)
+                client.receive_single_string(single_string_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_optional_string:
+        for single_optional_string_cb in self._signal_recv_callbacks_for_single_optional_string:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_optional_string(bound_cb)
+                client.receive_single_optional_string(single_optional_string_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_optional_string(cb)
+                client.receive_single_optional_string(single_optional_string_cb)
 
-        for cb in self._signal_recv_callbacks_for_three_strings:
+        for three_strings_cb in self._signal_recv_callbacks_for_three_strings:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_three_strings(bound_cb)
+                client.receive_three_strings(three_strings_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_three_strings(cb)
+                client.receive_three_strings(three_strings_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_enum:
+        for single_enum_cb in self._signal_recv_callbacks_for_single_enum:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_enum(bound_cb)
+                client.receive_single_enum(single_enum_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_enum(cb)
+                client.receive_single_enum(single_enum_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_optional_enum:
+        for single_optional_enum_cb in self._signal_recv_callbacks_for_single_optional_enum:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_optional_enum(bound_cb)
+                client.receive_single_optional_enum(single_optional_enum_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_optional_enum(cb)
+                client.receive_single_optional_enum(single_optional_enum_cb)
 
-        for cb in self._signal_recv_callbacks_for_three_enums:
+        for three_enums_cb in self._signal_recv_callbacks_for_three_enums:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_three_enums(bound_cb)
+                client.receive_three_enums(three_enums_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_three_enums(cb)
+                client.receive_three_enums(three_enums_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_struct:
+        for single_struct_cb in self._signal_recv_callbacks_for_single_struct:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_struct(bound_cb)
+                client.receive_single_struct(single_struct_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_struct(cb)
+                client.receive_single_struct(single_struct_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_optional_struct:
+        for single_optional_struct_cb in self._signal_recv_callbacks_for_single_optional_struct:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_optional_struct(bound_cb)
+                client.receive_single_optional_struct(single_optional_struct_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_optional_struct(cb)
+                client.receive_single_optional_struct(single_optional_struct_cb)
 
-        for cb in self._signal_recv_callbacks_for_three_structs:
+        for three_structs_cb in self._signal_recv_callbacks_for_three_structs:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_three_structs(bound_cb)
+                client.receive_three_structs(three_structs_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_three_structs(cb)
+                client.receive_three_structs(three_structs_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_date_time:
+        for single_date_time_cb in self._signal_recv_callbacks_for_single_date_time:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_date_time(bound_cb)
+                client.receive_single_date_time(single_date_time_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_date_time(cb)
+                client.receive_single_date_time(single_date_time_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_optional_datetime:
+        for single_optional_datetime_cb in self._signal_recv_callbacks_for_single_optional_datetime:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_optional_datetime(bound_cb)
+                client.receive_single_optional_datetime(single_optional_datetime_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_optional_datetime(cb)
+                client.receive_single_optional_datetime(single_optional_datetime_cb)
 
-        for cb in self._signal_recv_callbacks_for_three_date_times:
+        for three_date_times_cb in self._signal_recv_callbacks_for_three_date_times:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_three_date_times(bound_cb)
+                client.receive_three_date_times(three_date_times_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_three_date_times(cb)
+                client.receive_three_date_times(three_date_times_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_duration:
+        for single_duration_cb in self._signal_recv_callbacks_for_single_duration:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_duration(bound_cb)
+                client.receive_single_duration(single_duration_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_duration(cb)
+                client.receive_single_duration(single_duration_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_optional_duration:
+        for single_optional_duration_cb in self._signal_recv_callbacks_for_single_optional_duration:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_optional_duration(bound_cb)
+                client.receive_single_optional_duration(single_optional_duration_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_optional_duration(cb)
+                client.receive_single_optional_duration(single_optional_duration_cb)
 
-        for cb in self._signal_recv_callbacks_for_three_durations:
+        for three_durations_cb in self._signal_recv_callbacks_for_three_durations:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_three_durations(bound_cb)
+                client.receive_three_durations(three_durations_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_three_durations(cb)
+                client.receive_three_durations(three_durations_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_binary:
+        for single_binary_cb in self._signal_recv_callbacks_for_single_binary:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_binary(bound_cb)
+                client.receive_single_binary(single_binary_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_binary(cb)
+                client.receive_single_binary(single_binary_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_optional_binary:
+        for single_optional_binary_cb in self._signal_recv_callbacks_for_single_optional_binary:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_optional_binary(bound_cb)
+                client.receive_single_optional_binary(single_optional_binary_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_optional_binary(cb)
+                client.receive_single_optional_binary(single_optional_binary_cb)
 
-        for cb in self._signal_recv_callbacks_for_three_binaries:
+        for three_binaries_cb in self._signal_recv_callbacks_for_three_binaries:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_three_binaries(bound_cb)
+                client.receive_three_binaries(three_binaries_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_three_binaries(cb)
+                client.receive_three_binaries(three_binaries_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_array_of_integers:
+        for single_array_of_integers_cb in self._signal_recv_callbacks_for_single_array_of_integers:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_array_of_integers(bound_cb)
+                client.receive_single_array_of_integers(single_array_of_integers_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_array_of_integers(cb)
+                client.receive_single_array_of_integers(single_array_of_integers_cb)
 
-        for cb in self._signal_recv_callbacks_for_single_optional_array_of_strings:
+        for single_optional_array_of_strings_cb in self._signal_recv_callbacks_for_single_optional_array_of_strings:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_single_optional_array_of_strings(bound_cb)
+                client.receive_single_optional_array_of_strings(single_optional_array_of_strings_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_single_optional_array_of_strings(cb)
+                client.receive_single_optional_array_of_strings(single_optional_array_of_strings_cb)
 
-        for cb in self._signal_recv_callbacks_for_array_of_every_type:
+        for array_of_every_type_cb in self._signal_recv_callbacks_for_array_of_every_type:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_array_of_every_type(bound_cb)
+                client.receive_array_of_every_type(array_of_every_type_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_array_of_every_type(cb)
+                client.receive_array_of_every_type(array_of_every_type_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_integer:
+        for read_write_integer_cb in self._property_updated_callbacks_for_read_write_integer:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_integer_changed(bound_cb)
+                client.read_write_integer_changed(read_write_integer_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_integer_changed(cb)
+                client.read_write_integer_changed(read_write_integer_cb)
 
-        for cb in self._property_updated_callbacks_for_read_only_integer:
+        for read_only_integer_cb in self._property_updated_callbacks_for_read_only_integer:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_only_integer_changed(bound_cb)
+                client.read_only_integer_changed(read_only_integer_cb.__get__(binding, binding.__class__))
             else:
-                client.read_only_integer_changed(cb)
+                client.read_only_integer_changed(read_only_integer_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_optional_integer:
+        for read_write_optional_integer_cb in self._property_updated_callbacks_for_read_write_optional_integer:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_optional_integer_changed(bound_cb)
+                client.read_write_optional_integer_changed(read_write_optional_integer_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_optional_integer_changed(cb)
+                client.read_write_optional_integer_changed(read_write_optional_integer_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_two_integers:
+        for read_write_two_integers_cb in self._property_updated_callbacks_for_read_write_two_integers:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_two_integers_changed(bound_cb)
+                client.read_write_two_integers_changed(read_write_two_integers_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_two_integers_changed(cb)
+                client.read_write_two_integers_changed(read_write_two_integers_cb)
 
-        for cb in self._property_updated_callbacks_for_read_only_string:
+        for read_only_string_cb in self._property_updated_callbacks_for_read_only_string:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_only_string_changed(bound_cb)
+                client.read_only_string_changed(read_only_string_cb.__get__(binding, binding.__class__))
             else:
-                client.read_only_string_changed(cb)
+                client.read_only_string_changed(read_only_string_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_string:
+        for read_write_string_cb in self._property_updated_callbacks_for_read_write_string:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_string_changed(bound_cb)
+                client.read_write_string_changed(read_write_string_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_string_changed(cb)
+                client.read_write_string_changed(read_write_string_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_optional_string:
+        for read_write_optional_string_cb in self._property_updated_callbacks_for_read_write_optional_string:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_optional_string_changed(bound_cb)
+                client.read_write_optional_string_changed(read_write_optional_string_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_optional_string_changed(cb)
+                client.read_write_optional_string_changed(read_write_optional_string_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_two_strings:
+        for read_write_two_strings_cb in self._property_updated_callbacks_for_read_write_two_strings:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_two_strings_changed(bound_cb)
+                client.read_write_two_strings_changed(read_write_two_strings_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_two_strings_changed(cb)
+                client.read_write_two_strings_changed(read_write_two_strings_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_struct:
+        for read_write_struct_cb in self._property_updated_callbacks_for_read_write_struct:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_struct_changed(bound_cb)
+                client.read_write_struct_changed(read_write_struct_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_struct_changed(cb)
+                client.read_write_struct_changed(read_write_struct_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_optional_struct:
+        for read_write_optional_struct_cb in self._property_updated_callbacks_for_read_write_optional_struct:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_optional_struct_changed(bound_cb)
+                client.read_write_optional_struct_changed(read_write_optional_struct_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_optional_struct_changed(cb)
+                client.read_write_optional_struct_changed(read_write_optional_struct_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_two_structs:
+        for read_write_two_structs_cb in self._property_updated_callbacks_for_read_write_two_structs:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_two_structs_changed(bound_cb)
+                client.read_write_two_structs_changed(read_write_two_structs_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_two_structs_changed(cb)
+                client.read_write_two_structs_changed(read_write_two_structs_cb)
 
-        for cb in self._property_updated_callbacks_for_read_only_enum:
+        for read_only_enum_cb in self._property_updated_callbacks_for_read_only_enum:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_only_enum_changed(bound_cb)
+                client.read_only_enum_changed(read_only_enum_cb.__get__(binding, binding.__class__))
             else:
-                client.read_only_enum_changed(cb)
+                client.read_only_enum_changed(read_only_enum_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_enum:
+        for read_write_enum_cb in self._property_updated_callbacks_for_read_write_enum:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_enum_changed(bound_cb)
+                client.read_write_enum_changed(read_write_enum_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_enum_changed(cb)
+                client.read_write_enum_changed(read_write_enum_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_optional_enum:
+        for read_write_optional_enum_cb in self._property_updated_callbacks_for_read_write_optional_enum:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_optional_enum_changed(bound_cb)
+                client.read_write_optional_enum_changed(read_write_optional_enum_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_optional_enum_changed(cb)
+                client.read_write_optional_enum_changed(read_write_optional_enum_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_two_enums:
+        for read_write_two_enums_cb in self._property_updated_callbacks_for_read_write_two_enums:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_two_enums_changed(bound_cb)
+                client.read_write_two_enums_changed(read_write_two_enums_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_two_enums_changed(cb)
+                client.read_write_two_enums_changed(read_write_two_enums_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_datetime:
+        for read_write_datetime_cb in self._property_updated_callbacks_for_read_write_datetime:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_datetime_changed(bound_cb)
+                client.read_write_datetime_changed(read_write_datetime_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_datetime_changed(cb)
+                client.read_write_datetime_changed(read_write_datetime_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_optional_datetime:
+        for read_write_optional_datetime_cb in self._property_updated_callbacks_for_read_write_optional_datetime:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_optional_datetime_changed(bound_cb)
+                client.read_write_optional_datetime_changed(read_write_optional_datetime_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_optional_datetime_changed(cb)
+                client.read_write_optional_datetime_changed(read_write_optional_datetime_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_two_datetimes:
+        for read_write_two_datetimes_cb in self._property_updated_callbacks_for_read_write_two_datetimes:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_two_datetimes_changed(bound_cb)
+                client.read_write_two_datetimes_changed(read_write_two_datetimes_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_two_datetimes_changed(cb)
+                client.read_write_two_datetimes_changed(read_write_two_datetimes_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_duration:
+        for read_write_duration_cb in self._property_updated_callbacks_for_read_write_duration:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_duration_changed(bound_cb)
+                client.read_write_duration_changed(read_write_duration_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_duration_changed(cb)
+                client.read_write_duration_changed(read_write_duration_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_optional_duration:
+        for read_write_optional_duration_cb in self._property_updated_callbacks_for_read_write_optional_duration:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_optional_duration_changed(bound_cb)
+                client.read_write_optional_duration_changed(read_write_optional_duration_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_optional_duration_changed(cb)
+                client.read_write_optional_duration_changed(read_write_optional_duration_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_two_durations:
+        for read_write_two_durations_cb in self._property_updated_callbacks_for_read_write_two_durations:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_two_durations_changed(bound_cb)
+                client.read_write_two_durations_changed(read_write_two_durations_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_two_durations_changed(cb)
+                client.read_write_two_durations_changed(read_write_two_durations_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_binary:
+        for read_write_binary_cb in self._property_updated_callbacks_for_read_write_binary:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_binary_changed(bound_cb)
+                client.read_write_binary_changed(read_write_binary_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_binary_changed(cb)
+                client.read_write_binary_changed(read_write_binary_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_optional_binary:
+        for read_write_optional_binary_cb in self._property_updated_callbacks_for_read_write_optional_binary:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_optional_binary_changed(bound_cb)
+                client.read_write_optional_binary_changed(read_write_optional_binary_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_optional_binary_changed(cb)
+                client.read_write_optional_binary_changed(read_write_optional_binary_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_two_binaries:
+        for read_write_two_binaries_cb in self._property_updated_callbacks_for_read_write_two_binaries:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_two_binaries_changed(bound_cb)
+                client.read_write_two_binaries_changed(read_write_two_binaries_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_two_binaries_changed(cb)
+                client.read_write_two_binaries_changed(read_write_two_binaries_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_list_of_strings:
+        for read_write_list_of_strings_cb in self._property_updated_callbacks_for_read_write_list_of_strings:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_list_of_strings_changed(bound_cb)
+                client.read_write_list_of_strings_changed(read_write_list_of_strings_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_list_of_strings_changed(cb)
+                client.read_write_list_of_strings_changed(read_write_list_of_strings_cb)
 
-        for cb in self._property_updated_callbacks_for_read_write_lists:
+        for read_write_lists_cb in self._property_updated_callbacks_for_read_write_lists:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.read_write_lists_changed(bound_cb)
+                client.read_write_lists_changed(read_write_lists_cb.__get__(binding, binding.__class__))
             else:
-                client.read_write_lists_changed(cb)
+                client.read_write_lists_changed(read_write_lists_cb)
 
         return client
 
@@ -3872,12 +3821,12 @@ class TestableClientDiscoverer:
                 else:
                     self._logger.debug("Updated info for service: %s", instance_id)
 
-    def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _process_service_discovery_message(self, message: Message):
         """Processes a service discovery message."""
-        self._logger.debug("Processing service discovery message on topic %s", topic)
-        if len(payload) > 0:
+        self._logger.debug("Processing service discovery message on topic %s", message.topic)
+        if len(message.payload) > 0:
             try:
-                service_info = InterfaceInfo.model_validate_json(payload)
+                service_info = InterfaceInfo.model_validate_json(message.payload)
                 with self._mutex:
                     self._discovered_interface_infos[service_info.instance] = service_info
             except Exception as e:
@@ -3885,7 +3834,7 @@ class TestableClientDiscoverer:
             self._check_for_fully_discovered(service_info.instance)
 
         else:  # Empty payload means the service is going away
-            instance_id = topic.split("/")[-2]
+            instance_id = message.topic.split("/")[-2]
             with self._mutex:
                 if instance_id in self._discovered_services:
                     self._logger.info("Service %s is going away", instance_id)
@@ -3898,15 +3847,15 @@ class TestableClientDiscoverer:
                     for cb in self._removed_service_callbacks:
                         cb(instance_id)
 
-    def _process_property_value_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _process_property_value_message(self, message: Message):
         """Processes a property value message for discovery purposes."""
-        self._logger.debug("Processing property value message on topic %s", topic)
-        instance_id = topic.split("/")[1]
-        property_name = topic.split("/")[3]
-        user_properties = properties.get("UserProperty", {})
-        prop_version = user_properties.get("PropertyVersion", -1)
+        self._logger.debug("Processing property value message on topic %s", message.topic)
+        instance_id = message.topic.split("/")[1]
+        property_name = message.topic.split("/")[3]
+        user_properties = message.user_properties or {}
+        prop_version = user_properties.get("PropertyVersion", "-1")
         try:
-            prop_obj = json.loads(payload)
+            prop_obj = json.loads(message.payload)
             with self._mutex:
                 if instance_id not in self._discovered_properties:
                     self._discovered_properties[instance_id] = dict()
