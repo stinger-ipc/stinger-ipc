@@ -1,9 +1,9 @@
 """Main TUI application for SimpleIPC."""
 
 from typing import Optional
-from textual.app import App
-from textual.screen import Screen
-from simpleipc.connection import MqttBrokerConnection
+from textual.app import App  # typing: ignore
+from textual.screen import Screen  # typing: ignore
+from pyqttier.connection import Mqtt5Connection
 from simpleipc.client import SimpleClient
 
 
@@ -11,7 +11,7 @@ class SimpleIPCApp(App):
     """A Textual app for SimpleIPC client interface."""
 
     # Store the MQTT connection and client globally
-    mqtt_connection: Optional[MqttBrokerConnection] = None
+    mqtt_connection: Optional[Mqtt5Connection] = None
     simple_client: Optional[SimpleClient] = None
 
     CSS = """

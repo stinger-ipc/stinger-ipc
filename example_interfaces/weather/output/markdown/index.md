@@ -499,9 +499,9 @@ Log levels are re-used from the `syslog.h` header file, although no other syslog
 ```c++
 #include <syslog.h>
 
-auto connnection = std::make_shared<MqttBrokerConnection>(...);
-connnection->SetLogLevel(LOG_DEBUG);
-connnection->SetLogFunction([](int level, const char* msg)
+auto connection = std::make_shared<MqttBrokerConnection>(...);
+connection->SetLogLevel(LOG_DEBUG);
+connection->SetLogFunction([](int level, const char* msg)
 {
     std::cout << "[" << level << "] " << msg << std::endl;
 });

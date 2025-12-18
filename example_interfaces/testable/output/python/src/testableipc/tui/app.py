@@ -1,9 +1,9 @@
 """Main TUI application for TestableIPC."""
 
 from typing import Optional
-from textual.app import App
-from textual.screen import Screen
-from testableipc.connection import MqttBrokerConnection
+from textual.app import App  # typing: ignore
+from textual.screen import Screen  # typing: ignore
+from pyqttier.connection import Mqtt5Connection
 from testableipc.client import TestableClient
 
 
@@ -11,7 +11,7 @@ class TestableIPCApp(App):
     """A Textual app for TestableIPC client interface."""
 
     # Store the MQTT connection and client globally
-    mqtt_connection: Optional[MqttBrokerConnection] = None
+    mqtt_connection: Optional[Mqtt5Connection] = None
     testable_client: Optional[TestableClient] = None
 
     CSS = """

@@ -1,9 +1,9 @@
 """Main TUI application for SignalOnlyIPC."""
 
 from typing import Optional
-from textual.app import App
-from textual.screen import Screen
-from signal_onlyipc.connection import MqttBrokerConnection
+from textual.app import App  # typing: ignore
+from textual.screen import Screen  # typing: ignore
+from pyqttier.connection import Mqtt5Connection
 from signal_onlyipc.client import SignalOnlyClient
 
 
@@ -11,7 +11,7 @@ class SignalOnlyIPCApp(App):
     """A Textual app for SignalOnlyIPC client interface."""
 
     # Store the MQTT connection and client globally
-    mqtt_connection: Optional[MqttBrokerConnection] = None
+    mqtt_connection: Optional[Mqtt5Connection] = None
     signal_only_client: Optional[SignalOnlyClient] = None
 
     CSS = """

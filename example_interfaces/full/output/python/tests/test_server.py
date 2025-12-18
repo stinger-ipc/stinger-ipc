@@ -42,7 +42,7 @@ def initial_property_values():
         last_birthdays=LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
-            sister=datetime.now(UTC),
+            sister=None,
             brothers_age=42,
         ),
     )
@@ -924,7 +924,7 @@ class TestFullServerProperties:
         prop_data = {
             "mom": datetime.now(UTC),
             "dad": datetime.now(UTC),
-            "sister": None,
+            "sister": datetime.now(UTC),
             "brothers_age": 2022,
         }
         prop_obj = LastBirthdaysProperty(**prop_data)
@@ -971,7 +971,7 @@ class TestFullServerProperties:
         prop_data = {
             "mom": datetime.now(UTC),
             "dad": datetime.now(UTC),
-            "sister": None,
+            "sister": datetime.now(UTC),
             "brothers_age": 2022,
         }
         prop_obj = LastBirthdaysProperty(**prop_data)

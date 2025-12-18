@@ -1,9 +1,9 @@
 """Main TUI application for {{stinger.name|UpperCamelCase}}IPC."""
 
 from typing import Optional
-from textual.app import App
-from textual.screen import Screen
-from {{stinger.name|snake_case}}ipc.connection import MqttBrokerConnection
+from textual.app import App # typing: ignore
+from textual.screen import Screen # typing: ignore
+from pyqttier.connection import Mqtt5Connection
 from {{stinger.name|snake_case}}ipc.client import {{stinger.name|UpperCamelCase}}Client
 
 
@@ -11,7 +11,7 @@ class {{stinger.name|UpperCamelCase}}IPCApp(App):
     """A Textual app for {{stinger.name|UpperCamelCase}}IPC client interface."""
     
     # Store the MQTT connection and client globally
-    mqtt_connection: Optional[MqttBrokerConnection] = None
+    mqtt_connection: Optional[Mqtt5Connection] = None
     {{stinger.name|snake_case}}_client: Optional[{{stinger.name|UpperCamelCase}}Client] = None
     
     CSS = """

@@ -4,10 +4,10 @@ import concurrent.futures as futures
 from datetime import datetime, timedelta
 import isodate
 from typing import List, Optional, Any, Dict
-from textual.app import ComposeResult
-from textual.screen import Screen, ModalScreen
-from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label
-from textual.containers import Horizontal, VerticalScroll, Vertical
+from textual.app import ComposeResult  # typing: ignore
+from textual.screen import Screen, ModalScreen  # typing: ignore
+from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label  # typing: ignore
+from textual.containers import Horizontal, VerticalScroll, Vertical  # typing: ignore
 from fullipc.interface_types import *
 from fullipc.client import FullClient
 

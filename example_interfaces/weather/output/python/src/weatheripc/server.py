@@ -584,25 +584,26 @@ class WeatherServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling refresh_daily_forecast: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling refresh_daily_forecast: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling refresh_daily_forecast", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_refresh_hourly_forecast(self, handler: Callable[[None], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_hourly_forecast' method calls."""
@@ -641,25 +642,26 @@ class WeatherServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling refresh_hourly_forecast: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling refresh_hourly_forecast: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling refresh_hourly_forecast", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_refresh_current_conditions(self, handler: Callable[[None], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_current_conditions' method calls."""
@@ -698,25 +700,26 @@ class WeatherServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling refresh_current_conditions: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling refresh_current_conditions: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling refresh_current_conditions", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     @property
     def location(self) -> LocationProperty:

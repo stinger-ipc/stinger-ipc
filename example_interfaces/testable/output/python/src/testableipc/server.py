@@ -2545,25 +2545,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callWithNothing: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callWithNothing: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callWithNothing", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_one_integer(self, handler: Callable[[int], int]):
         """This is a decorator to decorate a method that will handle the 'callOneInteger' method calls."""
@@ -2607,25 +2608,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneInteger: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOneInteger: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOneInteger", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_optional_integer(self, handler: Callable[[Optional[int]], Optional[int]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalInteger' method calls."""
@@ -2669,25 +2671,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalInteger: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOptionalInteger: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOptionalInteger", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_three_integers(self, handler: Callable[[int, int, Optional[int]], CallThreeIntegersMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeIntegers' method calls."""
@@ -2732,25 +2735,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeIntegers: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callThreeIntegers: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callThreeIntegers", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_one_string(self, handler: Callable[[str], str]):
         """This is a decorator to decorate a method that will handle the 'callOneString' method calls."""
@@ -2794,25 +2798,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneString: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOneString: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOneString", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_optional_string(self, handler: Callable[[Optional[str]], Optional[str]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalString' method calls."""
@@ -2856,25 +2861,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalString: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOptionalString: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOptionalString", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_three_strings(self, handler: Callable[[str, Optional[str], str], CallThreeStringsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeStrings' method calls."""
@@ -2919,25 +2925,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeStrings: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callThreeStrings: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callThreeStrings", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_one_enum(self, handler: Callable[[Numbers], Numbers]):
         """This is a decorator to decorate a method that will handle the 'callOneEnum' method calls."""
@@ -2981,25 +2988,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneEnum: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOneEnum: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOneEnum", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_optional_enum(self, handler: Callable[[Optional[Numbers]], Optional[Numbers]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalEnum' method calls."""
@@ -3043,25 +3051,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalEnum: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOptionalEnum: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOptionalEnum", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_three_enums(self, handler: Callable[[Numbers, Numbers, Optional[Numbers]], CallThreeEnumsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeEnums' method calls."""
@@ -3106,25 +3115,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeEnums: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callThreeEnums: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callThreeEnums", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_one_struct(self, handler: Callable[[AllTypes], AllTypes]):
         """This is a decorator to decorate a method that will handle the 'callOneStruct' method calls."""
@@ -3168,25 +3178,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneStruct: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOneStruct: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOneStruct", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_optional_struct(self, handler: Callable[[AllTypes], AllTypes]):
         """This is a decorator to decorate a method that will handle the 'callOptionalStruct' method calls."""
@@ -3230,25 +3241,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalStruct: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOptionalStruct: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOptionalStruct", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_three_structs(self, handler: Callable[[AllTypes, AllTypes, AllTypes], CallThreeStructsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeStructs' method calls."""
@@ -3293,25 +3305,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeStructs: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callThreeStructs: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callThreeStructs", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_one_date_time(self, handler: Callable[[datetime], datetime]):
         """This is a decorator to decorate a method that will handle the 'callOneDateTime' method calls."""
@@ -3355,25 +3368,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneDateTime: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOneDateTime: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOneDateTime", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_optional_date_time(self, handler: Callable[[Optional[datetime]], Optional[datetime]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalDateTime' method calls."""
@@ -3417,25 +3431,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalDateTime: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOptionalDateTime: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOptionalDateTime", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_three_date_times(self, handler: Callable[[datetime, datetime, Optional[datetime]], CallThreeDateTimesMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeDateTimes' method calls."""
@@ -3480,25 +3495,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeDateTimes: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callThreeDateTimes: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callThreeDateTimes", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_one_duration(self, handler: Callable[[timedelta], timedelta]):
         """This is a decorator to decorate a method that will handle the 'callOneDuration' method calls."""
@@ -3542,25 +3558,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneDuration: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOneDuration: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOneDuration", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_optional_duration(self, handler: Callable[[Optional[timedelta]], Optional[timedelta]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalDuration' method calls."""
@@ -3604,25 +3621,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalDuration: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOptionalDuration: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOptionalDuration", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_three_durations(self, handler: Callable[[timedelta, timedelta, Optional[timedelta]], CallThreeDurationsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeDurations' method calls."""
@@ -3667,25 +3685,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeDurations: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callThreeDurations: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callThreeDurations", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_one_binary(self, handler: Callable[[bytes], bytes]):
         """This is a decorator to decorate a method that will handle the 'callOneBinary' method calls."""
@@ -3729,25 +3748,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneBinary: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOneBinary: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOneBinary", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_optional_binary(self, handler: Callable[[bytes], bytes]):
         """This is a decorator to decorate a method that will handle the 'callOptionalBinary' method calls."""
@@ -3791,25 +3811,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalBinary: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOptionalBinary: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOptionalBinary", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_three_binaries(self, handler: Callable[[bytes, bytes, bytes], CallThreeBinariesMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeBinaries' method calls."""
@@ -3854,25 +3875,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeBinaries: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callThreeBinaries: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callThreeBinaries", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_one_list_of_integers(self, handler: Callable[[List[int]], List[int]]):
         """This is a decorator to decorate a method that will handle the 'callOneListOfIntegers' method calls."""
@@ -3916,25 +3938,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneListOfIntegers: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOneListOfIntegers: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOneListOfIntegers", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_optional_list_of_floats(self, handler: Callable[[List[float]], List[float]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalListOfFloats' method calls."""
@@ -3978,25 +4001,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalListOfFloats: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callOptionalListOfFloats: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callOptionalListOfFloats", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     def handle_call_two_lists(self, handler: Callable[[List[Numbers], List[str]], CallTwoListsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callTwoLists' method calls."""
@@ -4040,25 +4064,26 @@ class TestableServer:
 
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callTwoLists: %s", e)
-                return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling callTwoLists: %s", sme)
-                return_code = sme.return_code
-                debug_msg = str(sme)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling callTwoLists", exc_info=e)
-                return_code = MethodReturnCode.SERVER_ERROR
-                debug_msg = str(e)
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=debug_msg)
-                self._conn.publish(err_msg)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
             else:
-                msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
-                self._conn.publish(msg)
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
 
     @property
     def read_write_integer(self) -> Optional[int]:

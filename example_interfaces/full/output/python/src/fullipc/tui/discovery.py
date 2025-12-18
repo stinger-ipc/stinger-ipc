@@ -1,11 +1,11 @@
 """Discovery screen for finding FullIPC servers."""
 
 from typing import Set
-from textual.app import ComposeResult
-from textual.screen import Screen
-from textual.widgets import Header, Footer, Static, Button
-from textual.containers import Grid, Container
-from textual.reactive import reactive
+from textual.app import ComposeResult  # typing: ignore
+from textual.screen import Screen  # typing: ignore
+from textual.widgets import Header, Footer, Static, Button  # typing: ignore
+from textual.containers import Grid, Container  # typing: ignore
+from textual.reactive import reactive  # typing: ignore
 from fullipc.client import FullClientDiscoverer, DiscoveredInstance, FullClient
 import logging
 
@@ -136,6 +136,7 @@ class DiscoveryScreen(Screen):
             instance_id = event.button.instance_id
 
             # Get the DiscoveredInstance object
+            assert self.discoverer is not None, "Discoverer not initialized"
             discovered_instance = self.discoverer.get_discovery_info(instance_id)
 
             if discovered_instance is None:

@@ -1,9 +1,9 @@
 """Main TUI application for WeatherIPC."""
 
 from typing import Optional
-from textual.app import App
-from textual.screen import Screen
-from weatheripc.connection import MqttBrokerConnection
+from textual.app import App  # typing: ignore
+from textual.screen import Screen  # typing: ignore
+from pyqttier.connection import Mqtt5Connection
 from weatheripc.client import WeatherClient
 
 
@@ -11,7 +11,7 @@ class WeatherIPCApp(App):
     """A Textual app for WeatherIPC client interface."""
 
     # Store the MQTT connection and client globally
-    mqtt_connection: Optional[MqttBrokerConnection] = None
+    mqtt_connection: Optional[Mqtt5Connection] = None
     weather_client: Optional[WeatherClient] = None
 
     CSS = """

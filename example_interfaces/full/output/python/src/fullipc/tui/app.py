@@ -1,9 +1,9 @@
 """Main TUI application for FullIPC."""
 
 from typing import Optional
-from textual.app import App
-from textual.screen import Screen
-from fullipc.connection import MqttBrokerConnection
+from textual.app import App  # typing: ignore
+from textual.screen import Screen  # typing: ignore
+from pyqttier.connection import Mqtt5Connection
 from fullipc.client import FullClient
 
 
@@ -11,7 +11,7 @@ class FullIPCApp(App):
     """A Textual app for FullIPC client interface."""
 
     # Store the MQTT connection and client globally
-    mqtt_connection: Optional[MqttBrokerConnection] = None
+    mqtt_connection: Optional[Mqtt5Connection] = None
     full_client: Optional[FullClient] = None
 
     CSS = """

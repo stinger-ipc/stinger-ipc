@@ -1,10 +1,11 @@
 """MQTT Connection screen for configuring broker connection."""
 
-from textual.app import ComposeResult
-from textual.screen import Screen
-from textual.widgets import Header, Footer, Input, Button, Static
-from textual.containers import Container, Vertical
-from testableipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from textual.app import ComposeResult  # typing: ignore
+from textual.screen import Screen  # typing: ignore
+from textual.widgets import Header, Footer, Input, Button, Static  # typing: ignore
+from textual.containers import Container, Vertical  # typing: ignore
+from pyqttier.connection import Mqtt5Connection
+from pyqttier.transport import MqttTransport, MqttTransportType
 
 
 class ConnectionScreen(Screen):
@@ -79,7 +80,7 @@ class ConnectionScreen(Screen):
 
             # Create the MQTT connection
             transport = MqttTransport(MqttTransportType.TCP, ip_address, port)
-            conn = MqttBrokerConnection(transport)
+            conn = Mqtt5Connection(transport)
 
             # Store connection in app for use by other screens
             self.app.mqtt_connection = conn
