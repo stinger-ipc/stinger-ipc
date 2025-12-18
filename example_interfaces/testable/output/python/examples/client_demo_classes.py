@@ -13,7 +13,7 @@ client_builder = TestableClientBuilder()
 
 class SuperAwesomeDoerOfThings:
 
-    def __init__(self, label: str, connection: MqttBrokerConnection):
+    def __init__(self, label: str, connection: Mqtt5Connection):
         self.counter = 0
         self.label = label
         discovery = TestableClientDiscoverer(connection, client_builder, build_binding=self)  # The build binding will bind all @client_builder decorated methods to this instance.
@@ -231,11 +231,11 @@ class SuperAwesomeDoerOfThings:
 
     @client_builder.read_write_binary_updated
     def print_new_read_write_binary_value(self, value: bytes):
-        print(f"{self.label}-{self.counter} printing signal 'read_write_binary' : value={value}")
+        print(f"{self.label}-{self.counter} printing signal 'read_write_binary' : value={value!r}")
 
     @client_builder.read_write_optional_binary_updated
     def print_new_read_write_optional_binary_value(self, value: bytes):
-        print(f"{self.label}-{self.counter} printing signal 'read_write_optional_binary' : value={value}")
+        print(f"{self.label}-{self.counter} printing signal 'read_write_optional_binary' : value={value!r}")
 
     @client_builder.read_write_two_binaries_updated
     def print_new_read_write_two_binaries_value(self, value: ReadWriteTwoBinariesProperty):
@@ -390,7 +390,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -681,7 +681,7 @@ class SuperAwesomeDoerOfThings:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -747,7 +747,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -782,7 +782,7 @@ class SuperAwesomeDoerOfThings:
 
             self.client.read_write_two_datetimes = ReadWriteTwoDatetimesProperty(
                 first=datetime.now(UTC),
-                second=datetime.now(UTC),
+                second=None,
             )
 
             self.client.read_write_duration = timedelta(seconds=3536)

@@ -49,14 +49,14 @@ if __name__ == '__main__':
         {%for arg in sig.arg_list-%}
         @param {{arg.name}} {{arg.python_annotation}} {{arg.description or ''}}
         {%endfor%}"""
-        print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
+        print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}}{% if 'bytes' in arg.python_annotation %}!r{%endif-%} } {%endfor%}")
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
     @client_builder.{{prop_name | snake_case}}_updated
     def print_new_{{prop_name}}_value(value: {{prop.python_annotation}}):
         """{{prop.description}}
         """
-        print(f"Property '{{prop_name}}' has been updated to: {value}")
+        print(f"Property '{{prop_name}}' has been updated to: {value{% if 'bytes' in prop.python_annotation %}!r{%endif-%} }")
     {%endfor%}
 
     discovery = {{stinger.python.client_class_name}}Discoverer(conn, client_builder)

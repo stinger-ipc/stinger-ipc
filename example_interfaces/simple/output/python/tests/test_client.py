@@ -73,7 +73,7 @@ class TestClientMethods:
     def test_trade_numbers_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "your_number": 42,
-        }
+        }  # type: Dict[str, Any]
         client.trade_numbers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'trade_numbers' method call"
         message = mock_connection.published_messages[0]

@@ -123,21 +123,21 @@ class TestClientProperties:
 class TestClientMethods:
 
     def test_refresh_daily_forecast_method_call_sends_request(self, mock_connection, client):
-        kwargs = {}
+        kwargs = {}  # type: Dict[str, Any]
         client.refresh_daily_forecast(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_daily_forecast' method call"
         message = mock_connection.published_messages[0]
         assert message.topic.endswith("/method/refreshDailyForecast"), f"Incorrect topic for 'refresh_daily_forecast' method call: {message.topic}"
 
     def test_refresh_hourly_forecast_method_call_sends_request(self, mock_connection, client):
-        kwargs = {}
+        kwargs = {}  # type: Dict[str, Any]
         client.refresh_hourly_forecast(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_hourly_forecast' method call"
         message = mock_connection.published_messages[0]
         assert message.topic.endswith("/method/refreshHourlyForecast"), f"Incorrect topic for 'refresh_hourly_forecast' method call: {message.topic}"
 
     def test_refresh_current_conditions_method_call_sends_request(self, mock_connection, client):
-        kwargs = {}
+        kwargs = {}  # type: Dict[str, Any]
         client.refresh_current_conditions(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_current_conditions' method call"
         message = mock_connection.published_messages[0]

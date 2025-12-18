@@ -56,7 +56,7 @@ class TestSignalOnlyServerSignals:
             "one": 3.14,
             "two": True,
             "three": "apples",
-        }
+        }  # type: Dict[str, Any]
         server.emit_another_signal(**signal_data)
 
         # Verify that a message was published
@@ -68,7 +68,7 @@ class TestSignalOnlyServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = AnotherSignalSignalPayload(**signal_data)
+        expected_obj = AnotherSignalSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -77,7 +77,7 @@ class TestSignalOnlyServerSignals:
         """Test that the server can emit the 'bark' signal."""
         signal_data = {
             "word": "apples",
-        }
+        }  # type: Dict[str, Any]
         server.emit_bark(**signal_data)
 
         # Verify that a message was published
@@ -89,7 +89,7 @@ class TestSignalOnlyServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = BarkSignalPayload(**signal_data)
+        expected_obj = BarkSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -98,7 +98,7 @@ class TestSignalOnlyServerSignals:
         """Test that the server can emit the 'maybe_number' signal."""
         signal_data = {
             "number": 42,
-        }
+        }  # type: Dict[str, Any]
         server.emit_maybe_number(**signal_data)
 
         # Verify that a message was published
@@ -110,7 +110,7 @@ class TestSignalOnlyServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = MaybeNumberSignalPayload(**signal_data)
+        expected_obj = MaybeNumberSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -119,7 +119,7 @@ class TestSignalOnlyServerSignals:
         """Test that the server can emit the 'maybe_name' signal."""
         signal_data = {
             "name": "apples",
-        }
+        }  # type: Dict[str, Any]
         server.emit_maybe_name(**signal_data)
 
         # Verify that a message was published
@@ -131,7 +131,7 @@ class TestSignalOnlyServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = MaybeNameSignalPayload(**signal_data)
+        expected_obj = MaybeNameSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -140,7 +140,7 @@ class TestSignalOnlyServerSignals:
         """Test that the server can emit the 'now' signal."""
         signal_data = {
             "timestamp": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         server.emit_now(**signal_data)
 
         # Verify that a message was published
@@ -152,7 +152,7 @@ class TestSignalOnlyServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = NowSignalPayload(**signal_data)
+        expected_obj = NowSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"

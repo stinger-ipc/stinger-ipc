@@ -42,7 +42,7 @@ def initial_property_values():
         last_birthdays=LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
-            sister=None,
+            sister=datetime.now(UTC),
             brothers_age=42,
         ),
     )
@@ -113,7 +113,7 @@ class TestFullServerProperties:
         prop_data = {
             "number": 2020,
         }
-        prop_obj = FavoriteNumberProperty(**prop_data)
+        prop_obj = FavoriteNumberProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -154,7 +154,7 @@ class TestFullServerProperties:
         prop_data = {
             "number": 2020,
         }
-        prop_obj = FavoriteNumberProperty(**prop_data)
+        prop_obj = FavoriteNumberProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -301,7 +301,7 @@ class TestFullServerProperties:
             "slices_of_pizza": 42,
             "breakfast": "foo",
         }
-        prop_obj = FavoriteFoodsProperty(**prop_data)
+        prop_obj = FavoriteFoodsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -346,7 +346,7 @@ class TestFullServerProperties:
             "slices_of_pizza": 42,
             "breakfast": "foo",
         }
-        prop_obj = FavoriteFoodsProperty(**prop_data)
+        prop_obj = FavoriteFoodsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -495,7 +495,7 @@ class TestFullServerProperties:
             "monday": Lunch(drink=True, sandwich="example", crackers=1.0, day=DayOfTheWeek.MONDAY, order_number=2020, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=551)),
             "tuesday": Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
         }
-        prop_obj = LunchMenuProperty(**prop_data)
+        prop_obj = LunchMenuProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -553,7 +553,7 @@ class TestFullServerProperties:
         prop_data = {
             "family_name": "example",
         }
-        prop_obj = FamilyNameProperty(**prop_data)
+        prop_obj = FamilyNameProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -594,7 +594,7 @@ class TestFullServerProperties:
         prop_data = {
             "family_name": "example",
         }
-        prop_obj = FamilyNameProperty(**prop_data)
+        prop_obj = FamilyNameProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -737,7 +737,7 @@ class TestFullServerProperties:
         prop_data = {
             "timestamp": datetime.now(UTC),
         }
-        prop_obj = LastBreakfastTimeProperty(**prop_data)
+        prop_obj = LastBreakfastTimeProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -778,7 +778,7 @@ class TestFullServerProperties:
         prop_data = {
             "timestamp": datetime.now(UTC),
         }
-        prop_obj = LastBreakfastTimeProperty(**prop_data)
+        prop_obj = LastBreakfastTimeProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -927,7 +927,7 @@ class TestFullServerProperties:
             "sister": datetime.now(UTC),
             "brothers_age": 2022,
         }
-        prop_obj = LastBirthdaysProperty(**prop_data)
+        prop_obj = LastBirthdaysProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -974,7 +974,7 @@ class TestFullServerProperties:
             "sister": datetime.now(UTC),
             "brothers_age": 2022,
         }
-        prop_obj = LastBirthdaysProperty(**prop_data)
+        prop_obj = LastBirthdaysProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -1091,7 +1091,7 @@ class TestFullServerSignals:
         signal_data = {
             "day_of_month": 42,
             "day_of_week": DayOfTheWeek.SATURDAY,
-        }
+        }  # type: Dict[str, Any]
         server.emit_today_is(**signal_data)
 
         # Verify that a message was published
@@ -1103,7 +1103,7 @@ class TestFullServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = TodayIsSignalPayload(**signal_data)
+        expected_obj = TodayIsSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -1113,7 +1113,7 @@ class TestFullServerSignals:
         signal_data = {
             "word": "apples",
             "time": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         server.emit_random_word(**signal_data)
 
         # Verify that a message was published
@@ -1125,7 +1125,7 @@ class TestFullServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = RandomWordSignalPayload(**signal_data)
+        expected_obj = RandomWordSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -1136,7 +1136,7 @@ class TestFullServerMethods:
     def test_server_handle_add_numbers_method(self, server, mock_connection):
         """Test that the server can handle the 'add_numbers' method."""
         handler_callback_data = 42
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(first, second, third) -> int:
             nonlocal received_args
@@ -1154,7 +1154,7 @@ class TestFullServerMethods:
             "first": 2020,
             "second": 42,
             "third": 2022,
-        }
+        }  # type: Dict[str, Any]
         method_obj = AddNumbersMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -1192,7 +1192,7 @@ class TestFullServerMethods:
     def test_server_handle_do_something_method(self, server, mock_connection):
         """Test that the server can handle the 'do_something' method."""
         handler_callback_data = DoSomethingMethodResponse(label="apples", identifier=42)
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(task_to_do) -> DoSomethingMethodResponse:
             nonlocal received_args
@@ -1206,7 +1206,7 @@ class TestFullServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "task_to_do": "example",
-        }
+        }  # type: Dict[str, Any]
         method_obj = DoSomethingMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -1243,7 +1243,7 @@ class TestFullServerMethods:
     def test_server_handle_what_time_is_it_method(self, server, mock_connection):
         """Test that the server can handle the 'what_time_is_it' method."""
         handler_callback_data = datetime.now(UTC)
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler() -> datetime:
             nonlocal received_args
@@ -1253,7 +1253,7 @@ class TestFullServerMethods:
         server.handle_what_time_is_it(handler)
 
         # Create and simulate receiving a method call message
-        method_data = {}
+        method_data = {}  # type: Dict[str, Any]
         method_obj = WhatTimeIsItMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -1291,7 +1291,7 @@ class TestFullServerMethods:
     def test_server_handle_hold_temperature_method(self, server, mock_connection):
         """Test that the server can handle the 'hold_temperature' method."""
         handler_callback_data = True
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(temperature_celsius) -> bool:
             nonlocal received_args
@@ -1305,7 +1305,7 @@ class TestFullServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "temperature_celsius": 1.0,
-        }
+        }  # type: Dict[str, Any]
         method_obj = HoldTemperatureMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"

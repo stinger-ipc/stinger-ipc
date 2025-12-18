@@ -93,7 +93,7 @@ class FullServer:
         self._method_do_something_handler = None  # type: Optional[Callable[[str], DoSomethingMethodResponse]]
 
         self._conn.subscribe("full/{}/method/whatTimeIsIt".format(self._instance_id), self._process_what_time_is_it_call)
-        self._method_what_time_is_it_handler = None  # type: Optional[Callable[[None], datetime]]
+        self._method_what_time_is_it_handler = None  # type: Optional[Callable[[], datetime]]
 
         self._conn.subscribe("full/{}/method/holdTemperature".format(self._instance_id), self._process_hold_temperature_call)
         self._method_hold_temperature_handler = None  # type: Optional[Callable[[float], bool]]
@@ -679,7 +679,7 @@ class FullServer:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
 
-    def handle_what_time_is_it(self, handler: Callable[[None], datetime]):
+    def handle_what_time_is_it(self, handler: Callable[[], datetime]):
         """This is a decorator to decorate a method that will handle the 'what_time_is_it' method calls."""
         if self._method_what_time_is_it_handler is None and handler is not None:
             self._method_what_time_is_it_handler = handler
@@ -1110,7 +1110,7 @@ class FullServerBuilder:
 
         self._add_numbers_method_handler: Optional[Callable[[int, int, Optional[int]], int]] = None
         self._do_something_method_handler: Optional[Callable[[str], DoSomethingMethodResponse]] = None
-        self._what_time_is_it_method_handler: Optional[Callable[[None], datetime]] = None
+        self._what_time_is_it_method_handler: Optional[Callable[[], datetime]] = None
         self._hold_temperature_method_handler: Optional[Callable[[float], bool]] = None
 
         self._favorite_number_property_callbacks: List[Callable[[int], None]] = []
@@ -1142,7 +1142,7 @@ class FullServerBuilder:
             raise Exception("Method handler already set")
         return wrapper
 
-    def handle_what_time_is_it(self, handler: Callable[[None], datetime]):
+    def handle_what_time_is_it(self, handler: Callable[[], datetime]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)

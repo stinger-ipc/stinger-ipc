@@ -83,7 +83,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=None,
+            optional_date_time=datetime.now(UTC),
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -117,7 +117,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -149,7 +149,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -182,11 +182,11 @@ if __name__ == "__main__":
         read_write_two_enums_version=15,
         read_write_datetime=datetime.now(UTC),
         read_write_datetime_version=16,
-        read_write_optional_datetime=datetime.now(UTC),
+        read_write_optional_datetime=None,
         read_write_optional_datetime_version=17,
         read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
             first=datetime.now(UTC),
-            second=None,
+            second=datetime.now(UTC),
         ),
         read_write_two_datetimes_version=18,
         read_write_duration=timedelta(seconds=3536),
@@ -211,7 +211,7 @@ if __name__ == "__main__":
         read_write_list_of_strings_version=25,
         read_write_lists=ReadWriteListsProperty(
             the_list=[Numbers.ONE, Numbers.ONE],
-            optionalList=[datetime.now(UTC), datetime.now(UTC)],
+            optional_list=[datetime.now(UTC), datetime.now(UTC)],
         ),
         read_write_lists_version=26,
     )
@@ -335,7 +335,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -437,7 +437,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -496,19 +496,19 @@ if __name__ == "__main__":
     @server.handle_call_one_binary
     def call_one_binary(input1: bytes) -> bytes:
         """This is an example handler for the 'callOneBinary' method."""
-        print(f"--> Running call_one_binary({input1})'")
+        print(f"--> Running call_one_binary({input1!r})'")
         return b"example binary data"
 
     @server.handle_call_optional_binary
     def call_optional_binary(input1: bytes) -> bytes:
         """This is an example handler for the 'callOptionalBinary' method."""
-        print(f"--> Running call_optional_binary({input1})'")
+        print(f"--> Running call_optional_binary({input1!r})'")
         return b"example binary data"
 
     @server.handle_call_three_binaries
     def call_three_binaries(input1: bytes, input2: bytes, input3: bytes) -> CallThreeBinariesMethodResponse:
         """This is an example handler for the 'callThreeBinaries' method."""
-        print(f"--> Running call_three_binaries({input1}, {input2}, {input3})'")
+        print(f"--> Running call_three_binaries({input1!r}, {input2!r}, {input3!r})'")
         return CallThreeBinariesMethodResponse(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
 
     @server.handle_call_one_list_of_integers
@@ -688,7 +688,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -722,7 +722,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -788,7 +788,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -820,7 +820,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -840,7 +840,7 @@ if __name__ == "__main__":
                 ),
             )
             server.emit_single_date_time(datetime.now(UTC))
-            server.emit_single_optional_datetime(datetime.now(UTC))
+            server.emit_single_optional_datetime(None)
             server.emit_three_date_times(datetime.now(UTC), datetime.now(UTC), datetime.now(UTC))
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
@@ -955,7 +955,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -1039,7 +1039,7 @@ if __name__ == "__main__":
                 ),
             )
             server.emit_single_date_time(value=datetime.now(UTC))
-            server.emit_single_optional_datetime(value=datetime.now(UTC))
+            server.emit_single_optional_datetime(value=None)
             server.emit_three_date_times(first=datetime.now(UTC), second=datetime.now(UTC), third=datetime.now(UTC))
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)

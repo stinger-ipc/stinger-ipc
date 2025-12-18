@@ -337,7 +337,7 @@ class TestClientProperties:
 class TestClientMethods:
 
     def test_call_with_nothing_method_call_sends_request(self, mock_connection, client):
-        kwargs = {}
+        kwargs = {}  # type: Dict[str, Any]
         client.call_with_nothing(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_with_nothing' method call"
         message = mock_connection.published_messages[0]
@@ -346,7 +346,7 @@ class TestClientMethods:
     def test_call_one_integer_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": 42,
-        }
+        }  # type: Dict[str, Any]
         client.call_one_integer(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_integer' method call"
         message = mock_connection.published_messages[0]
@@ -355,7 +355,7 @@ class TestClientMethods:
     def test_call_optional_integer_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": 42,
-        }
+        }  # type: Dict[str, Any]
         client.call_optional_integer(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_integer' method call"
         message = mock_connection.published_messages[0]
@@ -366,7 +366,7 @@ class TestClientMethods:
             "input1": 42,
             "input2": 42,
             "input3": 42,
-        }
+        }  # type: Dict[str, Any]
         client.call_three_integers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_integers' method call"
         message = mock_connection.published_messages[0]
@@ -375,7 +375,7 @@ class TestClientMethods:
     def test_call_one_string_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": "apples",
-        }
+        }  # type: Dict[str, Any]
         client.call_one_string(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_string' method call"
         message = mock_connection.published_messages[0]
@@ -384,7 +384,7 @@ class TestClientMethods:
     def test_call_optional_string_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": "apples",
-        }
+        }  # type: Dict[str, Any]
         client.call_optional_string(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_string' method call"
         message = mock_connection.published_messages[0]
@@ -395,7 +395,7 @@ class TestClientMethods:
             "input1": "apples",
             "input2": "apples",
             "input3": "apples",
-        }
+        }  # type: Dict[str, Any]
         client.call_three_strings(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_strings' method call"
         message = mock_connection.published_messages[0]
@@ -404,7 +404,7 @@ class TestClientMethods:
     def test_call_one_enum_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": Numbers.ONE,
-        }
+        }  # type: Dict[str, Any]
         client.call_one_enum(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_enum' method call"
         message = mock_connection.published_messages[0]
@@ -413,7 +413,7 @@ class TestClientMethods:
     def test_call_optional_enum_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": Numbers.ONE,
-        }
+        }  # type: Dict[str, Any]
         client.call_optional_enum(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_enum' method call"
         message = mock_connection.published_messages[0]
@@ -424,7 +424,7 @@ class TestClientMethods:
             "input1": Numbers.ONE,
             "input2": Numbers.ONE,
             "input3": Numbers.ONE,
-        }
+        }  # type: Dict[str, Any]
         client.call_three_enums(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_enums' method call"
         message = mock_connection.published_messages[0]
@@ -464,7 +464,7 @@ class TestClientMethods:
                 array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
-        }
+        }  # type: Dict[str, Any]
         client.call_one_struct(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_struct' method call"
         message = mock_connection.published_messages[0]
@@ -504,7 +504,7 @@ class TestClientMethods:
                 array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
-        }
+        }  # type: Dict[str, Any]
         client.call_optional_struct(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_struct' method call"
         message = mock_connection.published_messages[0]
@@ -608,7 +608,7 @@ class TestClientMethods:
                 array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
-        }
+        }  # type: Dict[str, Any]
         client.call_three_structs(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_structs' method call"
         message = mock_connection.published_messages[0]
@@ -617,7 +617,7 @@ class TestClientMethods:
     def test_call_one_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         client.call_one_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_date_time' method call"
         message = mock_connection.published_messages[0]
@@ -626,7 +626,7 @@ class TestClientMethods:
     def test_call_optional_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         client.call_optional_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_date_time' method call"
         message = mock_connection.published_messages[0]
@@ -637,7 +637,7 @@ class TestClientMethods:
             "input1": datetime.now(UTC),
             "input2": datetime.now(UTC),
             "input3": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         client.call_three_date_times(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_date_times' method call"
         message = mock_connection.published_messages[0]
@@ -646,7 +646,7 @@ class TestClientMethods:
     def test_call_one_duration_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": timedelta(seconds=3536),
-        }
+        }  # type: Dict[str, Any]
         client.call_one_duration(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_duration' method call"
         message = mock_connection.published_messages[0]
@@ -655,7 +655,7 @@ class TestClientMethods:
     def test_call_optional_duration_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": None,
-        }
+        }  # type: Dict[str, Any]
         client.call_optional_duration(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_duration' method call"
         message = mock_connection.published_messages[0]
@@ -666,7 +666,7 @@ class TestClientMethods:
             "input1": timedelta(seconds=3536),
             "input2": timedelta(seconds=3536),
             "input3": None,
-        }
+        }  # type: Dict[str, Any]
         client.call_three_durations(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_durations' method call"
         message = mock_connection.published_messages[0]
@@ -675,7 +675,7 @@ class TestClientMethods:
     def test_call_one_binary_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": b"example binary data",
-        }
+        }  # type: Dict[str, Any]
         client.call_one_binary(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_binary' method call"
         message = mock_connection.published_messages[0]
@@ -684,7 +684,7 @@ class TestClientMethods:
     def test_call_optional_binary_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": b"example binary data",
-        }
+        }  # type: Dict[str, Any]
         client.call_optional_binary(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_binary' method call"
         message = mock_connection.published_messages[0]
@@ -695,7 +695,7 @@ class TestClientMethods:
             "input1": b"example binary data",
             "input2": b"example binary data",
             "input3": b"example binary data",
-        }
+        }  # type: Dict[str, Any]
         client.call_three_binaries(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_binaries' method call"
         message = mock_connection.published_messages[0]
@@ -704,7 +704,7 @@ class TestClientMethods:
     def test_call_one_list_of_integers_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": [42, 2022],
-        }
+        }  # type: Dict[str, Any]
         client.call_one_list_of_integers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_list_of_integers' method call"
         message = mock_connection.published_messages[0]
@@ -713,7 +713,7 @@ class TestClientMethods:
     def test_call_optional_list_of_floats_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": [3.14, 1.0],
-        }
+        }  # type: Dict[str, Any]
         client.call_optional_list_of_floats(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_list_of_floats' method call"
         message = mock_connection.published_messages[0]
@@ -723,7 +723,7 @@ class TestClientMethods:
         kwargs = {
             "input1": [Numbers.ONE, Numbers.ONE],
             "input2": ["apples", "foo"],
-        }
+        }  # type: Dict[str, Any]
         client.call_two_lists(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_two_lists' method call"
         message = mock_connection.published_messages[0]

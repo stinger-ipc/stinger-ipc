@@ -96,7 +96,7 @@ class TestSimpleServerProperties:
         prop_data = {
             "name": "example",
         }
-        prop_obj = SchoolProperty(**prop_data)
+        prop_obj = SchoolProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -137,7 +137,7 @@ class TestSimpleServerProperties:
         prop_data = {
             "name": "example",
         }
-        prop_obj = SchoolProperty(**prop_data)
+        prop_obj = SchoolProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -247,7 +247,7 @@ class TestSimpleServerSignals:
         """Test that the server can emit the 'person_entered' signal."""
         signal_data = {
             "person": Person(name="apples", gender=Gender.MALE),
-        }
+        }  # type: Dict[str, Any]
         server.emit_person_entered(**signal_data)
 
         # Verify that a message was published
@@ -259,7 +259,7 @@ class TestSimpleServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = PersonEnteredSignalPayload(**signal_data)
+        expected_obj = PersonEnteredSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -270,7 +270,7 @@ class TestSimpleServerMethods:
     def test_server_handle_trade_numbers_method(self, server, mock_connection):
         """Test that the server can handle the 'trade_numbers' method."""
         handler_callback_data = 42
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(your_number) -> int:
             nonlocal received_args
@@ -284,7 +284,7 @@ class TestSimpleServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "your_number": 2020,
-        }
+        }  # type: Dict[str, Any]
         method_obj = TradeNumbersMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"

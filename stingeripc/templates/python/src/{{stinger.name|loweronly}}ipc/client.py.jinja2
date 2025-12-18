@@ -8,7 +8,7 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
-from typing import Dict, Callable, List, Any, Optional
+from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
 import json
@@ -32,13 +32,13 @@ from pydantic import BaseModel
 logging.basicConfig(level=logging.DEBUG)
 
 {%for sig_name, sig in stinger.signals.items()-%}
-{{sig_name | UpperCamelCase}}SignalCallbackType = Callable[[{%for arg in sig.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]
+{{sig_name | UpperCamelCase}}SignalCallbackType = Union[Callable[[{%for arg in sig.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in sig.arg_list%}{%if loop.first%}, {%endif%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]
 {%endfor%}
 {%-for method_name, method in stinger.methods.items()-%}
-{{method_name | UpperCamelCase}}MethodResponseCallbackType = Callable[[{%if method.return_value%}{{method.return_value_python_annotation}}{%endif%}], None]
+{{method_name | UpperCamelCase}}MethodResponseCallbackType = Union[Callable[[{%if method.return_value%}{{method.return_value_python_annotation}}{%endif%}], None], Callable[[Any{%if method.return_value%}, {{method.return_value_python_annotation}}{%endif%}], None]]
 {%endfor%}
 {%for prop_name, prop in stinger.properties.items()-%}
-{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Callable[[{{prop.python_annotation}}], None]
+{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Union[Callable[[{{prop.python_annotation}}], None], Callable[[Any, {{prop.python_annotation}}], None]]
 {%endfor%}
 
 class DiscoveredInstance(BaseModel):

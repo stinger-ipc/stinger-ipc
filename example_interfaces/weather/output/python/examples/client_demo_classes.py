@@ -13,7 +13,7 @@ client_builder = WeatherClientBuilder()
 
 class SuperAwesomeDoerOfThings:
 
-    def __init__(self, label: str, connection: MqttBrokerConnection):
+    def __init__(self, label: str, connection: Mqtt5Connection):
         self.counter = 0
         self.label = label
         discovery = WeatherClientDiscoverer(connection, client_builder, build_binding=self)  # The build binding will bind all @client_builder decorated methods to this instance.

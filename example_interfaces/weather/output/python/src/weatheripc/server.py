@@ -98,13 +98,13 @@ class WeatherServer:
         self._conn.subscribe("weather/{}/property/dailyForecastRefreshInterval/setValue".format(self._instance_id), self._receive_daily_forecast_refresh_interval_update_request_message)
 
         self._conn.subscribe("weather/{}/method/refreshDailyForecast".format(self._instance_id), self._process_refresh_daily_forecast_call)
-        self._method_refresh_daily_forecast_handler = None  # type: Optional[Callable[[None], None]]
+        self._method_refresh_daily_forecast_handler = None  # type: Optional[Callable[[], None]]
 
         self._conn.subscribe("weather/{}/method/refreshHourlyForecast".format(self._instance_id), self._process_refresh_hourly_forecast_call)
-        self._method_refresh_hourly_forecast_handler = None  # type: Optional[Callable[[None], None]]
+        self._method_refresh_hourly_forecast_handler = None  # type: Optional[Callable[[], None]]
 
         self._conn.subscribe("weather/{}/method/refreshCurrentConditions".format(self._instance_id), self._process_refresh_current_conditions_call)
-        self._method_refresh_current_conditions_handler = None  # type: Optional[Callable[[None], None]]
+        self._method_refresh_current_conditions_handler = None  # type: Optional[Callable[[], None]]
 
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
@@ -547,7 +547,7 @@ class WeatherServer:
         sig_msg = MessageCreator.signal_message("weather/{}/signal/currentTime".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
-    def handle_refresh_daily_forecast(self, handler: Callable[[None], None]):
+    def handle_refresh_daily_forecast(self, handler: Callable[[], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_daily_forecast' method calls."""
         if self._method_refresh_daily_forecast_handler is None and handler is not None:
             self._method_refresh_daily_forecast_handler = handler
@@ -605,7 +605,7 @@ class WeatherServer:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
 
-    def handle_refresh_hourly_forecast(self, handler: Callable[[None], None]):
+    def handle_refresh_hourly_forecast(self, handler: Callable[[], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_hourly_forecast' method calls."""
         if self._method_refresh_hourly_forecast_handler is None and handler is not None:
             self._method_refresh_hourly_forecast_handler = handler
@@ -663,7 +663,7 @@ class WeatherServer:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
 
-    def handle_refresh_current_conditions(self, handler: Callable[[None], None]):
+    def handle_refresh_current_conditions(self, handler: Callable[[], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_current_conditions' method calls."""
         if self._method_refresh_current_conditions_handler is None and handler is not None:
             self._method_refresh_current_conditions_handler = handler
@@ -1127,9 +1127,9 @@ class WeatherServerBuilder:
 
     def __init__(self):
 
-        self._refresh_daily_forecast_method_handler: Optional[Callable[[None], None]] = None
-        self._refresh_hourly_forecast_method_handler: Optional[Callable[[None], None]] = None
-        self._refresh_current_conditions_method_handler: Optional[Callable[[None], None]] = None
+        self._refresh_daily_forecast_method_handler: Optional[Callable[[], None]] = None
+        self._refresh_hourly_forecast_method_handler: Optional[Callable[[], None]] = None
+        self._refresh_current_conditions_method_handler: Optional[Callable[[], None]] = None
 
         self._location_property_callbacks: List[Callable[[float, float], None]] = []
         self._current_temperature_property_callbacks: List[Callable[[float], None]] = []
@@ -1140,7 +1140,7 @@ class WeatherServerBuilder:
         self._hourly_forecast_refresh_interval_property_callbacks: List[Callable[[int], None]] = []
         self._daily_forecast_refresh_interval_property_callbacks: List[Callable[[int], None]] = []
 
-    def handle_refresh_daily_forecast(self, handler: Callable[[None], None]):
+    def handle_refresh_daily_forecast(self, handler: Callable[[], None]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
@@ -1151,7 +1151,7 @@ class WeatherServerBuilder:
             raise Exception("Method handler already set")
         return wrapper
 
-    def handle_refresh_hourly_forecast(self, handler: Callable[[None], None]):
+    def handle_refresh_hourly_forecast(self, handler: Callable[[], None]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
@@ -1162,7 +1162,7 @@ class WeatherServerBuilder:
             raise Exception("Method handler already set")
         return wrapper
 
-    def handle_refresh_current_conditions(self, handler: Callable[[None], None]):
+    def handle_refresh_current_conditions(self, handler: Callable[[], None]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)

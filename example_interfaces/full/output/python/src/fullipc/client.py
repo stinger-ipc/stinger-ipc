@@ -8,7 +8,7 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
-from typing import Dict, Callable, List, Any, Optional
+from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
 import json
@@ -31,19 +31,19 @@ from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
-TodayIsSignalCallbackType = Callable[[int, DayOfTheWeek], None]
-RandomWordSignalCallbackType = Callable[[str, datetime], None]
-AddNumbersMethodResponseCallbackType = Callable[[int], None]
-DoSomethingMethodResponseCallbackType = Callable[[DoSomethingMethodResponse], None]
-WhatTimeIsItMethodResponseCallbackType = Callable[[datetime], None]
-HoldTemperatureMethodResponseCallbackType = Callable[[bool], None]
+TodayIsSignalCallbackType = Union[Callable[[int, DayOfTheWeek], None], Callable[[Any, int, DayOfTheWeek], None]]
+RandomWordSignalCallbackType = Union[Callable[[str, datetime], None], Callable[[Any, str, datetime], None]]
+AddNumbersMethodResponseCallbackType = Union[Callable[[int], None], Callable[[Any, int], None]]
+DoSomethingMethodResponseCallbackType = Union[Callable[[DoSomethingMethodResponse], None], Callable[[Any, DoSomethingMethodResponse], None]]
+WhatTimeIsItMethodResponseCallbackType = Union[Callable[[datetime], None], Callable[[Any, datetime], None]]
+HoldTemperatureMethodResponseCallbackType = Union[Callable[[bool], None], Callable[[Any, bool], None]]
 
-FavoriteNumberPropertyUpdatedCallbackType = Callable[[int], None]
-FavoriteFoodsPropertyUpdatedCallbackType = Callable[[FavoriteFoodsProperty], None]
-LunchMenuPropertyUpdatedCallbackType = Callable[[LunchMenuProperty], None]
-FamilyNamePropertyUpdatedCallbackType = Callable[[str], None]
-LastBreakfastTimePropertyUpdatedCallbackType = Callable[[datetime], None]
-LastBirthdaysPropertyUpdatedCallbackType = Callable[[LastBirthdaysProperty], None]
+FavoriteNumberPropertyUpdatedCallbackType = Union[Callable[[int], None], Callable[[Any, int], None]]
+FavoriteFoodsPropertyUpdatedCallbackType = Union[Callable[[FavoriteFoodsProperty], None], Callable[[Any, FavoriteFoodsProperty], None]]
+LunchMenuPropertyUpdatedCallbackType = Union[Callable[[LunchMenuProperty], None], Callable[[Any, LunchMenuProperty], None]]
+FamilyNamePropertyUpdatedCallbackType = Union[Callable[[str], None], Callable[[Any, str], None]]
+LastBreakfastTimePropertyUpdatedCallbackType = Union[Callable[[datetime], None], Callable[[Any, datetime], None]]
+LastBirthdaysPropertyUpdatedCallbackType = Union[Callable[[LastBirthdaysProperty], None], Callable[[Any, LastBirthdaysProperty], None]]
 
 
 class DiscoveredInstance(BaseModel):

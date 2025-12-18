@@ -120,7 +120,7 @@ class TestWeatherServerProperties:
             "latitude": 1.0,
             "longitude": 3.14,
         }
-        prop_obj = LocationProperty(**prop_data)
+        prop_obj = LocationProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -163,7 +163,7 @@ class TestWeatherServerProperties:
             "latitude": 1.0,
             "longitude": 3.14,
         }
-        prop_obj = LocationProperty(**prop_data)
+        prop_obj = LocationProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -308,7 +308,7 @@ class TestWeatherServerProperties:
         prop_data = {
             "temperature_f": 1.0,
         }
-        prop_obj = CurrentTemperatureProperty(**prop_data)
+        prop_obj = CurrentTemperatureProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -368,7 +368,7 @@ class TestWeatherServerProperties:
             "condition": WeatherCondition.SUNNY,
             "description": "apples",
         }
-        prop_obj = CurrentConditionProperty(**prop_data)
+        prop_obj = CurrentConditionProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -430,7 +430,7 @@ class TestWeatherServerProperties:
             "tuesday": ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
             "wednesday": ForecastForDay(high_temperature=1.0, low_temperature=1.0, condition=WeatherCondition.SUNNY, start_time="foo", end_time="foo"),
         }
-        prop_obj = DailyForecastProperty(**prop_data)
+        prop_obj = DailyForecastProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -494,7 +494,7 @@ class TestWeatherServerProperties:
             "hour_2": ForecastForHour(temperature=1.0, starttime=datetime.now(UTC), condition=WeatherCondition.SUNNY),
             "hour_3": ForecastForHour(temperature=1.0, starttime=datetime.now(UTC), condition=WeatherCondition.SUNNY),
         }
-        prop_obj = HourlyForecastProperty(**prop_data)
+        prop_obj = HourlyForecastProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -554,7 +554,7 @@ class TestWeatherServerProperties:
         prop_data = {
             "seconds": 2020,
         }
-        prop_obj = CurrentConditionRefreshIntervalProperty(**prop_data)
+        prop_obj = CurrentConditionRefreshIntervalProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -595,7 +595,7 @@ class TestWeatherServerProperties:
         prop_data = {
             "seconds": 2020,
         }
-        prop_obj = CurrentConditionRefreshIntervalProperty(**prop_data)
+        prop_obj = CurrentConditionRefreshIntervalProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -738,7 +738,7 @@ class TestWeatherServerProperties:
         prop_data = {
             "seconds": 2020,
         }
-        prop_obj = HourlyForecastRefreshIntervalProperty(**prop_data)
+        prop_obj = HourlyForecastRefreshIntervalProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -779,7 +779,7 @@ class TestWeatherServerProperties:
         prop_data = {
             "seconds": 2020,
         }
-        prop_obj = HourlyForecastRefreshIntervalProperty(**prop_data)
+        prop_obj = HourlyForecastRefreshIntervalProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -922,7 +922,7 @@ class TestWeatherServerProperties:
         prop_data = {
             "seconds": 2020,
         }
-        prop_obj = DailyForecastRefreshIntervalProperty(**prop_data)
+        prop_obj = DailyForecastRefreshIntervalProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -963,7 +963,7 @@ class TestWeatherServerProperties:
         prop_data = {
             "seconds": 2020,
         }
-        prop_obj = DailyForecastRefreshIntervalProperty(**prop_data)
+        prop_obj = DailyForecastRefreshIntervalProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -1073,7 +1073,7 @@ class TestWeatherServerSignals:
         """Test that the server can emit the 'current_time' signal."""
         signal_data = {
             "current_time": "apples",
-        }
+        }  # type: Dict[str, Any]
         server.emit_current_time(**signal_data)
 
         # Verify that a message was published
@@ -1085,7 +1085,7 @@ class TestWeatherServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = CurrentTimeSignalPayload(**signal_data)
+        expected_obj = CurrentTimeSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -1096,7 +1096,7 @@ class TestWeatherServerMethods:
     def test_server_handle_refresh_daily_forecast_method(self, server, mock_connection):
         """Test that the server can handle the 'refresh_daily_forecast' method."""
         handler_callback_data = None
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler() -> None:
             nonlocal received_args
@@ -1106,7 +1106,7 @@ class TestWeatherServerMethods:
         server.handle_refresh_daily_forecast(handler)
 
         # Create and simulate receiving a method call message
-        method_data = {}
+        method_data = {}  # type: Dict[str, Any]
         method_obj = RefreshDailyForecastMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -1137,13 +1137,13 @@ class TestWeatherServerMethods:
         # Verify response payload
         resp_payload = json.loads(resp_msg.payload.decode("utf-8"))
 
-        expected_resp_dict = {}
+        expected_resp_dict = {}  # type: Dict[str, Any]
         assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
 
     def test_server_handle_refresh_hourly_forecast_method(self, server, mock_connection):
         """Test that the server can handle the 'refresh_hourly_forecast' method."""
         handler_callback_data = None
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler() -> None:
             nonlocal received_args
@@ -1153,7 +1153,7 @@ class TestWeatherServerMethods:
         server.handle_refresh_hourly_forecast(handler)
 
         # Create and simulate receiving a method call message
-        method_data = {}
+        method_data = {}  # type: Dict[str, Any]
         method_obj = RefreshHourlyForecastMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -1184,13 +1184,13 @@ class TestWeatherServerMethods:
         # Verify response payload
         resp_payload = json.loads(resp_msg.payload.decode("utf-8"))
 
-        expected_resp_dict = {}
+        expected_resp_dict = {}  # type: Dict[str, Any]
         assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
 
     def test_server_handle_refresh_current_conditions_method(self, server, mock_connection):
         """Test that the server can handle the 'refresh_current_conditions' method."""
         handler_callback_data = None
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler() -> None:
             nonlocal received_args
@@ -1200,7 +1200,7 @@ class TestWeatherServerMethods:
         server.handle_refresh_current_conditions(handler)
 
         # Create and simulate receiving a method call message
-        method_data = {}
+        method_data = {}  # type: Dict[str, Any]
         method_obj = RefreshCurrentConditionsMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -1231,5 +1231,5 @@ class TestWeatherServerMethods:
         # Verify response payload
         resp_payload = json.loads(resp_msg.payload.decode("utf-8"))
 
-        expected_resp_dict = {}
+        expected_resp_dict = {}  # type: Dict[str, Any]
         assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"

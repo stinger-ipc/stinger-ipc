@@ -179,7 +179,7 @@ class TestableServer:
         self._conn.subscribe("testable/{}/property/readWriteLists/setValue".format(self._instance_id), self._receive_read_write_lists_update_request_message)
 
         self._conn.subscribe("testable/{}/method/callWithNothing".format(self._instance_id), self._process_call_with_nothing_call)
-        self._method_call_with_nothing_handler = None  # type: Optional[Callable[[None], None]]
+        self._method_call_with_nothing_handler = None  # type: Optional[Callable[[], None]]
 
         self._conn.subscribe("testable/{}/method/callOneInteger".format(self._instance_id), self._process_call_one_integer_call)
         self._method_call_one_integer_handler = None  # type: Optional[Callable[[int], int]]
@@ -2508,7 +2508,7 @@ class TestableServer:
         sig_msg = MessageCreator.signal_message("testable/{}/signal/arrayOfEveryType".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
-    def handle_call_with_nothing(self, handler: Callable[[None], None]):
+    def handle_call_with_nothing(self, handler: Callable[[], None]):
         """This is a decorator to decorate a method that will handle the 'callWithNothing' method calls."""
         if self._method_call_with_nothing_handler is None and handler is not None:
             self._method_call_with_nothing_handler = handler
@@ -5263,7 +5263,7 @@ class TestableServerBuilder:
 
     def __init__(self):
 
-        self._call_with_nothing_method_handler: Optional[Callable[[None], None]] = None
+        self._call_with_nothing_method_handler: Optional[Callable[[], None]] = None
         self._call_one_integer_method_handler: Optional[Callable[[int], int]] = None
         self._call_optional_integer_method_handler: Optional[Callable[[Optional[int]], Optional[int]]] = None
         self._call_three_integers_method_handler: Optional[Callable[[int, int, Optional[int]], CallThreeIntegersMethodResponse]] = None
@@ -5316,7 +5316,7 @@ class TestableServerBuilder:
         self._read_write_list_of_strings_property_callbacks: List[Callable[[List[str]], None]] = []
         self._read_write_lists_property_callbacks: List[Callable[[List[Numbers], List[datetime]], None]] = []
 
-    def handle_call_with_nothing(self, handler: Callable[[None], None]):
+    def handle_call_with_nothing(self, handler: Callable[[], None]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)

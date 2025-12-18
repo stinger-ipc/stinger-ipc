@@ -152,7 +152,7 @@ def initial_property_values():
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -182,7 +182,7 @@ def initial_property_values():
         read_write_optional_datetime=datetime.now(UTC),
         read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
             first=datetime.now(UTC),
-            second=datetime.now(UTC),
+            second=None,
         ),
         read_write_duration=timedelta(seconds=3536),
         read_write_optional_duration=None,
@@ -269,7 +269,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": 2020,
         }
-        prop_obj = ReadWriteIntegerProperty(**prop_data)
+        prop_obj = ReadWriteIntegerProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -310,7 +310,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": 2020,
         }
-        prop_obj = ReadWriteIntegerProperty(**prop_data)
+        prop_obj = ReadWriteIntegerProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -453,7 +453,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": 2020,
         }
-        prop_obj = ReadOnlyIntegerProperty(**prop_data)
+        prop_obj = ReadOnlyIntegerProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -510,7 +510,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": 2020,
         }
-        prop_obj = ReadWriteOptionalIntegerProperty(**prop_data)
+        prop_obj = ReadWriteOptionalIntegerProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -551,7 +551,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": 2020,
         }
-        prop_obj = ReadWriteOptionalIntegerProperty(**prop_data)
+        prop_obj = ReadWriteOptionalIntegerProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -696,7 +696,7 @@ class TestTestableServerProperties:
             "first": 2020,
             "second": 42,
         }
-        prop_obj = ReadWriteTwoIntegersProperty(**prop_data)
+        prop_obj = ReadWriteTwoIntegersProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -739,7 +739,7 @@ class TestTestableServerProperties:
             "first": 2020,
             "second": 42,
         }
-        prop_obj = ReadWriteTwoIntegersProperty(**prop_data)
+        prop_obj = ReadWriteTwoIntegersProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -884,7 +884,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": "example",
         }
-        prop_obj = ReadOnlyStringProperty(**prop_data)
+        prop_obj = ReadOnlyStringProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -942,7 +942,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": "example",
         }
-        prop_obj = ReadWriteStringProperty(**prop_data)
+        prop_obj = ReadWriteStringProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -983,7 +983,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": "example",
         }
-        prop_obj = ReadWriteStringProperty(**prop_data)
+        prop_obj = ReadWriteStringProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -1125,7 +1125,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": "example",
         }
-        prop_obj = ReadWriteOptionalStringProperty(**prop_data)
+        prop_obj = ReadWriteOptionalStringProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -1166,7 +1166,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": "example",
         }
-        prop_obj = ReadWriteOptionalStringProperty(**prop_data)
+        prop_obj = ReadWriteOptionalStringProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -1311,7 +1311,7 @@ class TestTestableServerProperties:
             "first": "example",
             "second": "apples",
         }
-        prop_obj = ReadWriteTwoStringsProperty(**prop_data)
+        prop_obj = ReadWriteTwoStringsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -1354,7 +1354,7 @@ class TestTestableServerProperties:
             "first": "example",
             "second": "apples",
         }
-        prop_obj = ReadWriteTwoStringsProperty(**prop_data)
+        prop_obj = ReadWriteTwoStringsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -1530,7 +1530,7 @@ class TestTestableServerProperties:
                 optional_array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
             ),
         }
-        prop_obj = ReadWriteStructProperty(**prop_data)
+        prop_obj = ReadWriteStructProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -1602,7 +1602,7 @@ class TestTestableServerProperties:
                 optional_array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
             ),
         }
-        prop_obj = ReadWriteStructProperty(**prop_data)
+        prop_obj = ReadWriteStructProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -1756,7 +1756,7 @@ class TestTestableServerProperties:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -1775,7 +1775,7 @@ class TestTestableServerProperties:
                 optional_array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
             ),
         }
-        prop_obj = ReadWriteOptionalStructProperty(**prop_data)
+        prop_obj = ReadWriteOptionalStructProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -1847,7 +1847,7 @@ class TestTestableServerProperties:
                 optional_array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
             ),
         }
-        prop_obj = ReadWriteOptionalStructProperty(**prop_data)
+        prop_obj = ReadWriteOptionalStructProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -2035,7 +2035,7 @@ class TestTestableServerProperties:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -2054,7 +2054,7 @@ class TestTestableServerProperties:
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
         }
-        prop_obj = ReadWriteTwoStructsProperty(**prop_data)
+        prop_obj = ReadWriteTwoStructsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -2140,7 +2140,7 @@ class TestTestableServerProperties:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -2159,7 +2159,7 @@ class TestTestableServerProperties:
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
         }
-        prop_obj = ReadWriteTwoStructsProperty(**prop_data)
+        prop_obj = ReadWriteTwoStructsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -2304,7 +2304,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": Numbers.ONE,
         }
-        prop_obj = ReadOnlyEnumProperty(**prop_data)
+        prop_obj = ReadOnlyEnumProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -2362,7 +2362,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": Numbers.ONE,
         }
-        prop_obj = ReadWriteEnumProperty(**prop_data)
+        prop_obj = ReadWriteEnumProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -2403,7 +2403,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": Numbers.ONE,
         }
-        prop_obj = ReadWriteEnumProperty(**prop_data)
+        prop_obj = ReadWriteEnumProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -2545,7 +2545,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": Numbers.ONE,
         }
-        prop_obj = ReadWriteOptionalEnumProperty(**prop_data)
+        prop_obj = ReadWriteOptionalEnumProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -2586,7 +2586,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": Numbers.ONE,
         }
-        prop_obj = ReadWriteOptionalEnumProperty(**prop_data)
+        prop_obj = ReadWriteOptionalEnumProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -2731,7 +2731,7 @@ class TestTestableServerProperties:
             "first": Numbers.ONE,
             "second": Numbers.ONE,
         }
-        prop_obj = ReadWriteTwoEnumsProperty(**prop_data)
+        prop_obj = ReadWriteTwoEnumsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -2774,7 +2774,7 @@ class TestTestableServerProperties:
             "first": Numbers.ONE,
             "second": Numbers.ONE,
         }
-        prop_obj = ReadWriteTwoEnumsProperty(**prop_data)
+        prop_obj = ReadWriteTwoEnumsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -2919,7 +2919,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": datetime.now(UTC),
         }
-        prop_obj = ReadWriteDatetimeProperty(**prop_data)
+        prop_obj = ReadWriteDatetimeProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -2960,7 +2960,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": datetime.now(UTC),
         }
-        prop_obj = ReadWriteDatetimeProperty(**prop_data)
+        prop_obj = ReadWriteDatetimeProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -3100,9 +3100,9 @@ class TestTestableServerProperties:
 
         # Create and simulate receiving a property update message
         prop_data = {
-            "value": None,
+            "value": datetime.now(UTC),
         }
-        prop_obj = ReadWriteOptionalDatetimeProperty(**prop_data)
+        prop_obj = ReadWriteOptionalDatetimeProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -3141,9 +3141,9 @@ class TestTestableServerProperties:
 
         # Create and simulate receiving a property update message
         prop_data = {
-            "value": None,
+            "value": datetime.now(UTC),
         }
-        prop_obj = ReadWriteOptionalDatetimeProperty(**prop_data)
+        prop_obj = ReadWriteOptionalDatetimeProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -3288,7 +3288,7 @@ class TestTestableServerProperties:
             "first": datetime.now(UTC),
             "second": datetime.now(UTC),
         }
-        prop_obj = ReadWriteTwoDatetimesProperty(**prop_data)
+        prop_obj = ReadWriteTwoDatetimesProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -3331,7 +3331,7 @@ class TestTestableServerProperties:
             "first": datetime.now(UTC),
             "second": datetime.now(UTC),
         }
-        prop_obj = ReadWriteTwoDatetimesProperty(**prop_data)
+        prop_obj = ReadWriteTwoDatetimesProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -3476,7 +3476,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": timedelta(seconds=551),
         }
-        prop_obj = ReadWriteDurationProperty(**prop_data)
+        prop_obj = ReadWriteDurationProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -3517,7 +3517,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": timedelta(seconds=551),
         }
-        prop_obj = ReadWriteDurationProperty(**prop_data)
+        prop_obj = ReadWriteDurationProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -3659,7 +3659,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": timedelta(seconds=2332),
         }
-        prop_obj = ReadWriteOptionalDurationProperty(**prop_data)
+        prop_obj = ReadWriteOptionalDurationProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -3700,7 +3700,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": timedelta(seconds=2332),
         }
-        prop_obj = ReadWriteOptionalDurationProperty(**prop_data)
+        prop_obj = ReadWriteOptionalDurationProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -3845,7 +3845,7 @@ class TestTestableServerProperties:
             "first": timedelta(seconds=551),
             "second": None,
         }
-        prop_obj = ReadWriteTwoDurationsProperty(**prop_data)
+        prop_obj = ReadWriteTwoDurationsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -3888,7 +3888,7 @@ class TestTestableServerProperties:
             "first": timedelta(seconds=551),
             "second": None,
         }
-        prop_obj = ReadWriteTwoDurationsProperty(**prop_data)
+        prop_obj = ReadWriteTwoDurationsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -4033,7 +4033,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": b"example binary data",
         }
-        prop_obj = ReadWriteBinaryProperty(**prop_data)
+        prop_obj = ReadWriteBinaryProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -4074,7 +4074,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": b"example binary data",
         }
-        prop_obj = ReadWriteBinaryProperty(**prop_data)
+        prop_obj = ReadWriteBinaryProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -4216,7 +4216,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": b"example binary data",
         }
-        prop_obj = ReadWriteOptionalBinaryProperty(**prop_data)
+        prop_obj = ReadWriteOptionalBinaryProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -4257,7 +4257,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": b"example binary data",
         }
-        prop_obj = ReadWriteOptionalBinaryProperty(**prop_data)
+        prop_obj = ReadWriteOptionalBinaryProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -4402,7 +4402,7 @@ class TestTestableServerProperties:
             "first": b"example binary data",
             "second": b"example binary data",
         }
-        prop_obj = ReadWriteTwoBinariesProperty(**prop_data)
+        prop_obj = ReadWriteTwoBinariesProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -4445,7 +4445,7 @@ class TestTestableServerProperties:
             "first": b"example binary data",
             "second": b"example binary data",
         }
-        prop_obj = ReadWriteTwoBinariesProperty(**prop_data)
+        prop_obj = ReadWriteTwoBinariesProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -4590,7 +4590,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": ["example", "apples"],
         }
-        prop_obj = ReadWriteListOfStringsProperty(**prop_data)
+        prop_obj = ReadWriteListOfStringsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -4631,7 +4631,7 @@ class TestTestableServerProperties:
         prop_data = {
             "value": ["example", "apples"],
         }
-        prop_obj = ReadWriteListOfStringsProperty(**prop_data)
+        prop_obj = ReadWriteListOfStringsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -4776,7 +4776,7 @@ class TestTestableServerProperties:
             "the_list": [Numbers.ONE, Numbers.ONE],
             "optional_list": [datetime.now(UTC), datetime.now(UTC)],
         }
-        prop_obj = ReadWriteListsProperty(**prop_data)
+        prop_obj = ReadWriteListsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -4819,7 +4819,7 @@ class TestTestableServerProperties:
             "the_list": [Numbers.ONE, Numbers.ONE],
             "optional_list": [datetime.now(UTC), datetime.now(UTC)],
         }
-        prop_obj = ReadWriteListsProperty(**prop_data)
+        prop_obj = ReadWriteListsProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -4929,7 +4929,7 @@ class TestTestableServerSignals:
 
     def test_server_emit_empty(self, server, mock_connection):
         """Test that the server can emit the 'empty' signal."""
-        signal_data = {}
+        signal_data = {}  # type: Dict[str, Any]
         server.emit_empty(**signal_data)
 
         # Verify that a message was published
@@ -4941,7 +4941,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = EmptySignalPayload(**signal_data)
+        expected_obj = EmptySignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -4950,7 +4950,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_int' signal."""
         signal_data = {
             "value": 42,
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_int(**signal_data)
 
         # Verify that a message was published
@@ -4962,7 +4962,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleIntSignalPayload(**signal_data)
+        expected_obj = SingleIntSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -4971,7 +4971,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_optional_int' signal."""
         signal_data = {
             "value": 42,
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_optional_int(**signal_data)
 
         # Verify that a message was published
@@ -4983,7 +4983,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleOptionalIntSignalPayload(**signal_data)
+        expected_obj = SingleOptionalIntSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -4994,7 +4994,7 @@ class TestTestableServerSignals:
             "first": 42,
             "second": 42,
             "third": 42,
-        }
+        }  # type: Dict[str, Any]
         server.emit_three_integers(**signal_data)
 
         # Verify that a message was published
@@ -5006,7 +5006,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = ThreeIntegersSignalPayload(**signal_data)
+        expected_obj = ThreeIntegersSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5015,7 +5015,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_string' signal."""
         signal_data = {
             "value": "apples",
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_string(**signal_data)
 
         # Verify that a message was published
@@ -5027,7 +5027,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleStringSignalPayload(**signal_data)
+        expected_obj = SingleStringSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5036,7 +5036,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_optional_string' signal."""
         signal_data = {
             "value": "apples",
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_optional_string(**signal_data)
 
         # Verify that a message was published
@@ -5048,7 +5048,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleOptionalStringSignalPayload(**signal_data)
+        expected_obj = SingleOptionalStringSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5059,7 +5059,7 @@ class TestTestableServerSignals:
             "first": "apples",
             "second": "apples",
             "third": "apples",
-        }
+        }  # type: Dict[str, Any]
         server.emit_three_strings(**signal_data)
 
         # Verify that a message was published
@@ -5071,7 +5071,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = ThreeStringsSignalPayload(**signal_data)
+        expected_obj = ThreeStringsSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5080,7 +5080,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_enum' signal."""
         signal_data = {
             "value": Numbers.ONE,
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_enum(**signal_data)
 
         # Verify that a message was published
@@ -5092,7 +5092,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleEnumSignalPayload(**signal_data)
+        expected_obj = SingleEnumSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5101,7 +5101,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_optional_enum' signal."""
         signal_data = {
             "value": Numbers.ONE,
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_optional_enum(**signal_data)
 
         # Verify that a message was published
@@ -5113,7 +5113,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleOptionalEnumSignalPayload(**signal_data)
+        expected_obj = SingleOptionalEnumSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5124,7 +5124,7 @@ class TestTestableServerSignals:
             "first": Numbers.ONE,
             "second": Numbers.ONE,
             "third": Numbers.ONE,
-        }
+        }  # type: Dict[str, Any]
         server.emit_three_enums(**signal_data)
 
         # Verify that a message was published
@@ -5136,7 +5136,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = ThreeEnumsSignalPayload(**signal_data)
+        expected_obj = ThreeEnumsSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5176,7 +5176,7 @@ class TestTestableServerSignals:
                 array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_struct(**signal_data)
 
         # Verify that a message was published
@@ -5188,7 +5188,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleStructSignalPayload(**signal_data)
+        expected_obj = SingleStructSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5228,7 +5228,7 @@ class TestTestableServerSignals:
                 array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_optional_struct(**signal_data)
 
         # Verify that a message was published
@@ -5240,7 +5240,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleOptionalStructSignalPayload(**signal_data)
+        expected_obj = SingleOptionalStructSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5326,7 +5326,7 @@ class TestTestableServerSignals:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -5344,7 +5344,7 @@ class TestTestableServerSignals:
                 array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
-        }
+        }  # type: Dict[str, Any]
         server.emit_three_structs(**signal_data)
 
         # Verify that a message was published
@@ -5356,7 +5356,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = ThreeStructsSignalPayload(**signal_data)
+        expected_obj = ThreeStructsSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5365,7 +5365,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_date_time' signal."""
         signal_data = {
             "value": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_date_time(**signal_data)
 
         # Verify that a message was published
@@ -5377,7 +5377,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleDateTimeSignalPayload(**signal_data)
+        expected_obj = SingleDateTimeSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5386,7 +5386,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_optional_datetime' signal."""
         signal_data = {
             "value": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_optional_datetime(**signal_data)
 
         # Verify that a message was published
@@ -5398,7 +5398,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleOptionalDatetimeSignalPayload(**signal_data)
+        expected_obj = SingleOptionalDatetimeSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5408,8 +5408,8 @@ class TestTestableServerSignals:
         signal_data = {
             "first": datetime.now(UTC),
             "second": datetime.now(UTC),
-            "third": None,
-        }
+            "third": datetime.now(UTC),
+        }  # type: Dict[str, Any]
         server.emit_three_date_times(**signal_data)
 
         # Verify that a message was published
@@ -5421,7 +5421,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = ThreeDateTimesSignalPayload(**signal_data)
+        expected_obj = ThreeDateTimesSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5430,7 +5430,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_duration' signal."""
         signal_data = {
             "value": timedelta(seconds=3536),
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_duration(**signal_data)
 
         # Verify that a message was published
@@ -5442,7 +5442,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleDurationSignalPayload(**signal_data)
+        expected_obj = SingleDurationSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5451,7 +5451,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_optional_duration' signal."""
         signal_data = {
             "value": None,
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_optional_duration(**signal_data)
 
         # Verify that a message was published
@@ -5463,7 +5463,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleOptionalDurationSignalPayload(**signal_data)
+        expected_obj = SingleOptionalDurationSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5474,7 +5474,7 @@ class TestTestableServerSignals:
             "first": timedelta(seconds=3536),
             "second": timedelta(seconds=3536),
             "third": None,
-        }
+        }  # type: Dict[str, Any]
         server.emit_three_durations(**signal_data)
 
         # Verify that a message was published
@@ -5486,7 +5486,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = ThreeDurationsSignalPayload(**signal_data)
+        expected_obj = ThreeDurationsSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5495,7 +5495,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_binary' signal."""
         signal_data = {
             "value": b"example binary data",
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_binary(**signal_data)
 
         # Verify that a message was published
@@ -5507,7 +5507,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleBinarySignalPayload(**signal_data)
+        expected_obj = SingleBinarySignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5516,7 +5516,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_optional_binary' signal."""
         signal_data = {
             "value": b"example binary data",
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_optional_binary(**signal_data)
 
         # Verify that a message was published
@@ -5528,7 +5528,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleOptionalBinarySignalPayload(**signal_data)
+        expected_obj = SingleOptionalBinarySignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5539,7 +5539,7 @@ class TestTestableServerSignals:
             "first": b"example binary data",
             "second": b"example binary data",
             "third": b"example binary data",
-        }
+        }  # type: Dict[str, Any]
         server.emit_three_binaries(**signal_data)
 
         # Verify that a message was published
@@ -5551,7 +5551,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = ThreeBinariesSignalPayload(**signal_data)
+        expected_obj = ThreeBinariesSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5560,7 +5560,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_array_of_integers' signal."""
         signal_data = {
             "values": [42, 2022],
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_array_of_integers(**signal_data)
 
         # Verify that a message was published
@@ -5572,7 +5572,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleArrayOfIntegersSignalPayload(**signal_data)
+        expected_obj = SingleArrayOfIntegersSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5581,7 +5581,7 @@ class TestTestableServerSignals:
         """Test that the server can emit the 'single_optional_array_of_strings' signal."""
         signal_data = {
             "values": ["apples", "foo"],
-        }
+        }  # type: Dict[str, Any]
         server.emit_single_optional_array_of_strings(**signal_data)
 
         # Verify that a message was published
@@ -5593,7 +5593,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = SingleOptionalArrayOfStringsSignalPayload(**signal_data)
+        expected_obj = SingleOptionalArrayOfStringsSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5609,7 +5609,7 @@ class TestTestableServerSignals:
             "sixth_of_datetimes": [datetime.now(UTC), datetime.now(UTC)],
             "seventh_of_durations": [timedelta(seconds=3536), timedelta(seconds=975)],
             "eighth_of_binaries": [b"example binary data", b"example binary data"],
-        }
+        }  # type: Dict[str, Any]
         server.emit_array_of_every_type(**signal_data)
 
         # Verify that a message was published
@@ -5621,7 +5621,7 @@ class TestTestableServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
-        expected_obj = ArrayOfEveryTypeSignalPayload(**signal_data)
+        expected_obj = ArrayOfEveryTypeSignalPayload(**signal_data)  # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode("utf-8"))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -5632,7 +5632,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_with_nothing_method(self, server, mock_connection):
         """Test that the server can handle the 'call_with_nothing' method."""
         handler_callback_data = None
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler() -> None:
             nonlocal received_args
@@ -5642,7 +5642,7 @@ class TestTestableServerMethods:
         server.handle_call_with_nothing(handler)
 
         # Create and simulate receiving a method call message
-        method_data = {}
+        method_data = {}  # type: Dict[str, Any]
         method_obj = CallWithNothingMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -5673,13 +5673,13 @@ class TestTestableServerMethods:
         # Verify response payload
         resp_payload = json.loads(resp_msg.payload.decode("utf-8"))
 
-        expected_resp_dict = {}
+        expected_resp_dict = {}  # type: Dict[str, Any]
         assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
 
     def test_server_handle_call_one_integer_method(self, server, mock_connection):
         """Test that the server can handle the 'call_one_integer' method."""
         handler_callback_data = 42
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> int:
             nonlocal received_args
@@ -5693,7 +5693,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": 2020,
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOneIntegerMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -5731,7 +5731,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_optional_integer_method(self, server, mock_connection):
         """Test that the server can handle the 'call_optional_integer' method."""
         handler_callback_data = 42
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> Optional[int]:
             nonlocal received_args
@@ -5745,7 +5745,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": 2020,
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOptionalIntegerMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -5783,7 +5783,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_three_integers_method(self, server, mock_connection):
         """Test that the server can handle the 'call_three_integers' method."""
         handler_callback_data = CallThreeIntegersMethodResponse(output1=42, output2=42, output3=42)
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1, input2, input3) -> CallThreeIntegersMethodResponse:
             nonlocal received_args
@@ -5801,7 +5801,7 @@ class TestTestableServerMethods:
             "input1": 2020,
             "input2": 42,
             "input3": 2022,
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallThreeIntegersMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -5838,7 +5838,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_one_string_method(self, server, mock_connection):
         """Test that the server can handle the 'call_one_string' method."""
         handler_callback_data = "apples"
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> str:
             nonlocal received_args
@@ -5852,7 +5852,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": "example",
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOneStringMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -5890,7 +5890,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_optional_string_method(self, server, mock_connection):
         """Test that the server can handle the 'call_optional_string' method."""
         handler_callback_data = "apples"
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> Optional[str]:
             nonlocal received_args
@@ -5904,7 +5904,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": "example",
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOptionalStringMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -5942,7 +5942,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_three_strings_method(self, server, mock_connection):
         """Test that the server can handle the 'call_three_strings' method."""
         handler_callback_data = CallThreeStringsMethodResponse(output1="apples", output2="apples", output3="apples")
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1, input2, input3) -> CallThreeStringsMethodResponse:
             nonlocal received_args
@@ -5960,7 +5960,7 @@ class TestTestableServerMethods:
             "input1": "example",
             "input2": "apples",
             "input3": "foo",
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallThreeStringsMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -5997,7 +5997,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_one_enum_method(self, server, mock_connection):
         """Test that the server can handle the 'call_one_enum' method."""
         handler_callback_data = Numbers.ONE
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> Numbers:
             nonlocal received_args
@@ -6011,7 +6011,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": Numbers.ONE,
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOneEnumMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6049,7 +6049,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_optional_enum_method(self, server, mock_connection):
         """Test that the server can handle the 'call_optional_enum' method."""
         handler_callback_data = Numbers.ONE
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> Optional[Numbers]:
             nonlocal received_args
@@ -6063,7 +6063,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": Numbers.ONE,
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOptionalEnumMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6101,7 +6101,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_three_enums_method(self, server, mock_connection):
         """Test that the server can handle the 'call_three_enums' method."""
         handler_callback_data = CallThreeEnumsMethodResponse(output1=Numbers.ONE, output2=Numbers.ONE, output3=Numbers.ONE)
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1, input2, input3) -> CallThreeEnumsMethodResponse:
             nonlocal received_args
@@ -6119,7 +6119,7 @@ class TestTestableServerMethods:
             "input1": Numbers.ONE,
             "input2": Numbers.ONE,
             "input3": Numbers.ONE,
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallThreeEnumsMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6187,7 +6187,7 @@ class TestTestableServerMethods:
             array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
         )
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> AllTypes:
             nonlocal received_args
@@ -6232,7 +6232,7 @@ class TestTestableServerMethods:
                 array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
                 optional_array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
             ),
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOneStructMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6301,7 +6301,7 @@ class TestTestableServerMethods:
             array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
         )
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> AllTypes:
             nonlocal received_args
@@ -6328,7 +6328,7 @@ class TestTestableServerMethods:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -6346,7 +6346,7 @@ class TestTestableServerMethods:
                 array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
                 optional_array_of_entry_objects=[Entry(key=2020, value="example"), Entry(key=42, value="apples")],
             ),
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOptionalStructMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6481,7 +6481,7 @@ class TestTestableServerMethods:
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
         )
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1, input2, input3) -> CallThreeStructsMethodResponse:
             nonlocal received_args
@@ -6510,7 +6510,7 @@ class TestTestableServerMethods:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -6574,7 +6574,7 @@ class TestTestableServerMethods:
                 optional_string="foo",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2022, value="foo"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=timedelta(seconds=2428),
                 optional_binary=b"example binary data",
                 array_of_integers=[2022, 2022],
@@ -6592,7 +6592,7 @@ class TestTestableServerMethods:
                 array_of_entry_objects=[Entry(key=2022, value="foo"), Entry(key=2022, value="foo")],
                 optional_array_of_entry_objects=[Entry(key=2022, value="foo"), Entry(key=2022, value="foo")],
             ),
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallThreeStructsMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6629,7 +6629,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_one_date_time_method(self, server, mock_connection):
         """Test that the server can handle the 'call_one_date_time' method."""
         handler_callback_data = datetime.now(UTC)
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> datetime:
             nonlocal received_args
@@ -6643,7 +6643,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOneDateTimeMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6681,7 +6681,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_optional_date_time_method(self, server, mock_connection):
         """Test that the server can handle the 'call_optional_date_time' method."""
         handler_callback_data = datetime.now(UTC)
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> Optional[datetime]:
             nonlocal received_args
@@ -6695,7 +6695,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOptionalDateTimeMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6732,8 +6732,8 @@ class TestTestableServerMethods:
 
     def test_server_handle_call_three_date_times_method(self, server, mock_connection):
         """Test that the server can handle the 'call_three_date_times' method."""
-        handler_callback_data = CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=datetime.now(UTC))
-        received_args = None
+        handler_callback_data = CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=None)
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1, input2, input3) -> CallThreeDateTimesMethodResponse:
             nonlocal received_args
@@ -6751,7 +6751,7 @@ class TestTestableServerMethods:
             "input1": datetime.now(UTC),
             "input2": datetime.now(UTC),
             "input3": datetime.now(UTC),
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallThreeDateTimesMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6788,7 +6788,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_one_duration_method(self, server, mock_connection):
         """Test that the server can handle the 'call_one_duration' method."""
         handler_callback_data = timedelta(seconds=3536)
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> timedelta:
             nonlocal received_args
@@ -6802,7 +6802,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": timedelta(seconds=551),
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOneDurationMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6840,7 +6840,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_optional_duration_method(self, server, mock_connection):
         """Test that the server can handle the 'call_optional_duration' method."""
         handler_callback_data = None
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> Optional[timedelta]:
             nonlocal received_args
@@ -6854,7 +6854,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": timedelta(seconds=2332),
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOptionalDurationMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6892,7 +6892,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_three_durations_method(self, server, mock_connection):
         """Test that the server can handle the 'call_three_durations' method."""
         handler_callback_data = CallThreeDurationsMethodResponse(output1=timedelta(seconds=3536), output2=timedelta(seconds=3536), output3=None)
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1, input2, input3) -> CallThreeDurationsMethodResponse:
             nonlocal received_args
@@ -6910,7 +6910,7 @@ class TestTestableServerMethods:
             "input1": timedelta(seconds=551),
             "input2": timedelta(seconds=3536),
             "input3": timedelta(seconds=2428),
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallThreeDurationsMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6947,7 +6947,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_one_binary_method(self, server, mock_connection):
         """Test that the server can handle the 'call_one_binary' method."""
         handler_callback_data = b"example binary data"
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> bytes:
             nonlocal received_args
@@ -6961,7 +6961,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": b"example binary data",
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOneBinaryMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -6999,7 +6999,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_optional_binary_method(self, server, mock_connection):
         """Test that the server can handle the 'call_optional_binary' method."""
         handler_callback_data = b"example binary data"
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> bytes:
             nonlocal received_args
@@ -7013,7 +7013,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": b"example binary data",
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOptionalBinaryMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -7051,7 +7051,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_three_binaries_method(self, server, mock_connection):
         """Test that the server can handle the 'call_three_binaries' method."""
         handler_callback_data = CallThreeBinariesMethodResponse(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1, input2, input3) -> CallThreeBinariesMethodResponse:
             nonlocal received_args
@@ -7069,7 +7069,7 @@ class TestTestableServerMethods:
             "input1": b"example binary data",
             "input2": b"example binary data",
             "input3": b"example binary data",
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallThreeBinariesMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -7106,7 +7106,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_one_list_of_integers_method(self, server, mock_connection):
         """Test that the server can handle the 'call_one_list_of_integers' method."""
         handler_callback_data = [42, 2022]
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> List[int]:
             nonlocal received_args
@@ -7120,7 +7120,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": [2020, 42],
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOneListOfIntegersMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -7158,7 +7158,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_optional_list_of_floats_method(self, server, mock_connection):
         """Test that the server can handle the 'call_optional_list_of_floats' method."""
         handler_callback_data = [3.14, 1.0]
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> List[float]:
             nonlocal received_args
@@ -7172,7 +7172,7 @@ class TestTestableServerMethods:
         # Create and simulate receiving a method call message
         method_data = {
             "input1": [1.0, 3.14],
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallOptionalListOfFloatsMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -7210,7 +7210,7 @@ class TestTestableServerMethods:
     def test_server_handle_call_two_lists_method(self, server, mock_connection):
         """Test that the server can handle the 'call_two_lists' method."""
         handler_callback_data = CallTwoListsMethodResponse(output1=[Numbers.ONE, Numbers.ONE], output2=["apples", "foo"])
-        received_args = None
+        received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1, input2) -> CallTwoListsMethodResponse:
             nonlocal received_args
@@ -7226,7 +7226,7 @@ class TestTestableServerMethods:
         method_data = {
             "input1": [Numbers.ONE, Numbers.ONE],
             "input2": ["apples", "foo"],
-        }
+        }  # type: Dict[str, Any]
         method_obj = CallTwoListsMethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"

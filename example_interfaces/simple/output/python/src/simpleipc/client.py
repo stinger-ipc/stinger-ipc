@@ -8,7 +8,7 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
-from typing import Dict, Callable, List, Any, Optional
+from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
 import json
@@ -31,10 +31,10 @@ from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
-PersonEnteredSignalCallbackType = Callable[[Person], None]
-TradeNumbersMethodResponseCallbackType = Callable[[int], None]
+PersonEnteredSignalCallbackType = Union[Callable[[Person], None], Callable[[Any, Person], None]]
+TradeNumbersMethodResponseCallbackType = Union[Callable[[int], None], Callable[[Any, int], None]]
 
-SchoolPropertyUpdatedCallbackType = Callable[[str], None]
+SchoolPropertyUpdatedCallbackType = Union[Callable[[str], None], Callable[[Any, str], None]]
 
 
 class DiscoveredInstance(BaseModel):

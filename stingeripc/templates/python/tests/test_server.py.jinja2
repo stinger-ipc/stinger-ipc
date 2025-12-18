@@ -119,7 +119,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
             {%-endfor%}
         }
-        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data)
+        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data) # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -167,7 +167,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
             {%-endfor%}
         }
-        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data)
+        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data) # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -281,7 +281,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerSignals:
             {%-for arg in signal.arg_list%}
             "{{arg.name|snake_case}}": {{arg.get_random_example_value()}},
             {%endfor%}
-        }
+        } # type: Dict[str, Any]
         server.emit_{{signal_name|snake_case}}(**signal_data)
         
         # Verify that a message was published
@@ -293,7 +293,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
         
         # Verify payload
-        expected_obj = {{signal_name|UpperCamelCase}}SignalPayload(**signal_data)
+        expected_obj = {{signal_name|UpperCamelCase}}SignalPayload(**signal_data) # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode('utf-8'))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -306,7 +306,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
     def test_server_handle_{{method_name|snake_case}}_method(self, server, mock_connection):
         """Test that the server can handle the '{{method_name|snake_case}}' method."""
         handler_callback_data = {{method.get_return_value_random_example_value('python')}}
-        received_args = None
+        received_args = None # type: Optional[Dict[str, Any]]
         def handler({%for arg in method.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
             nonlocal received_args
             received_args = {
@@ -323,7 +323,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
             {%-for arg in method.arg_list%}
             "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
             {%-endfor%}
-        }
+        } # type: Dict[str, Any]
         method_obj = {{method_name|UpperCamelCase}}MethodRequest(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
@@ -359,7 +359,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         expected_return_obj = {{method_name|UpperCamelCase}}MethodResponse({{method.return_arg_list[0].name|snake_case}}=handler_callback_data)
         expected_resp_dict = to_jsonified_dict(expected_return_obj)
         {%else%}
-        expected_resp_dict = {}
+        expected_resp_dict = {} # type: Dict[str, Any]
         {%endif-%}
         assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
     {%endfor%}

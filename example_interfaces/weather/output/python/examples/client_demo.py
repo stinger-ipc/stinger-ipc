@@ -63,7 +63,7 @@ if __name__ == "__main__":
         """
         @param current_time str
         """
-        print(f"Got a 'current_time' signal: current_time={ current_time } ")
+        print(f"Got a 'current_time' signal: current_time={ current_time} ")
 
     @client_builder.location_updated
     def print_new_location_value(value: LocationProperty):

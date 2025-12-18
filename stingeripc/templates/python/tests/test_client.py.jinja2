@@ -88,7 +88,7 @@ class TestClientMethods:
         {%-for arg in method.arg_list%}
             "{{arg.name|snake_case}}": {{arg.get_random_example_value()}},
         {%endfor-%}
-        }
+        } # type: Dict[str, Any]
         client.{{method_name|snake_case}}(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for '{{method_name|snake_case}}' method call"
         message = mock_connection.published_messages[0]

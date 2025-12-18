@@ -19,7 +19,7 @@ if __name__ == '__main__':
             {%-if prop.arg_list | length > 1%}
             {{prop.python_class}}(
                 {%for arg in prop.arg_list%}
-                {{arg.name}}={{arg.get_random_example_value()}},
+                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
                 {%endfor%}
             ),
             {%-else-%}
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     @server.handle_{{method_name | snake_case}} 
     def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
         """ This is an example handler for the '{{method_name}}' method.  """
-        print(f"--> Running {{method_name | snake_case}}({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
+        print(f"--> Running {{method_name | snake_case}}({%for arg in method.arg_list %}{ {{-arg.name-}}{% if 'bytes' in arg.python_annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%})'")
         return {{method.get_return_value_random_example_value('python')}}
     {%endfor%}
 

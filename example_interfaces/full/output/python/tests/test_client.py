@@ -112,7 +112,7 @@ class TestClientMethods:
             "first": 42,
             "second": 42,
             "third": 42,
-        }
+        }  # type: Dict[str, Any]
         client.add_numbers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'add_numbers' method call"
         message = mock_connection.published_messages[0]
@@ -121,14 +121,14 @@ class TestClientMethods:
     def test_do_something_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "task_to_do": "apples",
-        }
+        }  # type: Dict[str, Any]
         client.do_something(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'do_something' method call"
         message = mock_connection.published_messages[0]
         assert message.topic.endswith("/method/doSomething"), f"Incorrect topic for 'do_something' method call: {message.topic}"
 
     def test_what_time_is_it_method_call_sends_request(self, mock_connection, client):
-        kwargs = {}
+        kwargs = {}  # type: Dict[str, Any]
         client.what_time_is_it(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'what_time_is_it' method call"
         message = mock_connection.published_messages[0]
@@ -137,7 +137,7 @@ class TestClientMethods:
     def test_hold_temperature_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "temperature_celsius": 3.14,
-        }
+        }  # type: Dict[str, Any]
         client.hold_temperature(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'hold_temperature' method call"
         message = mock_connection.published_messages[0]

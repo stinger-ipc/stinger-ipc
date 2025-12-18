@@ -80,7 +80,7 @@ if __name__ == "__main__":
         @param dayOfMonth int
         @param dayOfWeek DayOfTheWeek
         """
-        print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
+        print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth} dayOfWeek={ dayOfWeek} ")
 
     @client_builder.receive_random_word
     def print_randomWord_receipt(word: str, time: datetime):
@@ -88,7 +88,7 @@ if __name__ == "__main__":
         @param word str
         @param time datetime
         """
-        print(f"Got a 'randomWord' signal: word={ word } time={ time } ")
+        print(f"Got a 'randomWord' signal: word={ word} time={ time} ")
 
     @client_builder.favorite_number_updated
     def print_new_favorite_number_value(value: int):

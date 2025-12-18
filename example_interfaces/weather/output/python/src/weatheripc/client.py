@@ -8,7 +8,7 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
-from typing import Dict, Callable, List, Any, Optional
+from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
 import json
@@ -31,19 +31,19 @@ from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
-CurrentTimeSignalCallbackType = Callable[[str], None]
-RefreshDailyForecastMethodResponseCallbackType = Callable[[], None]
-RefreshHourlyForecastMethodResponseCallbackType = Callable[[], None]
-RefreshCurrentConditionsMethodResponseCallbackType = Callable[[], None]
+CurrentTimeSignalCallbackType = Union[Callable[[str], None], Callable[[Any, str], None]]
+RefreshDailyForecastMethodResponseCallbackType = Union[Callable[[], None], Callable[[Any], None]]
+RefreshHourlyForecastMethodResponseCallbackType = Union[Callable[[], None], Callable[[Any], None]]
+RefreshCurrentConditionsMethodResponseCallbackType = Union[Callable[[], None], Callable[[Any], None]]
 
-LocationPropertyUpdatedCallbackType = Callable[[LocationProperty], None]
-CurrentTemperaturePropertyUpdatedCallbackType = Callable[[float], None]
-CurrentConditionPropertyUpdatedCallbackType = Callable[[CurrentConditionProperty], None]
-DailyForecastPropertyUpdatedCallbackType = Callable[[DailyForecastProperty], None]
-HourlyForecastPropertyUpdatedCallbackType = Callable[[HourlyForecastProperty], None]
-CurrentConditionRefreshIntervalPropertyUpdatedCallbackType = Callable[[int], None]
-HourlyForecastRefreshIntervalPropertyUpdatedCallbackType = Callable[[int], None]
-DailyForecastRefreshIntervalPropertyUpdatedCallbackType = Callable[[int], None]
+LocationPropertyUpdatedCallbackType = Union[Callable[[LocationProperty], None], Callable[[Any, LocationProperty], None]]
+CurrentTemperaturePropertyUpdatedCallbackType = Union[Callable[[float], None], Callable[[Any, float], None]]
+CurrentConditionPropertyUpdatedCallbackType = Union[Callable[[CurrentConditionProperty], None], Callable[[Any, CurrentConditionProperty], None]]
+DailyForecastPropertyUpdatedCallbackType = Union[Callable[[DailyForecastProperty], None], Callable[[Any, DailyForecastProperty], None]]
+HourlyForecastPropertyUpdatedCallbackType = Union[Callable[[HourlyForecastProperty], None], Callable[[Any, HourlyForecastProperty], None]]
+CurrentConditionRefreshIntervalPropertyUpdatedCallbackType = Union[Callable[[int], None], Callable[[Any, int], None]]
+HourlyForecastRefreshIntervalPropertyUpdatedCallbackType = Union[Callable[[int], None], Callable[[Any, int], None]]
+DailyForecastRefreshIntervalPropertyUpdatedCallbackType = Union[Callable[[int], None], Callable[[Any, int], None]]
 
 
 class DiscoveredInstance(BaseModel):

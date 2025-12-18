@@ -38,7 +38,7 @@ if __name__ == "__main__":
         """
         @param person Person
         """
-        print(f"Got a 'person_entered' signal: person={ person } ")
+        print(f"Got a 'person_entered' signal: person={ person} ")
 
     @client_builder.school_updated
     def print_new_school_value(value: str):

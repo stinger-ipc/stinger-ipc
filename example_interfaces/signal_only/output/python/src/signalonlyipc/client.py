@@ -8,7 +8,7 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
-from typing import Dict, Callable, List, Any, Optional
+from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
 import json
@@ -23,11 +23,11 @@ from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
-AnotherSignalSignalCallbackType = Callable[[float, bool, str], None]
-BarkSignalCallbackType = Callable[[str], None]
-MaybeNumberSignalCallbackType = Callable[[Optional[int]], None]
-MaybeNameSignalCallbackType = Callable[[Optional[str]], None]
-NowSignalCallbackType = Callable[[datetime], None]
+AnotherSignalSignalCallbackType = Union[Callable[[float, bool, str], None], Callable[[Any, float, bool, str], None]]
+BarkSignalCallbackType = Union[Callable[[str], None], Callable[[Any, str], None]]
+MaybeNumberSignalCallbackType = Union[Callable[[Optional[int]], None], Callable[[Any, Optional[int]], None]]
+MaybeNameSignalCallbackType = Union[Callable[[Optional[str]], None], Callable[[Any, Optional[str]], None]]
+NowSignalCallbackType = Union[Callable[[datetime], None], Callable[[Any, datetime], None]]
 
 
 class DiscoveredInstance(BaseModel):

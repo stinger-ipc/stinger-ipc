@@ -12,7 +12,7 @@ client_builder = {{stinger.python.client_class_name}}Builder()
 
 class SuperAwesomeDoerOfThings:
 
-    def __init__(self, label: str, connection: MqttBrokerConnection):
+    def __init__(self, label: str, connection: Mqtt5Connection):
         self.counter = 0
         self.label = label
         discovery = {{stinger.python.client_class_name}}Discoverer(connection, client_builder, build_binding=self) # The build binding will bind all @client_builder decorated methods to this instance.
@@ -29,7 +29,7 @@ class SuperAwesomeDoerOfThings:
     {%for prop_name, prop in stinger.properties.items()%}
     @client_builder.{{prop_name | snake_case}}_updated
     def print_new_{{prop_name}}_value(self, value: {{prop.python_annotation}}):
-        print(f"{self.label}-{self.counter} printing signal '{{prop_name}}' : value={value}")
+        print(f"{self.label}-{self.counter} printing signal '{{prop_name}}' : value={value{% if 'bytes' in prop.python_annotation %}!r{%endif-%}}")
     {%endfor%}
 
     {% if (stinger.methods|length + stinger.properties_rw|length) > 0%}
