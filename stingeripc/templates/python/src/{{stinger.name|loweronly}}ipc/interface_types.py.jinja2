@@ -7,6 +7,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
 """
+
 {%macro field_list(arg_list)%}
 model_config = ConfigDict(populate_by_name=True)
 {%for arg in arg_list-%}
@@ -41,9 +42,21 @@ from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{
 {%if config.python.python37 %}
 UTC = timezone.utc
 {%endif%}
-from typing import Optional, Annotated, Union, List
+from typing import Optional, Union, List
 import base64
 {%if stinger.uses_enums()%}from enum import IntEnum{%endif%}
+
+{%- if config.python.python37 %}
+import sys
+
+# Use typing_extensions for Python < 3.9 compatibility
+if sys.version_info >= (3, 9):
+    from typing import Annotated
+else:
+    from typing_extensions import Annotated
+{%-else%}
+from typing import Annotated
+{%-endif%}
 
 def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
     """ If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""

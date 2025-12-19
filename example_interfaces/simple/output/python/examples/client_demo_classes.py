@@ -10,25 +10,29 @@ import threading
 
 client_builder = SimpleClientBuilder()
 
-
 class SuperAwesomeDoerOfThings:
 
     def __init__(self, label: str, connection: Mqtt5Connection):
         self.counter = 0
         self.label = label
-        discovery = SimpleClientDiscoverer(connection, client_builder, build_binding=self)  # The build binding will bind all @client_builder decorated methods to this instance.
+        discovery = SimpleClientDiscoverer(connection, client_builder, build_binding=self) # The build binding will bind all @client_builder decorated methods to this instance.
         self.client = discovery.get_singleton_client().result()
         threading.Thread(target=self.request_loop, daemon=True).start()
 
+    
     @client_builder.receive_person_entered
     def print_person_entered_signal(self, *args, **kwargs):
         self.counter += 1
         print(f"{self.label}-{self.counter} printing signal 'person_entered' : args={args}, kwargs={kwargs}")
+    
 
+    
     @client_builder.school_updated
     def print_new_school_value(self, value: str):
         print(f"{self.label}-{self.counter} printing signal 'school' : value={value}")
+    
 
+    
     def request_loop(self):
         """Example request loop that runs in a separate thread."""
         sleep(30)
@@ -40,18 +44,21 @@ class SuperAwesomeDoerOfThings:
             except futures.TimeoutError:
                 print(f"Timed out waiting for response to 'trade_numbers' call")
             sleep(5)
-
+            
+            
+            
             self.client.school = "apples"
-
+             
+             
             sleep(10)
+     
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = Mqtt5Connection(transport)
 
-    doer1 = SuperAwesomeDoerOfThings("Doer1", conn)
+    doer1 = SuperAwesomeDoerOfThings("Doer1", conn)    
 
     print("Ctrl-C will stop the program.")
     signal.pause()

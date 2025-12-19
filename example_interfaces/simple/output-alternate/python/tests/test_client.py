@@ -4,7 +4,10 @@ Tests for Simple client.
 import pytest
 import sys
 from pathlib import Path
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
+
+UTC = timezone.utc
+
 from simpleipc.client import SimpleClient, DiscoveredInstance
 from simpleipc.property import SimpleInitialPropertyValues
 from simpleipc.interface_types import *

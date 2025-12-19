@@ -8,19 +8,22 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
+
+
+
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta, UTC
 
-from typing import Optional, Annotated, Union, List
+from typing import Optional, Union, List
 import base64
 
+from typing import Annotated
 
 def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
-    """If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
+    """ If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
     if isinstance(value, str):
         return base64.b64decode(value)
     return value
-
 
 class InterfaceInfo(BaseModel):
     interface_name: str = Field(default="SignalOnly")
@@ -32,49 +35,56 @@ class InterfaceInfo(BaseModel):
 
 
 class AnotherSignalSignalPayload(BaseModel):
-    """Interface signal `anotherSignal`."""
-
+    """ Interface signal `anotherSignal`. 
+    """
+    
     model_config = ConfigDict(populate_by_name=True)
     one: Annotated[float, Field()]
     two: Annotated[bool, Field()]
     three: Annotated[str, Field()]
 
 
-class BarkSignalPayload(BaseModel):
-    """Interface signal `bark`.
 
+class BarkSignalPayload(BaseModel):
+    """ Interface signal `bark`. 
+    
     Emitted when a dog barks.
     """
-
+    
     model_config = ConfigDict(populate_by_name=True)
     word: Annotated[str, Field()]
 
 
-class MaybeNumberSignalPayload(BaseModel):
-    """Interface signal `maybe_number`.
 
+class MaybeNumberSignalPayload(BaseModel):
+    """ Interface signal `maybe_number`. 
+    
     A signal with optionally no payload.
     """
-
+    
     model_config = ConfigDict(populate_by_name=True)
     number: Annotated[Optional[int], Field()]
 
 
-class MaybeNameSignalPayload(BaseModel):
-    """Interface signal `maybe_name`.
 
+class MaybeNameSignalPayload(BaseModel):
+    """ Interface signal `maybe_name`. 
+    
     A signal with optionally no payload.
     """
-
+    
     model_config = ConfigDict(populate_by_name=True)
     name: Annotated[Optional[str], Field()]
 
 
-class NowSignalPayload(BaseModel):
-    """Interface signal `now`.
 
+class NowSignalPayload(BaseModel):
+    """ Interface signal `now`. 
+    
     The current date and time.
     """
-
+    
     model_config = ConfigDict(populate_by_name=True)
     timestamp: Annotated[datetime, Field()]
+
+

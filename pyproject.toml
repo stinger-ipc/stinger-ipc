@@ -9,6 +9,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
+    "go-task-bin>=3.46.2",
     "jacobs-jinja-too>=0.2.10",
     "jsonschema-rs>=0.34.0",
     "packaging>=25.0",

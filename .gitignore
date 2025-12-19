@@ -23,3 +23,5 @@ example_interfaces/*/output/python/uv.lock
 
 .vscode/
 build/
+
+.coverage

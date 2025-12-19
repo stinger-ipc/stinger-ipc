@@ -62,6 +62,24 @@ wheels = [
 ]
 
 [[package]]
+name = "go-task-bin"
+version = "3.46.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/04/12/583491723b96f5b1639bf0bc4ee060ed8e5bc8321272f45f7325a4e16810/go_task_bin-3.46.2.tar.gz", hash = "sha256:8ec486541971dd777c2144b6a344907a1cf4da66c1fbd7e474795263fce09fa2", size = 515762, upload-time = "2025-12-19T01:42:00.988Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/2a/840891c3fa8905cf08c69fbbc5dbc62f0862e504792ad5e4bcf765b7b804/go_task_bin-3.46.2-py3-none-android_33_arm64_v8a.whl", hash = "sha256:484081734a3c8bbffb3a95be20b619f17e3e0b8f2e6c04683bba4c780d0800c4", size = 9949837, upload-time = "2025-12-19T01:41:38.247Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/6f/ed94024ba24cd28f66ae92d855f9f323f18756234783e5286f9c87990b77/go_task_bin-3.46.2-py3-none-macosx_12_0_arm64.whl", hash = "sha256:4de99ae1b667754570c05fb736e031be92204392a6d2c458379273eb744710f6", size = 9808955, upload-time = "2025-12-19T01:41:40.64Z" },
+    { url = "https://files.pythonhosted.org/packages/05/f0/be66ad58e0f239cf23507a69c0aad0413029a1765bf1b469d8a5910ad204/go_task_bin-3.46.2-py3-none-macosx_12_0_x86_64.whl", hash = "sha256:de6d4ecff7e6131e37ca848e49c244fbd50fc07875f377ba2dd1a9dfd1f47973", size = 10608617, upload-time = "2025-12-19T01:41:42.903Z" },
+    { url = "https://files.pythonhosted.org/packages/db/11/6c78d2171df0f2584f32a439b1da6d8ebcf7ea7813aa85fd14075d6d942f/go_task_bin-3.46.2-py3-none-manylinux_2_28_aarch64.musllinux_1_2_aarch64.whl", hash = "sha256:d32fc5efdb0c70b079b9eac1f7e012c3846cd504a585a114f968abfe216dcc1c", size = 9362344, upload-time = "2025-12-19T01:41:45.057Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/13/7bad77d5b685fafb3723cc30b148d0bcdec78a47e3f741af3dffcf414a7e/go_task_bin-3.46.2-py3-none-manylinux_2_28_ppc64le.musllinux_1_2_ppc64le.whl", hash = "sha256:e5bf036e2523a3dc26ca05116b64a8af6f2a8f726855b5c3cd55318b3a8898e9", size = 9322039, upload-time = "2025-12-19T01:41:47.51Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/2a/9463c90e843238fbdede15a6f6d49f4636ea2e32b4192af0c9604119a56f/go_task_bin-3.46.2-py3-none-manylinux_2_28_riscv64.musllinux_1_2_riscv64.whl", hash = "sha256:7bf670cbc07c4d337f0f01f8b0171ee298dc357776711929150e5247b2a102f6", size = 9870184, upload-time = "2025-12-19T01:41:49.631Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/7e/cbedaa5409231d27217e0bc1cb539064530b6522d52284ce7a9742738e7e/go_task_bin-3.46.2-py3-none-manylinux_2_28_s390x.musllinux_1_2_s390x.whl", hash = "sha256:0d7ddd0ede4c20761f9035e1b5e518f293756d55b5c81756e2aa5646d4f622e5", size = 10173199, upload-time = "2025-12-19T01:41:52.087Z" },
+    { url = "https://files.pythonhosted.org/packages/98/96/419b80cca8946301f09c501ed4ab6c5bd9249008215eb02324d74769b304/go_task_bin-3.46.2-py3-none-manylinux_2_28_x86_64.musllinux_1_2_x86_64.whl", hash = "sha256:542be7edbc87e24c5a1eebe0ba01edfcd2db3a76d8764798417e786ce0bede7f", size = 10386869, upload-time = "2025-12-19T01:41:54.625Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/d3/b7df964045b5871440434862cc628c7e9cb17c439b9cd0ea58ecbf25f3a0/go_task_bin-3.46.2-py3-none-win_amd64.whl", hash = "sha256:90eee5d7622be52bc3ad2b1d8172065dce9537a4e0eb1cde1e5d67ef32ba454e", size = 10633825, upload-time = "2025-12-19T01:41:56.933Z" },
+    { url = "https://files.pythonhosted.org/packages/90/7c/3d9d5e129a94739f47a6155b00c7fcefa164893ae2ac0b7c00e2d32db991/go_task_bin-3.46.2-py3-none-win_arm64.whl", hash = "sha256:bef6a451a243bf62c55374cb6a77f84f2689eabd6d54edbfa58c47ce96c90f29", size = 9471116, upload-time = "2025-12-19T01:41:59.122Z" },
+]
+
+[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -651,6 +669,7 @@ name = "stinger-ipc"
 version = "0.5.3"
 source = { editable = "." }
 dependencies = [
+    { name = "go-task-bin" },
     { name = "jacobs-jinja-too" },
     { name = "jsonschema-rs" },
     { name = "packaging" },
@@ -677,6 +696,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "go-task-bin", specifier = ">=3.46.2" },
     { name = "jacobs-jinja-too", specifier = ">=0.2.10" },
     { name = "jsonschema-rs", specifier = ">=0.34.0" },
     { name = "packaging", specifier = ">=25.0" },

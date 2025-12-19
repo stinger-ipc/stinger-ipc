@@ -61,6 +61,8 @@ properties:
                 pattern: "^[a-zA-Z0-9_-]+$"
               description:
                 type: string
+              value:
+                type: integer
             required:
               - name
           version:
@@ -96,7 +98,6 @@ properties:
           properties:
             members:
               $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
-
   signals:
     type: object
     propertyNames:

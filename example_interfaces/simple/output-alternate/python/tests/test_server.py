@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 UTC = timezone.utc
 
 from simpleipc.server import SimpleServer
-from simpleipc.property import SimplePropertyAccess
+from simpleipc.property import SimplePropertyAccess, SimpleInitialPropertyValues
 from simpleipc.interface_types import *
 from stinger_python_utils.return_codes import *
 from pyqttier.mock import MockConnection
@@ -24,13 +24,53 @@ def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
     json_str = model.model_dump_json(by_alias=True)
     return json.loads(json_str)
 
+class SimpleServerSetup:
+
+    def __init__(self):
+        self.initial_property_values = self.get_initial_property_values()
+        
+        self.school = self.initial_property_values.school 
+        self.reset_modified_flags() 
+    def get_initial_property_values(self) -> SimpleInitialPropertyValues:
+        initial_property_values = SimpleInitialPropertyValues(
+            school="apples",
+        )
+        return initial_property_values
+    def get_property_access(self) -> SimplePropertyAccess:
+        property_access = SimplePropertyAccess(
+            school_getter=self.get_property_school,
+            school_setter=self.set_property_school,
+        )
+        return property_access
+
+    def reset_modified_flags(self):
+        self.school_modified_flag = False 
+
+    def create_server(self, mock_connection) -> SimpleServer:
+        server = SimpleServer(
+            mock_connection, 
+            "test_instance", 
+            self.get_property_access()
+        )
+        return server
+    def get_property_school(self):
+        """Return the value for the 'school' property."""
+        return self.school
+    def set_property_school(self, value: str):
+        """Set the value for the 'school' property."""
+        self.school_modified_flag = True
+        self.school = value  
+     
 
 @pytest.fixture
-def initial_property_values():
-    initial_property_values = SimpleInitialPropertyValues(
-        school="apples",
-    )
-    return initial_property_values
+def server_setup():
+    setup = SimpleServerSetup()
+    return setup
+
+
+@pytest.fixture
+def initial_property_values(server_setup):
+    return server_setup.get_initial_property_values()
 
 
 @pytest.fixture
@@ -39,47 +79,90 @@ def mock_connection():
     conn = MockConnection()
     return conn
 
- 
-class SimpleServerSetup:
+@pytest.fixture
+def server(server_setup, mock_connection):
+    server = server_setup.create_server(mock_connection)
+    yield server
+    server.shutdown(timeout=0.01)
 
-    def setup_method(self):
-        self.school = "apples"
+class TestSimpleServer:
 
-    def create_server(self, mock_connection):
-        property_access = SimplePropertyAccess(
-            school_getter=self.get_property_school,
-            school_setter=self.set_property_school,
-        )
-        server = SimpleServer(mock_connection, "test_instance", property_access)
-        return server
-    def get_property_school(self):
-        """Return the value for the 'school' property."""
-        return self.school
-    def set_property_school(self, value: str):
-        """Set the value for the 'school' property."""
-        self.school = value
-    
-
-class TestSimpleServerSetup(SimpleServerSetup):
-
-    def test_server_initializes(self, mock_connection):
+    def test_server_initializes(self, server):
         """Test that client initializes successfully."""
-        server = self.create_server(mock_connection)
         assert server is not None, "server failed to initialize"
         assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
 
 
 
+class TestSimpleServerProperties:
 
-
-class TestSimpleServerProperties(SimpleServerSetup):
-    def test_get_school_property(self, mock_connection):
+    
+    def test_get_initial_school_property(self, server_setup, server):
         """Test that the server can get the 'school' property."""
-        server = self.create_server(mock_connection)
-        assert server.school == self.school, "Getter for property 'school' returned incorrect value"
+        assert server.school == server_setup.school, "Getter for property 'school' returned incorrect value"
+     
+     
+
+    def test_school_property_publish(self, server, mock_connection, initial_property_values):
+        """Test that setting the 'school' property publishes the correct message."""
+        mock_connection.clear_published_messages()
+        server.publish_school_value()
+
+        published_list = mock_connection.find_published("simple/{}/property/school/value".format('+'))
+        assert len(published_list) == 1, f"No message was published for property 'school'.  Messages: {mock_connection.published_messages}"
+
+        msg = published_list[0]
+        expected_topic = "simple/{}/property/school/value".format(server.instance_id)
+        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
+        
+        # Verify payload
+        expected_obj = SchoolProperty(name=initial_property_values.school)
+        expected_dict = to_jsonified_dict(expected_obj)
+        payload_dict = json.loads(msg.payload.decode('utf-8'))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+
+    def test_school_receive(self, server, server_setup, mock_connection):
+        mock_connection.clear_published_messages()
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            "name": "example",
+        }
+        prop_obj = SchoolProperty(**prop_data) # type: ignore[arg-type]
+        response_topic = "client/test/response"
+        correlation_data = b"3.1415926535"
+        incoming_msg = Message(
+            topic="simple/{}/property/school/setValue".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos=1,
+            retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            content_type="application/json",
+            user_properties={"PropertyVersion": str(server._property_school.version)}
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # Verify that server property was updated
+        
+        assert server_setup.school_modified_flag, "Setter for property 'school' was not called"
+        
+
+        
+        # Expect a reply sent back acknowledging the update
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for property 'school'."
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        
+     
+
     
 
+     
 
+ 
 
 
 class TestSimpleServerSignals:

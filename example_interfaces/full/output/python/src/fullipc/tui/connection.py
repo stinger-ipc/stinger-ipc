@@ -1,16 +1,16 @@
 """MQTT Connection screen for configuring broker connection."""
 
-from textual.app import ComposeResult  # typing: ignore
-from textual.screen import Screen  # typing: ignore
-from textual.widgets import Header, Footer, Input, Button, Static  # typing: ignore
-from textual.containers import Container, Vertical  # typing: ignore
+from textual.app import ComposeResult # typing: ignore
+from textual.screen import Screen # typing: ignore
+from textual.widgets import Header, Footer, Input, Button, Static # typing: ignore
+from textual.containers import Container, Vertical # typing: ignore
 from pyqttier.connection import Mqtt5Connection
 from pyqttier.transport import MqttTransport, MqttTransportType
 
 
 class ConnectionScreen(Screen):
     """Screen for configuring MQTT broker connection."""
-
+    
     CSS = """
     ConnectionScreen {
         align: center middle;
@@ -47,11 +47,11 @@ class ConnectionScreen(Screen):
         margin-top: 1;
     }
     """
-
+    
     BINDINGS = [
         ("escape", "app.quit", "Quit"),
     ]
-
+    
     def compose(self) -> ComposeResult:
         """Compose the connection screen widgets."""
         yield Header()
@@ -65,25 +65,25 @@ class ConnectionScreen(Screen):
                 yield Input(placeholder="1883", value="1883", id="port")
             yield Button("Connect", variant="primary", id="connect_button")
         yield Footer()
-
+    
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle connect button press."""
         if event.button.id == "connect_button":
             ip_input = self.query_one("#ip_address", Input)
             port_input = self.query_one("#port", Input)
-
+            
             ip_address = ip_input.value or "localhost"
             try:
                 port = int(port_input.value or "1883")
             except ValueError:
                 port = 1883
-
+            
             # Create the MQTT connection
             transport = MqttTransport(MqttTransportType.TCP, ip_address, port)
             conn = Mqtt5Connection(transport)
-
+            
             # Store connection in app for use by other screens
             self.app.mqtt_connection = conn
-
+            
             # Navigate to discovery screen
             self.app.push_screen("discovery")

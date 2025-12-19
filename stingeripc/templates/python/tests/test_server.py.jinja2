@@ -11,7 +11,7 @@ UTC = timezone.utc
 {%endif%}
 from {{stinger.name | snake_case}}ipc.server import {{stinger.name | UpperCamelCase}}Server
 {%if stinger.properties | length > 0 -%}
-from {{stinger.name | snake_case}}ipc.property import {%if not config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}PropertyAccess{%else%}{{stinger.name | UpperCamelCase}}InitialPropertyValues{%endif%}
+from {{stinger.name | snake_case}}ipc.property import {%if not config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{{stinger.name | UpperCamelCase}}InitialPropertyValues
 {%endif-%}
 from {{stinger.name | snake_case}}ipc.interface_types import *
 from stinger_python_utils.return_codes import *
@@ -26,56 +26,34 @@ def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
     json_str = model.model_dump_json(by_alias=True)
     return json.loads(json_str)
 
-{%if stinger.properties | length > 0 %}
-@pytest.fixture
-def initial_property_values():
-    initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
-        {%-for prop_name, prop in stinger.properties.items()%}
-        {{prop_name|snake_case}}={%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
-            {%-for arg in prop.arg_list%}
-            {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-            {%-endfor%}
-        ){%else%}{{prop.arg_list[0].get_random_example_value()}}
-        {%-endif%},
-        {%-endfor%}
-    )
-    return initial_property_values
-{%endif%}
-
-@pytest.fixture
-def mock_connection():
-    """Fixture providing a mock MQTT connection."""
-    conn = MockConnection()
-    return conn
-
-{%if config.properties.stinger_owned_values %}
-@pytest.fixture
-def server(mock_connection{%if stinger.properties | length > 0 %}, initial_property_values{%endif%}):
-    server = {{stinger.python.server_class_name}}(mock_connection, "test_instance"{%if stinger.properties | length > 0 %}, initial_property_values{%endif%})
-    yield server
-    server.shutdown(timeout=0.1)
-
-class Test{{stinger.name|UpperCamelCase}}Server:
-
-    def test_server_initializes(self, server):
-        """Test that client initializes successfully."""
-        assert server is not None, "server failed to initialize"
-        assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
-
-{%else%} {# application-owned properties #}
 class {{stinger.name|UpperCamelCase}}ServerSetup:
 
-    def setup_method(self):
+    def __init__(self):
+        self.initial_property_values = self.get_initial_property_values()
+        {%if not config.properties.stinger_owned_values %}
         {%-for prop_name, prop in stinger.properties.items()%}
-        self.{{prop_name|snake_case}} = {%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
-            {%-for arg in prop.arg_list%}
-            {{arg.name|snake_case}} = {{arg.get_random_example_value()}},
-            {%-endfor%}
-        ){%else%}{{prop.arg_list[0].get_random_example_value()}}
-        {%-endif%}
-        {%-endfor%}
+        self.{{prop_name|snake_case}} = self.initial_property_values.{{prop_name|snake_case}}
+        {%-endfor%} {# end property foreach #}
+        self.reset_modified_flags()
+        {%-endif%} {# end app-owned values #}
 
-    def create_server(self, mock_connection):
+    {%-if stinger.properties | length > 0 %}
+    def get_initial_property_values(self) -> {{stinger.name|UpperCamelCase}}InitialPropertyValues:
+        initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
+            {%-for prop_name, prop in stinger.properties.items()%}
+            {{prop_name|snake_case}}={%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
+                {%-for arg in prop.arg_list%}
+                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
+                {%-endfor%}
+            ){%else%}{{prop.arg_list[0].get_random_example_value()}}
+            {%-endif%},
+            {%-endfor%}
+        )
+        return initial_property_values
+    {%- endif%}
+
+    {%-if stinger.properties | length > 0  and not config.properties.stinger_owned_values %}
+    def get_property_access(self) -> {{stinger.name|UpperCamelCase}}PropertyAccess:
         property_access = {{stinger.name|UpperCamelCase}}PropertyAccess(
         {%-for prop_name, prop in stinger.properties.items()%}
             {{prop_name|snake_case}}_getter=self.get_property_{{prop_name|snake_case}},
@@ -84,10 +62,26 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
             {%-endif%}
         {%-endfor%}
         )
-        server = {{stinger.python.server_class_name}}(mock_connection, "test_instance", property_access)
+        return property_access
+
+    def reset_modified_flags(self):
+        {%-for prop_name, prop in stinger.properties.items()%}
+        self.{{prop_name|snake_case}}_modified_flag = False
+        {%-endfor%} {# end property foreach #}
+    {%-endif%}
+
+    def create_server(self, mock_connection) -> {{stinger.python.server_class_name}}:
+        server = {{stinger.python.server_class_name}}(
+            mock_connection, 
+            "test_instance", 
+            {%if stinger.properties|length > 0%}
+            {%-if config.properties.stinger_owned_values %}self.get_initial_property_values(){%else%}self.get_property_access(){%endif%}
+            {%-endif%}
+        )
         return server
 
     {%-for prop_name, prop in stinger.properties.items()%}
+    {%-if not config.properties.stinger_owned_values %}
     def get_property_{{prop_name|snake_case}}(self):
         """Return the value for the '{{prop_name|snake_case}}' property."""
         return self.{{prop_name|snake_case}}
@@ -95,36 +89,53 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
     {%-if not prop.read_only%}
     def set_property_{{prop_name|snake_case}}(self, value: {{prop.python_annotation}}):
         """Set the value for the '{{prop_name|snake_case}}' property."""
+        self.{{prop_name|snake_case}}_modified_flag = True
         self.{{prop_name|snake_case}} = value
-    {%-endif%}
-    {%endfor%}
+    {%-endif%} {# end read only #}
+    {%-endif%} {# end app-owned values#}
+    {%endfor%} {# end property foreach #}
 
-class Test{{stinger.name|UpperCamelCase}}ServerSetup({{stinger.name|UpperCamelCase}}ServerSetup):
+@pytest.fixture
+def server_setup():
+    setup = {{stinger.name|UpperCamelCase}}ServerSetup()
+    return setup
 
-    def test_server_initializes(self, mock_connection):
+{%if stinger.properties | length > 0 %}
+@pytest.fixture
+def initial_property_values(server_setup):
+    return server_setup.get_initial_property_values()
+{%endif%}
+
+@pytest.fixture
+def mock_connection():
+    """Fixture providing a mock MQTT connection."""
+    conn = MockConnection()
+    return conn
+
+@pytest.fixture
+def server(server_setup, mock_connection):
+    server = server_setup.create_server(mock_connection)
+    yield server
+    server.shutdown(timeout=0.01)
+
+class Test{{stinger.name|UpperCamelCase}}Server:
+
+    def test_server_initializes(self, server):
         """Test that client initializes successfully."""
-        server = self.create_server(mock_connection)
         assert server is not None, "server failed to initialize"
         assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
 
-{%endif%}
+{%if stinger.properties | length > 0 %}
 
-{%if not config.properties.stinger_owned_values %}
-{%if stinger.properties | length > 0 %}
-class Test{{stinger.name|UpperCamelCase}}ServerProperties({{stinger.name|UpperCamelCase}}ServerSetup):
-    {%-for prop_name, prop in stinger.properties.items()%}
-    def test_get_{{prop_name|snake_case}}_property(self, mock_connection):
-        """Test that the server can get the '{{prop_name|snake_case}}' property."""
-        server = self.create_server(mock_connection)
-        assert server.{{prop_name|snake_case}} == self.{{prop_name|snake_case}}, "Getter for property '{{prop_name|snake_case}}' returned incorrect value"
-    {%endfor%}
-{%else%}
-# No (application-owned) properties to test
-{%endif%}
-{%else%}{# stinger owned properties #}
-{%if stinger.properties | length > 0 %}
 class Test{{stinger.name|UpperCamelCase}}ServerProperties:
-    {%for prop_name, prop in stinger.properties.items()%}
+    {%-for prop_name, prop in stinger.properties.items()%}
+
+    {%if not config.properties.stinger_owned_values %}
+    def test_get_initial_{{prop_name|snake_case}}_property(self, server_setup, server):
+        """Test that the server can get the '{{prop_name|snake_case}}' property."""
+        assert server.{{prop_name|snake_case}} == server_setup.{{prop_name|snake_case}}, "Getter for property '{{prop_name|snake_case}}' returned incorrect value"
+    {%endif%} {# end app owned values #}
+    {%if config.properties.stinger_owned_values %}
     def test_server_{{prop_name|snake_case}}_property_initialization(self, server, initial_property_values):
         """Test that the {{prop_name|snake_case}} server property is initialized correctly."""
         assert hasattr(server, '{{prop_name|snake_case}}'), "Server missing property '{{prop_name|snake_case}}'"
@@ -132,6 +143,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         assert server.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
         {%endif-%}
         assert server.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
+    {%endif%} {# end stinger owned values #}
 
     def test_{{prop_name|snake_case}}_property_publish(self, server, mock_connection, initial_property_values):
         """Test that setting the '{{prop_name|snake_case}}' property publishes the correct message."""
@@ -155,6 +167,49 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         payload_dict = json.loads(msg.payload.decode('utf-8'))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
+    {%if not config.properties.stinger_owned_values -%}
+    def test_{{prop_name|snake_case}}_receive(self, server, server_setup, mock_connection):
+        mock_connection.clear_published_messages()
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            {%-for arg in prop.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        }
+        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data) # type: ignore[arg-type]
+        response_topic = "client/test/response"
+        correlation_data = b"3.1415926535"
+        incoming_msg = Message(
+            topic="{{prop.update_topic}}".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos=1,
+            retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            content_type="application/json",
+            user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # Verify that server property was updated
+        {% if prop.read_only %}
+        assert server_setup.{{prop_name|snake_case}}_modified_flag is not True, "Setter for property '{{prop_name|snake_case}}' was called on read-only property"
+        {%else%}
+        assert server_setup.{{prop_name|snake_case}}_modified_flag, "Setter for property '{{prop_name|snake_case}}' was not called"
+        {%endif%}
+
+        {%if not prop.read_only%}
+        # Expect a reply sent back acknowledging the update
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for property '{{prop_name|snake_case}}'."
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        {%endif%}
+    {% endif %}{# end app-owned values -#}
+
+    {%if config.properties.stinger_owned_values -%}
     def test_{{prop_name|snake_case}}_property_receive(self, server, mock_connection):
         """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
         received_data = None
@@ -190,7 +245,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         {%if prop.read_only%}
         # Read-only property should not update server state
         assert received_data is None, "Read-only property '{{prop_name|snake_case}}' should not be updated"
-        {%else%}
+        {%else%} {# read-write property #}
         # Verify that server property was updated
         assert received_data is not None, "Callback for property '{{prop_name|snake_case}}' was not called"
 
@@ -200,9 +255,10 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         resp = published_list[0]
         assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
         assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
-        {%endif%}
+        {%endif%}{# end ro/rw property #}
+    {%endif%} {# end stinger owned values #}
 
-    {%if not prop.read_only%}
+    {%if not prop.read_only and config.properties.stinger_owned_values%}
     def test_{{prop_name|snake_case}}_property_receive_out_of_sync(self, server, mock_connection):
         """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
         received_data = None
@@ -320,11 +376,10 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
         assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
     {%endif%}{# end exclusion of read-only properties #}
-    {%endfor%}
-{%else%}
-# No (stinger-owned) properties to test
-{%endif%}
-{%endif%}{# stinger owned properties #}
+
+    {%endfor%} {# end property foreach #}
+
+{%endif%} {# end properties exist #}
 
 {%if stinger.signals | length > 0 %}
 class Test{{stinger.name|UpperCamelCase}}ServerSignals:

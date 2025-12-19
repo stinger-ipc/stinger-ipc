@@ -7,15 +7,19 @@ from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from signalonlyipc.server import SignalOnlyServer, SignalOnlyInitialPropertyValues
 from signalonlyipc.interface_types import *
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     """
     This shows an example on how to run the code.  Ideally, your app should do something similar, but use the methods in
     a more meaningful way.
     """
-
+    
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
     server = SignalOnlyServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"))
+
+    
+
+    
 
     print("Ctrl-C will stop the program.")
 
@@ -26,14 +30,14 @@ if __name__ == "__main__":
             server.emit_maybe_number(42)
             server.emit_maybe_name("apples")
             server.emit_now(datetime.now(UTC))
-
+            
             sleep(4)
             server.emit_another_signal(one=3.14, two=True, three="apples")
             server.emit_bark(word="apples")
             server.emit_maybe_number(number=42)
             server.emit_maybe_name(name="apples")
             server.emit_now(timestamp=datetime.now(UTC))
-
+            
             sleep(42)
         except KeyboardInterrupt:
             break

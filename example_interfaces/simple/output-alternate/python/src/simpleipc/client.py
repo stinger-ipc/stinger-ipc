@@ -13,7 +13,10 @@ from uuid import uuid4
 from functools import partial, wraps
 import json
 import logging
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
+
+UTC = timezone.utc
+
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
 from pyqttier.interface import IBrokerConnection

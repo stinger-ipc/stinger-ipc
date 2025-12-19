@@ -1,0 +1,233 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+vars:
+  THREADS: '{{default "16" .THREADS}}'
+  INTERFACES: simple signal_only full weather testable
+
+tasks:
+  default:
+    desc: Generate all example interfaces for all languages
+    cmds:
+      - task: generate:all
+
+  # ====================
+  # High-level tasks
+  # ====================
+
+  generate:all:
+    desc: Generate all interfaces for all languages
+    deps:
+      - generate:simple
+      - generate:python
+      - generate:cpp
+      - generate:rust
+      - generate:markdown
+      - generate:web
+      - generate:protobuf
+
+  generate:simple:
+    desc: Generate simple interface for all languages (runs first)
+    cmds:
+      - task: rust
+        vars: {IFACE: simple}
+      - task: python
+        vars: {IFACE: simple}
+      - task: cpp
+        vars: {IFACE: simple}
+      - task: protobuf:integers
+      - task: python:alternate
+
+  generate:python:
+    desc: Generate Python for all interfaces
+    deps:
+      - task: python
+        vars: {IFACE: signal_only}
+      - task: python
+        vars: {IFACE: full}
+      - task: python
+        vars: {IFACE: weather}
+      - task: python
+        vars: {IFACE: testable}
+
+  generate:cpp:
+    desc: Generate C++ for all interfaces
+    deps:
+      - task: cpp
+        vars: {IFACE: testable}
+      - task: cpp
+        vars: {IFACE: full}
+      - task: cpp
+        vars: {IFACE: signal_only}
+      - task: cpp
+        vars: {IFACE: weather}
+
+  generate:rust:
+    desc: Generate Rust for all interfaces
+    deps:
+      - task: rust
+        vars: {IFACE: testable}
+      - task: rust
+        vars: {IFACE: signal_only}
+      - task: rust
+        vars: {IFACE: full}
+      - task: rust
+        vars: {IFACE: weather}
+
+  generate:markdown:
+    desc: Generate Markdown docs for all interfaces
+    deps:
+      - task: markdown
+        vars: {IFACE: full}
+      - task: markdown
+        vars: {IFACE: weather}
+      - task: markdown
+        vars: {IFACE: signal_only}
+      - task: markdown
+        vars: {IFACE: testable}
+
+  generate:web:
+    desc: Generate web interfaces for all interfaces
+    deps:
+      - task: web
+        vars: {IFACE: full}
+      - task: web
+        vars: {IFACE: weather}
+      - task: web
+        vars: {IFACE: signal_only}
+      - task: web
+        vars: {IFACE: testable}
+
+  generate:protobuf:
+    desc: Generate Protobuf for all interfaces
+    deps:
+      - task: protobuf
+        vars: {IFACE: full}
+      - task: protobuf
+        vars: {IFACE: weather}
+      - task: protobuf
+        vars: {IFACE: signal_only}
+      - task: protobuf
+        vars: {IFACE: testable}
+
+  # ====================
+  # Language-specific tasks (reusable)
+  # ====================
+
+  python:
+    desc: Generate Python for a specific interface
+    internal: true
+    requires:
+      vars: [IFACE]
+    dir: example_interfaces/{{.IFACE}}
+    cmds:
+      - echo "----------- Generating Python for {{.IFACE}} ----------------"
+      - mkdir -p output/python/
+      - uv run stinger generate -l python {{.IFACE}}.stinger.yaml output/python/
+      - uv run black output/python/
+
+  cpp:
+    desc: Generate C++ for a specific interface
+    internal: true
+    requires:
+      vars: [IFACE]
+    dir: example_interfaces/{{.IFACE}}
+    cmds:
+      - echo "----------- Generating C++ for {{.IFACE}} ----------------"
+      - mkdir -p output/cpp/build
+      - uv run stinger generate -l cpp {{.IFACE}}.stinger.yaml output/cpp/
+      - |
+        if command -v clang-format &> /dev/null; then
+          echo "Running clang-format on generated C++ files"
+          clang-format --style=file:../../clang-format-config.yaml output/cpp/include/*.hpp output/cpp/src/*.cpp output/cpp/examples/*.cpp -i
+        fi
+      - cd output/cpp/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j{{.THREADS}}
+
+  rust:
+    desc: Generate Rust for a specific interface
+    internal: true
+    requires:
+      vars: [IFACE]
+    dir: example_interfaces/{{.IFACE}}
+    cmds:
+      - echo "----------- Generating Rust for {{.IFACE}} ----------------"
+      - mkdir -p output/rust/
+      - uv run stinger generate -l rust {{.IFACE}}.stinger.yaml output/rust/
+      - echo "{{.IFACE}} | cargo update"
+      - cd output/rust && cargo update
+      - echo "{{.IFACE}} | cargo fmt"
+      - cd output/rust && cargo fmt
+      - echo "{{.IFACE}} | cargo check"
+      - cd output/rust && cargo check --features client,server,payloads
+      - echo "{{.IFACE}} | cargo check client_demo"
+      - cd output/rust && cargo check --example {{.IFACE}}_client_demo --features client
+      - echo "{{.IFACE}} | cargo check server_demo"
+      - cd output/rust && cargo check --example {{.IFACE}}_server_demo --features server
+
+  markdown:
+    desc: Generate Markdown docs for a specific interface
+    internal: true
+    requires:
+      vars: [IFACE]
+    dir: example_interfaces/{{.IFACE}}
+    cmds:
+      - echo "----------- Creating Markdown Document for {{.IFACE}} ----------------"
+      - mkdir -p output/markdown/
+      - uv run stinger generate -l markdown {{.IFACE}}.stinger.yaml output/markdown/
+
+  web:
+    desc: Generate web interface for a specific interface
+    internal: true
+    requires:
+      vars: [IFACE]
+    dir: example_interfaces/{{.IFACE}}
+    cmds:
+      - echo "----------- Creating Webpage Interface for {{.IFACE}} ----------------"
+      - mkdir -p output/web/
+      - uv run stinger generate -l web {{.IFACE}}.stinger.yaml output/web/
+
+  protobuf:
+    desc: Generate Protobuf for a specific interface
+    internal: true
+    requires:
+      vars: [IFACE]
+    dir: example_interfaces/{{.IFACE}}
+    cmds:
+      - echo "----------- Creating Protobuf messages for {{.IFACE}} ----------------"
+      - mkdir -p output/protobuf/
+      - uv run stinger generate -l protobuf {{.IFACE}}.stinger.yaml output/protobuf/
+
+  # ====================
+  # Special cases
+  # ====================
+
+  protobuf:integers:
+    desc: Generate Protobuf with integers consumer for simple interface
+    internal: true
+    dir: example_interfaces/simple
+    cmds:
+      - mkdir -p output-integers/protobuf/
+      - uv run stinger generate -l protobuf --consumer integers simple.stinger.yaml output-integers/protobuf/
+
+  python:alternate:
+    desc: Generate Python with alternate config for simple interface
+    internal: true
+    dir: example_interfaces/simple
+    cmds:
+      - mkdir -p output-alternate/python/
+      - uv run stinger generate -l python --config ../alternates.toml simple.stinger.yaml output-alternate/python/
+
+  # ====================
+  # Utility tasks
+  # ====================
+
+  clean:
+    desc: Clean all generated output directories
+    cmds:
+      - ./bin/clean_example_output.sh
+
+  format:
+    desc: Format all Python code
+    cmds:
+      - uv run black stingeripc/ tests/

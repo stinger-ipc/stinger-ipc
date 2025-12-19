@@ -10,14 +10,22 @@ TODO: Get license text from stinger file
 
 
 
+
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta, timezone
 
 UTC = timezone.utc
 
-from typing import Optional, Annotated, Union, List
+from typing import Optional, Union, List
 import base64
 from enum import IntEnum
+import sys
+
+# Use typing_extensions for Python < 3.9 compatibility
+if sys.version_info >= (3, 9):
+    from typing import Annotated
+else:
+    from typing_extensions import Annotated
 
 def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
     """ If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""

@@ -1,10 +1,10 @@
 pyproject.toml
-src/simple_ipc.egg-info/PKG-INFO
-src/simple_ipc.egg-info/SOURCES.txt
-src/simple_ipc.egg-info/dependency_links.txt
-src/simple_ipc.egg-info/entry_points.txt
-src/simple_ipc.egg-info/requires.txt
-src/simple_ipc.egg-info/top_level.txt
+src/simple_37_ipc.egg-info/PKG-INFO
+src/simple_37_ipc.egg-info/SOURCES.txt
+src/simple_37_ipc.egg-info/dependency_links.txt
+src/simple_37_ipc.egg-info/entry_points.txt
+src/simple_37_ipc.egg-info/requires.txt
+src/simple_37_ipc.egg-info/top_level.txt
 src/simpleipc/__init__.py
 src/simpleipc/client.py
 src/simpleipc/interface_types.py

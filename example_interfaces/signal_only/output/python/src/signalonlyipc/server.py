@@ -18,7 +18,6 @@ from datetime import datetime, timedelta, UTC
 import isodate
 import functools
 from concurrent.futures import Future
-
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
@@ -27,20 +26,21 @@ from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import *
 from .interface_types import *
 
+ 
 
 class SignalOnlyServer:
 
     def __init__(self, connection: IBrokerConnection, instance_id: str):
-        self._logger = logging.getLogger(f"SignalOnlyServer:{instance_id}")
+        self._logger = logging.getLogger(f'SignalOnlyServer:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SignalOnlyServer instance %s", instance_id)
         self._instance_id = instance_id
         self._service_advert_topic = "signalOnly/{}/interface".format(self._instance_id)
-        self._re_advertise_server_interval_seconds = 120  # every two minutes
+        self._re_advertise_server_interval_seconds = 120 # every two minutes
         self._conn = connection
         self._running = True
         self._conn.add_message_callback(self._receive_message)
-
+        
         self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
         self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info, daemon=True)
@@ -49,22 +49,22 @@ class SignalOnlyServer:
     def __del__(self):
         self.shutdown()
 
-    def shutdown(self, timeout: float = 5.0):
+    def shutdown(self, timeout: float=5.0):
         """Gracefully shutdown the server and stop the advertisement thread."""
         if not self._running:
             return
         self._running = False
         self._conn.unpublish_retained(self._service_advert_topic)
-        if hasattr(self, "_advertise_thread") and self._advertise_thread.is_alive():
+        if hasattr(self, '_advertise_thread') and self._advertise_thread.is_alive():
             self._advertise_thread.join(timeout=timeout)
 
     @property
     def instance_id(self) -> str:
-        """The instance ID of this server instance."""
+        """ The instance ID of this server instance. """
         return self._instance_id
 
     def _loop_publishing_interface_info(self):
-        """We have a discovery topic separate from the MQTT client discovery topic.
+        """ We have a discovery topic separate from the MQTT client discovery topic.
         We publish it periodically, but with a Message Expiry interval."""
         while self._running:
             if self._conn.is_connected():
@@ -75,47 +75,60 @@ class SignalOnlyServer:
                     time_left -= 4
             else:
                 sleep(2)
-
+            
     def publish_interface_info(self):
-        """Publishes the interface info message to the interface info topic with an expiry interval."""
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
-        expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
+        """ Publishes the interface info message to the interface info topic with an expiry interval. """
+        data = InterfaceInfo(
+            instance=self._instance_id,
+            connection_topic=(self._conn.online_topic or ""),
+        timestamp=datetime.now(UTC).isoformat()
+        )
+        expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         msg = MessageCreator.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
+    
+
+    
+
     def _receive_message(self, message: Message):
-        """This is the callback that is called whenever any message is received on a subscribed topic."""
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
         self._logger.warning("Received unexpected message: %s", message)
 
     def emit_another_signal(self, one: float, two: bool, three: str):
-        """Server application code should call this method to emit the 'anotherSignal' signal.
+        """ Server application code should call this method to emit the 'anotherSignal' signal.
 
         AnotherSignalSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(one, float), f"The 'one' argument must be of type float, but was {type(one)}"
-
+        
         assert isinstance(two, bool), f"The 'two' argument must be of type bool, but was {type(two)}"
-
+        
         assert isinstance(three, str), f"The 'three' argument must be of type str, but was {type(three)}"
+        
 
         payload = AnotherSignalSignalPayload(
             one=one,
+        
             two=two,
+        
             three=three,
         )
         sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/anotherSignal".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
     def emit_bark(self, word: str):
-        """Server application code should call this method to emit the 'bark' signal.
+        """ Server application code should call this method to emit the 'bark' signal.
 
         BarkSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(word, str), f"The 'word' argument must be of type str, but was {type(word)}"
+        
 
         payload = BarkSignalPayload(
             word=word,
@@ -124,12 +137,13 @@ class SignalOnlyServer:
         self._conn.publish(sig_msg)
 
     def emit_maybe_number(self, number: Optional[int]):
-        """Server application code should call this method to emit the 'maybe_number' signal.
+        """ Server application code should call this method to emit the 'maybe_number' signal.
 
         MaybeNumberSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(number, int) or number is None, f"The 'number' argument must be of type Optional[int], but was {type(number)}"
+        
 
         payload = MaybeNumberSignalPayload(
             number=number if number is not None else None,
@@ -138,12 +152,13 @@ class SignalOnlyServer:
         self._conn.publish(sig_msg)
 
     def emit_maybe_name(self, name: Optional[str]):
-        """Server application code should call this method to emit the 'maybe_name' signal.
+        """ Server application code should call this method to emit the 'maybe_name' signal.
 
         MaybeNameSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(name, str) or name is None, f"The 'name' argument must be of type Optional[str], but was {type(name)}"
+        
 
         payload = MaybeNameSignalPayload(
             name=name if name is not None else None,
@@ -152,12 +167,13 @@ class SignalOnlyServer:
         self._conn.publish(sig_msg)
 
     def emit_now(self, timestamp: datetime):
-        """Server application code should call this method to emit the 'now' signal.
+        """ Server application code should call this method to emit the 'now' signal.
 
         NowSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(timestamp, datetime), f"The 'timestamp' argument must be of type datetime, but was {type(timestamp)}"
+        
 
         payload = NowSignalPayload(
             timestamp=timestamp,
@@ -165,6 +181,10 @@ class SignalOnlyServer:
         sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/now".format(self._instance_id), payload)
         self._conn.publish(sig_msg)
 
+    
+
+    
+    
 
 class SignalOnlyServerBuilder:
     """
@@ -173,11 +193,12 @@ class SignalOnlyServerBuilder:
 
     def __init__(self):
         pass
-
-    def build(self, connection: IBrokerConnection, instance_id: str, binding: Optional[Any] = None) -> SignalOnlyServer:
-        new_server = SignalOnlyServer(
-            connection,
-            instance_id,
-        )
-
+        
+        
+    
+    
+    def build(self, connection: IBrokerConnection, instance_id: str, binding: Optional[Any]=None) -> SignalOnlyServer:
+        new_server = SignalOnlyServer(connection, instance_id, )
+        
+        
         return new_server
