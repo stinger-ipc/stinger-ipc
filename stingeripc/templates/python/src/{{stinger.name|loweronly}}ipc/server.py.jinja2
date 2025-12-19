@@ -13,7 +13,10 @@ import logging
 import threading
 from time import sleep
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone.utc as UTC{%endif%}
+from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
+{%if config.python.python37 %}
+UTC = timezone.utc
+{%endif%}
 import isodate
 import functools
 from concurrent.futures import Future

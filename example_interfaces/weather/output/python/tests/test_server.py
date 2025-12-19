@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
+
 from weatheripc.server import WeatherServer
 from weatheripc.property import WeatherInitialPropertyValues
 from weatheripc.interface_types import *

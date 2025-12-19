@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
+
 from fullipc.server import FullServer
 from fullipc.property import FullInitialPropertyValues
 from fullipc.interface_types import *

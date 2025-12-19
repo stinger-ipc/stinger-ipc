@@ -5,10 +5,13 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
+{%if config.python.python37 %}
+UTC = timezone.utc
+{%endif%}
 from {{stinger.name | snake_case}}ipc.server import {{stinger.name | UpperCamelCase}}Server
 {%if stinger.properties | length > 0 -%}
-from {{stinger.name | snake_case}}ipc.property import {{stinger.name | UpperCamelCase}}InitialPropertyValues
+from {{stinger.name | snake_case}}ipc.property import {%if not config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}PropertyAccess{%else%}{{stinger.name | UpperCamelCase}}InitialPropertyValues{%endif%}
 {%endif-%}
 from {{stinger.name | snake_case}}ipc.interface_types import *
 from stinger_python_utils.return_codes import *
@@ -45,7 +48,7 @@ def mock_connection():
     conn = MockConnection()
     return conn
 
-
+{%if config.properties.stinger_owned_values %}
 @pytest.fixture
 def server(mock_connection{%if stinger.properties | length > 0 %}, initial_property_values{%endif%}):
     server = {{stinger.python.server_class_name}}(mock_connection, "test_instance"{%if stinger.properties | length > 0 %}, initial_property_values{%endif%})
@@ -59,11 +62,63 @@ class Test{{stinger.name|UpperCamelCase}}Server:
         assert server is not None, "server failed to initialize"
         assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
 
+{%else%} {# application-owned properties #}
+class {{stinger.name|UpperCamelCase}}ServerSetup:
+
+    def setup_method(self):
+        {%-for prop_name, prop in stinger.properties.items()%}
+        self.{{prop_name|snake_case}} = {%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
+            {%-for arg in prop.arg_list%}
+            {{arg.name|snake_case}} = {{arg.get_random_example_value()}},
+            {%-endfor%}
+        ){%else%}{{prop.arg_list[0].get_random_example_value()}}
+        {%-endif%},
+        {%-endfor%}
+
+    def create_server(self, mock_connection):
+        property_access = {{stinger.name|UpperCamelCase}}PropertyAccess(
+        {%-for prop_name, prop in stinger.properties.items()%}
+            {{prop_name|snake_case}}_getter=self.get_property_{{prop_name|snake_case}},
+            {%-if not prop.read_only%}
+            {{prop_name|snake_case}}_setter=self.set_property_{{prop_name|snake_case}},
+            {%-endif%}
+        {%-endfor%}
+        )
+        server = {{stinger.python.server_class_name}}(mock_connection, "test_instance", property_access)
+        return server
+
+    {%-for prop_name, prop in stinger.properties.items()%}
+    def get_property_{{prop_name_snake_case}}(self):
+        """Return the value for the '{{prop_name|snake_case}}' property."""
+        return self.{{prop_name|snake_case}}
+
+    {%-if not prop.read_only%}
+    def set_property_{{prop_name|snake_case}}(self, value: {{prop.python_annotation}}):
+        """Set the value for the '{{prop_name|snake_case}}' property."""
+        self.{{prop_name|snake_case}} = value
+    {%-endif%}
+    {%endfor%}
+
+class Test{{stinger.name|UpperCamelCase}}ServerSetup({{stinger.name|UpperCamelCase}}ServerSetup):
+
+    def test_server_initializes(self, mock_connection):
+        """Test that client initializes successfully."""
+        server = self.create_server(mock_connection)
+        assert server is not None, "server failed to initialize"
+        assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
+
+{%endif%}
 
 {%if not config.properties.stinger_owned_values %}
 {%if stinger.properties | length > 0 %}
-class Test{{stinger.name|UpperCamelCase}}ServerProperties:
-    pass
+class Test{{stinger.name|UpperCamelCase}}ServerProperties({{stinger.name|UpperCamelCase}}ServerSetup):
+    {%-for prop_name, prop in stinger.properties.items()%}
+    def test_get_{{prop_name|snake_case}}_property(self, mock_connection):
+        """Test that the server can get the '{{prop_name|snake_case}}' property."""
+        server = self.create_server(mock_connection)
+        value = server.get_{{prop_name|snake_case}}_property()
+        assert value == self.{{prop_name|snake_case}}, "Getter for property '{{prop_name|snake_case}}' returned incorrect value"
+    {%endfor%}
 {%else%}
 # No (application-owned) properties to test
 {%endif%}

@@ -1,0 +1,2 @@
+[console_scripts]
+simple-tui = simpleipc.tui.app:main

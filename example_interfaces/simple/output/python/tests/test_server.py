@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
+
 from simpleipc.server import SimpleServer
 from simpleipc.property import SimpleInitialPropertyValues
 from simpleipc.interface_types import *

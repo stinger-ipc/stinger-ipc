@@ -1,10 +1,10 @@
 [project]
-name = "testable-ipc"
+name = "simple-ipc"
 version = "0.0.1"
-description = "Interface for testing"
-requires-python = ">=3.9"
+description = "Simple Example Interface"
+requires-python = ">=3.7"
 dependencies = [
-    "pydantic>=2.11.7",
+    "pydantic==2.5.3",
     "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
     "pyqttier>=0.2.0",
@@ -12,13 +12,10 @@ dependencies = [
 ]
 
 
-[dependency-groups]
-dev = [
-    "pytest>=8.4.0",
-    "mypy>=1.19.1",
-]
 
 
+[project.optional-dependencies]
+tui = ["textual"]
 
 
 [build-system]
@@ -26,9 +23,12 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 
+[project.scripts]
+simple-tui = "simpleipc.tui.app:main"
+
 
 [tool.setuptools.package-data]
-packages = ["testableipc"]
+packages = ["simpleipc"]
 
 [tool.mypy]
 [[tool.mypy.overrides]]
