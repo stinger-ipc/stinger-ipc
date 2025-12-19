@@ -175,6 +175,9 @@ class SignalOnlyServerBuilder:
         pass
 
     def build(self, connection: IBrokerConnection, instance_id: str, binding: Optional[Any] = None) -> SignalOnlyServer:
-        new_server = SignalOnlyServer(connection, instance_id)
+        new_server = SignalOnlyServer(
+            connection,
+            instance_id,
+        )
 
         return new_server

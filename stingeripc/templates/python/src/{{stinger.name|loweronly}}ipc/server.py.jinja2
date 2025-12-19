@@ -57,7 +57,7 @@ class PropertyControls(Generic[T]):
         with self.mutex:
             self.value = new_value
             return self.value
-    {%else-%}
+    {%else%}
     mutex = threading.RLock()
     getter: Callable[[], T]
     setter: Callable[[T], None]
@@ -479,8 +479,8 @@ class {{stinger.python.server_class_name}}Builder:
         self._{{prop_name|snake_case}}_property_callbacks.append(wrapper)
         return wrapper
     {%endfor%}
-    def build(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}, binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
-        new_server = {{stinger.python.server_class_name}}(connection, instance_id{%if stinger.properties | length > 0 %}, initial_property_values{%endif%})
+    def build(self, connection: IBrokerConnection, instance_id: str, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues, {%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{%endif%}binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
+        new_server = {{stinger.python.server_class_name}}(connection, instance_id, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values{%else%}property_access{%endif%}{%endif%})
         {%for method_name, method in stinger.methods.items()%}
         if self._{{method_name|snake_case}}_method_handler is not None:
             if binding:

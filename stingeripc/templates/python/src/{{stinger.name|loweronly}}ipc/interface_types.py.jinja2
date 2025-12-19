@@ -37,7 +37,10 @@ model_config = ConfigDict(populate_by_name=True)
 
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
-from datetime import datetime, timedelta, {%if config.python.python37%}timezone.utc as UTC{%else%}UTC{%endif%}
+from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
+{%if config.python.python37 %}
+UTC = timezone.utc
+{%endif%}
 from typing import Optional, Annotated, Union, List
 import base64
 {%if stinger.uses_enums()%}from enum import IntEnum{%endif%}

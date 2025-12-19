@@ -72,7 +72,7 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
             {{arg.name|snake_case}} = {{arg.get_random_example_value()}},
             {%-endfor%}
         ){%else%}{{prop.arg_list[0].get_random_example_value()}}
-        {%-endif%},
+        {%-endif%}
         {%-endfor%}
 
     def create_server(self, mock_connection):
@@ -88,7 +88,7 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
         return server
 
     {%-for prop_name, prop in stinger.properties.items()%}
-    def get_property_{{prop_name_snake_case}}(self):
+    def get_property_{{prop_name|snake_case}}(self):
         """Return the value for the '{{prop_name|snake_case}}' property."""
         return self.{{prop_name|snake_case}}
 
@@ -116,8 +116,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties({{stinger.name|UpperCa
     def test_get_{{prop_name|snake_case}}_property(self, mock_connection):
         """Test that the server can get the '{{prop_name|snake_case}}' property."""
         server = self.create_server(mock_connection)
-        value = server.get_{{prop_name|snake_case}}_property()
-        assert value == self.{{prop_name|snake_case}}, "Getter for property '{{prop_name|snake_case}}' returned incorrect value"
+        assert server.{{prop_name|snake_case}} == self.{{prop_name|snake_case}}, "Getter for property '{{prop_name|snake_case}}' returned incorrect value"
     {%endfor%}
 {%else%}
 # No (application-owned) properties to test

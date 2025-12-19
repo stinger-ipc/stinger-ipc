@@ -10,6 +10,7 @@ TODO: Get license text from stinger file
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta, UTC
+
 from typing import Optional, Annotated, Union, List
 import base64
 from enum import IntEnum

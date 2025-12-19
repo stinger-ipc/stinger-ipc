@@ -40,7 +40,8 @@ T = TypeVar('T')
 class PropertyControls(Generic[T]):
     """
     Controls for a server property.  Generic[T] must be a single value or a pydantic BaseModel for multi-argument properties.
-    """mutex = threading.RLock()
+    """
+    mutex = threading.RLock()
     getter: Callable[[], T]
     setter: Callable[[T], None]
     version: int = -1
@@ -357,8 +358,8 @@ class SimpleServerBuilder:
         self._school_property_callbacks.append(wrapper)
         return wrapper
     
-    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, binding: Optional[Any]=None) -> SimpleServer:
-        new_server = SimpleServer(connection, instance_id, initial_property_values)
+    def build(self, connection: IBrokerConnection, instance_id: str, property_access: SimplePropertyAccess, binding: Optional[Any]=None) -> SimpleServer:
+        new_server = SimpleServer(connection, instance_id, property_access)
         
         if self._trade_numbers_method_handler is not None:
             if binding:

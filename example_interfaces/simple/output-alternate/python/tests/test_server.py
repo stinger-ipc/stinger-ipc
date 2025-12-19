@@ -43,7 +43,7 @@ def mock_connection():
 class SimpleServerSetup:
 
     def setup_method(self):
-        self.school = "apples",
+        self.school = "apples"
 
     def create_server(self, mock_connection):
         property_access = SimplePropertyAccess(
@@ -52,7 +52,7 @@ class SimpleServerSetup:
         )
         server = SimpleServer(mock_connection, "test_instance", property_access)
         return server
-    def get_property_(self):
+    def get_property_school(self):
         """Return the value for the 'school' property."""
         return self.school
     def set_property_school(self, value: str):
@@ -76,8 +76,7 @@ class TestSimpleServerProperties(SimpleServerSetup):
     def test_get_school_property(self, mock_connection):
         """Test that the server can get the 'school' property."""
         server = self.create_server(mock_connection)
-        value = server.get_school_property()
-        assert value == self.school, "Getter for property 'school' returned incorrect value"
+        assert server.school == self.school, "Getter for property 'school' returned incorrect value"
     
 
 
