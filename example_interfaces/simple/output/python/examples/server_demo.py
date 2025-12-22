@@ -4,8 +4,10 @@ import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-from simpleipc.server import SimpleServer, SimpleInitialPropertyValues
+from simpleipc.server import SimpleServer
+from simpleipc.property import SimpleInitialPropertyValues
 from simpleipc.interface_types import *
+
 
 if __name__ == "__main__":
     """

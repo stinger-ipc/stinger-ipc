@@ -130,9 +130,14 @@ When constructing a server instance, a connection object{%if stinger.properties 
 
 <details>
   <summary>Python Server Object Construction</summary>
-
+{%if stinger.properties | length > 0 %}
+Because the server needs correct property values on initialization, a {{stinger.name|UpperCamelCase}}InitialPropertyValues object must be provided to
+the server constructor.
+{%endif%}
+{%if config.properties.stinger_owned_values %}
 ```python
-from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}, {{stinger.name|UpperCamelCase}}InitialPropertyValues
+from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}
+from {{stinger.python.package_name}}.property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
 
 # Ideally, you would load these initial property values from a configuration file or database.
 {%if stinger.properties | length > 0 %}
@@ -156,6 +161,30 @@ initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
 service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
 server = {{stinger.python.server_class_name}}(connection_object, service_id, {%if stinger.properties | length > 0 %}initial_property_values{%endif%})
 ```
+{%else %}{# app-owned property values#}
+{%if stinger.properties | length > 0 %}
+Application code owns property values. In order for the server to read and write those property values, a {{stinger.name|UpperCamelCase}}PropertyAccess
+object must be provided to the server constructor with function pointers to getters and setters.
+{%endif%}
+```python
+from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}
+from {{stinger.python.package_name}}.property import {{stinger.name|UpperCamelCase}}PropertyAccess
+
+{%if stinger.properties | length > 0 %}
+# Create a structure which tells the stinger server how to get and set property values.
+property_access = {{stinger.name|UpperCamelCase}}PropertyAccess(
+    {%for prop_name, prop in stinger.properties.items()%}
+    {{prop_name | snake_case}}_getter=property_owner.get_property_{{prop_name | snake_case}},
+    {%-if not prop.read_only%}
+    {{prop_name | snake_case}}_setter=property_owner.set_property_{{prop_name | snake_case}},
+    {%-endif%}
+    {%endfor%}{# end foreach property#}
+)
+{%endif%}
+service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
+server = {{stinger.python.server_class_name}}(connection_object, service_id, {%if stinger.properties | length > 0 %}property_access{%endif%})
+```
+{%endif%}
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 
@@ -288,7 +317,10 @@ A full example can be viewed by looking at the generated `client/examples/client
 
 <details>
   <summary>Python Client Object Construction</summary>
-
+{%if stinger.properties|length > 0%}
+Because the client needs correct property values on initialization, a {{stinger.name|UpperCamelCase}}InitialPropertyValues object must be provided to
+the client constructor.  This object is generally created by the discovery mechanism.
+{%endif%}
 ```python
 from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}{%if stinger.properties|length > 0 %}, {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}
 

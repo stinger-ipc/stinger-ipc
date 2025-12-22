@@ -4,8 +4,10 @@ import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-from fullipc.server import FullServer, FullInitialPropertyValues
+from fullipc.server import FullServer
+from fullipc.property import FullInitialPropertyValues
 from fullipc.interface_types import *
+
 
 if __name__ == "__main__":
     """
@@ -34,7 +36,7 @@ if __name__ == "__main__":
         last_birthdays=LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
-            sister=None,
+            sister=datetime.now(UTC),
             brothers_age=42,
         ),
         last_birthdays_version=6,

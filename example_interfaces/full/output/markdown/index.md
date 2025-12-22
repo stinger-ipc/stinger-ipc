@@ -126,8 +126,13 @@ When constructing a server instance, a connection object and initial property va
 <details>
   <summary>Python Server Object Construction</summary>
 
+Because the server needs correct property values on initialization, a FullInitialPropertyValues object must be provided to
+the server constructor.
+
+
 ```python
-from fullipc.server import FullServer, FullInitialPropertyValues
+from fullipc.server import FullServer
+from fullipc.property import FullInitialPropertyValues
 
 # Ideally, you would load these initial property values from a configuration file or database.
 
@@ -187,6 +192,7 @@ initial_property_values = FullInitialPropertyValues(
 service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
 server = FullServer(connection_object, service_id, initial_property_values)
 ```
+
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 
@@ -352,6 +358,9 @@ A full example can be viewed by looking at the generated `client/examples/client
 
 <details>
   <summary>Python Client Object Construction</summary>
+
+Because the client needs correct property values on initialization, a FullInitialPropertyValues object must be provided to
+the client constructor.  This object is generally created by the discovery mechanism.
 
 ```python
 from fullipc.server import FullServer, FullInitialPropertyValues

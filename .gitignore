@@ -3,7 +3,7 @@
 __pycache__
 dist
 stinger_ipc.egg-info
-
+PGK-INFO
 
 # Rust
 stingeripc/templates/rust/**/target

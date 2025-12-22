@@ -4,8 +4,9 @@ import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-from signalonlyipc.server import SignalOnlyServer, SignalOnlyInitialPropertyValues
+from signalonlyipc.server import SignalOnlyServer
 from signalonlyipc.interface_types import *
+
 
 if __name__ == "__main__":
     """

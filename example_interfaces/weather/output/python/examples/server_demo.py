@@ -4,8 +4,10 @@ import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-from weatheripc.server import WeatherServer, WeatherInitialPropertyValues
+from weatheripc.server import WeatherServer
+from weatheripc.property import WeatherInitialPropertyValues
 from weatheripc.interface_types import *
+
 
 if __name__ == "__main__":
     """

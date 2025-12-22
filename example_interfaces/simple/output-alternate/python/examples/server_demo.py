@@ -4,8 +4,23 @@ import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-from simpleipc.server import SimpleServer, SimpleInitialPropertyValues
+from simpleipc.server import SimpleServer
+from simpleipc.property import SimplePropertyAccess
 from simpleipc.interface_types import *
+
+
+class SimplePropertyOwnership:
+    def __init__(self):
+        self._school = "apples"
+
+    def get_property_school(self):
+        """Return the value for the 'school' property."""
+        return self._school
+
+    def set_property_school(self, value: str):
+        """Set the value for the 'school' property."""
+        self._school = value
+
 
 if __name__ == "__main__":
     """
@@ -13,14 +28,15 @@ if __name__ == "__main__":
     a more meaningful way.
     """
 
-    initial_property_values = SimpleInitialPropertyValues(
-        school="apples",
-        school_version=1,
+    property_owner = SimplePropertyOwnership()
+    property_access = SimplePropertyAccess(
+        school_getter=property_owner.get_property_school,
+        school_setter=property_owner.set_property_school,
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
-    server = SimpleServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), initial_property_values)
+    server = SimpleServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), property_access)
 
     @server.handle_trade_numbers
     def trade_numbers(your_number: int) -> int:

@@ -124,8 +124,10 @@ When constructing a server instance, a connection object.
 <details>
   <summary>Python Server Object Construction</summary>
 
+
 ```python
-from signalonlyipc.server import SignalOnlyServer, SignalOnlyInitialPropertyValues
+from signalonlyipc.server import SignalOnlyServer
+from signalonlyipc.property import SignalOnlyInitialPropertyValues
 
 # Ideally, you would load these initial property values from a configuration file or database.
 
@@ -133,6 +135,7 @@ from signalonlyipc.server import SignalOnlyServer, SignalOnlyInitialPropertyValu
 service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
 server = SignalOnlyServer(connection_object, service_id, )
 ```
+
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 

@@ -4,39 +4,28 @@ import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-from testableipc.server import TestableServer, TestableInitialPropertyValues
+from testableipc.server import TestableServer
+from testableipc.property import TestablePropertyAccess
 from testableipc.interface_types import *
 
-if __name__ == "__main__":
-    """
-    This shows an example on how to run the code.  Ideally, your app should do something similar, but use the methods in
-    a more meaningful way.
-    """
 
-    initial_property_values = TestableInitialPropertyValues(
-        read_write_integer=42,
-        read_write_integer_version=1,
-        read_only_integer=42,
-        read_only_integer_version=2,
-        read_write_optional_integer=42,
-        read_write_optional_integer_version=3,
-        read_write_two_integers=ReadWriteTwoIntegersProperty(
+class TestablePropertyOwnership:
+    def __init__(self):
+        self._read_write_integer = 42
+        self._read_only_integer = 42
+        self._read_write_optional_integer = 42
+        self._read_write_two_integers = ReadWriteTwoIntegersProperty(
             first=42,
             second=42,
-        ),
-        read_write_two_integers_version=4,
-        read_only_string="apples",
-        read_only_string_version=5,
-        read_write_string="apples",
-        read_write_string_version=6,
-        read_write_optional_string="apples",
-        read_write_optional_string_version=7,
-        read_write_two_strings=ReadWriteTwoStringsProperty(
+        )
+        self._read_only_string = "apples"
+        self._read_write_string = "apples"
+        self._read_write_optional_string = "apples"
+        self._read_write_two_strings = ReadWriteTwoStringsProperty(
             first="apples",
             second="apples",
-        ),
-        read_write_two_strings_version=8,
-        read_write_struct=AllTypes(
+        )
+        self._read_write_struct = AllTypes(
             the_bool=True,
             the_int=42,
             the_number=3.14,
@@ -67,9 +56,8 @@ if __name__ == "__main__":
             optional_array_of_binaries=[b"example binary data", b"example binary data"],
             array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-        ),
-        read_write_struct_version=9,
-        read_write_optional_struct=AllTypes(
+        )
+        self._read_write_optional_struct = AllTypes(
             the_bool=True,
             the_int=42,
             the_number=3.14,
@@ -83,7 +71,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=None,
+            optional_date_time=datetime.now(UTC),
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -100,9 +88,8 @@ if __name__ == "__main__":
             optional_array_of_binaries=[b"example binary data", b"example binary data"],
             array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-        ),
-        read_write_optional_struct_version=10,
-        read_write_two_structs=ReadWriteTwoStructsProperty(
+        )
+        self._read_write_two_structs = ReadWriteTwoStructsProperty(
             first=AllTypes(
                 the_bool=True,
                 the_int=42,
@@ -167,58 +154,297 @@ if __name__ == "__main__":
                 array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
-        ),
-        read_write_two_structs_version=11,
-        read_only_enum=Numbers.ONE,
-        read_only_enum_version=12,
-        read_write_enum=Numbers.ONE,
-        read_write_enum_version=13,
-        read_write_optional_enum=Numbers.ONE,
-        read_write_optional_enum_version=14,
-        read_write_two_enums=ReadWriteTwoEnumsProperty(
+        )
+        self._read_only_enum = Numbers.ONE
+        self._read_write_enum = Numbers.ONE
+        self._read_write_optional_enum = Numbers.ONE
+        self._read_write_two_enums = ReadWriteTwoEnumsProperty(
             first=Numbers.ONE,
             second=Numbers.ONE,
-        ),
-        read_write_two_enums_version=15,
-        read_write_datetime=datetime.now(UTC),
-        read_write_datetime_version=16,
-        read_write_optional_datetime=None,
-        read_write_optional_datetime_version=17,
-        read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
+        )
+        self._read_write_datetime = datetime.now(UTC)
+        self._read_write_optional_datetime = datetime.now(UTC)
+        self._read_write_two_datetimes = ReadWriteTwoDatetimesProperty(
             first=datetime.now(UTC),
-            second=datetime.now(UTC),
-        ),
-        read_write_two_datetimes_version=18,
-        read_write_duration=timedelta(seconds=3536),
-        read_write_duration_version=19,
-        read_write_optional_duration=None,
-        read_write_optional_duration_version=20,
-        read_write_two_durations=ReadWriteTwoDurationsProperty(
+            second=None,
+        )
+        self._read_write_duration = timedelta(seconds=3536)
+        self._read_write_optional_duration = None
+        self._read_write_two_durations = ReadWriteTwoDurationsProperty(
             first=timedelta(seconds=3536),
             second=None,
-        ),
-        read_write_two_durations_version=21,
-        read_write_binary=b"example binary data",
-        read_write_binary_version=22,
-        read_write_optional_binary=b"example binary data",
-        read_write_optional_binary_version=23,
-        read_write_two_binaries=ReadWriteTwoBinariesProperty(
+        )
+        self._read_write_binary = b"example binary data"
+        self._read_write_optional_binary = b"example binary data"
+        self._read_write_two_binaries = ReadWriteTwoBinariesProperty(
             first=b"example binary data",
             second=b"example binary data",
-        ),
-        read_write_two_binaries_version=24,
-        read_write_list_of_strings=["apples", "foo"],
-        read_write_list_of_strings_version=25,
-        read_write_lists=ReadWriteListsProperty(
+        )
+        self._read_write_list_of_strings = ["apples", "foo"]
+        self._read_write_lists = ReadWriteListsProperty(
             the_list=[Numbers.ONE, Numbers.ONE],
             optional_list=[datetime.now(UTC), datetime.now(UTC)],
-        ),
-        read_write_lists_version=26,
+        )
+
+    def get_property_read_write_integer(self):
+        """Return the value for the 'read_write_integer' property."""
+        return self._read_write_integer
+
+    def set_property_read_write_integer(self, value: int):
+        """Set the value for the 'read_write_integer' property."""
+        self._read_write_integer = value
+
+    def get_property_read_only_integer(self):
+        """Return the value for the 'read_only_integer' property."""
+        return self._read_only_integer
+
+    def get_property_read_write_optional_integer(self):
+        """Return the value for the 'read_write_optional_integer' property."""
+        return self._read_write_optional_integer
+
+    def set_property_read_write_optional_integer(self, value: Optional[int]):
+        """Set the value for the 'read_write_optional_integer' property."""
+        self._read_write_optional_integer = value
+
+    def get_property_read_write_two_integers(self):
+        """Return the value for the 'read_write_two_integers' property."""
+        return self._read_write_two_integers
+
+    def set_property_read_write_two_integers(self, value: ReadWriteTwoIntegersProperty):
+        """Set the value for the 'read_write_two_integers' property."""
+        self._read_write_two_integers = value
+
+    def get_property_read_only_string(self):
+        """Return the value for the 'read_only_string' property."""
+        return self._read_only_string
+
+    def get_property_read_write_string(self):
+        """Return the value for the 'read_write_string' property."""
+        return self._read_write_string
+
+    def set_property_read_write_string(self, value: str):
+        """Set the value for the 'read_write_string' property."""
+        self._read_write_string = value
+
+    def get_property_read_write_optional_string(self):
+        """Return the value for the 'read_write_optional_string' property."""
+        return self._read_write_optional_string
+
+    def set_property_read_write_optional_string(self, value: Optional[str]):
+        """Set the value for the 'read_write_optional_string' property."""
+        self._read_write_optional_string = value
+
+    def get_property_read_write_two_strings(self):
+        """Return the value for the 'read_write_two_strings' property."""
+        return self._read_write_two_strings
+
+    def set_property_read_write_two_strings(self, value: ReadWriteTwoStringsProperty):
+        """Set the value for the 'read_write_two_strings' property."""
+        self._read_write_two_strings = value
+
+    def get_property_read_write_struct(self):
+        """Return the value for the 'read_write_struct' property."""
+        return self._read_write_struct
+
+    def set_property_read_write_struct(self, value: AllTypes):
+        """Set the value for the 'read_write_struct' property."""
+        self._read_write_struct = value
+
+    def get_property_read_write_optional_struct(self):
+        """Return the value for the 'read_write_optional_struct' property."""
+        return self._read_write_optional_struct
+
+    def set_property_read_write_optional_struct(self, value: AllTypes):
+        """Set the value for the 'read_write_optional_struct' property."""
+        self._read_write_optional_struct = value
+
+    def get_property_read_write_two_structs(self):
+        """Return the value for the 'read_write_two_structs' property."""
+        return self._read_write_two_structs
+
+    def set_property_read_write_two_structs(self, value: ReadWriteTwoStructsProperty):
+        """Set the value for the 'read_write_two_structs' property."""
+        self._read_write_two_structs = value
+
+    def get_property_read_only_enum(self):
+        """Return the value for the 'read_only_enum' property."""
+        return self._read_only_enum
+
+    def get_property_read_write_enum(self):
+        """Return the value for the 'read_write_enum' property."""
+        return self._read_write_enum
+
+    def set_property_read_write_enum(self, value: Numbers):
+        """Set the value for the 'read_write_enum' property."""
+        self._read_write_enum = value
+
+    def get_property_read_write_optional_enum(self):
+        """Return the value for the 'read_write_optional_enum' property."""
+        return self._read_write_optional_enum
+
+    def set_property_read_write_optional_enum(self, value: Optional[Numbers]):
+        """Set the value for the 'read_write_optional_enum' property."""
+        self._read_write_optional_enum = value
+
+    def get_property_read_write_two_enums(self):
+        """Return the value for the 'read_write_two_enums' property."""
+        return self._read_write_two_enums
+
+    def set_property_read_write_two_enums(self, value: ReadWriteTwoEnumsProperty):
+        """Set the value for the 'read_write_two_enums' property."""
+        self._read_write_two_enums = value
+
+    def get_property_read_write_datetime(self):
+        """Return the value for the 'read_write_datetime' property."""
+        return self._read_write_datetime
+
+    def set_property_read_write_datetime(self, value: datetime):
+        """Set the value for the 'read_write_datetime' property."""
+        self._read_write_datetime = value
+
+    def get_property_read_write_optional_datetime(self):
+        """Return the value for the 'read_write_optional_datetime' property."""
+        return self._read_write_optional_datetime
+
+    def set_property_read_write_optional_datetime(self, value: Optional[datetime]):
+        """Set the value for the 'read_write_optional_datetime' property."""
+        self._read_write_optional_datetime = value
+
+    def get_property_read_write_two_datetimes(self):
+        """Return the value for the 'read_write_two_datetimes' property."""
+        return self._read_write_two_datetimes
+
+    def set_property_read_write_two_datetimes(self, value: ReadWriteTwoDatetimesProperty):
+        """Set the value for the 'read_write_two_datetimes' property."""
+        self._read_write_two_datetimes = value
+
+    def get_property_read_write_duration(self):
+        """Return the value for the 'read_write_duration' property."""
+        return self._read_write_duration
+
+    def set_property_read_write_duration(self, value: timedelta):
+        """Set the value for the 'read_write_duration' property."""
+        self._read_write_duration = value
+
+    def get_property_read_write_optional_duration(self):
+        """Return the value for the 'read_write_optional_duration' property."""
+        return self._read_write_optional_duration
+
+    def set_property_read_write_optional_duration(self, value: Optional[timedelta]):
+        """Set the value for the 'read_write_optional_duration' property."""
+        self._read_write_optional_duration = value
+
+    def get_property_read_write_two_durations(self):
+        """Return the value for the 'read_write_two_durations' property."""
+        return self._read_write_two_durations
+
+    def set_property_read_write_two_durations(self, value: ReadWriteTwoDurationsProperty):
+        """Set the value for the 'read_write_two_durations' property."""
+        self._read_write_two_durations = value
+
+    def get_property_read_write_binary(self):
+        """Return the value for the 'read_write_binary' property."""
+        return self._read_write_binary
+
+    def set_property_read_write_binary(self, value: bytes):
+        """Set the value for the 'read_write_binary' property."""
+        self._read_write_binary = value
+
+    def get_property_read_write_optional_binary(self):
+        """Return the value for the 'read_write_optional_binary' property."""
+        return self._read_write_optional_binary
+
+    def set_property_read_write_optional_binary(self, value: bytes):
+        """Set the value for the 'read_write_optional_binary' property."""
+        self._read_write_optional_binary = value
+
+    def get_property_read_write_two_binaries(self):
+        """Return the value for the 'read_write_two_binaries' property."""
+        return self._read_write_two_binaries
+
+    def set_property_read_write_two_binaries(self, value: ReadWriteTwoBinariesProperty):
+        """Set the value for the 'read_write_two_binaries' property."""
+        self._read_write_two_binaries = value
+
+    def get_property_read_write_list_of_strings(self):
+        """Return the value for the 'read_write_list_of_strings' property."""
+        return self._read_write_list_of_strings
+
+    def set_property_read_write_list_of_strings(self, value: List[str]):
+        """Set the value for the 'read_write_list_of_strings' property."""
+        self._read_write_list_of_strings = value
+
+    def get_property_read_write_lists(self):
+        """Return the value for the 'read_write_lists' property."""
+        return self._read_write_lists
+
+    def set_property_read_write_lists(self, value: ReadWriteListsProperty):
+        """Set the value for the 'read_write_lists' property."""
+        self._read_write_lists = value
+
+
+if __name__ == "__main__":
+    """
+    This shows an example on how to run the code.  Ideally, your app should do something similar, but use the methods in
+    a more meaningful way.
+    """
+
+    property_owner = TestablePropertyOwnership()
+    property_access = TestablePropertyAccess(
+        read_write_integer_getter=property_owner.get_property_read_write_integer,
+        read_write_integer_setter=property_owner.set_property_read_write_integer,
+        read_only_integer_getter=property_owner.get_property_read_only_integer,
+        read_write_optional_integer_getter=property_owner.get_property_read_write_optional_integer,
+        read_write_optional_integer_setter=property_owner.set_property_read_write_optional_integer,
+        read_write_two_integers_getter=property_owner.get_property_read_write_two_integers,
+        read_write_two_integers_setter=property_owner.set_property_read_write_two_integers,
+        read_only_string_getter=property_owner.get_property_read_only_string,
+        read_write_string_getter=property_owner.get_property_read_write_string,
+        read_write_string_setter=property_owner.set_property_read_write_string,
+        read_write_optional_string_getter=property_owner.get_property_read_write_optional_string,
+        read_write_optional_string_setter=property_owner.set_property_read_write_optional_string,
+        read_write_two_strings_getter=property_owner.get_property_read_write_two_strings,
+        read_write_two_strings_setter=property_owner.set_property_read_write_two_strings,
+        read_write_struct_getter=property_owner.get_property_read_write_struct,
+        read_write_struct_setter=property_owner.set_property_read_write_struct,
+        read_write_optional_struct_getter=property_owner.get_property_read_write_optional_struct,
+        read_write_optional_struct_setter=property_owner.set_property_read_write_optional_struct,
+        read_write_two_structs_getter=property_owner.get_property_read_write_two_structs,
+        read_write_two_structs_setter=property_owner.set_property_read_write_two_structs,
+        read_only_enum_getter=property_owner.get_property_read_only_enum,
+        read_write_enum_getter=property_owner.get_property_read_write_enum,
+        read_write_enum_setter=property_owner.set_property_read_write_enum,
+        read_write_optional_enum_getter=property_owner.get_property_read_write_optional_enum,
+        read_write_optional_enum_setter=property_owner.set_property_read_write_optional_enum,
+        read_write_two_enums_getter=property_owner.get_property_read_write_two_enums,
+        read_write_two_enums_setter=property_owner.set_property_read_write_two_enums,
+        read_write_datetime_getter=property_owner.get_property_read_write_datetime,
+        read_write_datetime_setter=property_owner.set_property_read_write_datetime,
+        read_write_optional_datetime_getter=property_owner.get_property_read_write_optional_datetime,
+        read_write_optional_datetime_setter=property_owner.set_property_read_write_optional_datetime,
+        read_write_two_datetimes_getter=property_owner.get_property_read_write_two_datetimes,
+        read_write_two_datetimes_setter=property_owner.set_property_read_write_two_datetimes,
+        read_write_duration_getter=property_owner.get_property_read_write_duration,
+        read_write_duration_setter=property_owner.set_property_read_write_duration,
+        read_write_optional_duration_getter=property_owner.get_property_read_write_optional_duration,
+        read_write_optional_duration_setter=property_owner.set_property_read_write_optional_duration,
+        read_write_two_durations_getter=property_owner.get_property_read_write_two_durations,
+        read_write_two_durations_setter=property_owner.set_property_read_write_two_durations,
+        read_write_binary_getter=property_owner.get_property_read_write_binary,
+        read_write_binary_setter=property_owner.set_property_read_write_binary,
+        read_write_optional_binary_getter=property_owner.get_property_read_write_optional_binary,
+        read_write_optional_binary_setter=property_owner.set_property_read_write_optional_binary,
+        read_write_two_binaries_getter=property_owner.get_property_read_write_two_binaries,
+        read_write_two_binaries_setter=property_owner.set_property_read_write_two_binaries,
+        read_write_list_of_strings_getter=property_owner.get_property_read_write_list_of_strings,
+        read_write_list_of_strings_setter=property_owner.set_property_read_write_list_of_strings,
+        read_write_lists_getter=property_owner.get_property_read_write_lists,
+        read_write_lists_setter=property_owner.set_property_read_write_lists,
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
-    server = TestableServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), initial_property_values)
+    server = TestableServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), property_access)
 
     @server.handle_call_with_nothing
     def call_with_nothing() -> None:
@@ -298,7 +524,7 @@ if __name__ == "__main__":
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -405,7 +631,7 @@ if __name__ == "__main__":
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -756,71 +982,71 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
-                    optional_duration=None,
-                    optional_binary=b"example binary data",
-                    array_of_integers=[42, 2022],
-                    optional_array_of_integers=[42, 2022],
-                    array_of_strings=["apples", "foo"],
-                    optional_array_of_strings=["apples", "foo"],
-                    array_of_enums=[Numbers.ONE, Numbers.ONE],
-                    optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                    array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                    optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                    array_of_binaries=[b"example binary data", b"example binary data"],
-                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                    array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                    optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                ),
-                AllTypes(
-                    the_bool=True,
-                    the_int=42,
-                    the_number=3.14,
-                    the_str="apples",
-                    the_enum=Numbers.ONE,
-                    an_entry_object=Entry(key=42, value="apples"),
-                    date_and_time=datetime.now(UTC),
-                    time_duration=timedelta(seconds=3536),
-                    data=b"example binary data",
-                    optional_integer=42,
-                    optional_string="apples",
-                    optional_enum=Numbers.ONE,
-                    optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
-                    optional_duration=None,
-                    optional_binary=b"example binary data",
-                    array_of_integers=[42, 2022],
-                    optional_array_of_integers=[42, 2022],
-                    array_of_strings=["apples", "foo"],
-                    optional_array_of_strings=["apples", "foo"],
-                    array_of_enums=[Numbers.ONE, Numbers.ONE],
-                    optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                    array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                    optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                    array_of_binaries=[b"example binary data", b"example binary data"],
-                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                    array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                    optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                ),
-                AllTypes(
-                    the_bool=True,
-                    the_int=42,
-                    the_number=3.14,
-                    the_str="apples",
-                    the_enum=Numbers.ONE,
-                    an_entry_object=Entry(key=42, value="apples"),
-                    date_and_time=datetime.now(UTC),
-                    time_duration=timedelta(seconds=3536),
-                    data=b"example binary data",
-                    optional_integer=42,
-                    optional_string="apples",
-                    optional_enum=Numbers.ONE,
-                    optional_entry_object=Entry(key=42, value="apples"),
                     optional_date_time=None,
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
+                    array_of_integers=[42, 2022],
+                    optional_array_of_integers=[42, 2022],
+                    array_of_strings=["apples", "foo"],
+                    optional_array_of_strings=["apples", "foo"],
+                    array_of_enums=[Numbers.ONE, Numbers.ONE],
+                    optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                    array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                    optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                    optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                ),
+                AllTypes(
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=Numbers.ONE,
+                    an_entry_object=Entry(key=42, value="apples"),
+                    date_and_time=datetime.now(UTC),
+                    time_duration=timedelta(seconds=3536),
+                    data=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=Numbers.ONE,
+                    optional_entry_object=Entry(key=42, value="apples"),
+                    optional_date_time=datetime.now(UTC),
+                    optional_duration=None,
+                    optional_binary=b"example binary data",
+                    array_of_integers=[42, 2022],
+                    optional_array_of_integers=[42, 2022],
+                    array_of_strings=["apples", "foo"],
+                    optional_array_of_strings=["apples", "foo"],
+                    array_of_enums=[Numbers.ONE, Numbers.ONE],
+                    optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                    array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                    optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                    array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                    optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                    array_of_binaries=[b"example binary data", b"example binary data"],
+                    optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                    array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                    optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                ),
+                AllTypes(
+                    the_bool=True,
+                    the_int=42,
+                    the_number=3.14,
+                    the_str="apples",
+                    the_enum=Numbers.ONE,
+                    an_entry_object=Entry(key=42, value="apples"),
+                    date_and_time=datetime.now(UTC),
+                    time_duration=timedelta(seconds=3536),
+                    data=b"example binary data",
+                    optional_integer=42,
+                    optional_string="apples",
+                    optional_enum=Numbers.ONE,
+                    optional_entry_object=Entry(key=42, value="apples"),
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -840,7 +1066,7 @@ if __name__ == "__main__":
                 ),
             )
             server.emit_single_date_time(datetime.now(UTC))
-            server.emit_single_optional_datetime(datetime.now(UTC))
+            server.emit_single_optional_datetime(None)
             server.emit_three_date_times(datetime.now(UTC), datetime.now(UTC), datetime.now(UTC))
             server.emit_single_duration(timedelta(seconds=3536))
             server.emit_single_optional_duration(None)
@@ -887,7 +1113,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -955,7 +1181,7 @@ if __name__ == "__main__":
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=None,
+                    optional_date_time=datetime.now(UTC),
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -1039,8 +1265,8 @@ if __name__ == "__main__":
                 ),
             )
             server.emit_single_date_time(value=datetime.now(UTC))
-            server.emit_single_optional_datetime(value=None)
-            server.emit_three_date_times(first=datetime.now(UTC), second=datetime.now(UTC), third=datetime.now(UTC))
+            server.emit_single_optional_datetime(value=datetime.now(UTC))
+            server.emit_three_date_times(first=datetime.now(UTC), second=datetime.now(UTC), third=None)
             server.emit_single_duration(value=timedelta(seconds=3536))
             server.emit_single_optional_duration(value=None)
             server.emit_three_durations(first=timedelta(seconds=3536), second=timedelta(seconds=3536), third=None)

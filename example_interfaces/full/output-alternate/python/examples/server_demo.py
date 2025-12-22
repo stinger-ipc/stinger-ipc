@@ -4,8 +4,76 @@ import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-from fullipc.server import FullServer, FullInitialPropertyValues
+from fullipc.server import FullServer
+from fullipc.property import FullPropertyAccess
 from fullipc.interface_types import *
+
+
+class FullPropertyOwnership:
+    def __init__(self):
+        self._favorite_number = 42
+        self._favorite_foods = FavoriteFoodsProperty(
+            drink="apples",
+            slices_of_pizza=42,
+            breakfast="apples",
+        )
+        self._lunch_menu = LunchMenuProperty(
+            monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+            tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
+        )
+        self._family_name = "apples"
+        self._last_breakfast_time = datetime.now(UTC)
+        self._last_birthdays = LastBirthdaysProperty(
+            mom=datetime.now(UTC),
+            dad=datetime.now(UTC),
+            sister=None,
+            brothers_age=42,
+        )
+
+    def get_property_favorite_number(self):
+        """Return the value for the 'favorite_number' property."""
+        return self._favorite_number
+
+    def set_property_favorite_number(self, value: int):
+        """Set the value for the 'favorite_number' property."""
+        self._favorite_number = value
+
+    def get_property_favorite_foods(self):
+        """Return the value for the 'favorite_foods' property."""
+        return self._favorite_foods
+
+    def set_property_favorite_foods(self, value: FavoriteFoodsProperty):
+        """Set the value for the 'favorite_foods' property."""
+        self._favorite_foods = value
+
+    def get_property_lunch_menu(self):
+        """Return the value for the 'lunch_menu' property."""
+        return self._lunch_menu
+
+    def get_property_family_name(self):
+        """Return the value for the 'family_name' property."""
+        return self._family_name
+
+    def set_property_family_name(self, value: str):
+        """Set the value for the 'family_name' property."""
+        self._family_name = value
+
+    def get_property_last_breakfast_time(self):
+        """Return the value for the 'last_breakfast_time' property."""
+        return self._last_breakfast_time
+
+    def set_property_last_breakfast_time(self, value: datetime):
+        """Set the value for the 'last_breakfast_time' property."""
+        self._last_breakfast_time = value
+
+    def get_property_last_birthdays(self):
+        """Return the value for the 'last_birthdays' property."""
+        return self._last_birthdays
+
+    def set_property_last_birthdays(self, value: LastBirthdaysProperty):
+        """Set the value for the 'last_birthdays' property."""
+        self._last_birthdays = value
+
 
 if __name__ == "__main__":
     """
@@ -13,36 +81,24 @@ if __name__ == "__main__":
     a more meaningful way.
     """
 
-    initial_property_values = FullInitialPropertyValues(
-        favorite_number=42,
-        favorite_number_version=1,
-        favorite_foods=FavoriteFoodsProperty(
-            drink="apples",
-            slices_of_pizza=42,
-            breakfast="apples",
-        ),
-        favorite_foods_version=2,
-        lunch_menu=LunchMenuProperty(
-            monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
-            tuesday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
-        ),
-        lunch_menu_version=3,
-        family_name="apples",
-        family_name_version=4,
-        last_breakfast_time=datetime.now(UTC),
-        last_breakfast_time_version=5,
-        last_birthdays=LastBirthdaysProperty(
-            mom=datetime.now(UTC),
-            dad=datetime.now(UTC),
-            sister=datetime.now(UTC),
-            brothers_age=42,
-        ),
-        last_birthdays_version=6,
+    property_owner = FullPropertyOwnership()
+    property_access = FullPropertyAccess(
+        favorite_number_getter=property_owner.get_property_favorite_number,
+        favorite_number_setter=property_owner.set_property_favorite_number,
+        favorite_foods_getter=property_owner.get_property_favorite_foods,
+        favorite_foods_setter=property_owner.set_property_favorite_foods,
+        lunch_menu_getter=property_owner.get_property_lunch_menu,
+        family_name_getter=property_owner.get_property_family_name,
+        family_name_setter=property_owner.set_property_family_name,
+        last_breakfast_time_getter=property_owner.get_property_last_breakfast_time,
+        last_breakfast_time_setter=property_owner.set_property_last_breakfast_time,
+        last_birthdays_getter=property_owner.get_property_last_birthdays,
+        last_birthdays_setter=property_owner.set_property_last_birthdays,
     )
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
-    server = FullServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), initial_property_values)
+    server = FullServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), property_access)
 
     @server.handle_add_numbers
     def add_numbers(first: int, second: int, third: Optional[int]) -> int:
