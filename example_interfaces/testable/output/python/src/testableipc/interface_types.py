@@ -109,18 +109,18 @@ class AllTypes(BaseModel):
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
-    optional_integer: Annotated[Optional[int], Field(description="An optional integer type.", alias="OptionalInteger")]
-    optional_string: Annotated[Optional[str], Field(description="An optional string type.", alias="OptionalString")]
-    optional_enum: Annotated[Optional[Numbers], Field(description="An optional enum type, one of the numbers.", alias="OptionalEnum")]
-    optional_entry_object: Annotated[Optional[Entry], Field(description="An optional struct type.", alias="optionalEntryObject")]
-    optional_date_time: Annotated[Optional[datetime], Field(description="An optional date and time type.", alias="OptionalDateTime")]
-    optional_duration: Annotated[Optional[timedelta], Field(description="An optional duration type.", alias="OptionalDuration")]
+    optional_integer: Annotated[Optional[int], Field(description="An optional integer type.", alias="OptionalInteger")] = None
+    optional_string: Annotated[Optional[str], Field(description="An optional string type.", alias="OptionalString")] = None
+    optional_enum: Annotated[Optional[Numbers], Field(description="An optional enum type, one of the numbers.", alias="OptionalEnum")] = None
+    optional_entry_object: Annotated[Optional[Entry], Field(description="An optional struct type.", alias="optionalEntryObject")] = None
+    optional_date_time: Annotated[Optional[datetime], Field(description="An optional date and time type.", alias="OptionalDateTime")] = None
+    optional_duration: Annotated[Optional[timedelta], Field(description="An optional duration type.", alias="OptionalDuration")] = None
     optional_binary: Annotated[
         Optional[bytes],
         Field(description="An optional binary type.", alias="OptionalBinary"),
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None),
-    ]
+    ] = None
 
     array_of_integers: Annotated[
         List[int],
@@ -134,7 +134,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of integers.",
         ),
-    ]
+    ] = None
 
     array_of_strings: Annotated[
         List[str],
@@ -148,7 +148,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of strings.",
         ),
-    ]
+    ] = None
 
     array_of_enums: Annotated[
         List[Numbers],
@@ -162,7 +162,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of enums.",
         ),
-    ]
+    ] = None
 
     array_of_datetimes: Annotated[
         List[datetime],
@@ -176,7 +176,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of date and time values.",
         ),
-    ]
+    ] = None
 
     array_of_durations: Annotated[
         List[timedelta],
@@ -190,7 +190,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of duration values.",
         ),
-    ]
+    ] = None
 
     array_of_binaries: Annotated[
         List[bytes],
@@ -208,7 +208,7 @@ class AllTypes(BaseModel):
         ),
         PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]),
         PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr]),
-    ]
+    ] = None
 
     array_of_entry_objects: Annotated[
         List[Entry],
@@ -222,7 +222,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of struct values.",
         ),
-    ]
+    ] = None
 
 
 class EmptySignalPayload(BaseModel):
@@ -261,7 +261,7 @@ class SingleOptionalIntSignalPayload(BaseModel):
         Field(
             description="The integer value.",
         ),
-    ]
+    ] = None
 
 
 class ThreeIntegersSignalPayload(BaseModel):
@@ -288,7 +288,7 @@ class ThreeIntegersSignalPayload(BaseModel):
         Field(
             description="The third integer value.",
         ),
-    ]
+    ] = None
 
 
 class SingleStringSignalPayload(BaseModel):
@@ -318,7 +318,7 @@ class SingleOptionalStringSignalPayload(BaseModel):
         Field(
             description="The string value.",
         ),
-    ]
+    ] = None
 
 
 class ThreeStringsSignalPayload(BaseModel):
@@ -345,7 +345,7 @@ class ThreeStringsSignalPayload(BaseModel):
         Field(
             description="The third string value.",
         ),
-    ]
+    ] = None
 
 
 class SingleEnumSignalPayload(BaseModel):
@@ -375,7 +375,7 @@ class SingleOptionalEnumSignalPayload(BaseModel):
         Field(
             description="The enum value.",
         ),
-    ]
+    ] = None
 
 
 class ThreeEnumsSignalPayload(BaseModel):
@@ -402,7 +402,7 @@ class ThreeEnumsSignalPayload(BaseModel):
         Field(
             description="The third enum value.",
         ),
-    ]
+    ] = None
 
 
 class SingleStructSignalPayload(BaseModel):
@@ -432,7 +432,7 @@ class SingleOptionalStructSignalPayload(BaseModel):
         Field(
             description="The struct value.",
         ),
-    ]
+    ] = None
 
 
 class ThreeStructsSignalPayload(BaseModel):
@@ -459,7 +459,7 @@ class ThreeStructsSignalPayload(BaseModel):
         Field(
             description="The third struct value.",
         ),
-    ]
+    ] = None
 
 
 class SingleDateTimeSignalPayload(BaseModel):
@@ -489,7 +489,7 @@ class SingleOptionalDatetimeSignalPayload(BaseModel):
         Field(
             description="The date and time value.",
         ),
-    ]
+    ] = None
 
 
 class ThreeDateTimesSignalPayload(BaseModel):
@@ -516,7 +516,7 @@ class ThreeDateTimesSignalPayload(BaseModel):
         Field(
             description="The third date and time value.",
         ),
-    ]
+    ] = None
 
 
 class SingleDurationSignalPayload(BaseModel):
@@ -546,7 +546,7 @@ class SingleOptionalDurationSignalPayload(BaseModel):
         Field(
             description="The duration value.",
         ),
-    ]
+    ] = None
 
 
 class ThreeDurationsSignalPayload(BaseModel):
@@ -573,7 +573,7 @@ class ThreeDurationsSignalPayload(BaseModel):
         Field(
             description="The third duration value.",
         ),
-    ]
+    ] = None
 
 
 class SingleBinarySignalPayload(BaseModel):
@@ -607,7 +607,7 @@ class SingleOptionalBinarySignalPayload(BaseModel):
         ),
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None),
-    ]
+    ] = None
 
 
 class ThreeBinariesSignalPayload(BaseModel):
@@ -640,7 +640,7 @@ class ThreeBinariesSignalPayload(BaseModel):
         ),
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None),
-    ]
+    ] = None
 
 
 class SingleArrayOfIntegersSignalPayload(BaseModel):
@@ -672,7 +672,7 @@ class SingleOptionalArrayOfStringsSignalPayload(BaseModel):
         Field(
             description="The array of strings.",
         ),
-    ]
+    ] = None
 
 
 class ArrayOfEveryTypeSignalPayload(BaseModel):
@@ -766,7 +766,7 @@ class ReadWriteOptionalIntegerProperty(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[int], Field()]
+    value: Annotated[Optional[int], Field()] = None
 
 
 class ReadWriteTwoIntegersProperty(BaseModel):
@@ -782,7 +782,7 @@ class ReadWriteTwoIntegersProperty(BaseModel):
             description="An integer value.",
         ),
     ]
-    second: Annotated[Optional[int], Field()]
+    second: Annotated[Optional[int], Field()] = None
 
 
 class ReadOnlyStringProperty(BaseModel):
@@ -812,7 +812,7 @@ class ReadWriteOptionalStringProperty(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[str], Field()]
+    value: Annotated[Optional[str], Field()] = None
 
 
 class ReadWriteTwoStringsProperty(BaseModel):
@@ -828,7 +828,7 @@ class ReadWriteTwoStringsProperty(BaseModel):
             description="A string value.",
         ),
     ]
-    second: Annotated[Optional[str], Field()]
+    second: Annotated[Optional[str], Field()] = None
 
 
 class ReadWriteStructProperty(BaseModel):
@@ -848,7 +848,7 @@ class ReadWriteOptionalStructProperty(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[AllTypes], Field()]
+    value: Annotated[Optional[AllTypes], Field()] = None
 
 
 class ReadWriteTwoStructsProperty(BaseModel):
@@ -864,7 +864,7 @@ class ReadWriteTwoStructsProperty(BaseModel):
             description="A struct value.",
         ),
     ]
-    second: Annotated[Optional[AllTypes], Field()]
+    second: Annotated[Optional[AllTypes], Field()] = None
 
 
 class ReadOnlyEnumProperty(BaseModel):
@@ -894,7 +894,7 @@ class ReadWriteOptionalEnumProperty(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[Numbers], Field()]
+    value: Annotated[Optional[Numbers], Field()] = None
 
 
 class ReadWriteTwoEnumsProperty(BaseModel):
@@ -910,7 +910,7 @@ class ReadWriteTwoEnumsProperty(BaseModel):
             description="An enum value.",
         ),
     ]
-    second: Annotated[Optional[Numbers], Field()]
+    second: Annotated[Optional[Numbers], Field()] = None
 
 
 class ReadWriteDatetimeProperty(BaseModel):
@@ -930,7 +930,7 @@ class ReadWriteOptionalDatetimeProperty(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[datetime], Field()]
+    value: Annotated[Optional[datetime], Field()] = None
 
 
 class ReadWriteTwoDatetimesProperty(BaseModel):
@@ -946,7 +946,7 @@ class ReadWriteTwoDatetimesProperty(BaseModel):
             description="A date and time value.",
         ),
     ]
-    second: Annotated[Optional[datetime], Field()]
+    second: Annotated[Optional[datetime], Field()] = None
 
 
 class ReadWriteDurationProperty(BaseModel):
@@ -966,7 +966,7 @@ class ReadWriteOptionalDurationProperty(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[timedelta], Field()]
+    value: Annotated[Optional[timedelta], Field()] = None
 
 
 class ReadWriteTwoDurationsProperty(BaseModel):
@@ -982,7 +982,7 @@ class ReadWriteTwoDurationsProperty(BaseModel):
             description="A duration of time.",
         ),
     ]
-    second: Annotated[Optional[timedelta], Field()]
+    second: Annotated[Optional[timedelta], Field()] = None
 
 
 class ReadWriteBinaryProperty(BaseModel):
@@ -1002,7 +1002,7 @@ class ReadWriteOptionalBinaryProperty(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
+    value: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
 
 
 class ReadWriteTwoBinariesProperty(BaseModel):
@@ -1020,7 +1020,7 @@ class ReadWriteTwoBinariesProperty(BaseModel):
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
-    second: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
+    second: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
 
 
 class ReadWriteListOfStringsProperty(BaseModel):
@@ -1044,7 +1044,7 @@ class ReadWriteListsProperty(BaseModel):
 
     the_list: Annotated[List[Numbers], Field()]
 
-    optional_list: Annotated[Optional[List[datetime]], Field(alias="optionalList")]
+    optional_list: Annotated[Optional[List[datetime]], Field(alias="optionalList")] = None
 
 
 class CallWithNothingMethodRequest(BaseModel):
@@ -1092,7 +1092,7 @@ class CallOptionalIntegerMethodRequest(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[int], Field()]
+    input1: Annotated[Optional[int], Field()] = None
 
 
 class CallOptionalIntegerMethodResponse(BaseModel):
@@ -1102,7 +1102,7 @@ class CallOptionalIntegerMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[int], Field()]
+    output1: Annotated[Optional[int], Field()] = None
 
 
 class CallThreeIntegersMethodRequest(BaseModel):
@@ -1119,7 +1119,7 @@ class CallThreeIntegersMethodRequest(BaseModel):
         ),
     ]
     input2: Annotated[int, Field()]
-    input3: Annotated[Optional[int], Field()]
+    input3: Annotated[Optional[int], Field()] = None
 
 
 class CallThreeIntegersMethodResponse(BaseModel):
@@ -1136,7 +1136,7 @@ class CallThreeIntegersMethodResponse(BaseModel):
         ),
     ]
     output2: Annotated[int, Field()]
-    output3: Annotated[Optional[int], Field()]
+    output3: Annotated[Optional[int], Field()] = None
 
 
 class CallOneStringMethodRequest(BaseModel):
@@ -1166,7 +1166,7 @@ class CallOptionalStringMethodRequest(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[str], Field()]
+    input1: Annotated[Optional[str], Field()] = None
 
 
 class CallOptionalStringMethodResponse(BaseModel):
@@ -1176,7 +1176,7 @@ class CallOptionalStringMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[str], Field()]
+    output1: Annotated[Optional[str], Field()] = None
 
 
 class CallThreeStringsMethodRequest(BaseModel):
@@ -1192,7 +1192,7 @@ class CallThreeStringsMethodRequest(BaseModel):
             description="The first string input.  The other two don't have descriptions.",
         ),
     ]
-    input2: Annotated[Optional[str], Field()]
+    input2: Annotated[Optional[str], Field()] = None
     input3: Annotated[str, Field()]
 
 
@@ -1209,7 +1209,7 @@ class CallThreeStringsMethodResponse(BaseModel):
             description="The first string output.  The other two don't have descriptions.",
         ),
     ]
-    output2: Annotated[Optional[str], Field()]
+    output2: Annotated[Optional[str], Field()] = None
     output3: Annotated[str, Field()]
 
 
@@ -1240,7 +1240,7 @@ class CallOptionalEnumMethodRequest(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[Numbers], Field()]
+    input1: Annotated[Optional[Numbers], Field()] = None
 
 
 class CallOptionalEnumMethodResponse(BaseModel):
@@ -1250,7 +1250,7 @@ class CallOptionalEnumMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[Numbers], Field()]
+    output1: Annotated[Optional[Numbers], Field()] = None
 
 
 class CallThreeEnumsMethodRequest(BaseModel):
@@ -1267,7 +1267,7 @@ class CallThreeEnumsMethodRequest(BaseModel):
         ),
     ]
     input2: Annotated[Numbers, Field()]
-    input3: Annotated[Optional[Numbers], Field()]
+    input3: Annotated[Optional[Numbers], Field()] = None
 
 
 class CallThreeEnumsMethodResponse(BaseModel):
@@ -1284,7 +1284,7 @@ class CallThreeEnumsMethodResponse(BaseModel):
         ),
     ]
     output2: Annotated[Numbers, Field()]
-    output3: Annotated[Optional[Numbers], Field()]
+    output3: Annotated[Optional[Numbers], Field()] = None
 
 
 class CallOneStructMethodRequest(BaseModel):
@@ -1314,7 +1314,7 @@ class CallOptionalStructMethodRequest(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[AllTypes], Field()]
+    input1: Annotated[Optional[AllTypes], Field()] = None
 
 
 class CallOptionalStructMethodResponse(BaseModel):
@@ -1324,7 +1324,7 @@ class CallOptionalStructMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[AllTypes], Field()]
+    output1: Annotated[Optional[AllTypes], Field()] = None
 
 
 class CallThreeStructsMethodRequest(BaseModel):
@@ -1339,7 +1339,7 @@ class CallThreeStructsMethodRequest(BaseModel):
         Field(
             description="The first struct input.  The other two don't have descriptions.",
         ),
-    ]
+    ] = None
     input2: Annotated[AllTypes, Field()]
     input3: Annotated[AllTypes, Field()]
 
@@ -1356,7 +1356,7 @@ class CallThreeStructsMethodResponse(BaseModel):
         Field(
             description="The first struct output.  The other two don't have descriptions.",
         ),
-    ]
+    ] = None
     output2: Annotated[AllTypes, Field()]
     output3: Annotated[AllTypes, Field()]
 
@@ -1388,7 +1388,7 @@ class CallOptionalDateTimeMethodRequest(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[datetime], Field()]
+    input1: Annotated[Optional[datetime], Field()] = None
 
 
 class CallOptionalDateTimeMethodResponse(BaseModel):
@@ -1398,7 +1398,7 @@ class CallOptionalDateTimeMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[datetime], Field()]
+    output1: Annotated[Optional[datetime], Field()] = None
 
 
 class CallThreeDateTimesMethodRequest(BaseModel):
@@ -1415,7 +1415,7 @@ class CallThreeDateTimesMethodRequest(BaseModel):
         ),
     ]
     input2: Annotated[datetime, Field()]
-    input3: Annotated[Optional[datetime], Field()]
+    input3: Annotated[Optional[datetime], Field()] = None
 
 
 class CallThreeDateTimesMethodResponse(BaseModel):
@@ -1432,7 +1432,7 @@ class CallThreeDateTimesMethodResponse(BaseModel):
         ),
     ]
     output2: Annotated[datetime, Field()]
-    output3: Annotated[Optional[datetime], Field()]
+    output3: Annotated[Optional[datetime], Field()] = None
 
 
 class CallOneDurationMethodRequest(BaseModel):
@@ -1462,7 +1462,7 @@ class CallOptionalDurationMethodRequest(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[timedelta], Field()]
+    input1: Annotated[Optional[timedelta], Field()] = None
 
 
 class CallOptionalDurationMethodResponse(BaseModel):
@@ -1472,7 +1472,7 @@ class CallOptionalDurationMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[timedelta], Field()]
+    output1: Annotated[Optional[timedelta], Field()] = None
 
 
 class CallThreeDurationsMethodRequest(BaseModel):
@@ -1489,7 +1489,7 @@ class CallThreeDurationsMethodRequest(BaseModel):
         ),
     ]
     input2: Annotated[timedelta, Field()]
-    input3: Annotated[Optional[timedelta], Field()]
+    input3: Annotated[Optional[timedelta], Field()] = None
 
 
 class CallThreeDurationsMethodResponse(BaseModel):
@@ -1506,7 +1506,7 @@ class CallThreeDurationsMethodResponse(BaseModel):
         ),
     ]
     output2: Annotated[timedelta, Field()]
-    output3: Annotated[Optional[timedelta], Field()]
+    output3: Annotated[Optional[timedelta], Field()] = None
 
 
 class CallOneBinaryMethodRequest(BaseModel):
@@ -1536,7 +1536,7 @@ class CallOptionalBinaryMethodRequest(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
+    input1: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
 
 
 class CallOptionalBinaryMethodResponse(BaseModel):
@@ -1546,7 +1546,7 @@ class CallOptionalBinaryMethodResponse(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
+    output1: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
 
 
 class CallThreeBinariesMethodRequest(BaseModel):
@@ -1565,7 +1565,7 @@ class CallThreeBinariesMethodRequest(BaseModel):
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
     input2: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
-    input3: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
+    input3: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
 
 
 class CallThreeBinariesMethodResponse(BaseModel):
@@ -1584,7 +1584,7 @@ class CallThreeBinariesMethodResponse(BaseModel):
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
     output2: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
-    output3: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
+    output3: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
 
 
 class CallOneListOfIntegersMethodRequest(BaseModel):
@@ -1617,7 +1617,7 @@ class CallOptionalListOfFloatsMethodRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    input1: Annotated[Optional[List[float]], Field()]
+    input1: Annotated[Optional[List[float]], Field()] = None
 
 
 class CallOptionalListOfFloatsMethodResponse(BaseModel):
@@ -1628,7 +1628,7 @@ class CallOptionalListOfFloatsMethodResponse(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    output1: Annotated[Optional[List[float]], Field()]
+    output1: Annotated[Optional[List[float]], Field()] = None
 
 
 class CallTwoListsMethodRequest(BaseModel):
@@ -1646,7 +1646,7 @@ class CallTwoListsMethodRequest(BaseModel):
         ),
     ]
 
-    input2: Annotated[Optional[List[str]], Field()]
+    input2: Annotated[Optional[List[str]], Field()] = None
 
 
 class CallTwoListsMethodResponse(BaseModel):
@@ -1664,4 +1664,4 @@ class CallTwoListsMethodResponse(BaseModel):
         ),
     ]
 
-    output2: Annotated[Optional[List[str]], Field()]
+    output2: Annotated[Optional[List[str]], Field()] = None

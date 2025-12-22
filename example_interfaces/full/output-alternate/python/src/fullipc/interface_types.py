@@ -61,7 +61,7 @@ class Lunch(BaseModel):
     sandwich: Annotated[str, Field()]
     crackers: Annotated[float, Field()]
     day: Annotated[DayOfTheWeek, Field()]
-    order_number: Annotated[Optional[int], Field()]
+    order_number: Annotated[Optional[int], Field()] = None
     time_of_lunch: Annotated[datetime, Field()]
     duration_of_lunch: Annotated[timedelta, Field()]
 
@@ -99,7 +99,7 @@ class FavoriteFoodsProperty(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     drink: Annotated[str, Field()]
     slices_of_pizza: Annotated[int, Field()]
-    breakfast: Annotated[Optional[str], Field()]
+    breakfast: Annotated[Optional[str], Field()] = None
 
 
 class LunchMenuProperty(BaseModel):
@@ -144,8 +144,8 @@ class LastBirthdaysProperty(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     mom: Annotated[datetime, Field()]
     dad: Annotated[datetime, Field()]
-    sister: Annotated[Optional[datetime], Field()]
-    brothers_age: Annotated[Optional[int], Field()]
+    sister: Annotated[Optional[datetime], Field()] = None
+    brothers_age: Annotated[Optional[int], Field()] = None
 
 
 class AddNumbersMethodRequest(BaseModel):
@@ -154,7 +154,7 @@ class AddNumbersMethodRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     first: Annotated[int, Field()]
     second: Annotated[int, Field()]
-    third: Annotated[Optional[int], Field()]
+    third: Annotated[Optional[int], Field()] = None
 
 
 class AddNumbersMethodResponse(BaseModel):

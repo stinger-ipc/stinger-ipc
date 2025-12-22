@@ -67,7 +67,7 @@ class MaybeNumberSignalPayload(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    number: Annotated[Optional[int], Field()]
+    number: Annotated[Optional[int], Field()] = None
 
 
 class MaybeNameSignalPayload(BaseModel):
@@ -77,7 +77,7 @@ class MaybeNameSignalPayload(BaseModel):
     """
 
     model_config = ConfigDict(populate_by_name=True)
-    name: Annotated[Optional[str], Field()]
+    name: Annotated[Optional[str], Field()] = None
 
 
 class NowSignalPayload(BaseModel):
