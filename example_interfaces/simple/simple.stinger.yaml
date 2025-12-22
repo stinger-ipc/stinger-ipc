@@ -17,7 +17,7 @@ structures:
       - name: gender
         type: enum
         enumName: gender
-        documentation: The gender of the person
+        documentation: The gender of the person.
 
 enums:
 
@@ -46,7 +46,7 @@ methods:
     returnValues:
       - name: my_number
         type: integer
-        documentation: My favorite number.
+        documentation: My favorite number
 
 properties:
 

@@ -8,9 +8,6 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
-
-
-
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta, UTC
 
@@ -19,11 +16,13 @@ import base64
 from enum import IntEnum
 from typing import Annotated
 
+
 def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
-    """ If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
+    """If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
     if isinstance(value, str):
         return base64.b64decode(value)
     return value
+
 
 class InterfaceInfo(BaseModel):
     interface_name: str = Field(default="Simple")
@@ -35,53 +34,44 @@ class InterfaceInfo(BaseModel):
 
 
 class Gender(IntEnum):
-    """ Interface enum `gender`."""
+    """Interface enum `gender`."""
+
     MALE = 1
     FEMALE = 2
     OTHER = 3
 
+
 class Person(BaseModel):
-    """ Interface struct `person`. """
-    
+    """Interface struct `person`."""
+
     model_config = ConfigDict(populate_by_name=True)
     name: Annotated[str, Field()]
     gender: Annotated[Gender, Field()]
 
 
-
 class PersonEnteredSignalPayload(BaseModel):
-    """ Interface signal `person_entered`. 
-    """
-    
+    """Interface signal `person_entered`."""
+
     model_config = ConfigDict(populate_by_name=True)
     person: Annotated[Person, Field()]
 
 
-
 class SchoolProperty(BaseModel):
-    """ Interface property `school` (multi-value struct).
-    """
-    
+    """Interface property `school` (multi-value struct)."""
+
     model_config = ConfigDict(populate_by_name=True)
     name: Annotated[str, Field()]
 
 
-
 class TradeNumbersMethodRequest(BaseModel):
-    """ Interface method `trade_numbers` request object. 
-    """
-    
+    """Interface method `trade_numbers` request object."""
+
     model_config = ConfigDict(populate_by_name=True)
     your_number: Annotated[int, Field()]
 
 
-
-
 class TradeNumbersMethodResponse(BaseModel):
-    """ Interface method `trade_numbers` response object. 
-    """
-    
+    """Interface method `trade_numbers` response object."""
+
     model_config = ConfigDict(populate_by_name=True)
     my_number: Annotated[int, Field()]
-
-
