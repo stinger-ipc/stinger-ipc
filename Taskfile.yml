@@ -4,7 +4,7 @@ version: '3'
 
 vars:
   THREADS: '{{default "16" .THREADS}}'
-  INTERFACES: [full, simple, testable, signal_only]
+  INTERFACES: [full, simple, testable, signal_only, weather]
 
 tasks:
   default:
@@ -42,7 +42,7 @@ tasks:
       - example_interfaces/{{.IFACE}}/output-alternate/python/**
     cmds:
       - mkdir -p ./example_interfaces/{{.IFACE}}/output-alternate/python/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config example_interfaces/alternate.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output-alternate/python/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/alternates.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output-alternate/python/
       - uv run black ./example_interfaces/{{.IFACE}}/output-alternate/python/
     vars:
       IFACE: '{{index .MATCH 0}}'
@@ -50,9 +50,9 @@ tasks:
   python:generate-all:
     desc: Generate Python code for all interfaces
     deps:
-      - for: [full, simple, testable, signal_only]
+      - for: { var: INTERFACES }
         task: python:generate:{{ .ITEM }}
-      - for: [full, simple, testable, signal_only]
+      - for: { var: INTERFACES }
         task: python-alternate:generate:{{ .ITEM }}
 
   cpp:generate:*:
@@ -84,7 +84,7 @@ tasks:
   cpp:compile-all:
     desc: Compile C++ code for all interfaces
     deps:
-      - for: [full, simple, testable, signal_only]
+      - for: { var: INTERFACES }
         task: cpp:compile:{{ .ITEM }}
   
   rust:generate:*:
@@ -118,7 +118,7 @@ tasks:
   rust:check-all:
     desc: Check Rust code for all interfaces
     deps:
-      - for: [full, simple, testable, signal_only]
+      - for: { var: INTERFACES }
         task: rust:check:{{ .ITEM }}
 
   markdown:generate:*:
@@ -137,7 +137,7 @@ tasks:
   markdown:generate-all:
     desc: Generate markdown documentation for all interfaces
     deps:
-      - for: [full, simple, testable, signal_only]
+      - for: { var: INTERFACES }
         task: markdown:generate:{{ .ITEM }}
 
   web:generate:*:
@@ -156,7 +156,7 @@ tasks:
   web:generate-all:
     desc: Generate web documentation for all interfaces
     deps:
-      - for: [full, simple, testable, signal_only]
+      - for: { var: INTERFACES }
         task: web:generate:{{ .ITEM }}
   
   protobuf:generate:*:
@@ -175,7 +175,7 @@ tasks:
   protobuf:generate-all:
     desc: Generate Protobuf code for all interfaces
     deps:
-      - for: [full, simple, testable, signal_only]
+      - for: { var: INTERFACES }
         task: protobuf:generate:{{ .ITEM }}
   
   clean:

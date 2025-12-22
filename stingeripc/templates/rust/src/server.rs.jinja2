@@ -20,9 +20,9 @@ use tokio::sync::{oneshot};
 {%if stinger.methods|length > 0 %}
 use std::any::Any;
 use async_trait::async_trait;
+{%endif%}
 use tokio::sync::{Mutex as AsyncMutex};
 use std::sync::{Arc, Mutex};
-{%endif%}
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
 use serde_json;
 use tokio::sync::{broadcast{%if stinger.properties|length > 0 %}, watch{%endif%}};
@@ -30,10 +30,10 @@ use tokio::sync::{broadcast{%if stinger.properties|length > 0 %}, watch{%endif%}
 {%if stinger.properties | length > 0%}
 use std::sync::atomic::{AtomicU32, Ordering};
 use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
+use stinger_rwlock_watch::{RwLockWatch};
 {%endif%}
 use stinger_mqtt_trait::{Mqtt5PubSub, MqttPublishSuccess, Mqtt5PubSubError};
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
-use stinger_rwlock_watch::{RwLockWatch};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::{WriteRequestLockWatch, CommitResult};
 use tokio::task::JoinError;
@@ -73,7 +73,7 @@ struct {{stinger.name | UpperCamelCase}}Properties {
     {%-endfor%}
 }
 {%endif%}{# if any properties #}
-
+{%-endif%}{# any methods or properties #}
 
 #[cfg(feature = "metrics")]
 #[derive(Debug, Serialize)]
@@ -102,7 +102,6 @@ impl Default for {{stinger.name | UpperCamelCase }}ServerMetrics {
     }
 }
 
-{%endif%}{# any methods or properties #}
 #[derive(Clone)]
 pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
     mqtt_client: C,

@@ -4,7 +4,7 @@ version = "{{stinger.version}}"
 edition = "2021"
 
 [features]
-default = []
+default = ["payloads"]
 client = ["payloads", "tracing", "tracing-subscriber", "stinger-rwlock-watch/read_only", "stinger-rwlock-watch/write_request"]
 server = ["payloads", "async-trait", "tracing", "tracing-subscriber", "stinger-mqtt-trait/availability_publish", "stinger-rwlock-watch/write_request"]
 payloads = []

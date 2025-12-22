@@ -263,7 +263,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
     fn try_publish_discovered_service(
         service_in_discovery: &ServiceInDiscovery,
         notification_tx: &broadcast::Sender<DiscoveredService>,
-        #[cfg(feature = "metrics")] metrics: &Arc<Mutex<SimpleDiscoveryMetrics>>,
+        #[cfg(feature = "metrics")] metrics: &Arc<Mutex<WeatherDiscoveryMetrics>>,
     ) {
         // Check if this completes the discovery
 
@@ -286,7 +286,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
         mut message_rx: broadcast::Receiver<MqttMessage>,
         instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
         notification_tx: broadcast::Sender<DiscoveredService>,
-        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
+        #[cfg(feature = "metrics")] metrics: Arc<Mutex<WeatherDiscoveryMetrics>>,
     ) -> JoinHandle<()> {
         tokio::spawn(async move {
             debug!("Listening for discovery messages");
@@ -565,7 +565,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> WeatherDiscovery<C> {
         message: MqttMessage,
         instances_in_discovery: &Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
         notification_tx: &broadcast::Sender<DiscoveredService>,
-        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
+        #[cfg(feature = "metrics")] metrics: Arc<Mutex<WeatherDiscoveryMetrics>>,
     ) {
         if message.payload.is_empty() {
             info!("Service represented by {} is now offline", message.topic);
