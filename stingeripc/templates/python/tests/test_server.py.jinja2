@@ -13,7 +13,7 @@ from {{stinger.python.package_name}}.server import {{stinger.name | UpperCamelCa
 {%if stinger.properties | length > 0 -%}
 from {{stinger.python.package_name}}.property import {%if not config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{{stinger.name | UpperCamelCase}}InitialPropertyValues
 {%endif-%}
-from {{stinger.name | snake_case}}ipc.interface_types import *
+from {{stinger.name | loweronly}}ipc.interface_types import *
 from stinger_python_utils.return_codes import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message

@@ -566,6 +566,12 @@ class FullServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method addNumbers")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'addNumbers' method")
+                self._conn.publish(err_msg)
 
     def handle_do_something(self, handler: Callable[[str], DoSomethingMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'doSomething' method calls."""
@@ -628,6 +634,12 @@ class FullServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method doSomething")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'doSomething' method")
+                self._conn.publish(err_msg)
 
     def handle_what_time_is_it(self, handler: Callable[[], datetime]):
         """This is a decorator to decorate a method that will handle the 'what_time_is_it' method calls."""
@@ -689,6 +701,12 @@ class FullServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method what_time_is_it")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'what_time_is_it' method")
+                self._conn.publish(err_msg)
 
     def handle_hold_temperature(self, handler: Callable[[float], bool]):
         """This is a decorator to decorate a method that will handle the 'hold_temperature' method calls."""
@@ -752,6 +770,12 @@ class FullServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method hold_temperature")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'hold_temperature' method")
+                self._conn.publish(err_msg)
 
     @property
     def favorite_number(self) -> Optional[int]:

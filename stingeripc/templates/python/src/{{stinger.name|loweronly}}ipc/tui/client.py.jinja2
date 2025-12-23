@@ -8,8 +8,8 @@ from textual.app import ComposeResult # typing: ignore
 from textual.screen import Screen, ModalScreen # typing: ignore
 from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label # typing: ignore
 from textual.containers import Horizontal, VerticalScroll, Vertical # typing: ignore
-from {{stinger.name|snake_case}}ipc.interface_types import *
-from {{stinger.name|snake_case}}ipc.client import {{stinger.name|UpperCamelCase}}Client
+from {{stinger.name|loweronly}}ipc.interface_types import *
+from {{stinger.name|loweronly}}ipc.client import {{stinger.name|UpperCamelCase}}Client
 
 class PropertyEditModal(ModalScreen[bool]):
     """Modal screen for editing a property value."""

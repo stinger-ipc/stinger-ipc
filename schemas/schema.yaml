@@ -39,6 +39,9 @@ properties:
         maxLength: 32
       documentation:
         $ref: "#/$defs/documentation"
+      license:
+        type: string
+        description: "The license or copyright under which this interface is provided.  All generated code will be subject to this license."
     required:
       - name
       - version

@@ -552,6 +552,12 @@ class WeatherServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method refresh_daily_forecast")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'refresh_daily_forecast' method")
+                self._conn.publish(err_msg)
 
     def handle_refresh_hourly_forecast(self, handler: Callable[[], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_hourly_forecast' method calls."""
@@ -610,6 +616,12 @@ class WeatherServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method refresh_hourly_forecast")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'refresh_hourly_forecast' method")
+                self._conn.publish(err_msg)
 
     def handle_refresh_current_conditions(self, handler: Callable[[], None]):
         """This is a decorator to decorate a method that will handle the 'refresh_current_conditions' method calls."""
@@ -668,6 +680,12 @@ class WeatherServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method refresh_current_conditions")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'refresh_current_conditions' method")
+                self._conn.publish(err_msg)
 
     @property
     def location(self) -> LocationProperty:

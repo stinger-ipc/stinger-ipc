@@ -269,6 +269,12 @@ class SimpleServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method trade_numbers")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'trade_numbers' method")
+                self._conn.publish(err_msg)
 
     @property
     def school(self) -> Optional[str]:

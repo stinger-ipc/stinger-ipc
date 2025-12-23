@@ -8,11 +8,11 @@ from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{
 {%if config.python.python37 %}
 UTC = timezone.utc
 {%endif%}
-from {{stinger.name | snake_case}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance
+from {{stinger.name | loweronly}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance
 {%if stinger.properties | length > 0 -%}
-from {{stinger.name | snake_case}}ipc.property import {{stinger.name | UpperCamelCase}}InitialPropertyValues
+from {{stinger.name | loweronly}}ipc.property import {{stinger.name | UpperCamelCase}}InitialPropertyValues
 {%endif-%}
-from {{stinger.name | snake_case}}ipc.interface_types import *
+from {{stinger.name | loweronly}}ipc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
 from typing import Dict, Any

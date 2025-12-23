@@ -4,7 +4,7 @@ from typing import Optional
 from textual.app import App # typing: ignore
 from textual.screen import Screen # typing: ignore
 from pyqttier.connection import Mqtt5Connection
-from {{stinger.name|snake_case}}ipc.client import {{stinger.name|UpperCamelCase}}Client
+from {{stinger.name|loweronly}}ipc.client import {{stinger.name|UpperCamelCase}}Client
 
 
 class {{stinger.name|UpperCamelCase}}IPCApp(App):
@@ -23,9 +23,9 @@ class {{stinger.name|UpperCamelCase}}IPCApp(App):
     def on_mount(self) -> None:
         """Start with the connection screen."""
         # Import screens here to avoid circular imports
-        from {{stinger.name|snake_case}}ipc.tui.connection import ConnectionScreen
-        from {{stinger.name|snake_case}}ipc.tui.discovery import DiscoveryScreen
-        from {{stinger.name|snake_case}}ipc.tui.client import ClientScreen
+        from {{stinger.name|loweronly}}ipc.tui.connection import ConnectionScreen
+        from {{stinger.name|loweronly}}ipc.tui.discovery import DiscoveryScreen
+        from {{stinger.name|loweronly}}ipc.tui.client import ClientScreen
         
         # Install screens
         self.install_screen(ConnectionScreen(), name="connection")

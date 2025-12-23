@@ -2566,6 +2566,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callWithNothing")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callWithNothing' method")
+                self._conn.publish(err_msg)
 
     def handle_call_one_integer(self, handler: Callable[[int], int]):
         """This is a decorator to decorate a method that will handle the 'callOneInteger' method calls."""
@@ -2629,6 +2635,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOneInteger")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneInteger' method")
+                self._conn.publish(err_msg)
 
     def handle_call_optional_integer(self, handler: Callable[[Optional[int]], Optional[int]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalInteger' method calls."""
@@ -2692,6 +2704,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOptionalInteger")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalInteger' method")
+                self._conn.publish(err_msg)
 
     def handle_call_three_integers(self, handler: Callable[[int, int, Optional[int]], CallThreeIntegersMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeIntegers' method calls."""
@@ -2756,6 +2774,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callThreeIntegers")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeIntegers' method")
+                self._conn.publish(err_msg)
 
     def handle_call_one_string(self, handler: Callable[[str], str]):
         """This is a decorator to decorate a method that will handle the 'callOneString' method calls."""
@@ -2819,6 +2843,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOneString")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneString' method")
+                self._conn.publish(err_msg)
 
     def handle_call_optional_string(self, handler: Callable[[Optional[str]], Optional[str]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalString' method calls."""
@@ -2882,6 +2912,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOptionalString")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalString' method")
+                self._conn.publish(err_msg)
 
     def handle_call_three_strings(self, handler: Callable[[str, Optional[str], str], CallThreeStringsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeStrings' method calls."""
@@ -2946,6 +2982,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callThreeStrings")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeStrings' method")
+                self._conn.publish(err_msg)
 
     def handle_call_one_enum(self, handler: Callable[[Numbers], Numbers]):
         """This is a decorator to decorate a method that will handle the 'callOneEnum' method calls."""
@@ -3009,6 +3051,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOneEnum")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneEnum' method")
+                self._conn.publish(err_msg)
 
     def handle_call_optional_enum(self, handler: Callable[[Optional[Numbers]], Optional[Numbers]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalEnum' method calls."""
@@ -3072,6 +3120,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOptionalEnum")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalEnum' method")
+                self._conn.publish(err_msg)
 
     def handle_call_three_enums(self, handler: Callable[[Numbers, Numbers, Optional[Numbers]], CallThreeEnumsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeEnums' method calls."""
@@ -3136,6 +3190,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callThreeEnums")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeEnums' method")
+                self._conn.publish(err_msg)
 
     def handle_call_one_struct(self, handler: Callable[[AllTypes], AllTypes]):
         """This is a decorator to decorate a method that will handle the 'callOneStruct' method calls."""
@@ -3199,6 +3259,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOneStruct")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneStruct' method")
+                self._conn.publish(err_msg)
 
     def handle_call_optional_struct(self, handler: Callable[[AllTypes], AllTypes]):
         """This is a decorator to decorate a method that will handle the 'callOptionalStruct' method calls."""
@@ -3262,6 +3328,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOptionalStruct")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalStruct' method")
+                self._conn.publish(err_msg)
 
     def handle_call_three_structs(self, handler: Callable[[AllTypes, AllTypes, AllTypes], CallThreeStructsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeStructs' method calls."""
@@ -3326,6 +3398,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callThreeStructs")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeStructs' method")
+                self._conn.publish(err_msg)
 
     def handle_call_one_date_time(self, handler: Callable[[datetime], datetime]):
         """This is a decorator to decorate a method that will handle the 'callOneDateTime' method calls."""
@@ -3389,6 +3467,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOneDateTime")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneDateTime' method")
+                self._conn.publish(err_msg)
 
     def handle_call_optional_date_time(self, handler: Callable[[Optional[datetime]], Optional[datetime]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalDateTime' method calls."""
@@ -3452,6 +3536,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOptionalDateTime")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalDateTime' method")
+                self._conn.publish(err_msg)
 
     def handle_call_three_date_times(self, handler: Callable[[datetime, datetime, Optional[datetime]], CallThreeDateTimesMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeDateTimes' method calls."""
@@ -3516,6 +3606,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callThreeDateTimes")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeDateTimes' method")
+                self._conn.publish(err_msg)
 
     def handle_call_one_duration(self, handler: Callable[[timedelta], timedelta]):
         """This is a decorator to decorate a method that will handle the 'callOneDuration' method calls."""
@@ -3579,6 +3675,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOneDuration")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneDuration' method")
+                self._conn.publish(err_msg)
 
     def handle_call_optional_duration(self, handler: Callable[[Optional[timedelta]], Optional[timedelta]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalDuration' method calls."""
@@ -3642,6 +3744,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOptionalDuration")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalDuration' method")
+                self._conn.publish(err_msg)
 
     def handle_call_three_durations(self, handler: Callable[[timedelta, timedelta, Optional[timedelta]], CallThreeDurationsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeDurations' method calls."""
@@ -3706,6 +3814,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callThreeDurations")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeDurations' method")
+                self._conn.publish(err_msg)
 
     def handle_call_one_binary(self, handler: Callable[[bytes], bytes]):
         """This is a decorator to decorate a method that will handle the 'callOneBinary' method calls."""
@@ -3769,6 +3883,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOneBinary")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneBinary' method")
+                self._conn.publish(err_msg)
 
     def handle_call_optional_binary(self, handler: Callable[[bytes], bytes]):
         """This is a decorator to decorate a method that will handle the 'callOptionalBinary' method calls."""
@@ -3832,6 +3952,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOptionalBinary")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalBinary' method")
+                self._conn.publish(err_msg)
 
     def handle_call_three_binaries(self, handler: Callable[[bytes, bytes, bytes], CallThreeBinariesMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callThreeBinaries' method calls."""
@@ -3896,6 +4022,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callThreeBinaries")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeBinaries' method")
+                self._conn.publish(err_msg)
 
     def handle_call_one_list_of_integers(self, handler: Callable[[List[int]], List[int]]):
         """This is a decorator to decorate a method that will handle the 'callOneListOfIntegers' method calls."""
@@ -3959,6 +4091,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOneListOfIntegers")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneListOfIntegers' method")
+                self._conn.publish(err_msg)
 
     def handle_call_optional_list_of_floats(self, handler: Callable[[List[float]], List[float]]):
         """This is a decorator to decorate a method that will handle the 'callOptionalListOfFloats' method calls."""
@@ -4022,6 +4160,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callOptionalListOfFloats")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalListOfFloats' method")
+                self._conn.publish(err_msg)
 
     def handle_call_two_lists(self, handler: Callable[[List[Numbers], List[str]], CallTwoListsMethodResponse]):
         """This is a decorator to decorate a method that will handle the 'callTwoLists' method calls."""
@@ -4085,6 +4229,12 @@ class TestableServer:
                 if response_topic is not None:
                     msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method callTwoLists")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callTwoLists' method")
+                self._conn.publish(err_msg)
 
     @property
     def read_write_integer(self) -> Optional[int]:
