@@ -4,7 +4,7 @@ from typing import Optional
 from textual.app import App  # typing: ignore
 from textual.screen import Screen  # typing: ignore
 from pyqttier.connection import Mqtt5Connection
-from signal_onlyipc.client import SignalOnlyClient
+from signalonlyipc.client import SignalOnlyClient
 
 
 class SignalOnlyIPCApp(App):
@@ -23,9 +23,9 @@ class SignalOnlyIPCApp(App):
     def on_mount(self) -> None:
         """Start with the connection screen."""
         # Import screens here to avoid circular imports
-        from signal_onlyipc.tui.connection import ConnectionScreen
-        from signal_onlyipc.tui.discovery import DiscoveryScreen
-        from signal_onlyipc.tui.client import ClientScreen
+        from signalonlyipc.tui.connection import ConnectionScreen
+        from signalonlyipc.tui.discovery import DiscoveryScreen
+        from signalonlyipc.tui.client import ClientScreen
 
         # Install screens
         self.install_screen(ConnectionScreen(), name="connection")

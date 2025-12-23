@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 UTC = timezone.utc
 
 from signalonlyipc.server import SignalOnlyServer
-from signal_onlyipc.interface_types import *
+from signalonlyipc.interface_types import *
 from stinger_python_utils.return_codes import *
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message

@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 from datetime import datetime, timedelta, UTC
 
-from signal_onlyipc.client import SignalOnlyClient, DiscoveredInstance
-from signal_onlyipc.interface_types import *
+from signalonlyipc.client import SignalOnlyClient, DiscoveredInstance
+from signalonlyipc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
 from typing import Dict, Any

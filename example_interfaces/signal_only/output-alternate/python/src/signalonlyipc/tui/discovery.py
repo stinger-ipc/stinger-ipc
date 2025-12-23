@@ -6,7 +6,7 @@ from textual.screen import Screen  # typing: ignore
 from textual.widgets import Header, Footer, Static, Button  # typing: ignore
 from textual.containers import Grid, Container  # typing: ignore
 from textual.reactive import reactive  # typing: ignore
-from signal_onlyipc.client import SignalOnlyClientDiscoverer, DiscoveredInstance, SignalOnlyClient
+from signalonlyipc.client import SignalOnlyClientDiscoverer, DiscoveredInstance, SignalOnlyClient
 import logging
 
 logger = logging.getLogger(__name__)

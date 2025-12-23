@@ -8,8 +8,8 @@ from textual.app import ComposeResult  # typing: ignore
 from textual.screen import Screen, ModalScreen  # typing: ignore
 from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label  # typing: ignore
 from textual.containers import Horizontal, VerticalScroll, Vertical  # typing: ignore
-from signal_onlyipc.interface_types import *
-from signal_onlyipc.client import SignalOnlyClient
+from signalonlyipc.interface_types import *
+from signalonlyipc.client import SignalOnlyClient
 
 
 class PropertyEditModal(ModalScreen[bool]):
