@@ -11,6 +11,7 @@ tasks:
     desc: Generate and compile all interfaces
     deps:
       - task: python:generate-all
+      - task: python:unittest-all
       - task: cpp:compile-all
       - task: rust:check-all
       - task: markdown:generate-all
@@ -54,6 +55,25 @@ tasks:
         task: python:generate:{{ .ITEM }}
       - for: { var: INTERFACES }
         task: python-alternate:generate:{{ .ITEM }}
+
+  python:unittest:*:
+    desc: Run Python unit tests for an interface
+    dir: example_interfaces/{{.IFACE}}/output/python/
+    deps:
+      - task: python:generate:{{index .MATCH 0}}
+    sources:
+      - example_interfaces/{{.IFACE}}/output/python/tests/**
+      - example_interfaces/{{.IFACE}}/output/python/src/**
+    cmds:
+      - uv run pytest
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python:unittest-all:
+    desc: Run Python unit tests for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: python:unittest:{{ .ITEM }}
 
   cpp:generate:*:
     desc: Generate C++ code for an interface

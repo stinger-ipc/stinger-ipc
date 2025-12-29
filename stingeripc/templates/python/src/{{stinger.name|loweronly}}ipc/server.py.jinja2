@@ -24,6 +24,7 @@ logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from pyqttier.interface import IBrokerConnection
+from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import *
 from .interface_types import *
@@ -97,7 +98,9 @@ class {{stinger.python.server_class_name}}:
         self._conn.subscribe("{{method.topic}}".format(self._instance_id), self._process_{{method_name | snake_case}}_call)
         self._method_{{method_name|snake_case}}_handler = None # type: Optional[{{method_type_annotation(method)}}]
         {%endfor%}
+        {%-if stinger.properties|length > 0 %}
         self._publish_all_properties()
+        {%-endif%}
         self._logger.debug("Starting interface advertisement thread")
         self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info, daemon=True)
         self._advertise_thread.start()

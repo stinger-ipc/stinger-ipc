@@ -54,7 +54,7 @@ class FullServerSetup:
         return initial_property_values
 
     def create_server(self, mock_connection) -> FullServer:
-        server = FullServer(mock_connection, "test_instance", self.get_initial_property_values())
+        server = FullServer(mock_connection, "test_instance", self.initial_property_values)
         return server
 
 
@@ -944,7 +944,7 @@ class TestFullServerProperties:
         prop_data = {
             "mom": datetime.now(UTC),
             "dad": datetime.now(UTC),
-            "sister": datetime.now(UTC),
+            "sister": None,
             "brothers_age": 2022,
         }
         prop_obj = LastBirthdaysProperty(**prop_data)  # type: ignore[arg-type]

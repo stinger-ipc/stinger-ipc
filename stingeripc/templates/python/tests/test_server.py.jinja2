@@ -29,6 +29,7 @@ def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
 class {{stinger.name|UpperCamelCase}}ServerSetup:
 
     def __init__(self):
+        {%-if stinger.properties | length > 0 %}
         self.initial_property_values = self.get_initial_property_values()
         {%if not config.properties.stinger_owned_values %}
         {%-for prop_name, prop in stinger.properties.items()%}
@@ -36,6 +37,9 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
         {%-endfor%} {# end property foreach #}
         self.reset_modified_flags()
         {%-endif%} {# end app-owned values #}
+        {%else%}
+        ...
+        {%endif%}
 
     {%-if stinger.properties | length > 0 %}
     def get_initial_property_values(self) -> {{stinger.name|UpperCamelCase}}InitialPropertyValues:
@@ -75,7 +79,7 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
             mock_connection, 
             "test_instance", 
             {%if stinger.properties|length > 0%}
-            {%-if config.properties.stinger_owned_values %}self.get_initial_property_values(){%else%}self.get_property_access(){%endif%}
+            {%-if config.properties.stinger_owned_values %}self.initial_property_values{%else%}self.get_property_access(){%endif%}
             {%-endif%}
         )
         return server

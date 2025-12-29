@@ -23,6 +23,7 @@ logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from pyqttier.interface import IBrokerConnection
+from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import *
 from .interface_types import *
@@ -41,7 +42,6 @@ class SignalOnlyServer:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
 
-        self._publish_all_properties()
         self._logger.debug("Starting interface advertisement thread")
         self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info, daemon=True)
         self._advertise_thread.start()

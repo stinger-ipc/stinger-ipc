@@ -28,10 +28,7 @@ def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
 
 class SignalOnlyServerSetup:
 
-    def __init__(self):
-        self.initial_property_values = self.get_initial_property_values()
-
-        self.reset_modified_flags()
+    def __init__(self): ...
 
     def create_server(self, mock_connection) -> SignalOnlyServer:
         server = SignalOnlyServer(

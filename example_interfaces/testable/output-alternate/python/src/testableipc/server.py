@@ -25,6 +25,7 @@ logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from pyqttier.interface import IBrokerConnection
+from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import *
 from .interface_types import *
