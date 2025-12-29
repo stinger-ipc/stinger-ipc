@@ -667,12 +667,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_integer.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_integer.version}' of the 'read_write_integer' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteIntegerProperty.model_validate_json(message.payload)
 
@@ -718,12 +726,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_integer.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_integer.version}' of the 'read_write_optional_integer' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(message.payload)
 
@@ -771,12 +787,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_integers.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_integers.version}' of the 'read_write_two_integers' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(message.payload)
 
@@ -824,12 +848,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_string.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_string.version}' of the 'read_write_string' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteStringProperty.model_validate_json(message.payload)
 
@@ -875,12 +907,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_string.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_string.version}' of the 'read_write_optional_string' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteOptionalStringProperty.model_validate_json(message.payload)
 
@@ -928,12 +968,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_strings.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_strings.version}' of the 'read_write_two_strings' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteTwoStringsProperty.model_validate_json(message.payload)
 
@@ -981,12 +1029,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_struct.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_struct.version}' of the 'read_write_struct' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteStructProperty.model_validate_json(message.payload)
 
@@ -1032,12 +1088,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_struct.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_struct.version}' of the 'read_write_optional_struct' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteOptionalStructProperty.model_validate_json(message.payload)
 
@@ -1085,12 +1149,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_structs.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_structs.version}' of the 'read_write_two_structs' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteTwoStructsProperty.model_validate_json(message.payload)
 
@@ -1138,10 +1210,18 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_enum.version):
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_enum.version}' of the 'read_write_enum' property")
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteEnumProperty.model_validate_json(message.payload)
 
@@ -1187,12 +1267,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_enum.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_enum.version}' of the 'read_write_optional_enum' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(message.payload)
 
@@ -1240,12 +1328,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_enums.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_enums.version}' of the 'read_write_two_enums' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(message.payload)
 
@@ -1293,12 +1389,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_datetime.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_datetime.version}' of the 'read_write_datetime' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteDatetimeProperty.model_validate_json(message.payload)
 
@@ -1346,12 +1450,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_datetime.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_datetime.version}' of the 'read_write_optional_datetime' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(message.payload)
 
@@ -1399,12 +1511,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_datetimes.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_datetimes.version}' of the 'read_write_two_datetimes' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(message.payload)
 
@@ -1452,12 +1572,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_duration.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_duration.version}' of the 'read_write_duration' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteDurationProperty.model_validate_json(message.payload)
 
@@ -1505,12 +1633,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_duration.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_duration.version}' of the 'read_write_optional_duration' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(message.payload)
 
@@ -1558,12 +1694,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_durations.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_durations.version}' of the 'read_write_two_durations' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(message.payload)
 
@@ -1611,12 +1755,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_binary.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_binary.version}' of the 'read_write_binary' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteBinaryProperty.model_validate_json(message.payload)
 
@@ -1662,12 +1814,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_binary.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_binary.version}' of the 'read_write_optional_binary' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(message.payload)
 
@@ -1715,12 +1875,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_binaries.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_binaries.version}' of the 'read_write_two_binaries' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(message.payload)
 
@@ -1768,12 +1936,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_list_of_strings.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_list_of_strings.version}' of the 'read_write_list_of_strings' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteListOfStringsProperty.model_validate_json(message.payload)
 
@@ -1821,12 +1997,20 @@ class TestableServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_lists.version):
                 raise OutOfSyncStingerMethodException(
                     f"Request version '{prop_version}'' does not match current version '{self._property_read_write_lists.version}' of the 'read_write_lists' property"
                 )
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = ReadWriteListsProperty.model_validate_json(message.payload)
 

@@ -57,7 +57,7 @@ class FullServerSetup:
             last_birthdays=LastBirthdaysProperty(
                 mom=datetime.now(UTC),
                 dad=datetime.now(UTC),
-                sister=None,
+                sister=datetime.now(UTC),
                 brothers_age=42,
             ),
         )
@@ -149,7 +149,7 @@ def server_setup():
 
 @pytest.fixture
 def initial_property_values(server_setup):
-    return server_setup.get_initial_property_values()
+    return server_setup.initial_property_values
 
 
 @pytest.fixture

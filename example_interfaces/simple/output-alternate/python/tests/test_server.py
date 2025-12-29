@@ -73,7 +73,7 @@ def server_setup():
 
 @pytest.fixture
 def initial_property_values(server_setup):
-    return server_setup.get_initial_property_values()
+    return server_setup.initial_property_values
 
 
 @pytest.fixture

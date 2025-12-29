@@ -44,7 +44,7 @@ class Numbers(IntEnum):
 class Entry(BaseModel):
     """Interface struct `entry`."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     key: Annotated[
         int,
         Field(
@@ -62,7 +62,7 @@ class Entry(BaseModel):
 class AllTypes(BaseModel):
     """Interface struct `AllTypes`."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     the_bool: Annotated[bool, Field()]
     the_int: Annotated[int, Field()]
     the_number: Annotated[
@@ -109,18 +109,18 @@ class AllTypes(BaseModel):
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
-    optional_integer: Annotated[Optional[int], Field(description="An optional integer type.", alias="OptionalInteger")] = None
-    optional_string: Annotated[Optional[str], Field(description="An optional string type.", alias="OptionalString")] = None
-    optional_enum: Annotated[Optional[Numbers], Field(description="An optional enum type, one of the numbers.", alias="OptionalEnum")] = None
-    optional_entry_object: Annotated[Optional[Entry], Field(description="An optional struct type.", alias="optionalEntryObject")] = None
-    optional_date_time: Annotated[Optional[datetime], Field(description="An optional date and time type.", alias="OptionalDateTime")] = None
-    optional_duration: Annotated[Optional[timedelta], Field(description="An optional duration type.", alias="OptionalDuration")] = None
+    optional_integer: Annotated[Optional[int], Field(description="An optional integer type.", alias="OptionalInteger")]
+    optional_string: Annotated[Optional[str], Field(description="An optional string type.", alias="OptionalString")]
+    optional_enum: Annotated[Optional[Numbers], Field(description="An optional enum type, one of the numbers.", alias="OptionalEnum")]
+    optional_entry_object: Annotated[Optional[Entry], Field(description="An optional struct type.", alias="optionalEntryObject")]
+    optional_date_time: Annotated[Optional[datetime], Field(description="An optional date and time type.", alias="OptionalDateTime")]
+    optional_duration: Annotated[Optional[timedelta], Field(description="An optional duration type.", alias="OptionalDuration")]
     optional_binary: Annotated[
         Optional[bytes],
         Field(description="An optional binary type.", alias="OptionalBinary"),
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None),
-    ] = None
+    ]
 
     array_of_integers: Annotated[
         List[int],
@@ -134,7 +134,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of integers.",
         ),
-    ] = None
+    ]
 
     array_of_strings: Annotated[
         List[str],
@@ -148,7 +148,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of strings.",
         ),
-    ] = None
+    ]
 
     array_of_enums: Annotated[
         List[Numbers],
@@ -162,7 +162,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of enums.",
         ),
-    ] = None
+    ]
 
     array_of_datetimes: Annotated[
         List[datetime],
@@ -176,7 +176,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of date and time values.",
         ),
-    ] = None
+    ]
 
     array_of_durations: Annotated[
         List[timedelta],
@@ -190,7 +190,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of duration values.",
         ),
-    ] = None
+    ]
 
     array_of_binaries: Annotated[
         List[bytes],
@@ -208,7 +208,7 @@ class AllTypes(BaseModel):
         ),
         PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]),
         PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr]),
-    ] = None
+    ]
 
     array_of_entry_objects: Annotated[
         List[Entry],
@@ -222,7 +222,7 @@ class AllTypes(BaseModel):
         Field(
             description="An optional array of struct values.",
         ),
-    ] = None
+    ]
 
 
 class EmptySignalPayload(BaseModel):
@@ -231,7 +231,7 @@ class EmptySignalPayload(BaseModel):
     A signal with no parameters.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
 
 class SingleIntSignalPayload(BaseModel):
@@ -240,7 +240,7 @@ class SingleIntSignalPayload(BaseModel):
     A signal with a single integer parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         int,
         Field(
@@ -255,13 +255,13 @@ class SingleOptionalIntSignalPayload(BaseModel):
     A signal with a single optional integer parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         Optional[int],
         Field(
             description="The integer value.",
         ),
-    ] = None
+    ]
 
 
 class ThreeIntegersSignalPayload(BaseModel):
@@ -270,7 +270,7 @@ class ThreeIntegersSignalPayload(BaseModel):
     A signal with three integer parameters, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         int,
         Field(
@@ -288,7 +288,7 @@ class ThreeIntegersSignalPayload(BaseModel):
         Field(
             description="The third integer value.",
         ),
-    ] = None
+    ]
 
 
 class SingleStringSignalPayload(BaseModel):
@@ -297,7 +297,7 @@ class SingleStringSignalPayload(BaseModel):
     A signal with a single string parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         str,
         Field(
@@ -312,13 +312,13 @@ class SingleOptionalStringSignalPayload(BaseModel):
     A signal with a single optional string parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         Optional[str],
         Field(
             description="The string value.",
         ),
-    ] = None
+    ]
 
 
 class ThreeStringsSignalPayload(BaseModel):
@@ -327,7 +327,7 @@ class ThreeStringsSignalPayload(BaseModel):
     A signal with three string parameters, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         str,
         Field(
@@ -345,7 +345,7 @@ class ThreeStringsSignalPayload(BaseModel):
         Field(
             description="The third string value.",
         ),
-    ] = None
+    ]
 
 
 class SingleEnumSignalPayload(BaseModel):
@@ -354,7 +354,7 @@ class SingleEnumSignalPayload(BaseModel):
     A signal with a single enum parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         Numbers,
         Field(
@@ -369,13 +369,13 @@ class SingleOptionalEnumSignalPayload(BaseModel):
     A signal with a single optional enum parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         Optional[Numbers],
         Field(
             description="The enum value.",
         ),
-    ] = None
+    ]
 
 
 class ThreeEnumsSignalPayload(BaseModel):
@@ -384,7 +384,7 @@ class ThreeEnumsSignalPayload(BaseModel):
     A signal with three enum parameters, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         Numbers,
         Field(
@@ -402,7 +402,7 @@ class ThreeEnumsSignalPayload(BaseModel):
         Field(
             description="The third enum value.",
         ),
-    ] = None
+    ]
 
 
 class SingleStructSignalPayload(BaseModel):
@@ -411,7 +411,7 @@ class SingleStructSignalPayload(BaseModel):
     A signal with a single struct parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         AllTypes,
         Field(
@@ -426,13 +426,13 @@ class SingleOptionalStructSignalPayload(BaseModel):
     A signal with a single optional struct parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         Optional[AllTypes],
         Field(
             description="The struct value.",
         ),
-    ] = None
+    ]
 
 
 class ThreeStructsSignalPayload(BaseModel):
@@ -441,7 +441,7 @@ class ThreeStructsSignalPayload(BaseModel):
     A signal with three struct parameters, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         AllTypes,
         Field(
@@ -459,7 +459,7 @@ class ThreeStructsSignalPayload(BaseModel):
         Field(
             description="The third struct value.",
         ),
-    ] = None
+    ]
 
 
 class SingleDateTimeSignalPayload(BaseModel):
@@ -468,7 +468,7 @@ class SingleDateTimeSignalPayload(BaseModel):
     A signal with a single date and time parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         datetime,
         Field(
@@ -483,13 +483,13 @@ class SingleOptionalDatetimeSignalPayload(BaseModel):
     A signal with a single optional date and time parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         Optional[datetime],
         Field(
             description="The date and time value.",
         ),
-    ] = None
+    ]
 
 
 class ThreeDateTimesSignalPayload(BaseModel):
@@ -498,7 +498,7 @@ class ThreeDateTimesSignalPayload(BaseModel):
     A signal with three date and time parameters, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         datetime,
         Field(
@@ -516,7 +516,7 @@ class ThreeDateTimesSignalPayload(BaseModel):
         Field(
             description="The third date and time value.",
         ),
-    ] = None
+    ]
 
 
 class SingleDurationSignalPayload(BaseModel):
@@ -525,7 +525,7 @@ class SingleDurationSignalPayload(BaseModel):
     A signal with a single duration parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         timedelta,
         Field(
@@ -540,13 +540,13 @@ class SingleOptionalDurationSignalPayload(BaseModel):
     A signal with a single optional duration parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         Optional[timedelta],
         Field(
             description="The duration value.",
         ),
-    ] = None
+    ]
 
 
 class ThreeDurationsSignalPayload(BaseModel):
@@ -555,7 +555,7 @@ class ThreeDurationsSignalPayload(BaseModel):
     A signal with three duration parameters, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         timedelta,
         Field(
@@ -573,7 +573,7 @@ class ThreeDurationsSignalPayload(BaseModel):
         Field(
             description="The third duration value.",
         ),
-    ] = None
+    ]
 
 
 class SingleBinarySignalPayload(BaseModel):
@@ -582,7 +582,7 @@ class SingleBinarySignalPayload(BaseModel):
     A signal with a single binary parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         bytes,
         Field(
@@ -599,7 +599,7 @@ class SingleOptionalBinarySignalPayload(BaseModel):
     A signal with a single optional binary parameter.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[
         Optional[bytes],
         Field(
@@ -607,7 +607,7 @@ class SingleOptionalBinarySignalPayload(BaseModel):
         ),
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None),
-    ] = None
+    ]
 
 
 class ThreeBinariesSignalPayload(BaseModel):
@@ -616,7 +616,7 @@ class ThreeBinariesSignalPayload(BaseModel):
     A signal with three binary parameters, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         bytes,
         Field(
@@ -640,7 +640,7 @@ class ThreeBinariesSignalPayload(BaseModel):
         ),
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None),
-    ] = None
+    ]
 
 
 class SingleArrayOfIntegersSignalPayload(BaseModel):
@@ -649,7 +649,7 @@ class SingleArrayOfIntegersSignalPayload(BaseModel):
     A signal with an array of integers.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
     values: Annotated[
         List[int],
@@ -665,20 +665,20 @@ class SingleOptionalArrayOfStringsSignalPayload(BaseModel):
     A signal with an optional array of strings.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
     values: Annotated[
         Optional[List[str]],
         Field(
             description="The array of strings.",
         ),
-    ] = None
+    ]
 
 
 class ArrayOfEveryTypeSignalPayload(BaseModel):
     """Interface signal `arrayOfEveryType`."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
     first_of_integers: Annotated[
         List[int],
@@ -745,7 +745,7 @@ class ReadWriteIntegerProperty(BaseModel):
     A read-write integer property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[int, Field()]
 
 
@@ -755,7 +755,7 @@ class ReadOnlyIntegerProperty(BaseModel):
     A read-only integer property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[int, Field()]
 
 
@@ -765,8 +765,8 @@ class ReadWriteOptionalIntegerProperty(BaseModel):
     A read-write optional integer property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[int], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    value: Annotated[Optional[int], Field()]
 
 
 class ReadWriteTwoIntegersProperty(BaseModel):
@@ -775,14 +775,14 @@ class ReadWriteTwoIntegersProperty(BaseModel):
     A read-write property with two integer values. The second is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         int,
         Field(
             description="An integer value.",
         ),
     ]
-    second: Annotated[Optional[int], Field()] = None
+    second: Annotated[Optional[int], Field()]
 
 
 class ReadOnlyStringProperty(BaseModel):
@@ -791,7 +791,7 @@ class ReadOnlyStringProperty(BaseModel):
     A read-only string property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[str, Field()]
 
 
@@ -801,7 +801,7 @@ class ReadWriteStringProperty(BaseModel):
     A read-write string property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[str, Field()]
 
 
@@ -811,8 +811,8 @@ class ReadWriteOptionalStringProperty(BaseModel):
     A read-write optional string property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[str], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    value: Annotated[Optional[str], Field()]
 
 
 class ReadWriteTwoStringsProperty(BaseModel):
@@ -821,14 +821,14 @@ class ReadWriteTwoStringsProperty(BaseModel):
     A read-write property with two string values. The second is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         str,
         Field(
             description="A string value.",
         ),
     ]
-    second: Annotated[Optional[str], Field()] = None
+    second: Annotated[Optional[str], Field()]
 
 
 class ReadWriteStructProperty(BaseModel):
@@ -837,7 +837,7 @@ class ReadWriteStructProperty(BaseModel):
     A read-write struct property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[AllTypes, Field()]
 
 
@@ -847,8 +847,8 @@ class ReadWriteOptionalStructProperty(BaseModel):
     A read-write optional struct property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[AllTypes], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    value: Annotated[Optional[AllTypes], Field()]
 
 
 class ReadWriteTwoStructsProperty(BaseModel):
@@ -857,14 +857,14 @@ class ReadWriteTwoStructsProperty(BaseModel):
     A read-write property with two struct values. The second is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         AllTypes,
         Field(
             description="A struct value.",
         ),
     ]
-    second: Annotated[Optional[AllTypes], Field()] = None
+    second: Annotated[Optional[AllTypes], Field()]
 
 
 class ReadOnlyEnumProperty(BaseModel):
@@ -873,7 +873,7 @@ class ReadOnlyEnumProperty(BaseModel):
     A read-only enum property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[Numbers, Field()]
 
 
@@ -883,7 +883,7 @@ class ReadWriteEnumProperty(BaseModel):
     A read-write enum property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[Numbers, Field()]
 
 
@@ -893,8 +893,8 @@ class ReadWriteOptionalEnumProperty(BaseModel):
     A read-write optional enum property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[Numbers], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    value: Annotated[Optional[Numbers], Field()]
 
 
 class ReadWriteTwoEnumsProperty(BaseModel):
@@ -903,14 +903,14 @@ class ReadWriteTwoEnumsProperty(BaseModel):
     A read-write property with two enum values. The second is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         Numbers,
         Field(
             description="An enum value.",
         ),
     ]
-    second: Annotated[Optional[Numbers], Field()] = None
+    second: Annotated[Optional[Numbers], Field()]
 
 
 class ReadWriteDatetimeProperty(BaseModel):
@@ -919,7 +919,7 @@ class ReadWriteDatetimeProperty(BaseModel):
     A read-write datetime property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[datetime, Field()]
 
 
@@ -929,8 +929,8 @@ class ReadWriteOptionalDatetimeProperty(BaseModel):
     A read-write optional datetime property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[datetime], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    value: Annotated[Optional[datetime], Field()]
 
 
 class ReadWriteTwoDatetimesProperty(BaseModel):
@@ -939,14 +939,14 @@ class ReadWriteTwoDatetimesProperty(BaseModel):
     A read-write property with two datetime values. The second is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         datetime,
         Field(
             description="A date and time value.",
         ),
     ]
-    second: Annotated[Optional[datetime], Field()] = None
+    second: Annotated[Optional[datetime], Field()]
 
 
 class ReadWriteDurationProperty(BaseModel):
@@ -955,7 +955,7 @@ class ReadWriteDurationProperty(BaseModel):
     A read-write duration property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[timedelta, Field()]
 
 
@@ -965,8 +965,8 @@ class ReadWriteOptionalDurationProperty(BaseModel):
     A read-write optional duration property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[timedelta], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    value: Annotated[Optional[timedelta], Field()]
 
 
 class ReadWriteTwoDurationsProperty(BaseModel):
@@ -975,14 +975,14 @@ class ReadWriteTwoDurationsProperty(BaseModel):
     A read-write property with two duration values. The second is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         timedelta,
         Field(
             description="A duration of time.",
         ),
     ]
-    second: Annotated[Optional[timedelta], Field()] = None
+    second: Annotated[Optional[timedelta], Field()]
 
 
 class ReadWriteBinaryProperty(BaseModel):
@@ -991,7 +991,7 @@ class ReadWriteBinaryProperty(BaseModel):
     A read-write binary property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     value: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
 
 
@@ -1001,8 +1001,8 @@ class ReadWriteOptionalBinaryProperty(BaseModel):
     A read-write optional binary property.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    value: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    value: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
 
 
 class ReadWriteTwoBinariesProperty(BaseModel):
@@ -1011,7 +1011,7 @@ class ReadWriteTwoBinariesProperty(BaseModel):
     A read-write property with two binary values.  The second is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     first: Annotated[
         bytes,
         Field(
@@ -1020,7 +1020,7 @@ class ReadWriteTwoBinariesProperty(BaseModel):
         PlainValidator(base64_decode_if_str),
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
-    second: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
+    second: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
 
 
 class ReadWriteListOfStringsProperty(BaseModel):
@@ -1029,7 +1029,7 @@ class ReadWriteListOfStringsProperty(BaseModel):
     A read-write property that is a list of strings.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
     value: Annotated[List[str], Field()]
 
@@ -1040,11 +1040,11 @@ class ReadWriteListsProperty(BaseModel):
     A read-write property containing two lists.  The second list is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
     the_list: Annotated[List[Numbers], Field()]
 
-    optional_list: Annotated[Optional[List[datetime]], Field(alias="optionalList")] = None
+    optional_list: Annotated[Optional[List[datetime]], Field(alias="optionalList")]
 
 
 class CallWithNothingMethodRequest(BaseModel):
@@ -1053,7 +1053,7 @@ class CallWithNothingMethodRequest(BaseModel):
     Method that takes no arguments and returns nothing.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
 
 class CallWithNothingMethodResponse(BaseModel):
@@ -1062,7 +1062,7 @@ class CallWithNothingMethodResponse(BaseModel):
     Method that takes no arguments and returns nothing.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
 
 class CallOneIntegerMethodRequest(BaseModel):
@@ -1071,7 +1071,7 @@ class CallOneIntegerMethodRequest(BaseModel):
     Method that takes one integer argument and returns one integer value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[int, Field()]
 
 
@@ -1081,7 +1081,7 @@ class CallOneIntegerMethodResponse(BaseModel):
     Method that takes one integer argument and returns one integer value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[int, Field()]
 
 
@@ -1091,8 +1091,8 @@ class CallOptionalIntegerMethodRequest(BaseModel):
     Method that takes one optional integer argument and returns one optional integer value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[int], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    input1: Annotated[Optional[int], Field()]
 
 
 class CallOptionalIntegerMethodResponse(BaseModel):
@@ -1101,8 +1101,8 @@ class CallOptionalIntegerMethodResponse(BaseModel):
     Method that takes one optional integer argument and returns one optional integer value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[int], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    output1: Annotated[Optional[int], Field()]
 
 
 class CallThreeIntegersMethodRequest(BaseModel):
@@ -1111,7 +1111,7 @@ class CallThreeIntegersMethodRequest(BaseModel):
     Method that takes three integer arguments, the third is optional, and returns three integer values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[
         int,
         Field(
@@ -1119,7 +1119,7 @@ class CallThreeIntegersMethodRequest(BaseModel):
         ),
     ]
     input2: Annotated[int, Field()]
-    input3: Annotated[Optional[int], Field()] = None
+    input3: Annotated[Optional[int], Field()]
 
 
 class CallThreeIntegersMethodResponse(BaseModel):
@@ -1128,7 +1128,7 @@ class CallThreeIntegersMethodResponse(BaseModel):
     Method that takes three integer arguments, the third is optional, and returns three integer values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[
         int,
         Field(
@@ -1136,7 +1136,7 @@ class CallThreeIntegersMethodResponse(BaseModel):
         ),
     ]
     output2: Annotated[int, Field()]
-    output3: Annotated[Optional[int], Field()] = None
+    output3: Annotated[Optional[int], Field()]
 
 
 class CallOneStringMethodRequest(BaseModel):
@@ -1145,7 +1145,7 @@ class CallOneStringMethodRequest(BaseModel):
     Method that takes one string argument and returns one string value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[str, Field()]
 
 
@@ -1155,7 +1155,7 @@ class CallOneStringMethodResponse(BaseModel):
     Method that takes one string argument and returns one string value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[str, Field()]
 
 
@@ -1165,8 +1165,8 @@ class CallOptionalStringMethodRequest(BaseModel):
     Method that takes one optional string argument and returns one optional string value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[str], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    input1: Annotated[Optional[str], Field()]
 
 
 class CallOptionalStringMethodResponse(BaseModel):
@@ -1175,8 +1175,8 @@ class CallOptionalStringMethodResponse(BaseModel):
     Method that takes one optional string argument and returns one optional string value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[str], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    output1: Annotated[Optional[str], Field()]
 
 
 class CallThreeStringsMethodRequest(BaseModel):
@@ -1185,14 +1185,14 @@ class CallThreeStringsMethodRequest(BaseModel):
     Method that takes three string arguments, the 2nd is optional, and returns three string values, the 2nd is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[
         str,
         Field(
             description="The first string input.  The other two don't have descriptions.",
         ),
     ]
-    input2: Annotated[Optional[str], Field()] = None
+    input2: Annotated[Optional[str], Field()]
     input3: Annotated[str, Field()]
 
 
@@ -1202,14 +1202,14 @@ class CallThreeStringsMethodResponse(BaseModel):
     Method that takes three string arguments, the 2nd is optional, and returns three string values, the 2nd is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[
         str,
         Field(
             description="The first string output.  The other two don't have descriptions.",
         ),
     ]
-    output2: Annotated[Optional[str], Field()] = None
+    output2: Annotated[Optional[str], Field()]
     output3: Annotated[str, Field()]
 
 
@@ -1219,7 +1219,7 @@ class CallOneEnumMethodRequest(BaseModel):
     Method that takes one enum argument and returns one enum value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[Numbers, Field()]
 
 
@@ -1229,7 +1229,7 @@ class CallOneEnumMethodResponse(BaseModel):
     Method that takes one enum argument and returns one enum value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[Numbers, Field()]
 
 
@@ -1239,8 +1239,8 @@ class CallOptionalEnumMethodRequest(BaseModel):
     Method that takes one optional enum argument and returns one optional enum value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[Numbers], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    input1: Annotated[Optional[Numbers], Field()]
 
 
 class CallOptionalEnumMethodResponse(BaseModel):
@@ -1249,8 +1249,8 @@ class CallOptionalEnumMethodResponse(BaseModel):
     Method that takes one optional enum argument and returns one optional enum value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[Numbers], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    output1: Annotated[Optional[Numbers], Field()]
 
 
 class CallThreeEnumsMethodRequest(BaseModel):
@@ -1259,7 +1259,7 @@ class CallThreeEnumsMethodRequest(BaseModel):
     Method that takes three enum arguments, the third is optional, and returns three enum values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[
         Numbers,
         Field(
@@ -1267,7 +1267,7 @@ class CallThreeEnumsMethodRequest(BaseModel):
         ),
     ]
     input2: Annotated[Numbers, Field()]
-    input3: Annotated[Optional[Numbers], Field()] = None
+    input3: Annotated[Optional[Numbers], Field()]
 
 
 class CallThreeEnumsMethodResponse(BaseModel):
@@ -1276,7 +1276,7 @@ class CallThreeEnumsMethodResponse(BaseModel):
     Method that takes three enum arguments, the third is optional, and returns three enum values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[
         Numbers,
         Field(
@@ -1284,7 +1284,7 @@ class CallThreeEnumsMethodResponse(BaseModel):
         ),
     ]
     output2: Annotated[Numbers, Field()]
-    output3: Annotated[Optional[Numbers], Field()] = None
+    output3: Annotated[Optional[Numbers], Field()]
 
 
 class CallOneStructMethodRequest(BaseModel):
@@ -1293,7 +1293,7 @@ class CallOneStructMethodRequest(BaseModel):
     Method that takes one struct argument and returns one struct value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[AllTypes, Field()]
 
 
@@ -1303,7 +1303,7 @@ class CallOneStructMethodResponse(BaseModel):
     Method that takes one struct argument and returns one struct value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[AllTypes, Field()]
 
 
@@ -1313,8 +1313,8 @@ class CallOptionalStructMethodRequest(BaseModel):
     Method that takes one optional struct argument and returns one optional struct value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[AllTypes], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    input1: Annotated[Optional[AllTypes], Field()]
 
 
 class CallOptionalStructMethodResponse(BaseModel):
@@ -1323,8 +1323,8 @@ class CallOptionalStructMethodResponse(BaseModel):
     Method that takes one optional struct argument and returns one optional struct value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[AllTypes], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    output1: Annotated[Optional[AllTypes], Field()]
 
 
 class CallThreeStructsMethodRequest(BaseModel):
@@ -1333,13 +1333,13 @@ class CallThreeStructsMethodRequest(BaseModel):
     Method that takes three struct arguments, the first is optional, and returns three struct values, the first is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[
         Optional[AllTypes],
         Field(
             description="The first struct input.  The other two don't have descriptions.",
         ),
-    ] = None
+    ]
     input2: Annotated[AllTypes, Field()]
     input3: Annotated[AllTypes, Field()]
 
@@ -1350,13 +1350,13 @@ class CallThreeStructsMethodResponse(BaseModel):
     Method that takes three struct arguments, the first is optional, and returns three struct values, the first is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[
         Optional[AllTypes],
         Field(
             description="The first struct output.  The other two don't have descriptions.",
         ),
-    ] = None
+    ]
     output2: Annotated[AllTypes, Field()]
     output3: Annotated[AllTypes, Field()]
 
@@ -1367,7 +1367,7 @@ class CallOneDateTimeMethodRequest(BaseModel):
     Method that takes one date and time argument and returns one date and time value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[datetime, Field()]
 
 
@@ -1377,7 +1377,7 @@ class CallOneDateTimeMethodResponse(BaseModel):
     Method that takes one date and time argument and returns one date and time value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[datetime, Field()]
 
 
@@ -1387,8 +1387,8 @@ class CallOptionalDateTimeMethodRequest(BaseModel):
     Method that takes one optional date and time argument and returns one optional date and time value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[datetime], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    input1: Annotated[Optional[datetime], Field()]
 
 
 class CallOptionalDateTimeMethodResponse(BaseModel):
@@ -1397,8 +1397,8 @@ class CallOptionalDateTimeMethodResponse(BaseModel):
     Method that takes one optional date and time argument and returns one optional date and time value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[datetime], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    output1: Annotated[Optional[datetime], Field()]
 
 
 class CallThreeDateTimesMethodRequest(BaseModel):
@@ -1407,7 +1407,7 @@ class CallThreeDateTimesMethodRequest(BaseModel):
     Method that takes three date and time arguments, the third is optional, and returns three date and time values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[
         datetime,
         Field(
@@ -1415,7 +1415,7 @@ class CallThreeDateTimesMethodRequest(BaseModel):
         ),
     ]
     input2: Annotated[datetime, Field()]
-    input3: Annotated[Optional[datetime], Field()] = None
+    input3: Annotated[Optional[datetime], Field()]
 
 
 class CallThreeDateTimesMethodResponse(BaseModel):
@@ -1424,7 +1424,7 @@ class CallThreeDateTimesMethodResponse(BaseModel):
     Method that takes three date and time arguments, the third is optional, and returns three date and time values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[
         datetime,
         Field(
@@ -1432,7 +1432,7 @@ class CallThreeDateTimesMethodResponse(BaseModel):
         ),
     ]
     output2: Annotated[datetime, Field()]
-    output3: Annotated[Optional[datetime], Field()] = None
+    output3: Annotated[Optional[datetime], Field()]
 
 
 class CallOneDurationMethodRequest(BaseModel):
@@ -1441,7 +1441,7 @@ class CallOneDurationMethodRequest(BaseModel):
     Method that takes one duration argument and returns one duration value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[timedelta, Field()]
 
 
@@ -1451,7 +1451,7 @@ class CallOneDurationMethodResponse(BaseModel):
     Method that takes one duration argument and returns one duration value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[timedelta, Field()]
 
 
@@ -1461,8 +1461,8 @@ class CallOptionalDurationMethodRequest(BaseModel):
     Method that takes one optional duration argument and returns one optional duration value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[timedelta], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    input1: Annotated[Optional[timedelta], Field()]
 
 
 class CallOptionalDurationMethodResponse(BaseModel):
@@ -1471,8 +1471,8 @@ class CallOptionalDurationMethodResponse(BaseModel):
     Method that takes one optional duration argument and returns one optional duration value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[timedelta], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    output1: Annotated[Optional[timedelta], Field()]
 
 
 class CallThreeDurationsMethodRequest(BaseModel):
@@ -1481,7 +1481,7 @@ class CallThreeDurationsMethodRequest(BaseModel):
     Method that takes three duration arguments, the third is optional, and returns three duration values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[
         timedelta,
         Field(
@@ -1489,7 +1489,7 @@ class CallThreeDurationsMethodRequest(BaseModel):
         ),
     ]
     input2: Annotated[timedelta, Field()]
-    input3: Annotated[Optional[timedelta], Field()] = None
+    input3: Annotated[Optional[timedelta], Field()]
 
 
 class CallThreeDurationsMethodResponse(BaseModel):
@@ -1498,7 +1498,7 @@ class CallThreeDurationsMethodResponse(BaseModel):
     Method that takes three duration arguments, the third is optional, and returns three duration values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[
         timedelta,
         Field(
@@ -1506,7 +1506,7 @@ class CallThreeDurationsMethodResponse(BaseModel):
         ),
     ]
     output2: Annotated[timedelta, Field()]
-    output3: Annotated[Optional[timedelta], Field()] = None
+    output3: Annotated[Optional[timedelta], Field()]
 
 
 class CallOneBinaryMethodRequest(BaseModel):
@@ -1515,7 +1515,7 @@ class CallOneBinaryMethodRequest(BaseModel):
     Method that takes one binary argument and returns one binary value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
 
 
@@ -1525,7 +1525,7 @@ class CallOneBinaryMethodResponse(BaseModel):
     Method that takes one binary argument and returns one binary value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
 
 
@@ -1535,8 +1535,8 @@ class CallOptionalBinaryMethodRequest(BaseModel):
     Method that takes one optional binary argument and returns one optional binary value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    input1: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    input1: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
 
 
 class CallOptionalBinaryMethodResponse(BaseModel):
@@ -1545,8 +1545,8 @@ class CallOptionalBinaryMethodResponse(BaseModel):
     Method that takes one optional binary argument and returns one optional binary value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    output1: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    output1: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
 
 
 class CallThreeBinariesMethodRequest(BaseModel):
@@ -1555,7 +1555,7 @@ class CallThreeBinariesMethodRequest(BaseModel):
     Method that takes three binary arguments, the third is optional, and returns three binary values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     input1: Annotated[
         bytes,
         Field(
@@ -1565,7 +1565,7 @@ class CallThreeBinariesMethodRequest(BaseModel):
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
     input2: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
-    input3: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
+    input3: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
 
 
 class CallThreeBinariesMethodResponse(BaseModel):
@@ -1574,7 +1574,7 @@ class CallThreeBinariesMethodResponse(BaseModel):
     Method that takes three binary arguments, the third is optional, and returns three binary values, the third is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     output1: Annotated[
         bytes,
         Field(
@@ -1584,7 +1584,7 @@ class CallThreeBinariesMethodResponse(BaseModel):
         PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8")),
     ]
     output2: Annotated[bytes, Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8"))]
-    output3: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)] = None
+    output3: Annotated[Optional[bytes], Field(), PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode("utf-8") if v is not None else None)]
 
 
 class CallOneListOfIntegersMethodRequest(BaseModel):
@@ -1593,7 +1593,7 @@ class CallOneListOfIntegersMethodRequest(BaseModel):
     Method that takes one list of integers argument and returns one list of integers value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
     input1: Annotated[List[int], Field()]
 
@@ -1604,7 +1604,7 @@ class CallOneListOfIntegersMethodResponse(BaseModel):
     Method that takes one list of integers argument and returns one list of integers value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
     output1: Annotated[List[int], Field()]
 
@@ -1615,9 +1615,9 @@ class CallOptionalListOfFloatsMethodRequest(BaseModel):
     Method that takes one optional list of floats argument and returns one optional list of floats value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
-    input1: Annotated[Optional[List[float]], Field()] = None
+    input1: Annotated[Optional[List[float]], Field()]
 
 
 class CallOptionalListOfFloatsMethodResponse(BaseModel):
@@ -1626,9 +1626,9 @@ class CallOptionalListOfFloatsMethodResponse(BaseModel):
     Method that takes one optional list of floats argument and returns one optional list of floats value.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
-    output1: Annotated[Optional[List[float]], Field()] = None
+    output1: Annotated[Optional[List[float]], Field()]
 
 
 class CallTwoListsMethodRequest(BaseModel):
@@ -1637,7 +1637,7 @@ class CallTwoListsMethodRequest(BaseModel):
     Method that takes two list arguments, the second is optional, and returns two list values, the second is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
     input1: Annotated[
         List[Numbers],
@@ -1646,7 +1646,7 @@ class CallTwoListsMethodRequest(BaseModel):
         ),
     ]
 
-    input2: Annotated[Optional[List[str]], Field()] = None
+    input2: Annotated[Optional[List[str]], Field()]
 
 
 class CallTwoListsMethodResponse(BaseModel):
@@ -1655,7 +1655,7 @@ class CallTwoListsMethodResponse(BaseModel):
     Method that takes two list arguments, the second is optional, and returns two list values, the second is optional.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
     output1: Annotated[
         List[Numbers],
@@ -1664,4 +1664,4 @@ class CallTwoListsMethodResponse(BaseModel):
         ),
     ]
 
-    output2: Annotated[Optional[List[str]], Field()] = None
+    output2: Annotated[Optional[List[str]], Field()]

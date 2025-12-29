@@ -107,7 +107,7 @@ def server_setup():
 {%if stinger.properties | length > 0 %}
 @pytest.fixture
 def initial_property_values(server_setup):
-    return server_setup.get_initial_property_values()
+    return server_setup.initial_property_values
 {%endif%}
 
 @pytest.fixture

@@ -36,7 +36,7 @@ class InterfaceInfo(BaseModel):
 class AnotherSignalSignalPayload(BaseModel):
     """Interface signal `anotherSignal`."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     one: Annotated[float, Field()]
     two: Annotated[bool, Field()]
     three: Annotated[str, Field()]
@@ -48,7 +48,7 @@ class BarkSignalPayload(BaseModel):
     Emitted when a dog barks.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     word: Annotated[str, Field()]
 
 
@@ -58,8 +58,8 @@ class MaybeNumberSignalPayload(BaseModel):
     A signal with optionally no payload.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    number: Annotated[Optional[int], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    number: Annotated[Optional[int], Field()]
 
 
 class MaybeNameSignalPayload(BaseModel):
@@ -68,8 +68,8 @@ class MaybeNameSignalPayload(BaseModel):
     A signal with optionally no payload.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
-    name: Annotated[Optional[str], Field()] = None
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    name: Annotated[Optional[str], Field()]
 
 
 class NowSignalPayload(BaseModel):
@@ -78,5 +78,5 @@ class NowSignalPayload(BaseModel):
     The current date and time.
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     timestamp: Annotated[datetime, Field()]

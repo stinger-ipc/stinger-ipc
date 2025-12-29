@@ -143,10 +143,18 @@ class SimpleServer:
         prop_version = int(prop_version_str)
         correlation_id = message.correlation_data  # type: Optional[bytes]
         response_topic = message.response_topic  # type: Optional[str]
+        content_type = message.content_type  # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_school.version):
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_school.version}' of the 'school' property")
+
+            if content_type is None:
+                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
 
             recv_prop_obj = SchoolProperty.model_validate_json(message.payload)
 

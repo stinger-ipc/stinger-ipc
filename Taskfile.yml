@@ -65,7 +65,7 @@ tasks:
       - example_interfaces/{{.IFACE}}/output/python/tests/**
       - example_interfaces/{{.IFACE}}/output/python/src/**
     cmds:
-      - uv run pytest
+      - uv run pytest -vv
     vars:
       IFACE: '{{index .MATCH 0}}'
 

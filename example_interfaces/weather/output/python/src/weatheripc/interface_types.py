@@ -48,7 +48,7 @@ class WeatherCondition(IntEnum):
 class ForecastForHour(BaseModel):
     """Interface struct `forecast_for_hour`."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     temperature: Annotated[
         float,
         Field(
@@ -67,7 +67,7 @@ class ForecastForHour(BaseModel):
 class ForecastForDay(BaseModel):
     """Interface struct `forecast_for_day`."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     high_temperature: Annotated[
         float,
         Field(
@@ -93,7 +93,7 @@ class CurrentTimeSignalPayload(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     current_time: Annotated[str, Field()]
 
 
@@ -104,7 +104,7 @@ class LocationProperty(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     latitude: Annotated[float, Field()]
     longitude: Annotated[float, Field()]
 
@@ -118,7 +118,7 @@ class CurrentTemperatureProperty(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     temperature_f: Annotated[float, Field()]
 
 
@@ -130,7 +130,7 @@ class CurrentConditionProperty(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     condition: Annotated[WeatherCondition, Field()]
     description: Annotated[str, Field()]
 
@@ -145,7 +145,7 @@ class DailyForecastProperty(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     monday: Annotated[
         ForecastForDay,
         Field(
@@ -165,7 +165,7 @@ class HourlyForecastProperty(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     hour_0: Annotated[
         ForecastForHour,
         Field(
@@ -190,7 +190,7 @@ class CurrentConditionRefreshIntervalProperty(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     seconds: Annotated[int, Field()]
 
 
@@ -201,7 +201,7 @@ class HourlyForecastRefreshIntervalProperty(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     seconds: Annotated[
         int,
         Field(
@@ -217,7 +217,7 @@ class DailyForecastRefreshIntervalProperty(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
     seconds: Annotated[int, Field()]
 
 
@@ -233,7 +233,7 @@ class RefreshDailyForecastMethodRequest(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
 
 class RefreshDailyForecastMethodResponse(BaseModel):
@@ -248,7 +248,7 @@ class RefreshDailyForecastMethodResponse(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
 
 class RefreshHourlyForecastMethodRequest(BaseModel):
@@ -263,7 +263,7 @@ class RefreshHourlyForecastMethodRequest(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
 
 class RefreshHourlyForecastMethodResponse(BaseModel):
@@ -278,7 +278,7 @@ class RefreshHourlyForecastMethodResponse(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
 
 class RefreshCurrentConditionsMethodRequest(BaseModel):
@@ -295,7 +295,7 @@ class RefreshCurrentConditionsMethodRequest(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
 
 
 class RefreshCurrentConditionsMethodResponse(BaseModel):
@@ -312,4 +312,4 @@ class RefreshCurrentConditionsMethodResponse(BaseModel):
 
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")

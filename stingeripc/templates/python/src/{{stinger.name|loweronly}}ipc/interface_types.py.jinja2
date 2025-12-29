@@ -9,27 +9,27 @@ TODO: Get license text from stinger file
 """
 
 {%macro field_list(arg_list)%}
-model_config = ConfigDict(populate_by_name=True)
+model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
 {%for arg in arg_list-%}
 {%set field_desc %}Field({%if arg.description%}description="{{arg.description}}", {%endif%}{%if (arg.name|snake_case) != arg.name %}alias="{{arg.name}}"{%endif%}){%endset%}
 {%-if arg.arg_type.name.lower() == 'primitive' -%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]{%if arg.optional%} = None{%endif%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'enum'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]{%if arg.optional%} = None{%endif%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'struct'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]{%if arg.optional%} = None{%endif%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'datetime'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[datetime]{%else%}datetime{%endif%}, {{field_desc}}]{%if arg.optional%} = None{%endif%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[datetime]{%else%}datetime{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'duration'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[timedelta]{%else%}timedelta{%endif%}, {{field_desc}}]{%if arg.optional%} = None{%endif%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[timedelta]{%else%}timedelta{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'binary'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[bytes]{%else%}bytes{%endif%}, {{field_desc}}, PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode('utf-8'){%if arg.optional%} if v is not None else None{%endif%})]{%if arg.optional%} = None{%endif%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[bytes]{%else%}bytes{%endif%}, {{field_desc}}, PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode('utf-8'){%if arg.optional%} if v is not None else None{%endif%})]
 {%elif arg.arg_type.name.lower() == 'array'-%}
 {%if arg.element.arg_type.name.lower() == 'binary'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[bytes]]{%else%}List[bytes]{%endif%}, {{field_desc}}, PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]), PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr])]{%if arg.optional%} = None{%endif%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[bytes]]{%else%}List[bytes]{%endif%}, {{field_desc}}, PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]), PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr])]
 
 {%else%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[{{arg.element.python_local_type}}]]{%else%}List[{{arg.element.python_local_type}}]{%endif%}, {{field_desc}}]{%if arg.optional%} = None{%endif%}
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[{{arg.element.python_local_type}}]]{%else%}List[{{arg.element.python_local_type}}]{%endif%}, {{field_desc}}]
 {%endif%}{# end array element cases #}
 
 {%endif-%}
