@@ -2,7 +2,7 @@
 
 from textual.app import ComposeResult  # typing: ignore
 from textual.screen import Screen  # typing: ignore
-from textual.widgets import Header, Footer, Input, Button, Static  # typing: ignore
+from textual.widgets import Header, Footer, Input, Button, Static, Checkbox  # typing: ignore
 from textual.containers import Container, Vertical  # typing: ignore
 from pyqttier.connection import Mqtt5Connection
 from pyqttier.transport import MqttTransport, MqttTransportType
@@ -63,6 +63,14 @@ class ConnectionScreen(Screen):
             with Vertical(classes="input_group"):
                 yield Static("Port:", classes="label")
                 yield Input(placeholder="1883", value="1883", id="port")
+            with Vertical(classes="input_group"):
+                yield Static("Username (optional):", classes="label")
+                yield Input(placeholder="", id="username")
+            with Vertical(classes="input_group"):
+                yield Static("Password (optional):", classes="label")
+                yield Input(placeholder="", password=True, id="password")
+            with Vertical(classes="input_group"):
+                yield Checkbox("Use TLS", id="use_tls")
             yield Button("Connect", variant="primary", id="connect_button")
         yield Footer()
 
@@ -71,6 +79,9 @@ class ConnectionScreen(Screen):
         if event.button.id == "connect_button":
             ip_input = self.query_one("#ip_address", Input)
             port_input = self.query_one("#port", Input)
+            username_input = self.query_one("#username", Input)
+            password_input = self.query_one("#password", Input)
+            tls_checkbox = self.query_one("#use_tls", Checkbox)
 
             ip_address = ip_input.value or "localhost"
             try:
@@ -78,9 +89,15 @@ class ConnectionScreen(Screen):
             except ValueError:
                 port = 1883
 
+            username = username_input.value if username_input.value else None
+            password = password_input.value if password_input.value else None
+            use_tls = tls_checkbox.value
+
             # Create the MQTT connection
             transport = MqttTransport(MqttTransportType.TCP, ip_address, port)
-            conn = Mqtt5Connection(transport)
+            if use_tls:
+                transport.enable_tls()
+            conn = Mqtt5Connection(transport, username=username, password=password)
 
             # Store connection in app for use by other screens
             self.app.mqtt_connection = conn

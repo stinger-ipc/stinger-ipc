@@ -7,7 +7,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
-    "pyqttier>=0.2.4",
+    "pyqttier>=0.2.5",
     "stinger-python-utils>=0.1.5",
     
 ]

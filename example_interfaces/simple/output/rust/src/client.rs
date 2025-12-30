@@ -488,37 +488,39 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> SimpleClient<C> {
                         }
 
                         _i if _i == sub_ids.school_property_value => {
-                            debug!("Received SCHOOL property value");
-                            // JSON deserialize into SchoolProperty struct
-                            match serde_json::from_slice::<SchoolProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.school.write().await;
+                            debug!("Received 'school' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into SchoolProperty struct
+                                match serde_json::from_slice::<SchoolProperty>(&msg.payload) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.school.write().await;
 
-                                    debug!("SCHOOL property value updated: {:?}", pl.name);
-                                    *guard = pl.name.clone();
+                                        debug!("SCHOOL property value updated: {:?}", pl.name);
+                                        *guard = pl.name.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.school_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.school_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         unhandled_subscription_id => {

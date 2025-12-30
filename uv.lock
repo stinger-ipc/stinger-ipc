@@ -662,7 +662,7 @@ wheels = [
 
 [[package]]
 name = "stinger-ipc"
-version = "0.6.3"
+version = "0.6.4"
 source = { editable = "." }
 dependencies = [
     { name = "go-task-bin" },
