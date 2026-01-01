@@ -6,7 +6,7 @@ import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult  # typing: ignore
 from textual.screen import Screen, ModalScreen  # typing: ignore
-from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label  # typing: ignore
+from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label, Select  # typing: ignore
 from textual.containers import Horizontal, VerticalScroll, Vertical  # typing: ignore
 from simpleipc.interface_types import *
 from simpleipc.client import SimpleClient
@@ -79,6 +79,7 @@ class PropertyEditModal(ModalScreen[bool]):
             yield Static(f"Edit: {self.property_name}", id="property_modal_title")
             yield Label(f"Current value: {self.current_value}", classes="property_input_label")
             if self.property_name == "school":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             with Horizontal(id="property_button_container"):
@@ -374,7 +375,7 @@ class ClientScreen(Screen):
         methods = {
             "trade_numbers": {
                 "your_number": int,
-            },
+            },  # type: Dict[str, Any]
         }
 
         for method_name, params in methods.items():

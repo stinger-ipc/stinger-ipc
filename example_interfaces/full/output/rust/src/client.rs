@@ -1374,13 +1374,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                                 if let Some(sender) = opt_sender {
                                     let oss: oneshot::Sender<MethodReturnCode> = sender;
                                     if oss.send(return_code.clone()).is_err() {
-                                        warn!(
-                                            "Failed to send method response  to waiting receiver"
-                                        );
+                                        warn!("Failed to propagate property update response to waiting receiver");
+                                    } else {
+                                        debug!("Propagated property update response to waiting receiver");
                                     }
                                 }
                             } else {
-                                warn!("Received method response without correlation ID");
+                                warn!("Received property update response without correlation ID");
                             }
                         }
 

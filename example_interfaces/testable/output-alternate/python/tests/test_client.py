@@ -529,7 +529,7 @@ class TestClientMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -628,7 +628,7 @@ class TestClientMethods:
 
     def test_call_optional_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
-            "input1": datetime.now(UTC),
+            "input1": None,
         }  # type: Dict[str, Any]
         client.call_optional_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_date_time' method call"
@@ -639,7 +639,7 @@ class TestClientMethods:
         kwargs = {
             "input1": datetime.now(UTC),
             "input2": datetime.now(UTC),
-            "input3": None,
+            "input3": datetime.now(UTC),
         }  # type: Dict[str, Any]
         client.call_three_date_times(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_date_times' method call"

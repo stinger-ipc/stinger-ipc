@@ -25,7 +25,11 @@ from pyqttier.message import Message
 import concurrent.futures as futures
 
 import asyncio
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    ClientDeserializationErrorStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 import threading
 
@@ -327,7 +331,7 @@ class TestableClient:
         with self._property_read_write_integer_mutex:
             self._changed_value_callbacks_for_read_write_integer.append(handler)
             if call_immediately and self._property_read_write_integer is not None:
-                handler(self._property_read_write_integer)
+                handler(self._property_read_write_integer)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -343,7 +347,7 @@ class TestableClient:
         with self._property_read_only_integer_mutex:
             self._changed_value_callbacks_for_read_only_integer.append(handler)
             if call_immediately and self._property_read_only_integer is not None:
-                handler(self._property_read_only_integer)
+                handler(self._property_read_only_integer)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -376,7 +380,7 @@ class TestableClient:
         with self._property_read_write_optional_integer_mutex:
             self._changed_value_callbacks_for_read_write_optional_integer.append(handler)
             if call_immediately and self._property_read_write_optional_integer is not None:
-                handler(self._property_read_write_optional_integer)
+                handler(self._property_read_write_optional_integer)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -409,7 +413,7 @@ class TestableClient:
         with self._property_read_write_two_integers_mutex:
             self._changed_value_callbacks_for_read_write_two_integers.append(handler)
             if call_immediately and self._property_read_write_two_integers is not None:
-                handler(self._property_read_write_two_integers)
+                handler(self._property_read_write_two_integers)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -425,7 +429,7 @@ class TestableClient:
         with self._property_read_only_string_mutex:
             self._changed_value_callbacks_for_read_only_string.append(handler)
             if call_immediately and self._property_read_only_string is not None:
-                handler(self._property_read_only_string)
+                handler(self._property_read_only_string)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -454,7 +458,7 @@ class TestableClient:
         with self._property_read_write_string_mutex:
             self._changed_value_callbacks_for_read_write_string.append(handler)
             if call_immediately and self._property_read_write_string is not None:
-                handler(self._property_read_write_string)
+                handler(self._property_read_write_string)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -487,7 +491,7 @@ class TestableClient:
         with self._property_read_write_optional_string_mutex:
             self._changed_value_callbacks_for_read_write_optional_string.append(handler)
             if call_immediately and self._property_read_write_optional_string is not None:
-                handler(self._property_read_write_optional_string)
+                handler(self._property_read_write_optional_string)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -520,7 +524,7 @@ class TestableClient:
         with self._property_read_write_two_strings_mutex:
             self._changed_value_callbacks_for_read_write_two_strings.append(handler)
             if call_immediately and self._property_read_write_two_strings is not None:
-                handler(self._property_read_write_two_strings)
+                handler(self._property_read_write_two_strings)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -549,7 +553,7 @@ class TestableClient:
         with self._property_read_write_struct_mutex:
             self._changed_value_callbacks_for_read_write_struct.append(handler)
             if call_immediately and self._property_read_write_struct is not None:
-                handler(self._property_read_write_struct)
+                handler(self._property_read_write_struct)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -582,7 +586,7 @@ class TestableClient:
         with self._property_read_write_optional_struct_mutex:
             self._changed_value_callbacks_for_read_write_optional_struct.append(handler)
             if call_immediately and self._property_read_write_optional_struct is not None:
-                handler(self._property_read_write_optional_struct)
+                handler(self._property_read_write_optional_struct)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -615,7 +619,7 @@ class TestableClient:
         with self._property_read_write_two_structs_mutex:
             self._changed_value_callbacks_for_read_write_two_structs.append(handler)
             if call_immediately and self._property_read_write_two_structs is not None:
-                handler(self._property_read_write_two_structs)
+                handler(self._property_read_write_two_structs)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -631,7 +635,7 @@ class TestableClient:
         with self._property_read_only_enum_mutex:
             self._changed_value_callbacks_for_read_only_enum.append(handler)
             if call_immediately and self._property_read_only_enum is not None:
-                handler(self._property_read_only_enum)
+                handler(self._property_read_only_enum)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -660,7 +664,7 @@ class TestableClient:
         with self._property_read_write_enum_mutex:
             self._changed_value_callbacks_for_read_write_enum.append(handler)
             if call_immediately and self._property_read_write_enum is not None:
-                handler(self._property_read_write_enum)
+                handler(self._property_read_write_enum)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -693,7 +697,7 @@ class TestableClient:
         with self._property_read_write_optional_enum_mutex:
             self._changed_value_callbacks_for_read_write_optional_enum.append(handler)
             if call_immediately and self._property_read_write_optional_enum is not None:
-                handler(self._property_read_write_optional_enum)
+                handler(self._property_read_write_optional_enum)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -722,7 +726,7 @@ class TestableClient:
         with self._property_read_write_two_enums_mutex:
             self._changed_value_callbacks_for_read_write_two_enums.append(handler)
             if call_immediately and self._property_read_write_two_enums is not None:
-                handler(self._property_read_write_two_enums)
+                handler(self._property_read_write_two_enums)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -751,7 +755,7 @@ class TestableClient:
         with self._property_read_write_datetime_mutex:
             self._changed_value_callbacks_for_read_write_datetime.append(handler)
             if call_immediately and self._property_read_write_datetime is not None:
-                handler(self._property_read_write_datetime)
+                handler(self._property_read_write_datetime)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -784,7 +788,7 @@ class TestableClient:
         with self._property_read_write_optional_datetime_mutex:
             self._changed_value_callbacks_for_read_write_optional_datetime.append(handler)
             if call_immediately and self._property_read_write_optional_datetime is not None:
-                handler(self._property_read_write_optional_datetime)
+                handler(self._property_read_write_optional_datetime)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -817,7 +821,7 @@ class TestableClient:
         with self._property_read_write_two_datetimes_mutex:
             self._changed_value_callbacks_for_read_write_two_datetimes.append(handler)
             if call_immediately and self._property_read_write_two_datetimes is not None:
-                handler(self._property_read_write_two_datetimes)
+                handler(self._property_read_write_two_datetimes)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -846,7 +850,7 @@ class TestableClient:
         with self._property_read_write_duration_mutex:
             self._changed_value_callbacks_for_read_write_duration.append(handler)
             if call_immediately and self._property_read_write_duration is not None:
-                handler(self._property_read_write_duration)
+                handler(self._property_read_write_duration)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -879,7 +883,7 @@ class TestableClient:
         with self._property_read_write_optional_duration_mutex:
             self._changed_value_callbacks_for_read_write_optional_duration.append(handler)
             if call_immediately and self._property_read_write_optional_duration is not None:
-                handler(self._property_read_write_optional_duration)
+                handler(self._property_read_write_optional_duration)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -912,7 +916,7 @@ class TestableClient:
         with self._property_read_write_two_durations_mutex:
             self._changed_value_callbacks_for_read_write_two_durations.append(handler)
             if call_immediately and self._property_read_write_two_durations is not None:
-                handler(self._property_read_write_two_durations)
+                handler(self._property_read_write_two_durations)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -941,7 +945,7 @@ class TestableClient:
         with self._property_read_write_binary_mutex:
             self._changed_value_callbacks_for_read_write_binary.append(handler)
             if call_immediately and self._property_read_write_binary is not None:
-                handler(self._property_read_write_binary)
+                handler(self._property_read_write_binary)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -974,7 +978,7 @@ class TestableClient:
         with self._property_read_write_optional_binary_mutex:
             self._changed_value_callbacks_for_read_write_optional_binary.append(handler)
             if call_immediately and self._property_read_write_optional_binary is not None:
-                handler(self._property_read_write_optional_binary)
+                handler(self._property_read_write_optional_binary)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -1007,7 +1011,7 @@ class TestableClient:
         with self._property_read_write_two_binaries_mutex:
             self._changed_value_callbacks_for_read_write_two_binaries.append(handler)
             if call_immediately and self._property_read_write_two_binaries is not None:
-                handler(self._property_read_write_two_binaries)
+                handler(self._property_read_write_two_binaries)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -1040,7 +1044,7 @@ class TestableClient:
         with self._property_read_write_list_of_strings_mutex:
             self._changed_value_callbacks_for_read_write_list_of_strings.append(handler)
             if call_immediately and self._property_read_write_list_of_strings is not None:
-                handler(self._property_read_write_list_of_strings)
+                handler(self._property_read_write_list_of_strings)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -1069,7 +1073,7 @@ class TestableClient:
         with self._property_read_write_lists_mutex:
             self._changed_value_callbacks_for_read_write_lists.append(handler)
             if call_immediately and self._property_read_write_lists is not None:
-                handler(self._property_read_write_lists)
+                handler(self._property_read_write_lists)  # type: ignore[call-arg]
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):

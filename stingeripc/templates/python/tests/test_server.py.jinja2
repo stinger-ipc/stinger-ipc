@@ -14,7 +14,9 @@ from {{stinger.python.package_name}}.server import {{stinger.name | UpperCamelCa
 from {{stinger.python.package_name}}.property import {%if not config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{{stinger.name | UpperCamelCase}}InitialPropertyValues
 {%endif-%}
 from {{stinger.name | loweronly}}ipc.interface_types import *
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode
+)
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json

@@ -6,7 +6,7 @@ import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult  # typing: ignore
 from textual.screen import Screen, ModalScreen  # typing: ignore
-from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label  # typing: ignore
+from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label, Select  # typing: ignore
 from textual.containers import Horizontal, VerticalScroll, Vertical  # typing: ignore
 from testableipc.interface_types import *
 from testableipc.client import TestableClient
@@ -79,12 +79,15 @@ class PropertyEditModal(ModalScreen[bool]):
             yield Static(f"Edit: {self.property_name}", id="property_modal_title")
             yield Label(f"Current value: {self.current_value}", classes="property_input_label")
             if self.property_name == "read_write_integer":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_only_integer":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_optional_integer":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_two_integers":
@@ -95,12 +98,15 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
 
             if self.property_name == "read_only_string":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_string":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_optional_string":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_two_strings":
@@ -111,9 +117,11 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
 
             if self.property_name == "read_write_struct":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_optional_struct":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_two_structs":
@@ -124,13 +132,19 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"second value", value=self.current_value.second.model_dump_json(), classes="property_input_value", id="property_input_second")
 
             if self.property_name == "read_only_enum":
-                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+                enum_options = [(f"{member.name} ({member.value})", member.value) for member in Numbers]
+                yield Select(options=enum_options, value=self.current_value.value if self.current_value is not None else None, id="property_input")
 
             if self.property_name == "read_write_enum":
-                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+                enum_options = [(f"{member.name} ({member.value})", member.value) for member in Numbers]
+                yield Select(options=enum_options, value=self.current_value.value if self.current_value is not None else None, id="property_input")
 
             if self.property_name == "read_write_optional_enum":
-                yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
+
+                enum_options = [(f"{member.name} ({member.value})", member.value) for member in Numbers]
+                yield Select(options=enum_options, value=self.current_value.value if self.current_value is not None else None, id="property_input")
 
             if self.property_name == "read_write_two_enums":
                 yield Label(f"first", classes="property_input_value_label")
@@ -140,9 +154,11 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
 
             if self.property_name == "read_write_datetime":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_optional_datetime":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_two_datetimes":
@@ -153,9 +169,11 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
 
             if self.property_name == "read_write_duration":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_optional_duration":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_two_durations":
@@ -166,9 +184,11 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
 
             if self.property_name == "read_write_binary":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_optional_binary":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_two_binaries":
@@ -179,6 +199,7 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"second value", value=str(self.current_value.second), classes="property_input_value", id="property_input_second")
 
             if self.property_name == "read_write_list_of_strings":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "read_write_lists":
@@ -653,94 +674,94 @@ class ClientScreen(Screen):
 
         # Define all methods with their parameters
         methods = {
-            "call_with_nothing": {},
+            "call_with_nothing": {},  # type: Dict[str, Any]
             "call_one_integer": {
                 "input1": int,
-            },
+            },  # type: Dict[str, Any]
             "call_optional_integer": {
                 "input1": Optional[int],
-            },
+            },  # type: Dict[str, Any]
             "call_three_integers": {
                 "input1": int,
                 "input2": int,
                 "input3": Optional[int],
-            },
+            },  # type: Dict[str, Any]
             "call_one_string": {
                 "input1": str,
-            },
+            },  # type: Dict[str, Any]
             "call_optional_string": {
                 "input1": Optional[str],
-            },
+            },  # type: Dict[str, Any]
             "call_three_strings": {
                 "input1": str,
                 "input2": Optional[str],
                 "input3": str,
-            },
+            },  # type: Dict[str, Any]
             "call_one_enum": {
                 "input1": Numbers,
-            },
+            },  # type: Dict[str, Any]
             "call_optional_enum": {
                 "input1": Optional[Numbers],
-            },
+            },  # type: Dict[str, Any]
             "call_three_enums": {
                 "input1": Numbers,
                 "input2": Numbers,
                 "input3": Optional[Numbers],
-            },
+            },  # type: Dict[str, Any]
             "call_one_struct": {
                 "input1": AllTypes,
-            },
+            },  # type: Dict[str, Any]
             "call_optional_struct": {
                 "input1": AllTypes,
-            },
+            },  # type: Dict[str, Any]
             "call_three_structs": {
                 "input1": AllTypes,
                 "input2": AllTypes,
                 "input3": AllTypes,
-            },
+            },  # type: Dict[str, Any]
             "call_one_date_time": {
                 "input1": datetime,
-            },
+            },  # type: Dict[str, Any]
             "call_optional_date_time": {
                 "input1": Optional[datetime],
-            },
+            },  # type: Dict[str, Any]
             "call_three_date_times": {
                 "input1": datetime,
                 "input2": datetime,
                 "input3": Optional[datetime],
-            },
+            },  # type: Dict[str, Any]
             "call_one_duration": {
                 "input1": timedelta,
-            },
+            },  # type: Dict[str, Any]
             "call_optional_duration": {
                 "input1": Optional[timedelta],
-            },
+            },  # type: Dict[str, Any]
             "call_three_durations": {
                 "input1": timedelta,
                 "input2": timedelta,
                 "input3": Optional[timedelta],
-            },
+            },  # type: Dict[str, Any]
             "call_one_binary": {
                 "input1": bytes,
-            },
+            },  # type: Dict[str, Any]
             "call_optional_binary": {
                 "input1": bytes,
-            },
+            },  # type: Dict[str, Any]
             "call_three_binaries": {
                 "input1": bytes,
                 "input2": bytes,
                 "input3": bytes,
-            },
+            },  # type: Dict[str, Any]
             "call_one_list_of_integers": {
                 "input1": List[int],
-            },
+            },  # type: Dict[str, Any]
             "call_optional_list_of_floats": {
                 "input1": List[float],
-            },
+            },  # type: Dict[str, Any]
             "call_two_lists": {
                 "input1": List[Numbers],
                 "input2": List[str],
-            },
+            },  # type: Dict[str, Any]
         }
 
         for method_name, params in methods.items():

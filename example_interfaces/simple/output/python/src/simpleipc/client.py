@@ -23,7 +23,11 @@ from pyqttier.message import Message
 import concurrent.futures as futures
 
 import asyncio
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    ClientDeserializationErrorStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 import threading
 
@@ -100,7 +104,7 @@ class SimpleClient:
         with self._property_school_mutex:
             self._changed_value_callbacks_for_school.append(handler)
             if call_immediately and self._property_school is not None:
-                handler(self._property_school)
+                handler(self._property_school)  # type: ignore[call-arg]
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):

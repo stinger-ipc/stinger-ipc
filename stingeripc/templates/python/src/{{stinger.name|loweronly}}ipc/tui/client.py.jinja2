@@ -6,7 +6,7 @@ import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult # typing: ignore
 from textual.screen import Screen, ModalScreen # typing: ignore
-from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label # typing: ignore
+from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label, Select # typing: ignore
 from textual.containers import Horizontal, VerticalScroll, Vertical # typing: ignore
 from {{stinger.name|loweronly}}ipc.interface_types import *
 from {{stinger.name|loweronly}}ipc.client import {{stinger.name|UpperCamelCase}}Client
@@ -80,8 +80,16 @@ class PropertyEditModal(ModalScreen[bool]):
             {%for prop_name, prop in stinger.properties.items()-%}
             if self.property_name == '{{prop_name|snake_case}}':
                 {%-if prop.arg_list|length == 1%}
+                {%if prop.arg_list[0].arg_type.name == 'ENUM'%}
+                enum_options = [
+                    (f"{member.name} ({member.value})", member.value)
+                    for member in {{prop.arg_list[0].enum.python_type}}
+                ]
+                yield Select(options=enum_options, value=self.current_value.value if self.current_value is not None else None, id="property_input")
+                {%else%}{# not single enum arg #}
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
-                {%else%}
+                {%endif%}{# single arg type cases #}
+                {%else%}{# multiple args #}
                 {%-for arg in prop.arg_list%}
                     yield Label(f"{{arg.name}}{%if arg.arg_type.name == 'STRUCT'%} (JSON){%endif%}", classes="property_input_value_label")
                     yield Input(placeholder=f"{{arg.name}} value", value={%if arg.arg_type.name == 'STRUCT'%}self.current_value.{{arg.name|snake_case}}.model_dump_json(){%else%}str(self.current_value.{{arg.name|snake_case}}){%endif%}, classes="property_input_value", id="property_input_{{arg.name|snake_case}}")
@@ -410,9 +418,9 @@ class ClientScreen(Screen):
         # Define all methods with their parameters
         methods = {
         {%-for method_name, method in stinger.methods.items()%}
-            "{{method_name|snake_case}}": { {% for arg in method.arg_list %}"{{arg.name|snake_case}}": {{arg.python_annotation}}, {%endfor%} },
+            "{{method_name|snake_case}}": { {% for arg in method.arg_list %}"{{arg.name|snake_case}}": {{arg.python_annotation}}, {%endfor%} }, 
         {%endfor%}
-        }
+        } # type: Dict[str, Dict[str, Any]]
         
         for method_name, params in methods.items():
             btn = Button(method_name, classes="method_button")

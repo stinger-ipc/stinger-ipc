@@ -25,7 +25,14 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    StingerMethodException,
+    ServerSerializationErrorStingerMethodException,
+    ServerDeserializationErrorStingerMethodException,
+    OutOfSyncStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 
 
@@ -156,11 +163,11 @@ class SimpleServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_school.version}' of the 'school' property")
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'school' property")
 
             recv_prop_obj = SchoolProperty.model_validate_json(message.payload)
 

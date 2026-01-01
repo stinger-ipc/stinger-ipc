@@ -91,13 +91,14 @@ class ConnectionScreen(Screen):
 
             username = username_input.value if username_input.value else None
             password = password_input.value if password_input.value else None
+            credentials = (username, password) if (username and password) else None
             use_tls = tls_checkbox.value
 
             # Create the MQTT connection
             transport = MqttTransport(MqttTransportType.TCP, ip_address, port)
             if use_tls:
                 transport.enable_tls()
-            conn = Mqtt5Connection(transport, username=username, password=password)
+            conn = Mqtt5Connection(transport, credentials=credentials)
 
             # Store connection in app for use by other screens
             self.app.mqtt_connection = conn

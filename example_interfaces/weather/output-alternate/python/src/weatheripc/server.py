@@ -27,7 +27,14 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    StingerMethodException,
+    ServerSerializationErrorStingerMethodException,
+    ServerDeserializationErrorStingerMethodException,
+    OutOfSyncStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 
 
@@ -283,11 +290,11 @@ class WeatherServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_location.version}' of the 'location' property")
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'location' property")
 
             recv_prop_obj = LocationProperty.model_validate_json(message.payload)
 
@@ -340,11 +347,11 @@ class WeatherServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'current_condition_refresh_interval' property")
 
             recv_prop_obj = CurrentConditionRefreshIntervalProperty.model_validate_json(message.payload)
 
@@ -403,11 +410,11 @@ class WeatherServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'hourly_forecast_refresh_interval' property")
 
             recv_prop_obj = HourlyForecastRefreshIntervalProperty.model_validate_json(message.payload)
 
@@ -466,11 +473,11 @@ class WeatherServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'daily_forecast_refresh_interval' property")
 
             recv_prop_obj = DailyForecastRefreshIntervalProperty.model_validate_json(message.payload)
 

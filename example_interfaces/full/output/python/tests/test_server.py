@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, UTC
 from fullipc.server import FullServer
 from fullipc.property import FullInitialPropertyValues
 from fullipc.interface_types import *
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import MethodReturnCode
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json

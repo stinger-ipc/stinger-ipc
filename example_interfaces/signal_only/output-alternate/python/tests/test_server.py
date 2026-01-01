@@ -12,7 +12,7 @@ UTC = timezone.utc
 
 from signalonlyipc.server import SignalOnlyServer
 from signalonlyipc.interface_types import *
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import MethodReturnCode
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json

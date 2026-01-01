@@ -6,7 +6,7 @@ import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult  # typing: ignore
 from textual.screen import Screen, ModalScreen  # typing: ignore
-from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label  # typing: ignore
+from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label, Select  # typing: ignore
 from textual.containers import Horizontal, VerticalScroll, Vertical  # typing: ignore
 from fullipc.interface_types import *
 from fullipc.client import FullClient
@@ -79,6 +79,7 @@ class PropertyEditModal(ModalScreen[bool]):
             yield Static(f"Edit: {self.property_name}", id="property_modal_title")
             yield Label(f"Current value: {self.current_value}", classes="property_input_label")
             if self.property_name == "favorite_number":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "favorite_foods":
@@ -99,9 +100,11 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"tuesday value", value=self.current_value.tuesday.model_dump_json(), classes="property_input_value", id="property_input_tuesday")
 
             if self.property_name == "family_name":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "last_breakfast_time":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "last_birthdays":
@@ -460,14 +463,14 @@ class ClientScreen(Screen):
                 "first": int,
                 "second": int,
                 "third": Optional[int],
-            },
+            },  # type: Dict[str, Any]
             "do_something": {
                 "task_to_do": str,
-            },
-            "what_time_is_it": {},
+            },  # type: Dict[str, Any]
+            "what_time_is_it": {},  # type: Dict[str, Any]
             "hold_temperature": {
                 "temperature_celsius": float,
-            },
+            },  # type: Dict[str, Any]
         }
 
         for method_name, params in methods.items():

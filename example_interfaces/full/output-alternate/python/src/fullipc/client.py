@@ -25,7 +25,11 @@ from pyqttier.message import Message
 import concurrent.futures as futures
 
 import asyncio
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    ClientDeserializationErrorStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 import threading
 
@@ -137,7 +141,7 @@ class FullClient:
         with self._property_favorite_number_mutex:
             self._changed_value_callbacks_for_favorite_number.append(handler)
             if call_immediately and self._property_favorite_number is not None:
-                handler(self._property_favorite_number)
+                handler(self._property_favorite_number)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -166,7 +170,7 @@ class FullClient:
         with self._property_favorite_foods_mutex:
             self._changed_value_callbacks_for_favorite_foods.append(handler)
             if call_immediately and self._property_favorite_foods is not None:
-                handler(self._property_favorite_foods)
+                handler(self._property_favorite_foods)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -182,7 +186,7 @@ class FullClient:
         with self._property_lunch_menu_mutex:
             self._changed_value_callbacks_for_lunch_menu.append(handler)
             if call_immediately and self._property_lunch_menu is not None:
-                handler(self._property_lunch_menu)
+                handler(self._property_lunch_menu)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -211,7 +215,7 @@ class FullClient:
         with self._property_family_name_mutex:
             self._changed_value_callbacks_for_family_name.append(handler)
             if call_immediately and self._property_family_name is not None:
-                handler(self._property_family_name)
+                handler(self._property_family_name)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -240,7 +244,7 @@ class FullClient:
         with self._property_last_breakfast_time_mutex:
             self._changed_value_callbacks_for_last_breakfast_time.append(handler)
             if call_immediately and self._property_last_breakfast_time is not None:
-                handler(self._property_last_breakfast_time)
+                handler(self._property_last_breakfast_time)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -269,7 +273,7 @@ class FullClient:
         with self._property_last_birthdays_mutex:
             self._changed_value_callbacks_for_last_birthdays.append(handler)
             if call_immediately and self._property_last_birthdays is not None:
-                handler(self._property_last_birthdays)
+                handler(self._property_last_birthdays)  # type: ignore[call-arg]
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):

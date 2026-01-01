@@ -25,7 +25,14 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    StingerMethodException,
+    ServerSerializationErrorStingerMethodException,
+    ServerDeserializationErrorStingerMethodException,
+    OutOfSyncStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 
 
@@ -268,11 +275,11 @@ class FullServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_favorite_number.version}' of the 'favorite_number' property")
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'favorite_number' property")
 
             recv_prop_obj = FavoriteNumberProperty.model_validate_json(message.payload)
 
@@ -329,11 +336,11 @@ class FullServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_favorite_foods.version}' of the 'favorite_foods' property")
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'favorite_foods' property")
 
             recv_prop_obj = FavoriteFoodsProperty.model_validate_json(message.payload)
 
@@ -390,11 +397,11 @@ class FullServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_family_name.version}' of the 'family_name' property")
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'family_name' property")
 
             recv_prop_obj = FamilyNameProperty.model_validate_json(message.payload)
 
@@ -451,11 +458,11 @@ class FullServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'last_breakfast_time' property")
 
             recv_prop_obj = LastBreakfastTimeProperty.model_validate_json(message.payload)
 
@@ -512,11 +519,11 @@ class FullServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_last_birthdays.version}' of the 'last_birthdays' property")
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'last_birthdays' property")
 
             recv_prop_obj = LastBirthdaysProperty.model_validate_json(message.payload)
 

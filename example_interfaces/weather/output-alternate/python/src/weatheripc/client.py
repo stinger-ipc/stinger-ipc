@@ -25,7 +25,11 @@ from pyqttier.message import Message
 import concurrent.futures as futures
 
 import asyncio
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    ClientDeserializationErrorStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 import threading
 
@@ -146,7 +150,7 @@ class WeatherClient:
         with self._property_location_mutex:
             self._changed_value_callbacks_for_location.append(handler)
             if call_immediately and self._property_location is not None:
-                handler(self._property_location)
+                handler(self._property_location)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -162,7 +166,7 @@ class WeatherClient:
         with self._property_current_temperature_mutex:
             self._changed_value_callbacks_for_current_temperature.append(handler)
             if call_immediately and self._property_current_temperature is not None:
-                handler(self._property_current_temperature)
+                handler(self._property_current_temperature)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -178,7 +182,7 @@ class WeatherClient:
         with self._property_current_condition_mutex:
             self._changed_value_callbacks_for_current_condition.append(handler)
             if call_immediately and self._property_current_condition is not None:
-                handler(self._property_current_condition)
+                handler(self._property_current_condition)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -194,7 +198,7 @@ class WeatherClient:
         with self._property_daily_forecast_mutex:
             self._changed_value_callbacks_for_daily_forecast.append(handler)
             if call_immediately and self._property_daily_forecast is not None:
-                handler(self._property_daily_forecast)
+                handler(self._property_daily_forecast)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -210,7 +214,7 @@ class WeatherClient:
         with self._property_hourly_forecast_mutex:
             self._changed_value_callbacks_for_hourly_forecast.append(handler)
             if call_immediately and self._property_hourly_forecast is not None:
-                handler(self._property_hourly_forecast)
+                handler(self._property_hourly_forecast)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -243,7 +247,7 @@ class WeatherClient:
         with self._property_current_condition_refresh_interval_mutex:
             self._changed_value_callbacks_for_current_condition_refresh_interval.append(handler)
             if call_immediately and self._property_current_condition_refresh_interval is not None:
-                handler(self._property_current_condition_refresh_interval)
+                handler(self._property_current_condition_refresh_interval)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -276,7 +280,7 @@ class WeatherClient:
         with self._property_hourly_forecast_refresh_interval_mutex:
             self._changed_value_callbacks_for_hourly_forecast_refresh_interval.append(handler)
             if call_immediately and self._property_hourly_forecast_refresh_interval is not None:
-                handler(self._property_hourly_forecast_refresh_interval)
+                handler(self._property_hourly_forecast_refresh_interval)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -309,7 +313,7 @@ class WeatherClient:
         with self._property_daily_forecast_refresh_interval_mutex:
             self._changed_value_callbacks_for_daily_forecast_refresh_interval.append(handler)
             if call_immediately and self._property_daily_forecast_refresh_interval is not None:
-                handler(self._property_daily_forecast_refresh_interval)
+                handler(self._property_daily_forecast_refresh_interval)  # type: ignore[call-arg]
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):

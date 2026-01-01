@@ -25,7 +25,14 @@ from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
 from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    StingerMethodException,
+    ServerSerializationErrorStingerMethodException,
+    ServerDeserializationErrorStingerMethodException,
+    OutOfSyncStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 
 
@@ -807,11 +814,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_integer' property")
 
             recv_prop_obj = ReadWriteIntegerProperty.model_validate_json(message.payload)
 
@@ -870,11 +877,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_optional_integer' property")
 
             recv_prop_obj = ReadWriteOptionalIntegerProperty.model_validate_json(message.payload)
 
@@ -935,11 +942,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_two_integers' property")
 
             recv_prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(message.payload)
 
@@ -1000,11 +1007,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_string' property")
 
             recv_prop_obj = ReadWriteStringProperty.model_validate_json(message.payload)
 
@@ -1063,11 +1070,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_optional_string' property")
 
             recv_prop_obj = ReadWriteOptionalStringProperty.model_validate_json(message.payload)
 
@@ -1128,11 +1135,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_two_strings' property")
 
             recv_prop_obj = ReadWriteTwoStringsProperty.model_validate_json(message.payload)
 
@@ -1193,11 +1200,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_struct' property")
 
             recv_prop_obj = ReadWriteStructProperty.model_validate_json(message.payload)
 
@@ -1256,11 +1263,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_optional_struct' property")
 
             recv_prop_obj = ReadWriteOptionalStructProperty.model_validate_json(message.payload)
 
@@ -1321,11 +1328,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_two_structs' property")
 
             recv_prop_obj = ReadWriteTwoStructsProperty.model_validate_json(message.payload)
 
@@ -1384,11 +1391,11 @@ class TestableServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_enum.version}' of the 'read_write_enum' property")
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_enum' property")
 
             recv_prop_obj = ReadWriteEnumProperty.model_validate_json(message.payload)
 
@@ -1447,11 +1454,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_optional_enum' property")
 
             recv_prop_obj = ReadWriteOptionalEnumProperty.model_validate_json(message.payload)
 
@@ -1512,11 +1519,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_two_enums' property")
 
             recv_prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(message.payload)
 
@@ -1577,11 +1584,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_datetime' property")
 
             recv_prop_obj = ReadWriteDatetimeProperty.model_validate_json(message.payload)
 
@@ -1642,11 +1649,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_optional_datetime' property")
 
             recv_prop_obj = ReadWriteOptionalDatetimeProperty.model_validate_json(message.payload)
 
@@ -1707,11 +1714,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_two_datetimes' property")
 
             recv_prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(message.payload)
 
@@ -1772,11 +1779,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_duration' property")
 
             recv_prop_obj = ReadWriteDurationProperty.model_validate_json(message.payload)
 
@@ -1837,11 +1844,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_optional_duration' property")
 
             recv_prop_obj = ReadWriteOptionalDurationProperty.model_validate_json(message.payload)
 
@@ -1902,11 +1909,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_two_durations' property")
 
             recv_prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(message.payload)
 
@@ -1967,11 +1974,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_binary' property")
 
             recv_prop_obj = ReadWriteBinaryProperty.model_validate_json(message.payload)
 
@@ -2030,11 +2037,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_optional_binary' property")
 
             recv_prop_obj = ReadWriteOptionalBinaryProperty.model_validate_json(message.payload)
 
@@ -2095,11 +2102,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_two_binaries' property")
 
             recv_prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(message.payload)
 
@@ -2160,11 +2167,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_list_of_strings' property")
 
             recv_prop_obj = ReadWriteListOfStringsProperty.model_validate_json(message.payload)
 
@@ -2225,11 +2232,11 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self.logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{prop_name}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of 'read_write_lists' property")
 
             recv_prop_obj = ReadWriteListsProperty.model_validate_json(message.payload)
 

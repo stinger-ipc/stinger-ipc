@@ -13,7 +13,7 @@ UTC = timezone.utc
 from simpleipc.server import SimpleServer
 from simpleipc.property import SimplePropertyAccess, SimpleInitialPropertyValues
 from simpleipc.interface_types import *
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import MethodReturnCode
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json

@@ -6,7 +6,7 @@ import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult  # typing: ignore
 from textual.screen import Screen, ModalScreen  # typing: ignore
-from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label  # typing: ignore
+from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label, Select  # typing: ignore
 from textual.containers import Horizontal, VerticalScroll, Vertical  # typing: ignore
 from weatheripc.interface_types import *
 from weatheripc.client import WeatherClient
@@ -86,6 +86,7 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"longitude value", value=str(self.current_value.longitude), classes="property_input_value", id="property_input_longitude")
 
             if self.property_name == "current_temperature":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "current_condition":
@@ -119,12 +120,15 @@ class PropertyEditModal(ModalScreen[bool]):
                 yield Input(placeholder=f"hour_3 value", value=self.current_value.hour_3.model_dump_json(), classes="property_input_value", id="property_input_hour_3")
 
             if self.property_name == "current_condition_refresh_interval":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "hourly_forecast_refresh_interval":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             if self.property_name == "daily_forecast_refresh_interval":
+
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
 
             with Horizontal(id="property_button_container"):
@@ -441,9 +445,9 @@ class ClientScreen(Screen):
 
         # Define all methods with their parameters
         methods = {
-            "refresh_daily_forecast": {},
-            "refresh_hourly_forecast": {},
-            "refresh_current_conditions": {},
+            "refresh_daily_forecast": {},  # type: Dict[str, Any]
+            "refresh_hourly_forecast": {},  # type: Dict[str, Any]
+            "refresh_current_conditions": {},  # type: Dict[str, Any]
         }
 
         for method_name, params in methods.items():

@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, UTC
 from weatheripc.server import WeatherServer
 from weatheripc.property import WeatherInitialPropertyValues
 from weatheripc.interface_types import *
-from stinger_python_utils.return_codes import *
+from stinger_python_utils.return_codes import MethodReturnCode
 from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
