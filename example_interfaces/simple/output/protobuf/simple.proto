@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package simple;
+
+
+
+
+enum Gender {
+    GENDER_UNSPECIFIED = 0;
+    MALE = 1;
+    FEMALE = 2;
+    OTHER = 3;
+}
+
+
+message Person {
+    string name = 1;
+    Gender gender = 2;
+}
+
+
+
+message PersonEnteredSignal {
+    Person person = 1;
+}
+
+
+
+message SchoolProperty {
+    string name = 1;
+}
+
+
+
+message TradeNumbersRequest {
+    int32 your_number = 1;
+}
+
+message TradeNumbersResponse {
+    int32 my_number = 1;
+}

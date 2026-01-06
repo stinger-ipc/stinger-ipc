@@ -8,21 +8,29 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
-from typing import Dict, Callable, List, Any, Optional
+from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
 import json
 import logging
 from datetime import datetime, timedelta, UTC
+
 from isodate import parse_duration
+from stinger_python_utils.message_creator import MessageCreator
+from stinger_python_utils.return_codes import *
+from pyqttier.interface import IBrokerConnection
+from pyqttier.message import Message
+import concurrent.futures as futures
 
 import asyncio
-import concurrent.futures as futures
-from .method_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    ClientDeserializationErrorStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 import threading
 
-from .connection import IBrokerConnection
 
 from .property import FullInitialPropertyValues
 
@@ -30,19 +38,19 @@ from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
-TodayIsSignalCallbackType = Callable[[int, DayOfTheWeek], None]
-RandomWordSignalCallbackType = Callable[[str, datetime], None]
-AddNumbersMethodResponseCallbackType = Callable[[int], None]
-DoSomethingMethodResponseCallbackType = Callable[[DoSomethingMethodResponse], None]
-WhatTimeIsItMethodResponseCallbackType = Callable[[datetime], None]
-HoldTemperatureMethodResponseCallbackType = Callable[[bool], None]
+TodayIsSignalCallbackType = Union[Callable[[int, DayOfTheWeek], None], Callable[[Any, int, DayOfTheWeek], None]]
+RandomWordSignalCallbackType = Union[Callable[[str, datetime], None], Callable[[Any, str, datetime], None]]
+AddNumbersMethodResponseCallbackType = Union[Callable[[int], None], Callable[[Any, int], None]]
+DoSomethingMethodResponseCallbackType = Union[Callable[[DoSomethingMethodResponse], None], Callable[[Any, DoSomethingMethodResponse], None]]
+WhatTimeIsItMethodResponseCallbackType = Union[Callable[[datetime], None], Callable[[Any, datetime], None]]
+HoldTemperatureMethodResponseCallbackType = Union[Callable[[bool], None], Callable[[Any, bool], None]]
 
-FavoriteNumberPropertyUpdatedCallbackType = Callable[[int], None]
-FavoriteFoodsPropertyUpdatedCallbackType = Callable[[FavoriteFoodsProperty], None]
-LunchMenuPropertyUpdatedCallbackType = Callable[[LunchMenuProperty], None]
-FamilyNamePropertyUpdatedCallbackType = Callable[[str], None]
-LastBreakfastTimePropertyUpdatedCallbackType = Callable[[datetime], None]
-LastBirthdaysPropertyUpdatedCallbackType = Callable[[LastBirthdaysProperty], None]
+FavoriteNumberPropertyUpdatedCallbackType = Union[Callable[[int], None], Callable[[Any, int], None]]
+FavoriteFoodsPropertyUpdatedCallbackType = Union[Callable[[FavoriteFoodsProperty], None], Callable[[Any, FavoriteFoodsProperty], None]]
+LunchMenuPropertyUpdatedCallbackType = Union[Callable[[LunchMenuProperty], None], Callable[[Any, LunchMenuProperty], None]]
+FamilyNamePropertyUpdatedCallbackType = Union[Callable[[str], None], Callable[[Any, str], None]]
+LastBreakfastTimePropertyUpdatedCallbackType = Union[Callable[[datetime], None], Callable[[Any, datetime], None]]
+LastBirthdaysPropertyUpdatedCallbackType = Union[Callable[[LastBirthdaysProperty], None], Callable[[Any, LastBirthdaysProperty], None]]
 
 
 class DiscoveredInstance(BaseModel):
@@ -61,44 +69,49 @@ class FullClient:
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
 
-        self._pending_method_responses: dict[str, Callable[..., None]] = {}
+        self._pending_method_responses: Dict[str, Callable[..., None]] = {}
 
         self._property_favorite_number = instance_info.initial_property_values.favorite_number  # type: int
         self._property_favorite_number_mutex = threading.Lock()
         self._property_favorite_number_version = instance_info.initial_property_values.favorite_number_version
         self._conn.subscribe("full/{}/property/favoriteNumber/value".format(self._service_id), self._receive_favorite_number_property_update_message)
-        self._changed_value_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_favorite_number: List[FavoriteNumberPropertyUpdatedCallbackType] = []
         self._property_favorite_foods = instance_info.initial_property_values.favorite_foods  # type: FavoriteFoodsProperty
         self._property_favorite_foods_mutex = threading.Lock()
         self._property_favorite_foods_version = instance_info.initial_property_values.favorite_foods_version
         self._conn.subscribe("full/{}/property/favoriteFoods/value".format(self._service_id), self._receive_favorite_foods_property_update_message)
-        self._changed_value_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_favorite_foods: List[FavoriteFoodsPropertyUpdatedCallbackType] = []
         self._property_lunch_menu = instance_info.initial_property_values.lunch_menu  # type: LunchMenuProperty
         self._property_lunch_menu_mutex = threading.Lock()
         self._property_lunch_menu_version = instance_info.initial_property_values.lunch_menu_version
         self._conn.subscribe("full/{}/property/lunchMenu/value".format(self._service_id), self._receive_lunch_menu_property_update_message)
-        self._changed_value_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_lunch_menu: List[LunchMenuPropertyUpdatedCallbackType] = []
         self._property_family_name = instance_info.initial_property_values.family_name  # type: str
         self._property_family_name_mutex = threading.Lock()
         self._property_family_name_version = instance_info.initial_property_values.family_name_version
         self._conn.subscribe("full/{}/property/familyName/value".format(self._service_id), self._receive_family_name_property_update_message)
-        self._changed_value_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_family_name: List[FamilyNamePropertyUpdatedCallbackType] = []
         self._property_last_breakfast_time = instance_info.initial_property_values.last_breakfast_time  # type: datetime
         self._property_last_breakfast_time_mutex = threading.Lock()
         self._property_last_breakfast_time_version = instance_info.initial_property_values.last_breakfast_time_version
         self._conn.subscribe("full/{}/property/lastBreakfastTime/value".format(self._service_id), self._receive_last_breakfast_time_property_update_message)
-        self._changed_value_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
+        self._changed_value_callbacks_for_last_breakfast_time: List[LastBreakfastTimePropertyUpdatedCallbackType] = []
         self._property_last_birthdays = instance_info.initial_property_values.last_birthdays  # type: LastBirthdaysProperty
         self._property_last_birthdays_mutex = threading.Lock()
         self._property_last_birthdays_version = instance_info.initial_property_values.last_birthdays_version
         self._conn.subscribe("full/{}/property/lastBirthdays/value".format(self._service_id), self._receive_last_birthdays_property_update_message)
-        self._changed_value_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
-        self._signal_recv_callbacks_for_today_is: list[TodayIsSignalCallbackType] = []
-        self._signal_recv_callbacks_for_random_word: list[RandomWordSignalCallbackType] = []
+        self._changed_value_callbacks_for_last_birthdays: List[LastBirthdaysPropertyUpdatedCallbackType] = []
+        self._signal_recv_callbacks_for_today_is: List[TodayIsSignalCallbackType] = []
+        self._signal_recv_callbacks_for_random_word: List[RandomWordSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/Full/methodResponse", self._receive_any_method_response_message)
 
         self._property_response_topic = f"client/{self._conn.client_id}/Full/propertyUpdateResponse"
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
+
+    @property
+    def service_id(self) -> str:
+        """The service ID of the connected service instance."""
+        return self._service_id
 
     @property
     def favorite_number(self) -> int:
@@ -114,9 +127,10 @@ class FullClient:
         property_obj = FavoriteNumberProperty(number=value)
         self._logger.debug("Setting 'favorite_number' property to %s", property_obj)
         with self._property_favorite_number_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/favoriteNumber/setValue".format(self._service_id), property_obj, str(self._property_favorite_number_version), self._property_response_topic
+            req_msg = MessageCreator.property_update_request_message(
+                "full/{}/property/favoriteNumber/setValue".format(self._service_id), property_obj, str(self._property_favorite_number_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def favorite_number_changed(self, handler: FavoriteNumberPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'favorite_number' property changes.
@@ -125,7 +139,7 @@ class FullClient:
         with self._property_favorite_number_mutex:
             self._changed_value_callbacks_for_favorite_number.append(handler)
             if call_immediately and self._property_favorite_number is not None:
-                handler(self._property_favorite_number)
+                handler(self._property_favorite_number)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -142,9 +156,10 @@ class FullClient:
         property_obj = value
         self._logger.debug("Setting 'favorite_foods' property to %s", property_obj)
         with self._property_favorite_foods_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/favoriteFoods/setValue".format(self._service_id), property_obj, str(self._property_favorite_foods_version), self._property_response_topic
+            req_msg = MessageCreator.property_update_request_message(
+                "full/{}/property/favoriteFoods/setValue".format(self._service_id), property_obj, str(self._property_favorite_foods_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def favorite_foods_changed(self, handler: FavoriteFoodsPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'favorite_foods' property changes.
@@ -153,7 +168,7 @@ class FullClient:
         with self._property_favorite_foods_mutex:
             self._changed_value_callbacks_for_favorite_foods.append(handler)
             if call_immediately and self._property_favorite_foods is not None:
-                handler(self._property_favorite_foods)
+                handler(self._property_favorite_foods)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -169,7 +184,7 @@ class FullClient:
         with self._property_lunch_menu_mutex:
             self._changed_value_callbacks_for_lunch_menu.append(handler)
             if call_immediately and self._property_lunch_menu is not None:
-                handler(self._property_lunch_menu)
+                handler(self._property_lunch_menu)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -186,9 +201,10 @@ class FullClient:
         property_obj = FamilyNameProperty(family_name=value)
         self._logger.debug("Setting 'family_name' property to %s", property_obj)
         with self._property_family_name_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/familyName/setValue".format(self._service_id), property_obj, str(self._property_family_name_version), self._property_response_topic
+            req_msg = MessageCreator.property_update_request_message(
+                "full/{}/property/familyName/setValue".format(self._service_id), property_obj, str(self._property_family_name_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def family_name_changed(self, handler: FamilyNamePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'family_name' property changes.
@@ -197,7 +213,7 @@ class FullClient:
         with self._property_family_name_mutex:
             self._changed_value_callbacks_for_family_name.append(handler)
             if call_immediately and self._property_family_name is not None:
-                handler(self._property_family_name)
+                handler(self._property_family_name)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -214,9 +230,10 @@ class FullClient:
         property_obj = LastBreakfastTimeProperty(timestamp=value)
         self._logger.debug("Setting 'last_breakfast_time' property to %s", property_obj)
         with self._property_last_breakfast_time_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/lastBreakfastTime/setValue".format(self._service_id), property_obj, str(self._property_last_breakfast_time_version), self._property_response_topic
+            req_msg = MessageCreator.property_update_request_message(
+                "full/{}/property/lastBreakfastTime/setValue".format(self._service_id), property_obj, str(self._property_last_breakfast_time_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def last_breakfast_time_changed(self, handler: LastBreakfastTimePropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'last_breakfast_time' property changes.
@@ -225,7 +242,7 @@ class FullClient:
         with self._property_last_breakfast_time_mutex:
             self._changed_value_callbacks_for_last_breakfast_time.append(handler)
             if call_immediately and self._property_last_breakfast_time is not None:
-                handler(self._property_last_breakfast_time)
+                handler(self._property_last_breakfast_time)  # type: ignore[call-arg]
         return handler
 
     @property
@@ -242,9 +259,10 @@ class FullClient:
         property_obj = value
         self._logger.debug("Setting 'last_birthdays' property to %s", property_obj)
         with self._property_last_birthdays_mutex:
-            self._conn.publish_property_update_request(
-                "full/{}/property/lastBirthdays/setValue".format(self._service_id), property_obj, str(self._property_last_birthdays_version), self._property_response_topic
+            req_msg = MessageCreator.property_update_request_message(
+                "full/{}/property/lastBirthdays/setValue".format(self._service_id), property_obj, str(self._property_last_birthdays_version), self._property_response_topic, str(uuid4())
             )
+            self._conn.publish(req_msg)
 
     def last_birthdays_changed(self, handler: LastBirthdaysPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'last_birthdays' property changes.
@@ -253,7 +271,7 @@ class FullClient:
         with self._property_last_birthdays_mutex:
             self._changed_value_callbacks_for_last_birthdays.append(handler)
             if call_immediately and self._property_last_birthdays is not None:
-                handler(self._property_last_birthdays)
+                handler(self._property_last_birthdays)  # type: ignore[call-arg]
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
@@ -270,63 +288,63 @@ class FullClient:
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_today_is_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_today_is_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'todayIs' signal with non-JSON content type")
             return
 
-        model = TodayIsSignalPayload.model_validate_json(payload)
+        model = TodayIsSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_today_is, **kwargs)
 
-    def _receive_random_word_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_random_word_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'randomWord' signal with non-JSON content type")
             return
 
-        model = RandomWordSignalPayload.model_validate_json(payload)
+        model = RandomWordSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_random_word, **kwargs)
 
-    def _receive_any_method_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_any_method_response_message(self, message: Message):
         # Handle '' method response.
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
-        if "UserProperty" in properties:
-            user_properties = properties["UserProperty"]
+        if message.user_properties:
+            user_properties = message.user_properties or {}
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", message.topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
             if "ReturnCode" in user_properties:
                 return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
-        if "CorrelationData" in properties:
-            correlation_id = properties["CorrelationData"].decode()
+        if message.correlation_data is not None:
+            correlation_id = message.correlation_data.decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, return_code, debug_message)
+                cb(message.payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
-            self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+            self._logger.warning("No correlation data in properties sent to %s.", message.topic)
 
-    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get("UserProperty", {})
+    def _receive_any_property_response_message(self, message: Message):
+        user_properties = message.user_properties or {}
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
             debug_info = user_properties.get("DebugInfo", "")
             self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
 
-    def _receive_favorite_number_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_favorite_number_property_update_message(self, message: Message):
         # Handle 'favorite_number' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'favorite_number' property change with non-JSON content type")
             return
         try:
-            prop_obj = FavoriteNumberProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = FavoriteNumberProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_favorite_number_mutex:
                 self._property_favorite_number = prop_obj.number
@@ -337,14 +355,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'favorite_number' property change: %s", exc_info=e)
 
-    def _receive_favorite_foods_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_favorite_foods_property_update_message(self, message: Message):
         # Handle 'favorite_foods' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'favorite_foods' property change with non-JSON content type")
             return
         try:
-            prop_obj = FavoriteFoodsProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = FavoriteFoodsProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_favorite_foods_mutex:
                 self._property_favorite_foods = prop_obj
@@ -355,14 +373,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'favorite_foods' property change: %s", exc_info=e)
 
-    def _receive_lunch_menu_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_lunch_menu_property_update_message(self, message: Message):
         # Handle 'lunch_menu' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'lunch_menu' property change with non-JSON content type")
             return
         try:
-            prop_obj = LunchMenuProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = LunchMenuProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_lunch_menu_mutex:
                 self._property_lunch_menu = prop_obj
@@ -373,14 +391,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'lunch_menu' property change: %s", exc_info=e)
 
-    def _receive_family_name_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_family_name_property_update_message(self, message: Message):
         # Handle 'family_name' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'family_name' property change with non-JSON content type")
             return
         try:
-            prop_obj = FamilyNameProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = FamilyNameProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_family_name_mutex:
                 self._property_family_name = prop_obj.family_name
@@ -391,14 +409,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'family_name' property change: %s", exc_info=e)
 
-    def _receive_last_breakfast_time_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_last_breakfast_time_property_update_message(self, message: Message):
         # Handle 'last_breakfast_time' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'last_breakfast_time' property change with non-JSON content type")
             return
         try:
-            prop_obj = LastBreakfastTimeProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = LastBreakfastTimeProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_last_breakfast_time_mutex:
                 self._property_last_breakfast_time = prop_obj.timestamp
@@ -409,14 +427,14 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'last_breakfast_time' property change: %s", exc_info=e)
 
-    def _receive_last_birthdays_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_last_birthdays_property_update_message(self, message: Message):
         # Handle 'last_birthdays' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'last_birthdays' property change with non-JSON content type")
             return
         try:
-            prop_obj = LastBirthdaysProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = LastBirthdaysProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_last_birthdays_mutex:
                 self._property_last_birthdays = prop_obj
@@ -427,11 +445,11 @@ class FullClient:
         except Exception as e:
             self._logger.exception("Error processing 'last_birthdays' property change: %s", exc_info=e)
 
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_message(self, message: Message):
         """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
-        self._logger.warning("Receiving message sent to %s, but without a handler", topic)
+        self._logger.warning("Receiving message %s, but without a handler", message)
 
     def receive_today_is(self, handler: TodayIsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
@@ -457,10 +475,10 @@ class FullClient:
             second=second,
             third=third,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'addNumbers' method with payload %s", json_payload)
+        self._logger.debug("Calling 'addNumbers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/addNumbers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = MessageCreator.request_message("full/{}/method/addNumbers".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_add_numbers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -490,10 +508,10 @@ class FullClient:
         payload = DoSomethingMethodRequest(
             task_to_do=task_to_do,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'doSomething' method with payload %s", json_payload)
+        self._logger.debug("Calling 'doSomething' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/doSomething".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = MessageCreator.request_message("full/{}/method/doSomething".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_do_something_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -523,10 +541,10 @@ class FullClient:
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_what_time_is_it_response, fut)
         payload = WhatTimeIsItMethodRequest()
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'what_time_is_it' method with payload %s", json_payload)
+        self._logger.debug("Calling 'what_time_is_it' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/whatTimeIsIt".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = MessageCreator.request_message("full/{}/method/whatTimeIsIt".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_what_time_is_it_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -556,10 +574,10 @@ class FullClient:
         payload = HoldTemperatureMethodRequest(
             temperature_celsius=temperature_celsius,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'hold_temperature' method with payload %s", json_payload)
+        self._logger.debug("Calling 'hold_temperature' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Full/methodResponse"
-        self._conn.publish("full/{}/method/holdTemperature".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = MessageCreator.request_message("full/{}/method/holdTemperature".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_hold_temperature_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -594,12 +612,12 @@ class FullClientBuilder:
         self._logger = logging.getLogger("FullClientBuilder")
         self._signal_recv_callbacks_for_today_is = []  # type: List[TodayIsSignalCallbackType]
         self._signal_recv_callbacks_for_random_word = []  # type: List[RandomWordSignalCallbackType]
-        self._property_updated_callbacks_for_favorite_number: list[FavoriteNumberPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_favorite_foods: list[FavoriteFoodsPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_lunch_menu: list[LunchMenuPropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_family_name: list[FamilyNamePropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_last_breakfast_time: list[LastBreakfastTimePropertyUpdatedCallbackType] = []
-        self._property_updated_callbacks_for_last_birthdays: list[LastBirthdaysPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_favorite_number: List[FavoriteNumberPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_favorite_foods: List[FavoriteFoodsPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_lunch_menu: List[LunchMenuPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_family_name: List[FamilyNamePropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_last_breakfast_time: List[LastBreakfastTimePropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_last_birthdays: List[LastBirthdaysPropertyUpdatedCallbackType] = []
 
     def receive_today_is(self, handler):
         """Used as a decorator for methods which handle particular signals."""
@@ -686,61 +704,53 @@ class FullClientBuilder:
         self._logger.debug("Building FullClient for service instance %s", instance_info.instance_id)
         client = FullClient(broker, instance_info)
 
-        for cb in self._signal_recv_callbacks_for_today_is:
+        for today_is_cb in self._signal_recv_callbacks_for_today_is:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_today_is(bound_cb)
+                client.receive_today_is(today_is_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_today_is(cb)
+                client.receive_today_is(today_is_cb)
 
-        for cb in self._signal_recv_callbacks_for_random_word:
+        for random_word_cb in self._signal_recv_callbacks_for_random_word:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_random_word(bound_cb)
+                client.receive_random_word(random_word_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_random_word(cb)
+                client.receive_random_word(random_word_cb)
 
-        for cb in self._property_updated_callbacks_for_favorite_number:
+        for favorite_number_cb in self._property_updated_callbacks_for_favorite_number:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.favorite_number_changed(bound_cb)
+                client.favorite_number_changed(favorite_number_cb.__get__(binding, binding.__class__))
             else:
-                client.favorite_number_changed(cb)
+                client.favorite_number_changed(favorite_number_cb)
 
-        for cb in self._property_updated_callbacks_for_favorite_foods:
+        for favorite_foods_cb in self._property_updated_callbacks_for_favorite_foods:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.favorite_foods_changed(bound_cb)
+                client.favorite_foods_changed(favorite_foods_cb.__get__(binding, binding.__class__))
             else:
-                client.favorite_foods_changed(cb)
+                client.favorite_foods_changed(favorite_foods_cb)
 
-        for cb in self._property_updated_callbacks_for_lunch_menu:
+        for lunch_menu_cb in self._property_updated_callbacks_for_lunch_menu:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.lunch_menu_changed(bound_cb)
+                client.lunch_menu_changed(lunch_menu_cb.__get__(binding, binding.__class__))
             else:
-                client.lunch_menu_changed(cb)
+                client.lunch_menu_changed(lunch_menu_cb)
 
-        for cb in self._property_updated_callbacks_for_family_name:
+        for family_name_cb in self._property_updated_callbacks_for_family_name:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.family_name_changed(bound_cb)
+                client.family_name_changed(family_name_cb.__get__(binding, binding.__class__))
             else:
-                client.family_name_changed(cb)
+                client.family_name_changed(family_name_cb)
 
-        for cb in self._property_updated_callbacks_for_last_breakfast_time:
+        for last_breakfast_time_cb in self._property_updated_callbacks_for_last_breakfast_time:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.last_breakfast_time_changed(bound_cb)
+                client.last_breakfast_time_changed(last_breakfast_time_cb.__get__(binding, binding.__class__))
             else:
-                client.last_breakfast_time_changed(cb)
+                client.last_breakfast_time_changed(last_breakfast_time_cb)
 
-        for cb in self._property_updated_callbacks_for_last_birthdays:
+        for last_birthdays_cb in self._property_updated_callbacks_for_last_birthdays:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.last_birthdays_changed(bound_cb)
+                client.last_birthdays_changed(last_birthdays_cb.__get__(binding, binding.__class__))
             else:
-                client.last_birthdays_changed(cb)
+                client.last_birthdays_changed(last_birthdays_cb)
 
         return client
 
@@ -798,7 +808,7 @@ class FullClientDiscoverer:
         fut = futures.Future()  # type: futures.Future[FullClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                instance_info = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services.values()))
                 if self._builder is None:
                     fut.set_result(FullClient(self._conn, instance_info))
                 else:
@@ -832,12 +842,12 @@ class FullClientDiscoverer:
                 else:
                     self._logger.debug("Updated info for service: %s", instance_id)
 
-    def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _process_service_discovery_message(self, message: Message):
         """Processes a service discovery message."""
-        self._logger.debug("Processing service discovery message on topic %s", topic)
-        if len(payload) > 0:
+        self._logger.debug("Processing service discovery message on topic %s", message.topic)
+        if len(message.payload) > 0:
             try:
-                service_info = InterfaceInfo.model_validate_json(payload)
+                service_info = InterfaceInfo.model_validate_json(message.payload)
                 with self._mutex:
                     self._discovered_interface_infos[service_info.instance] = service_info
             except Exception as e:
@@ -845,7 +855,7 @@ class FullClientDiscoverer:
             self._check_for_fully_discovered(service_info.instance)
 
         else:  # Empty payload means the service is going away
-            instance_id = topic.split("/")[-2]
+            instance_id = message.topic.split("/")[-2]
             with self._mutex:
                 if instance_id in self._discovered_services:
                     self._logger.info("Service %s is going away", instance_id)
@@ -858,15 +868,15 @@ class FullClientDiscoverer:
                     for cb in self._removed_service_callbacks:
                         cb(instance_id)
 
-    def _process_property_value_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _process_property_value_message(self, message: Message):
         """Processes a property value message for discovery purposes."""
-        self._logger.debug("Processing property value message on topic %s", topic)
-        instance_id = topic.split("/")[1]
-        property_name = topic.split("/")[3]
-        user_properties = properties.get("UserProperty", {})
-        prop_version = user_properties.get("PropertyVersion", -1)
+        self._logger.debug("Processing property value message on topic %s", message.topic)
+        instance_id = message.topic.split("/")[1]
+        property_name = message.topic.split("/")[3]
+        user_properties = message.user_properties or {}
+        prop_version = user_properties.get("PropertyVersion", "-1")
         try:
-            prop_obj = json.loads(payload)
+            prop_obj = json.loads(message.payload)
             with self._mutex:
                 if instance_id not in self._discovered_properties:
                     self._discovered_properties[instance_id] = dict()

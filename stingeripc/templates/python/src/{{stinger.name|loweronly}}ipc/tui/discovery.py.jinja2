@@ -1,0 +1,153 @@
+"""Discovery screen for finding {{stinger.name|UpperCamelCase}}IPC servers."""
+
+from typing import Set
+from textual.app import ComposeResult # typing: ignore
+from textual.screen import Screen # typing: ignore
+from textual.widgets import Header, Footer, Static, Button # typing: ignore
+from textual.containers import Grid, Container # typing: ignore
+from textual.reactive import reactive # typing: ignore
+from {{stinger.name|loweronly}}ipc.client import {{stinger.name|UpperCamelCase}}ClientDiscoverer, DiscoveredInstance, {{stinger.name|UpperCamelCase}}Client
+import logging
+
+logger = logging.getLogger(__name__)
+
+class DiscoveryScreen(Screen):
+    """Screen for discovering available {{stinger.name|UpperCamelCase}}IPC servers."""
+    
+    CSS = """
+    DiscoveryScreen {
+        align: center top;
+    }
+    
+    #title {
+        width: 100%;
+        text-align: center;
+        text-style: bold;
+        padding: 1;
+        background: $primary;
+    }
+    
+    #instances_container {
+        width: 100%;
+        height: auto;
+        padding: 2;
+    }
+    
+    #instances_grid {
+        grid-size: 3;
+        grid-gutter: 1;
+        width: 100%;
+        height: auto;
+    }
+    
+    .instance_box {
+        height: 5;
+        border: solid $accent;
+        text-align: center;
+        content-align: center middle;
+    }
+    
+    .instance_box:hover {
+        background: $accent 20%;
+    }
+    
+    Static.no_servers {
+        height: 5;
+        text-align: center;
+        content-align: center middle;
+        color: $text-muted;
+    }
+    """
+    
+    BINDINGS = [
+        ("escape", "app.quit", "Quit"),
+    ]
+    
+    # Reactive variable to track discovered instances
+    discovered_instances: reactive[Set[str]] = reactive(set())
+    
+    def __init__(self):
+        """Initialize the discovery screen."""
+        super().__init__()
+        self.discoverer = None
+    
+    def compose(self) -> ComposeResult:
+        """Compose the discovery screen widgets."""
+        yield Header()
+        yield Static("Discovered Servers", id="title")
+        with Container(id="instances_container"):
+            yield Grid(id="instances_grid")
+        yield Footer()
+    
+    def on_mount(self) -> None:
+        """Initialize discovery when screen mounts."""
+        # Get the MQTT connection from the app
+        conn = self.app.mqtt_connection
+        
+        if conn is None:
+            self.notify("No MQTT connection available!", severity="error")
+            return
+        
+        # Create the discoverer
+        self.discoverer = {{stinger.name|UpperCamelCase}}ClientDiscoverer(conn)
+        
+        # Subscribe to newly discovered services
+        self.discoverer.add_discovered_service_callback(self._on_service_discovered)
+        
+        # Initialize the list with currently known instances
+        initial_instances = self.discoverer.get_service_instance_ids()
+        self.discovered_instances = set(initial_instances)
+        
+        # Populate the grid
+        self._update_grid()
+    
+    def _on_service_discovered(self, instance: DiscoveredInstance) -> None:
+        """Callback when a new service is discovered."""
+        # Use call_from_thread to safely update from MQTT callback thread
+        self.app.call_from_thread(self._add_instance, instance.instance_id)
+    
+    def _add_instance(self, instance_id: str) -> None:
+        """Add an instance to the discovered set (called on main thread)."""
+        new_instances = self.discovered_instances.copy()
+        new_instances.add(instance_id)
+        self.discovered_instances = new_instances
+    
+    def watch_discovered_instances(self, old_instances: Set[str], new_instances: Set[str]) -> None:
+        """React to changes in discovered instances."""
+        self._update_grid()
+    
+    def _update_grid(self) -> None:
+        """Update the grid display with current instances."""
+        grid = self.query_one("#instances_grid", Grid)
+        grid.remove_children()
+        
+        if not self.discovered_instances:
+            grid.mount(Static("No servers discovered yet...", classes="no_servers"))
+        else:
+            for instance_id in sorted(self.discovered_instances):
+                btn = Button(instance_id, classes="instance_box")
+                btn.instance_id = instance_id  # Store instance_id on the button
+                grid.mount(btn)
+    
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle instance box click."""
+        if hasattr(event.button, 'instance_id'):
+            instance_id = event.button.instance_id
+            
+            # Get the DiscoveredInstance object
+            assert self.discoverer is not None, "Discoverer not initialized"
+            discovered_instance = self.discoverer.get_discovery_info(instance_id)
+            
+            if discovered_instance is None:
+                self.notify(f"Could not find instance {instance_id}", severity="error")
+                return
+            
+            # Create the {{stinger.name|UpperCamelCase}}Client
+            conn = self.app.mqtt_connection
+            client = {{stinger.name|UpperCamelCase}}Client(conn, discovered_instance)
+            
+            # Store the client in the app for the Client screen to use
+            self.app.{{stinger.name|snake_case}}_client = client
+            
+            # Navigate to the client screen
+            self.app.push_screen("client")

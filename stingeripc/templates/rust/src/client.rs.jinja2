@@ -467,11 +467,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                 if let Some(sender) = opt_sender {
                                     let oss: oneshot::Sender<MethodReturnCode> = sender;
                                     if oss.send(return_code.clone()).is_err() {
-                                        warn!("Failed to send method response  to waiting receiver");
+                                        warn!("Failed to propagate property update response to waiting receiver");
+                                    } else {
+                                        debug!("Propagated property update response to waiting receiver");
                                     }
                                 }
                             } else {
-                                warn!("Received method response without correlation ID");
+                                warn!("Received property update response without correlation ID");
                             }
                         },
                         {%endif%}
@@ -510,31 +512,33 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         {%endfor%}
                         {%-for prop_name, prop in stinger.properties.items()%}
                         _i if _i == sub_ids.{{prop_name | snake_case}}_property_value => {
-                            debug!("Received {{prop_name|CONST_CASE}} property value");
-                            // JSON deserialize into {{prop_name | UpperCamelCase}}Property struct
-                            match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.{{prop_name | snake_case}}.write().await;
-                                    {%if prop.arg_list | length == 1 %}
-                                    debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", pl.{{prop.arg_list[0].name}});
-                                    *guard = pl.{{prop.arg_list[0].name}}.clone();
-                                    {%else%}
-                                    debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", pl);
-                                    *guard = pl.clone();
-                                    {%endif%}
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.{{prop_name | snake_case}}_version.store(version_num, std::sync::atomic::Ordering::Relaxed);
+                            debug!("Received '{{prop_name}}' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into {{prop_name | UpperCamelCase}}Property struct
+                                match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property>(&msg.payload) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.{{prop_name | snake_case}}.write().await;
+                                        {%if prop.arg_list | length == 1 %}
+                                        debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", pl.{{prop.arg_list[0].name}});
+                                        *guard = pl.{{prop.arg_list[0].name}}.clone();
+                                        {%else%}
+                                        debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", pl);
+                                        *guard = pl.clone();
+                                        {%endif%}
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.{{prop_name | snake_case}}_version.store(version_num, std::sync::atomic::Ordering::Relaxed);
+                                            }
                                         }
+                                    },
+                                    Err(e) => {
+                                        warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
                                     }
-                                },
-                                Err(e) => {
-                                    warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                    continue;
                                 }
-                            }
+                            });
                         },
                         {%endfor%}
                         unhandled_subscription_id => {

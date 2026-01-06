@@ -1573,13 +1573,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                                 if let Some(sender) = opt_sender {
                                     let oss: oneshot::Sender<MethodReturnCode> = sender;
                                     if oss.send(return_code.clone()).is_err() {
-                                        warn!(
-                                            "Failed to send method response  to waiting receiver"
-                                        );
+                                        warn!("Failed to propagate property update response to waiting receiver");
+                                    } else {
+                                        debug!("Propagated property update response to waiting receiver");
                                     }
                                 }
                             } else {
-                                warn!("Received method response without correlation ID");
+                                warn!("Received property update response without correlation ID");
                             }
                         }
 
@@ -1601,288 +1601,326 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> WeatherClient<C> {
                         }
 
                         _i if _i == sub_ids.location_property_value => {
-                            debug!("Received LOCATION property value");
-                            // JSON deserialize into LocationProperty struct
-                            match serde_json::from_slice::<LocationProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.location.write().await;
+                            debug!("Received 'location' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into LocationProperty struct
+                                match serde_json::from_slice::<LocationProperty>(&msg.payload) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.location.write().await;
 
-                                    debug!("LOCATION property value updated: {:?}", pl);
-                                    *guard = pl.clone();
+                                        debug!("LOCATION property value updated: {:?}", pl);
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.location_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.location_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.current_temperature_property_value => {
-                            debug!("Received CURRENT_TEMPERATURE property value");
-                            // JSON deserialize into CurrentTemperatureProperty struct
-                            match serde_json::from_slice::<CurrentTemperatureProperty>(&msg.payload)
-                            {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.current_temperature.write().await;
+                            debug!("Received 'current_temperature' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into CurrentTemperatureProperty struct
+                                match serde_json::from_slice::<CurrentTemperatureProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.current_temperature.write().await;
 
-                                    debug!(
-                                        "CURRENT_TEMPERATURE property value updated: {:?}",
-                                        pl.temperature_f
-                                    );
-                                    *guard = pl.temperature_f.clone();
+                                        debug!(
+                                            "CURRENT_TEMPERATURE property value updated: {:?}",
+                                            pl.temperature_f
+                                        );
+                                        *guard = pl.temperature_f.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.current_temperature_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.current_temperature_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.current_condition_property_value => {
-                            debug!("Received CURRENT_CONDITION property value");
-                            // JSON deserialize into CurrentConditionProperty struct
-                            match serde_json::from_slice::<CurrentConditionProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.current_condition.write().await;
+                            debug!("Received 'current_condition' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into CurrentConditionProperty struct
+                                match serde_json::from_slice::<CurrentConditionProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.current_condition.write().await;
 
-                                    debug!("CURRENT_CONDITION property value updated: {:?}", pl);
-                                    *guard = pl.clone();
+                                        debug!(
+                                            "CURRENT_CONDITION property value updated: {:?}",
+                                            pl
+                                        );
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.current_condition_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.current_condition_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.daily_forecast_property_value => {
-                            debug!("Received DAILY_FORECAST property value");
-                            // JSON deserialize into DailyForecastProperty struct
-                            match serde_json::from_slice::<DailyForecastProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.daily_forecast.write().await;
+                            debug!("Received 'daily_forecast' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into DailyForecastProperty struct
+                                match serde_json::from_slice::<DailyForecastProperty>(&msg.payload)
+                                {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.daily_forecast.write().await;
 
-                                    debug!("DAILY_FORECAST property value updated: {:?}", pl);
-                                    *guard = pl.clone();
+                                        debug!("DAILY_FORECAST property value updated: {:?}", pl);
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.daily_forecast_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.daily_forecast_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.hourly_forecast_property_value => {
-                            debug!("Received HOURLY_FORECAST property value");
-                            // JSON deserialize into HourlyForecastProperty struct
-                            match serde_json::from_slice::<HourlyForecastProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.hourly_forecast.write().await;
+                            debug!("Received 'hourly_forecast' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into HourlyForecastProperty struct
+                                match serde_json::from_slice::<HourlyForecastProperty>(&msg.payload)
+                                {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.hourly_forecast.write().await;
 
-                                    debug!("HOURLY_FORECAST property value updated: {:?}", pl);
-                                    *guard = pl.clone();
+                                        debug!("HOURLY_FORECAST property value updated: {:?}", pl);
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.hourly_forecast_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.hourly_forecast_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.current_condition_refresh_interval_property_value => {
-                            debug!("Received CURRENT_CONDITION_REFRESH_INTERVAL property value");
-                            // JSON deserialize into CurrentConditionRefreshIntervalProperty struct
-                            match serde_json::from_slice::<CurrentConditionRefreshIntervalProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard =
-                                        props.current_condition_refresh_interval.write().await;
+                            debug!("Received 'current_condition_refresh_interval' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into CurrentConditionRefreshIntervalProperty struct
+                                match serde_json::from_slice::<
+                                    CurrentConditionRefreshIntervalProperty,
+                                >(&msg.payload)
+                                {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy
+                                            .current_condition_refresh_interval
+                                            .write()
+                                            .await;
 
-                                    debug!("CURRENT_CONDITION_REFRESH_INTERVAL property value updated: {:?}", pl.seconds);
-                                    *guard = pl.seconds.clone();
+                                        debug!("CURRENT_CONDITION_REFRESH_INTERVAL property value updated: {:?}", pl.seconds);
+                                        *guard = pl.seconds.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.current_condition_refresh_interval_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .current_condition_refresh_interval_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.hourly_forecast_refresh_interval_property_value => {
-                            debug!("Received HOURLY_FORECAST_REFRESH_INTERVAL property value");
-                            // JSON deserialize into HourlyForecastRefreshIntervalProperty struct
-                            match serde_json::from_slice::<HourlyForecastRefreshIntervalProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard =
-                                        props.hourly_forecast_refresh_interval.write().await;
+                            debug!("Received 'hourly_forecast_refresh_interval' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into HourlyForecastRefreshIntervalProperty struct
+                                match serde_json::from_slice::<HourlyForecastRefreshIntervalProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy
+                                            .hourly_forecast_refresh_interval
+                                            .write()
+                                            .await;
 
-                                    debug!("HOURLY_FORECAST_REFRESH_INTERVAL property value updated: {:?}", pl.seconds);
-                                    *guard = pl.seconds.clone();
+                                        debug!("HOURLY_FORECAST_REFRESH_INTERVAL property value updated: {:?}", pl.seconds);
+                                        *guard = pl.seconds.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.hourly_forecast_refresh_interval_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .hourly_forecast_refresh_interval_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.daily_forecast_refresh_interval_property_value => {
-                            debug!("Received DAILY_FORECAST_REFRESH_INTERVAL property value");
-                            // JSON deserialize into DailyForecastRefreshIntervalProperty struct
-                            match serde_json::from_slice::<DailyForecastRefreshIntervalProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard =
-                                        props.daily_forecast_refresh_interval.write().await;
+                            debug!("Received 'daily_forecast_refresh_interval' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into DailyForecastRefreshIntervalProperty struct
+                                match serde_json::from_slice::<DailyForecastRefreshIntervalProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy
+                                            .daily_forecast_refresh_interval
+                                            .write()
+                                            .await;
 
-                                    debug!("DAILY_FORECAST_REFRESH_INTERVAL property value updated: {:?}", pl.seconds);
-                                    *guard = pl.seconds.clone();
+                                        debug!("DAILY_FORECAST_REFRESH_INTERVAL property value updated: {:?}", pl.seconds);
+                                        *guard = pl.seconds.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.daily_forecast_refresh_interval_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .daily_forecast_refresh_interval_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         unhandled_subscription_id => {

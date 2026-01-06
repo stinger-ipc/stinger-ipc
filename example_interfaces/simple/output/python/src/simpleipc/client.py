@@ -8,21 +8,29 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
-from typing import Dict, Callable, List, Any, Optional
+from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
 import json
 import logging
 from datetime import datetime, timedelta, UTC
+
 from isodate import parse_duration
+from stinger_python_utils.message_creator import MessageCreator
+from stinger_python_utils.return_codes import *
+from pyqttier.interface import IBrokerConnection
+from pyqttier.message import Message
+import concurrent.futures as futures
 
 import asyncio
-import concurrent.futures as futures
-from .method_codes import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    ClientDeserializationErrorStingerMethodException,
+    stinger_exception_factory,
+)
 from .interface_types import *
 import threading
 
-from .connection import IBrokerConnection
 
 from .property import SimpleInitialPropertyValues
 
@@ -30,10 +38,10 @@ from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
-PersonEnteredSignalCallbackType = Callable[[Person], None]
-TradeNumbersMethodResponseCallbackType = Callable[[int], None]
+PersonEnteredSignalCallbackType = Union[Callable[[Person], None], Callable[[Any, Person], None]]
+TradeNumbersMethodResponseCallbackType = Union[Callable[[int], None], Callable[[Any, int], None]]
 
-SchoolPropertyUpdatedCallbackType = Callable[[str], None]
+SchoolPropertyUpdatedCallbackType = Union[Callable[[str], None], Callable[[Any, str], None]]
 
 
 class DiscoveredInstance(BaseModel):
@@ -52,18 +60,23 @@ class SimpleClient:
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
 
-        self._pending_method_responses: dict[str, Callable[..., None]] = {}
+        self._pending_method_responses: Dict[str, Callable[..., None]] = {}
 
         self._property_school = instance_info.initial_property_values.school  # type: str
         self._property_school_mutex = threading.Lock()
         self._property_school_version = instance_info.initial_property_values.school_version
         self._conn.subscribe("simple/{}/property/school/value".format(self._service_id), self._receive_school_property_update_message)
-        self._changed_value_callbacks_for_school: list[SchoolPropertyUpdatedCallbackType] = []
-        self._signal_recv_callbacks_for_person_entered: list[PersonEnteredSignalCallbackType] = []
+        self._changed_value_callbacks_for_school: List[SchoolPropertyUpdatedCallbackType] = []
+        self._signal_recv_callbacks_for_person_entered: List[PersonEnteredSignalCallbackType] = []
         self._conn.subscribe(f"client/{self._conn.client_id}/Simple/methodResponse", self._receive_any_method_response_message)
 
         self._property_response_topic = f"client/{self._conn.client_id}/Simple/propertyUpdateResponse"
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
+
+    @property
+    def service_id(self) -> str:
+        """The service ID of the connected service instance."""
+        return self._service_id
 
     @property
     def school(self) -> str:
@@ -79,7 +92,10 @@ class SimpleClient:
         property_obj = SchoolProperty(name=value)
         self._logger.debug("Setting 'school' property to %s", property_obj)
         with self._property_school_mutex:
-            self._conn.publish_property_update_request("simple/{}/property/school/setValue".format(self._service_id), property_obj, str(self._property_school_version), self._property_response_topic)
+            req_msg = MessageCreator.property_update_request_message(
+                "simple/{}/property/school/setValue".format(self._service_id), property_obj, str(self._property_school_version), self._property_response_topic, str(uuid4())
+            )
+            self._conn.publish(req_msg)
 
     def school_changed(self, handler: SchoolPropertyUpdatedCallbackType, call_immediately: bool = False):
         """Sets a callback to be called when the 'school' property changes.
@@ -88,7 +104,7 @@ class SimpleClient:
         with self._property_school_mutex:
             self._changed_value_callbacks_for_school.append(handler)
             if call_immediately and self._property_school is not None:
-                handler(self._property_school)
+                handler(self._property_school)  # type: ignore[call-arg]
         return handler
 
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
@@ -105,53 +121,53 @@ class SimpleClient:
                 filtered_args[k] = v
         return filtered_args
 
-    def _receive_person_entered_signal_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+    def _receive_person_entered_signal_message(self, message: Message):
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'person_entered' signal with non-JSON content type")
             return
 
-        model = PersonEnteredSignalPayload.model_validate_json(payload)
+        model = PersonEnteredSignalPayload.model_validate_json(message.payload)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_person_entered, **kwargs)
 
-    def _receive_any_method_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_any_method_response_message(self, message: Message):
         # Handle '' method response.
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
-        if "UserProperty" in properties:
-            user_properties = properties["UserProperty"]
+        if message.user_properties:
+            user_properties = message.user_properties or {}
             if "DebugInfo" in user_properties:
-                self._logger.info("Received Debug Info to '%s': %s", topic, user_properties["DebugInfo"])
+                self._logger.info("Received Debug Info to '%s': %s", message.topic, user_properties["DebugInfo"])
                 debug_message = user_properties["DebugInfo"]
             if "ReturnCode" in user_properties:
                 return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
-        if "CorrelationData" in properties:
-            correlation_id = properties["CorrelationData"].decode()
+        if message.correlation_data is not None:
+            correlation_id = message.correlation_data.decode()
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(payload, return_code, debug_message)
+                cb(message.payload, return_code, debug_message)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
-            self._logger.warning("No correlation data in properties sent to %s... %s", topic, [s for s in properties.keys()])
+            self._logger.warning("No correlation data in properties sent to %s.", message.topic)
 
-    def _receive_any_property_response_message(self, topic: str, payload: str, properties: Dict[str, Any]):
-        user_properties = properties.get("UserProperty", {})
+    def _receive_any_property_response_message(self, message: Message):
+        user_properties = message.user_properties or {}
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
             debug_info = user_properties.get("DebugInfo", "")
             self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
 
-    def _receive_school_property_update_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_school_property_update_message(self, message: Message):
         # Handle 'school' property change.
-        if "ContentType" not in properties or properties["ContentType"] != "application/json":
+        if message.content_type is None or message.content_type != "application/json":
             self._logger.warning("Received 'school' property change with non-JSON content type")
             return
         try:
-            prop_obj = SchoolProperty.model_validate_json(payload)
-            user_properties = properties.get("UserProperty", {})
+            prop_obj = SchoolProperty.model_validate_json(message.payload)
+            user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_school_mutex:
                 self._property_school = prop_obj.name
@@ -162,11 +178,11 @@ class SimpleClient:
         except Exception as e:
             self._logger.exception("Error processing 'school' property change: %s", exc_info=e)
 
-    def _receive_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _receive_message(self, message: Message):
         """New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
-        self._logger.warning("Receiving message sent to %s, but without a handler", topic)
+        self._logger.warning("Receiving message %s, but without a handler", message)
 
     def receive_person_entered(self, handler: PersonEnteredSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
@@ -183,10 +199,10 @@ class SimpleClient:
         payload = TradeNumbersMethodRequest(
             your_number=your_number,
         )
-        json_payload = payload.model_dump_json(by_alias=True)
-        self._logger.debug("Calling 'trade_numbers' method with payload %s", json_payload)
+        self._logger.debug("Calling 'trade_numbers' method with payload %s", payload)
         response_topic = f"client/{self._conn.client_id}/Simple/methodResponse"
-        self._conn.publish("simple/{}/method/tradeNumbers".format(self._service_id), json_payload, qos=2, retain=False, correlation_id=correlation_id, response_topic=response_topic)
+        req_msg = MessageCreator.request_message("simple/{}/method/tradeNumbers".format(self._service_id), payload, response_topic, correlation_id)
+        self._conn.publish(req_msg)
         return fut
 
     def _handle_trade_numbers_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str] = None):
@@ -220,7 +236,7 @@ class SimpleClientBuilder:
         """Creates a new SimpleClientBuilder."""
         self._logger = logging.getLogger("SimpleClientBuilder")
         self._signal_recv_callbacks_for_person_entered = []  # type: List[PersonEnteredSignalCallbackType]
-        self._property_updated_callbacks_for_school: list[SchoolPropertyUpdatedCallbackType] = []
+        self._property_updated_callbacks_for_school: List[SchoolPropertyUpdatedCallbackType] = []
 
     def receive_person_entered(self, handler):
         """Used as a decorator for methods which handle particular signals."""
@@ -247,19 +263,17 @@ class SimpleClientBuilder:
         self._logger.debug("Building SimpleClient for service instance %s", instance_info.instance_id)
         client = SimpleClient(broker, instance_info)
 
-        for cb in self._signal_recv_callbacks_for_person_entered:
+        for person_entered_cb in self._signal_recv_callbacks_for_person_entered:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.receive_person_entered(bound_cb)
+                client.receive_person_entered(person_entered_cb.__get__(binding, binding.__class__))
             else:
-                client.receive_person_entered(cb)
+                client.receive_person_entered(person_entered_cb)
 
-        for cb in self._property_updated_callbacks_for_school:
+        for school_cb in self._property_updated_callbacks_for_school:
             if binding:
-                bound_cb = cb.__get__(binding, binding.__class__)
-                client.school_changed(bound_cb)
+                client.school_changed(school_cb.__get__(binding, binding.__class__))
             else:
-                client.school_changed(cb)
+                client.school_changed(school_cb)
 
         return client
 
@@ -317,7 +331,7 @@ class SimpleClientDiscoverer:
         fut = futures.Future()  # type: futures.Future[SimpleClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
-                instance_info = next(iter(self._discovered_services))
+                instance_info = next(iter(self._discovered_services.values()))
                 if self._builder is None:
                     fut.set_result(SimpleClient(self._conn, instance_info))
                 else:
@@ -351,12 +365,12 @@ class SimpleClientDiscoverer:
                 else:
                     self._logger.debug("Updated info for service: %s", instance_id)
 
-    def _process_service_discovery_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _process_service_discovery_message(self, message: Message):
         """Processes a service discovery message."""
-        self._logger.debug("Processing service discovery message on topic %s", topic)
-        if len(payload) > 0:
+        self._logger.debug("Processing service discovery message on topic %s", message.topic)
+        if len(message.payload) > 0:
             try:
-                service_info = InterfaceInfo.model_validate_json(payload)
+                service_info = InterfaceInfo.model_validate_json(message.payload)
                 with self._mutex:
                     self._discovered_interface_infos[service_info.instance] = service_info
             except Exception as e:
@@ -364,7 +378,7 @@ class SimpleClientDiscoverer:
             self._check_for_fully_discovered(service_info.instance)
 
         else:  # Empty payload means the service is going away
-            instance_id = topic.split("/")[-2]
+            instance_id = message.topic.split("/")[-2]
             with self._mutex:
                 if instance_id in self._discovered_services:
                     self._logger.info("Service %s is going away", instance_id)
@@ -377,15 +391,15 @@ class SimpleClientDiscoverer:
                     for cb in self._removed_service_callbacks:
                         cb(instance_id)
 
-    def _process_property_value_message(self, topic: str, payload: str, properties: Dict[str, Any]):
+    def _process_property_value_message(self, message: Message):
         """Processes a property value message for discovery purposes."""
-        self._logger.debug("Processing property value message on topic %s", topic)
-        instance_id = topic.split("/")[1]
-        property_name = topic.split("/")[3]
-        user_properties = properties.get("UserProperty", {})
-        prop_version = user_properties.get("PropertyVersion", -1)
+        self._logger.debug("Processing property value message on topic %s", message.topic)
+        instance_id = message.topic.split("/")[1]
+        property_name = message.topic.split("/")[3]
+        user_properties = message.user_properties or {}
+        prop_version = user_properties.get("PropertyVersion", "-1")
         try:
-            prop_obj = json.loads(payload)
+            prop_obj = json.loads(message.payload)
             with self._mutex:
                 if instance_id not in self._discovered_properties:
                     self._discovered_properties[instance_id] = dict()

@@ -6509,13 +6509,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestableClient<C> {
                                 if let Some(sender) = opt_sender {
                                     let oss: oneshot::Sender<MethodReturnCode> = sender;
                                     if oss.send(return_code.clone()).is_err() {
-                                        warn!(
-                                            "Failed to send method response  to waiting receiver"
-                                        );
+                                        warn!("Failed to propagate property update response to waiting receiver");
+                                    } else {
+                                        debug!("Propagated property update response to waiting receiver");
                                     }
                                 }
                             } else {
-                                warn!("Received method response without correlation ID");
+                                warn!("Received property update response without correlation ID");
                             }
                         }
 
@@ -6972,989 +6972,1071 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> TestableClient<C> {
                         }
 
                         _i if _i == sub_ids.read_write_integer_property_value => {
-                            debug!("Received READ_WRITE_INTEGER property value");
-                            // JSON deserialize into ReadWriteIntegerProperty struct
-                            match serde_json::from_slice::<ReadWriteIntegerProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_integer.write().await;
+                            debug!("Received 'read_write_integer' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteIntegerProperty struct
+                                match serde_json::from_slice::<ReadWriteIntegerProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.read_write_integer.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_INTEGER property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_WRITE_INTEGER property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_integer_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_integer_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_only_integer_property_value => {
-                            debug!("Received READ_ONLY_INTEGER property value");
-                            // JSON deserialize into ReadOnlyIntegerProperty struct
-                            match serde_json::from_slice::<ReadOnlyIntegerProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_only_integer.write().await;
+                            debug!("Received 'read_only_integer' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadOnlyIntegerProperty struct
+                                match serde_json::from_slice::<ReadOnlyIntegerProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.read_only_integer.write().await;
 
-                                    debug!(
-                                        "READ_ONLY_INTEGER property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_ONLY_INTEGER property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_only_integer_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_only_integer_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_optional_integer_property_value => {
-                            debug!("Received READ_WRITE_OPTIONAL_INTEGER property value");
-                            // JSON deserialize into ReadWriteOptionalIntegerProperty struct
-                            match serde_json::from_slice::<ReadWriteOptionalIntegerProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_optional_integer.write().await;
+                            debug!("Received 'read_write_optional_integer' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteOptionalIntegerProperty struct
+                                match serde_json::from_slice::<ReadWriteOptionalIntegerProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_optional_integer.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_OPTIONAL_INTEGER property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!("READ_WRITE_OPTIONAL_INTEGER property value updated: {:?}", pl.value);
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_optional_integer_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .read_write_optional_integer_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_two_integers_property_value => {
-                            debug!("Received READ_WRITE_TWO_INTEGERS property value");
-                            // JSON deserialize into ReadWriteTwoIntegersProperty struct
-                            match serde_json::from_slice::<ReadWriteTwoIntegersProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_two_integers.write().await;
+                            debug!("Received 'read_write_two_integers' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteTwoIntegersProperty struct
+                                match serde_json::from_slice::<ReadWriteTwoIntegersProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_two_integers.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_TWO_INTEGERS property value updated: {:?}",
-                                        pl
-                                    );
-                                    *guard = pl.clone();
+                                        debug!(
+                                            "READ_WRITE_TWO_INTEGERS property value updated: {:?}",
+                                            pl
+                                        );
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_two_integers_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_two_integers_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_only_string_property_value => {
-                            debug!("Received READ_ONLY_STRING property value");
-                            // JSON deserialize into ReadOnlyStringProperty struct
-                            match serde_json::from_slice::<ReadOnlyStringProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_only_string.write().await;
+                            debug!("Received 'read_only_string' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadOnlyStringProperty struct
+                                match serde_json::from_slice::<ReadOnlyStringProperty>(&msg.payload)
+                                {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.read_only_string.write().await;
 
-                                    debug!(
-                                        "READ_ONLY_STRING property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_ONLY_STRING property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_only_string_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_only_string_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_string_property_value => {
-                            debug!("Received READ_WRITE_STRING property value");
-                            // JSON deserialize into ReadWriteStringProperty struct
-                            match serde_json::from_slice::<ReadWriteStringProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_string.write().await;
+                            debug!("Received 'read_write_string' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteStringProperty struct
+                                match serde_json::from_slice::<ReadWriteStringProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.read_write_string.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_STRING property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_WRITE_STRING property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_string_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_string_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_optional_string_property_value => {
-                            debug!("Received READ_WRITE_OPTIONAL_STRING property value");
-                            // JSON deserialize into ReadWriteOptionalStringProperty struct
-                            match serde_json::from_slice::<ReadWriteOptionalStringProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_optional_string.write().await;
+                            debug!("Received 'read_write_optional_string' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteOptionalStringProperty struct
+                                match serde_json::from_slice::<ReadWriteOptionalStringProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_optional_string.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_OPTIONAL_STRING property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!("READ_WRITE_OPTIONAL_STRING property value updated: {:?}", pl.value);
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_optional_string_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .read_write_optional_string_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_two_strings_property_value => {
-                            debug!("Received READ_WRITE_TWO_STRINGS property value");
-                            // JSON deserialize into ReadWriteTwoStringsProperty struct
-                            match serde_json::from_slice::<ReadWriteTwoStringsProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_two_strings.write().await;
+                            debug!("Received 'read_write_two_strings' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteTwoStringsProperty struct
+                                match serde_json::from_slice::<ReadWriteTwoStringsProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_two_strings.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_TWO_STRINGS property value updated: {:?}",
-                                        pl
-                                    );
-                                    *guard = pl.clone();
+                                        debug!(
+                                            "READ_WRITE_TWO_STRINGS property value updated: {:?}",
+                                            pl
+                                        );
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_two_strings_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_two_strings_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_struct_property_value => {
-                            debug!("Received READ_WRITE_STRUCT property value");
-                            // JSON deserialize into ReadWriteStructProperty struct
-                            match serde_json::from_slice::<ReadWriteStructProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_struct.write().await;
+                            debug!("Received 'read_write_struct' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteStructProperty struct
+                                match serde_json::from_slice::<ReadWriteStructProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.read_write_struct.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_STRUCT property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_WRITE_STRUCT property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_struct_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_struct_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_optional_struct_property_value => {
-                            debug!("Received READ_WRITE_OPTIONAL_STRUCT property value");
-                            // JSON deserialize into ReadWriteOptionalStructProperty struct
-                            match serde_json::from_slice::<ReadWriteOptionalStructProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_optional_struct.write().await;
+                            debug!("Received 'read_write_optional_struct' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteOptionalStructProperty struct
+                                match serde_json::from_slice::<ReadWriteOptionalStructProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_optional_struct.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_OPTIONAL_STRUCT property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!("READ_WRITE_OPTIONAL_STRUCT property value updated: {:?}", pl.value);
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_optional_struct_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .read_write_optional_struct_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_two_structs_property_value => {
-                            debug!("Received READ_WRITE_TWO_STRUCTS property value");
-                            // JSON deserialize into ReadWriteTwoStructsProperty struct
-                            match serde_json::from_slice::<ReadWriteTwoStructsProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_two_structs.write().await;
+                            debug!("Received 'read_write_two_structs' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteTwoStructsProperty struct
+                                match serde_json::from_slice::<ReadWriteTwoStructsProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_two_structs.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_TWO_STRUCTS property value updated: {:?}",
-                                        pl
-                                    );
-                                    *guard = pl.clone();
+                                        debug!(
+                                            "READ_WRITE_TWO_STRUCTS property value updated: {:?}",
+                                            pl
+                                        );
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_two_structs_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_two_structs_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_only_enum_property_value => {
-                            debug!("Received READ_ONLY_ENUM property value");
-                            // JSON deserialize into ReadOnlyEnumProperty struct
-                            match serde_json::from_slice::<ReadOnlyEnumProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_only_enum.write().await;
+                            debug!("Received 'read_only_enum' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadOnlyEnumProperty struct
+                                match serde_json::from_slice::<ReadOnlyEnumProperty>(&msg.payload) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.read_only_enum.write().await;
 
-                                    debug!("READ_ONLY_ENUM property value updated: {:?}", pl.value);
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_ONLY_ENUM property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_only_enum_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_only_enum_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_enum_property_value => {
-                            debug!("Received READ_WRITE_ENUM property value");
-                            // JSON deserialize into ReadWriteEnumProperty struct
-                            match serde_json::from_slice::<ReadWriteEnumProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_enum.write().await;
+                            debug!("Received 'read_write_enum' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteEnumProperty struct
+                                match serde_json::from_slice::<ReadWriteEnumProperty>(&msg.payload)
+                                {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.read_write_enum.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_ENUM property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_WRITE_ENUM property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_enum_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_enum_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_optional_enum_property_value => {
-                            debug!("Received READ_WRITE_OPTIONAL_ENUM property value");
-                            // JSON deserialize into ReadWriteOptionalEnumProperty struct
-                            match serde_json::from_slice::<ReadWriteOptionalEnumProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_optional_enum.write().await;
+                            debug!("Received 'read_write_optional_enum' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteOptionalEnumProperty struct
+                                match serde_json::from_slice::<ReadWriteOptionalEnumProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_optional_enum.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_OPTIONAL_ENUM property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_WRITE_OPTIONAL_ENUM property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_optional_enum_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_optional_enum_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_two_enums_property_value => {
-                            debug!("Received READ_WRITE_TWO_ENUMS property value");
-                            // JSON deserialize into ReadWriteTwoEnumsProperty struct
-                            match serde_json::from_slice::<ReadWriteTwoEnumsProperty>(&msg.payload)
-                            {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_two_enums.write().await;
+                            debug!("Received 'read_write_two_enums' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteTwoEnumsProperty struct
+                                match serde_json::from_slice::<ReadWriteTwoEnumsProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_two_enums.write().await;
 
-                                    debug!("READ_WRITE_TWO_ENUMS property value updated: {:?}", pl);
-                                    *guard = pl.clone();
+                                        debug!(
+                                            "READ_WRITE_TWO_ENUMS property value updated: {:?}",
+                                            pl
+                                        );
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_two_enums_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_two_enums_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_datetime_property_value => {
-                            debug!("Received READ_WRITE_DATETIME property value");
-                            // JSON deserialize into ReadWriteDatetimeProperty struct
-                            match serde_json::from_slice::<ReadWriteDatetimeProperty>(&msg.payload)
-                            {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_datetime.write().await;
+                            debug!("Received 'read_write_datetime' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteDatetimeProperty struct
+                                match serde_json::from_slice::<ReadWriteDatetimeProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_datetime.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_DATETIME property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_WRITE_DATETIME property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_datetime_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_datetime_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_optional_datetime_property_value => {
-                            debug!("Received READ_WRITE_OPTIONAL_DATETIME property value");
-                            // JSON deserialize into ReadWriteOptionalDatetimeProperty struct
-                            match serde_json::from_slice::<ReadWriteOptionalDatetimeProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard =
-                                        props.read_write_optional_datetime.write().await;
+                            debug!("Received 'read_write_optional_datetime' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteOptionalDatetimeProperty struct
+                                match serde_json::from_slice::<ReadWriteOptionalDatetimeProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_optional_datetime.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_OPTIONAL_DATETIME property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!("READ_WRITE_OPTIONAL_DATETIME property value updated: {:?}", pl.value);
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_optional_datetime_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .read_write_optional_datetime_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_two_datetimes_property_value => {
-                            debug!("Received READ_WRITE_TWO_DATETIMES property value");
-                            // JSON deserialize into ReadWriteTwoDatetimesProperty struct
-                            match serde_json::from_slice::<ReadWriteTwoDatetimesProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_two_datetimes.write().await;
+                            debug!("Received 'read_write_two_datetimes' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteTwoDatetimesProperty struct
+                                match serde_json::from_slice::<ReadWriteTwoDatetimesProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_two_datetimes.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_TWO_DATETIMES property value updated: {:?}",
-                                        pl
-                                    );
-                                    *guard = pl.clone();
+                                        debug!(
+                                            "READ_WRITE_TWO_DATETIMES property value updated: {:?}",
+                                            pl
+                                        );
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_two_datetimes_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_two_datetimes_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_duration_property_value => {
-                            debug!("Received READ_WRITE_DURATION property value");
-                            // JSON deserialize into ReadWriteDurationProperty struct
-                            match serde_json::from_slice::<ReadWriteDurationProperty>(&msg.payload)
-                            {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_duration.write().await;
+                            debug!("Received 'read_write_duration' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteDurationProperty struct
+                                match serde_json::from_slice::<ReadWriteDurationProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_duration.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_DURATION property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_WRITE_DURATION property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_duration_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_duration_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_optional_duration_property_value => {
-                            debug!("Received READ_WRITE_OPTIONAL_DURATION property value");
-                            // JSON deserialize into ReadWriteOptionalDurationProperty struct
-                            match serde_json::from_slice::<ReadWriteOptionalDurationProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard =
-                                        props.read_write_optional_duration.write().await;
+                            debug!("Received 'read_write_optional_duration' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteOptionalDurationProperty struct
+                                match serde_json::from_slice::<ReadWriteOptionalDurationProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_optional_duration.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_OPTIONAL_DURATION property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!("READ_WRITE_OPTIONAL_DURATION property value updated: {:?}", pl.value);
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_optional_duration_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .read_write_optional_duration_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_two_durations_property_value => {
-                            debug!("Received READ_WRITE_TWO_DURATIONS property value");
-                            // JSON deserialize into ReadWriteTwoDurationsProperty struct
-                            match serde_json::from_slice::<ReadWriteTwoDurationsProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_two_durations.write().await;
+                            debug!("Received 'read_write_two_durations' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteTwoDurationsProperty struct
+                                match serde_json::from_slice::<ReadWriteTwoDurationsProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_two_durations.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_TWO_DURATIONS property value updated: {:?}",
-                                        pl
-                                    );
-                                    *guard = pl.clone();
+                                        debug!(
+                                            "READ_WRITE_TWO_DURATIONS property value updated: {:?}",
+                                            pl
+                                        );
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_two_durations_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_two_durations_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_binary_property_value => {
-                            debug!("Received READ_WRITE_BINARY property value");
-                            // JSON deserialize into ReadWriteBinaryProperty struct
-                            match serde_json::from_slice::<ReadWriteBinaryProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_binary.write().await;
+                            debug!("Received 'read_write_binary' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteBinaryProperty struct
+                                match serde_json::from_slice::<ReadWriteBinaryProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.read_write_binary.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_BINARY property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!(
+                                            "READ_WRITE_BINARY property value updated: {:?}",
+                                            pl.value
+                                        );
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_binary_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_binary_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_optional_binary_property_value => {
-                            debug!("Received READ_WRITE_OPTIONAL_BINARY property value");
-                            // JSON deserialize into ReadWriteOptionalBinaryProperty struct
-                            match serde_json::from_slice::<ReadWriteOptionalBinaryProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_optional_binary.write().await;
+                            debug!("Received 'read_write_optional_binary' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteOptionalBinaryProperty struct
+                                match serde_json::from_slice::<ReadWriteOptionalBinaryProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_optional_binary.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_OPTIONAL_BINARY property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!("READ_WRITE_OPTIONAL_BINARY property value updated: {:?}", pl.value);
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_optional_binary_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .read_write_optional_binary_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_two_binaries_property_value => {
-                            debug!("Received READ_WRITE_TWO_BINARIES property value");
-                            // JSON deserialize into ReadWriteTwoBinariesProperty struct
-                            match serde_json::from_slice::<ReadWriteTwoBinariesProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_two_binaries.write().await;
+                            debug!("Received 'read_write_two_binaries' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteTwoBinariesProperty struct
+                                match serde_json::from_slice::<ReadWriteTwoBinariesProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_two_binaries.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_TWO_BINARIES property value updated: {:?}",
-                                        pl
-                                    );
-                                    *guard = pl.clone();
+                                        debug!(
+                                            "READ_WRITE_TWO_BINARIES property value updated: {:?}",
+                                            pl
+                                        );
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_two_binaries_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_two_binaries_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_list_of_strings_property_value => {
-                            debug!("Received READ_WRITE_LIST_OF_STRINGS property value");
-                            // JSON deserialize into ReadWriteListOfStringsProperty struct
-                            match serde_json::from_slice::<ReadWriteListOfStringsProperty>(
-                                &msg.payload,
-                            ) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_list_of_strings.write().await;
+                            debug!("Received 'read_write_list_of_strings' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteListOfStringsProperty struct
+                                match serde_json::from_slice::<ReadWriteListOfStringsProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.read_write_list_of_strings.write().await;
 
-                                    debug!(
-                                        "READ_WRITE_LIST_OF_STRINGS property value updated: {:?}",
-                                        pl.value
-                                    );
-                                    *guard = pl.value.clone();
+                                        debug!("READ_WRITE_LIST_OF_STRINGS property value updated: {:?}", pl.value);
+                                        *guard = pl.value.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_list_of_strings_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy
+                                                    .read_write_list_of_strings_version
+                                                    .store(
+                                                        version_num,
+                                                        std::sync::atomic::Ordering::Relaxed,
+                                                    );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.read_write_lists_property_value => {
-                            debug!("Received READ_WRITE_LISTS property value");
-                            // JSON deserialize into ReadWriteListsProperty struct
-                            match serde_json::from_slice::<ReadWriteListsProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.read_write_lists.write().await;
+                            debug!("Received 'read_write_lists' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into ReadWriteListsProperty struct
+                                match serde_json::from_slice::<ReadWriteListsProperty>(&msg.payload)
+                                {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.read_write_lists.write().await;
 
-                                    debug!("READ_WRITE_LISTS property value updated: {:?}", pl);
-                                    *guard = pl.clone();
+                                        debug!("READ_WRITE_LISTS property value updated: {:?}", pl);
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.read_write_lists_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.read_write_lists_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         unhandled_subscription_id => {

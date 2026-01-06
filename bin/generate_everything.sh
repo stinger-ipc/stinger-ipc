@@ -77,8 +77,13 @@ generate_rust simple || exit 1
 generate_python simple || exit 1
 generate_cpp simple || exit 1
 
-mkdir -p ${BASE_DIR}/../example_interfaces/${IFACE_NAME}/output-integers/protobuf/
+mkdir -p ${BASE_DIR}/../example_interfaces/simple/output-integers/protobuf/
 uv run stinger generate -l protobuf --consumer integers ${BASE_DIR}/../example_interfaces/simple/simple.stinger.yaml ${BASE_DIR}/../example_interfaces/simple/output-integers/protobuf/
+if [ $? -ne 0 ]; then exit 1; fi
+
+mkdir -p ${BASE_DIR}/../example_interfaces/simple/output-alternate/python/
+uv run stinger generate -l python --config ${BASE_DIR}/../example_interfaces/alternates.toml ${BASE_DIR}/../example_interfaces/simple/simple.stinger.yaml ${BASE_DIR}/../example_interfaces/simple/output-alternate/python/
+if [ $? -ne 0 ]; then exit 1; fi
 
 #### Python
 

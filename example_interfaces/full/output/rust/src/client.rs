@@ -1374,13 +1374,13 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                                 if let Some(sender) = opt_sender {
                                     let oss: oneshot::Sender<MethodReturnCode> = sender;
                                     if oss.send(return_code.clone()).is_err() {
-                                        warn!(
-                                            "Failed to send method response  to waiting receiver"
-                                        );
+                                        warn!("Failed to propagate property update response to waiting receiver");
+                                    } else {
+                                        debug!("Propagated property update response to waiting receiver");
                                     }
                                 }
                             } else {
-                                warn!("Received method response without correlation ID");
+                                warn!("Received property update response without correlation ID");
                             }
                         }
 
@@ -1423,217 +1423,234 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         }
 
                         _i if _i == sub_ids.favorite_number_property_value => {
-                            debug!("Received FAVORITE_NUMBER property value");
-                            // JSON deserialize into FavoriteNumberProperty struct
-                            match serde_json::from_slice::<FavoriteNumberProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.favorite_number.write().await;
+                            debug!("Received 'favorite_number' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into FavoriteNumberProperty struct
+                                match serde_json::from_slice::<FavoriteNumberProperty>(&msg.payload)
+                                {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.favorite_number.write().await;
 
-                                    debug!(
-                                        "FAVORITE_NUMBER property value updated: {:?}",
-                                        pl.number
-                                    );
-                                    *guard = pl.number.clone();
+                                        debug!(
+                                            "FAVORITE_NUMBER property value updated: {:?}",
+                                            pl.number
+                                        );
+                                        *guard = pl.number.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.favorite_number_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.favorite_number_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.favorite_foods_property_value => {
-                            debug!("Received FAVORITE_FOODS property value");
-                            // JSON deserialize into FavoriteFoodsProperty struct
-                            match serde_json::from_slice::<FavoriteFoodsProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.favorite_foods.write().await;
+                            debug!("Received 'favorite_foods' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into FavoriteFoodsProperty struct
+                                match serde_json::from_slice::<FavoriteFoodsProperty>(&msg.payload)
+                                {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.favorite_foods.write().await;
 
-                                    debug!("FAVORITE_FOODS property value updated: {:?}", pl);
-                                    *guard = pl.clone();
+                                        debug!("FAVORITE_FOODS property value updated: {:?}", pl);
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.favorite_foods_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.favorite_foods_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.lunch_menu_property_value => {
-                            debug!("Received LUNCH_MENU property value");
-                            // JSON deserialize into LunchMenuProperty struct
-                            match serde_json::from_slice::<LunchMenuProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.lunch_menu.write().await;
+                            debug!("Received 'lunch_menu' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into LunchMenuProperty struct
+                                match serde_json::from_slice::<LunchMenuProperty>(&msg.payload) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.lunch_menu.write().await;
 
-                                    debug!("LUNCH_MENU property value updated: {:?}", pl);
-                                    *guard = pl.clone();
+                                        debug!("LUNCH_MENU property value updated: {:?}", pl);
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.lunch_menu_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.lunch_menu_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.family_name_property_value => {
-                            debug!("Received FAMILY_NAME property value");
-                            // JSON deserialize into FamilyNameProperty struct
-                            match serde_json::from_slice::<FamilyNameProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.family_name.write().await;
+                            debug!("Received 'family_name' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into FamilyNameProperty struct
+                                match serde_json::from_slice::<FamilyNameProperty>(&msg.payload) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.family_name.write().await;
 
-                                    debug!(
-                                        "FAMILY_NAME property value updated: {:?}",
-                                        pl.family_name
-                                    );
-                                    *guard = pl.family_name.clone();
+                                        debug!(
+                                            "FAMILY_NAME property value updated: {:?}",
+                                            pl.family_name
+                                        );
+                                        *guard = pl.family_name.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.family_name_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.family_name_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.last_breakfast_time_property_value => {
-                            debug!("Received LAST_BREAKFAST_TIME property value");
-                            // JSON deserialize into LastBreakfastTimeProperty struct
-                            match serde_json::from_slice::<LastBreakfastTimeProperty>(&msg.payload)
-                            {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.last_breakfast_time.write().await;
+                            debug!("Received 'last_breakfast_time' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into LastBreakfastTimeProperty struct
+                                match serde_json::from_slice::<LastBreakfastTimeProperty>(
+                                    &msg.payload,
+                                ) {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard =
+                                            props_copy.last_breakfast_time.write().await;
 
-                                    debug!(
-                                        "LAST_BREAKFAST_TIME property value updated: {:?}",
-                                        pl.timestamp
-                                    );
-                                    *guard = pl.timestamp.clone();
+                                        debug!(
+                                            "LAST_BREAKFAST_TIME property value updated: {:?}",
+                                            pl.timestamp
+                                        );
+                                        *guard = pl.timestamp.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.last_breakfast_time_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.last_breakfast_time_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         _i if _i == sub_ids.last_birthdays_property_value => {
-                            debug!("Received LAST_BIRTHDAYS property value");
-                            // JSON deserialize into LastBirthdaysProperty struct
-                            match serde_json::from_slice::<LastBirthdaysProperty>(&msg.payload) {
-                                Ok(pl) => {
-                                    // Get a write-guard and set the local copy of the property value.
-                                    let mut guard = props.last_birthdays.write().await;
+                            debug!("Received 'last_birthdays' property value");
+                            let props_copy = props.clone();
+                            tokio::spawn(async move {
+                                // JSON deserialize into LastBirthdaysProperty struct
+                                match serde_json::from_slice::<LastBirthdaysProperty>(&msg.payload)
+                                {
+                                    Ok(pl) => {
+                                        // Get a write-guard and set the local copy of the property value.
+                                        let mut guard = props_copy.last_birthdays.write().await;
 
-                                    debug!("LAST_BIRTHDAYS property value updated: {:?}", pl);
-                                    *guard = pl.clone();
+                                        debug!("LAST_BIRTHDAYS property value updated: {:?}", pl);
+                                        *guard = pl.clone();
 
-                                    // Hold onto the write-guard while we set the local copy of the property version.
-                                    if let Some(version_str) =
-                                        msg.user_properties.get("PropertyVersion")
-                                    {
-                                        if let Ok(version_num) = version_str.parse::<u32>() {
-                                            props.last_birthdays_version.store(
-                                                version_num,
-                                                std::sync::atomic::Ordering::Relaxed,
-                                            );
+                                        // Hold onto the write-guard while we set the local copy of the property version.
+                                        if let Some(version_str) =
+                                            msg.user_properties.get("PropertyVersion")
+                                        {
+                                            if let Ok(version_num) = version_str.parse::<u32>() {
+                                                props_copy.last_birthdays_version.store(
+                                                    version_num,
+                                                    std::sync::atomic::Ordering::Relaxed,
+                                                );
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        warn!(
+                                            "Failed to deserialize '{}' into SignalPayload: {}",
+                                            String::from_utf8_lossy(&msg.payload),
+                                            e
+                                        );
+                                    }
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to deserialize '{}' into SignalPayload: {}",
-                                        String::from_utf8_lossy(&msg.payload),
-                                        e
-                                    );
-                                    continue;
-                                }
-                            }
+                            });
                         }
 
                         unhandled_subscription_id => {

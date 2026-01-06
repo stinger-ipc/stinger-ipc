@@ -1,0 +1,481 @@
+"""
+Tests for {{stinger.name}} server.
+"""
+import pytest
+from unittest.mock import Mock, patch, MagicMock
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
+{%if config.python.python37 %}
+UTC = timezone.utc
+{%endif%}
+from {{stinger.python.package_name}}.server import {{stinger.name | UpperCamelCase}}Server
+{%if stinger.properties | length > 0 -%}
+from {{stinger.python.package_name}}.property import {%if not config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{{stinger.name | UpperCamelCase}}InitialPropertyValues
+{%endif-%}
+from {{stinger.name | loweronly}}ipc.interface_types import *
+from stinger_python_utils.return_codes import (
+    MethodReturnCode
+)
+from pyqttier.mock import MockConnection
+from pyqttier.message import Message
+import json
+from pydantic import BaseModel
+from typing import Any, Dict
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
+
+class {{stinger.name|UpperCamelCase}}ServerSetup:
+
+    def __init__(self):
+        {%-if stinger.properties | length > 0 %}
+        self.initial_property_values = self.get_initial_property_values()
+        {%if not config.properties.stinger_owned_values %}
+        {%-for prop_name, prop in stinger.properties.items()%}
+        self.{{prop_name|snake_case}} = self.initial_property_values.{{prop_name|snake_case}}
+        {%-endfor%} {# end property foreach #}
+        self.reset_modified_flags()
+        {%-endif%} {# end app-owned values #}
+        {%else%}
+        ...
+        {%endif%}
+
+    {%-if stinger.properties | length > 0 %}
+    def get_initial_property_values(self) -> {{stinger.name|UpperCamelCase}}InitialPropertyValues:
+        initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
+            {%-for prop_name, prop in stinger.properties.items()%}
+            {{prop_name|snake_case}}={%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
+                {%-for arg in prop.arg_list%}
+                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
+                {%-endfor%}
+            ){%else%}{{prop.arg_list[0].get_random_example_value()}}
+            {%-endif%},
+            {%-endfor%}
+        )
+        return initial_property_values
+    {%- endif%}
+
+    {%-if stinger.properties | length > 0  and not config.properties.stinger_owned_values %}
+    def get_property_access(self) -> {{stinger.name|UpperCamelCase}}PropertyAccess:
+        property_access = {{stinger.name|UpperCamelCase}}PropertyAccess(
+        {%-for prop_name, prop in stinger.properties.items()%}
+            {{prop_name|snake_case}}_getter=self.get_property_{{prop_name|snake_case}},
+            {%-if not prop.read_only%}
+            {{prop_name|snake_case}}_setter=self.set_property_{{prop_name|snake_case}},
+            {%-endif%}
+        {%-endfor%}
+        )
+        return property_access
+
+    def reset_modified_flags(self):
+        {%-for prop_name, prop in stinger.properties.items()%}
+        self.{{prop_name|snake_case}}_modified_flag = False
+        {%-endfor%} {# end property foreach #}
+    {%-endif%}
+
+    def create_server(self, mock_connection) -> {{stinger.python.server_class_name}}:
+        server = {{stinger.python.server_class_name}}(
+            mock_connection, 
+            "test_instance", 
+            {%if stinger.properties|length > 0%}
+            {%-if config.properties.stinger_owned_values %}self.initial_property_values{%else%}self.get_property_access(){%endif%}
+            {%-endif%}
+        )
+        return server
+
+    {%-for prop_name, prop in stinger.properties.items()%}
+    {%-if not config.properties.stinger_owned_values %}
+    def get_property_{{prop_name|snake_case}}(self):
+        """Return the value for the '{{prop_name|snake_case}}' property."""
+        return self.{{prop_name|snake_case}}
+
+    {%-if not prop.read_only%}
+    def set_property_{{prop_name|snake_case}}(self, value: {{prop.python_annotation}}):
+        """Set the value for the '{{prop_name|snake_case}}' property."""
+        self.{{prop_name|snake_case}}_modified_flag = True
+        self.{{prop_name|snake_case}} = value
+    {%-endif%} {# end read only #}
+    {%-endif%} {# end app-owned values#}
+    {%endfor%} {# end property foreach #}
+
+@pytest.fixture
+def server_setup():
+    setup = {{stinger.name|UpperCamelCase}}ServerSetup()
+    return setup
+
+{%if stinger.properties | length > 0 %}
+@pytest.fixture
+def initial_property_values(server_setup):
+    return server_setup.initial_property_values
+{%endif%}
+
+@pytest.fixture
+def mock_connection():
+    """Fixture providing a mock MQTT connection."""
+    conn = MockConnection()
+    return conn
+
+@pytest.fixture
+def server(server_setup, mock_connection):
+    server = server_setup.create_server(mock_connection)
+    yield server
+    server.shutdown(timeout=0.01)
+
+class Test{{stinger.name|UpperCamelCase}}Server:
+
+    def test_server_initializes(self, server):
+        """Test that client initializes successfully."""
+        assert server is not None, "server failed to initialize"
+        assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
+
+{%if stinger.properties | length > 0 %}
+
+class Test{{stinger.name|UpperCamelCase}}ServerProperties:
+    {%-for prop_name, prop in stinger.properties.items()%}
+
+    {%if not config.properties.stinger_owned_values %}
+    def test_get_initial_{{prop_name|snake_case}}_property(self, server_setup, server):
+        """Test that the server can get the '{{prop_name|snake_case}}' property."""
+        assert server.{{prop_name|snake_case}} == server_setup.{{prop_name|snake_case}}, "Getter for property '{{prop_name|snake_case}}' returned incorrect value"
+    {%endif%} {# end app owned values #}
+    {%if config.properties.stinger_owned_values %}
+    def test_server_{{prop_name|snake_case}}_property_initialization(self, server, initial_property_values):
+        """Test that the {{prop_name|snake_case}} server property is initialized correctly."""
+        assert hasattr(server, '{{prop_name|snake_case}}'), "Server missing property '{{prop_name|snake_case}}'"
+        {%if prop.arg_list|length > 1 or not prop.arg_list[0].optional-%}
+        assert server.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
+        {%endif-%}
+        assert server.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
+    {%endif%} {# end stinger owned values #}
+
+    def test_{{prop_name|snake_case}}_property_publish(self, server, mock_connection, initial_property_values):
+        """Test that setting the '{{prop_name|snake_case}}' property publishes the correct message."""
+        mock_connection.clear_published_messages()
+        server.publish_{{prop_name|snake_case}}_value()
+
+        published_list = mock_connection.find_published("{{prop.value_topic}}".format('+'))
+        assert len(published_list) == 1, f"No message was published for property '{{prop_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
+
+        msg = published_list[0]
+        expected_topic = "{{prop.value_topic}}".format(server.instance_id)
+        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
+        
+        # Verify payload
+        {%-if prop.arg_list | length == 1%}
+        expected_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=initial_property_values.{{prop_name|snake_case}})
+        {%-else%}
+        expected_obj = initial_property_values.{{prop_name|snake_case}}
+        {%-endif%}
+        expected_dict = to_jsonified_dict(expected_obj)
+        payload_dict = json.loads(msg.payload.decode('utf-8'))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+
+    {%if not config.properties.stinger_owned_values -%}
+    def test_{{prop_name|snake_case}}_receive(self, server, server_setup, mock_connection):
+        mock_connection.clear_published_messages()
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            {%-for arg in prop.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        }
+        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data) # type: ignore[arg-type]
+        response_topic = "client/test/response"
+        correlation_data = b"3.1415926535"
+        incoming_msg = Message(
+            topic="{{prop.update_topic}}".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos=1,
+            retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            content_type="application/json",
+            user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # Verify that server property was updated
+        {% if prop.read_only %}
+        assert server_setup.{{prop_name|snake_case}}_modified_flag is not True, "Setter for property '{{prop_name|snake_case}}' was called on read-only property"
+        {%else%}
+        assert server_setup.{{prop_name|snake_case}}_modified_flag, "Setter for property '{{prop_name|snake_case}}' was not called"
+        {%endif%}
+
+        {%if not prop.read_only%}
+        # Expect a reply sent back acknowledging the update
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for property '{{prop_name|snake_case}}'."
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        {%endif%}
+    {% endif %}{# end app-owned values -#}
+
+    {%if config.properties.stinger_owned_values -%}
+    def test_{{prop_name|snake_case}}_property_receive(self, server, mock_connection):
+        """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
+        received_data = None
+        def callback({%for arg in prop.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}):
+            nonlocal received_data
+            received_data = {
+                {%-for arg in prop.arg_list%}
+                "{{arg.name|snake_case}}": {{arg.name|snake_case}},
+                {%-endfor%}
+            }
+        server.on_{{prop_name|snake_case}}_updated(callback)
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            {%-for arg in prop.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        }
+        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data) # type: ignore[arg-type]
+        response_topic = "client/test/response"
+        correlation_data = b"123-41"
+        incoming_msg = Message(
+            topic="{{prop.update_topic}}".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos=1,
+            retain=False,
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            content_type="application/json",
+            user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+        )
+        mock_connection.simulate_message(incoming_msg)
+        {%if prop.read_only%}
+        # Read-only property should not update server state
+        assert received_data is None, "Read-only property '{{prop_name|snake_case}}' should not be updated"
+        {%else%} {# read-write property #}
+        # Verify that server property was updated
+        assert received_data is not None, "Callback for property '{{prop_name|snake_case}}' was not called"
+
+        # Expect a reply sent back acknowledging the update
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for property '{{prop_name|snake_case}}'."
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SUCCESS.value), f"Expected SUCCESS return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        {%endif%}{# end ro/rw property #}
+    {%endif%} {# end stinger owned values #}
+
+    {%if not prop.read_only and config.properties.stinger_owned_values%}
+    def test_{{prop_name|snake_case}}_property_receive_out_of_sync(self, server, mock_connection):
+        """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
+        received_data = None
+        def callback({%for arg in prop.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}):
+            nonlocal received_data
+            received_data = {
+                {%-for arg in prop.arg_list%}
+                "{{arg.name|snake_case}}": {{arg.name|snake_case}},
+                {%-endfor%}
+            }
+        server.on_{{prop_name|snake_case}}_updated(callback)
+
+        # Create and simulate receiving a property update message
+        prop_data = {
+            {%-for arg in prop.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        }
+        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data) # type: ignore[arg-type]
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="{{prop.update_topic}}".format(server.instance_id),
+            payload=prop_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": "67"}
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property '{{prop_name|snake_case}}' was called despite out-of-sync version"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for out-of-sync property '{{prop_name|snake_case}}'."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.OUT_OF_SYNC.value), f"Expected OUT_OF_SYNC return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_{{prop_name|snake_case}}_property_receive_nonsense_payload(self, server, mock_connection):
+        """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
+        received_data = None
+        def callback({%for arg in prop.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}):
+            nonlocal received_data
+            received_data = {
+                {%-for arg in prop.arg_list%}
+                "{{arg.name|snake_case}}": {{arg.name|snake_case}},
+                {%-endfor%}
+            }
+        server.on_{{prop_name|snake_case}}_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="{{prop.update_topic}}".format(server.instance_id),
+            payload=b"adsfaf{this is not json}12|false",
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property '{{prop_name|snake_case}}' was called despite bad payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for bad payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+
+    def test_{{prop_name|snake_case}}_property_receive_wrong_payload(self, server, mock_connection):
+        """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
+        received_data = None
+        def callback({%for arg in prop.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}):
+            nonlocal received_data
+            received_data = {
+                {%-for arg in prop.arg_list%}
+                "{{arg.name|snake_case}}": {{arg.name|snake_case}},
+                {%-endfor%}
+            }
+        server.on_{{prop_name|snake_case}}_updated(callback)
+
+        # Create and simulate receiving a property update message that has nonsensical payload
+        response_topic = "client/test/response"
+        correlation_data = b"12345-67"
+        incoming_msg = Message(
+            topic="{{prop.update_topic}}".format(server.instance_id),
+            payload=b"{\"wrong_field\": 123, \"another_wrong\": false}",
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+            user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_data is None, "Callback for property '{{prop_name|snake_case}}' was called despite wrong payload"
+
+        # Check for error message published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response/error message was published for wrong payload request."
+
+        resp = published_list[0]
+        assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value), f"Expected SERVER_DESERIALIZATION_ERROR return code, got '{resp.user_properties.get('ReturnCode')}'"
+        assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+    {%endif%}{# end exclusion of read-only properties #}
+
+    {%endfor%} {# end property foreach #}
+
+{%endif%} {# end properties exist #}
+
+{%if stinger.signals | length > 0 %}
+class Test{{stinger.name|UpperCamelCase}}ServerSignals:
+    {%for signal_name, signal in stinger.signals.items()%}
+    def test_server_emit_{{signal_name|snake_case}}(self, server, mock_connection):
+        """Test that the server can emit the '{{signal_name|snake_case}}' signal."""
+        signal_data = {
+            {%-for arg in signal.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value()}},
+            {%endfor%}
+        } # type: Dict[str, Any]
+        server.emit_{{signal_name|snake_case}}(**signal_data)
+        
+        # Verify that a message was published
+        published_list = mock_connection.find_published("{{signal.topic}}".format('+'))
+        assert len(published_list) == 1, "No message was published for signal '{{signal_name|snake_case}}'"
+        
+        msg = published_list[0]
+        expected_topic = "{{signal.topic}}".format(server.instance_id)
+        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
+        
+        # Verify payload
+        expected_obj = {{signal_name|UpperCamelCase}}SignalPayload(**signal_data) # type: ignore[arg-type]
+        expected_dict = to_jsonified_dict(expected_obj)
+        payload_dict = json.loads(msg.payload.decode('utf-8'))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+    {%endfor%}
+{%endif%}
+
+{%if stinger.methods | length > 0 %}
+class Test{{stinger.name|UpperCamelCase}}ServerMethods:
+    {%for method_name, method in stinger.methods.items()%}
+    def test_server_handle_{{method_name|snake_case}}_method(self, server, mock_connection):
+        """Test that the server can handle the '{{method_name|snake_case}}' method."""
+        handler_callback_data = {{method.get_return_value_random_example_value('python')}}
+        received_args = None # type: Optional[Dict[str, Any]]
+        def handler({%for arg in method.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
+            nonlocal received_args
+            received_args = {
+                {%-for arg in method.arg_list%}
+                "{{arg.name|snake_case}}": {{arg.name|snake_case}},
+                {%-endfor%}
+            }
+            return handler_callback_data
+        
+        server.handle_{{method_name|snake_case}}(handler)
+
+        # Create and simulate receiving a method call message
+        method_data = {
+            {%-for arg in method.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        } # type: Dict[str, Any]
+        method_obj = {{method_name|UpperCamelCase}}MethodRequest(**method_data)
+        print(method_obj)
+        response_topic = "client/test/response"
+        correlation_data = b"method-1234"
+        incoming_msg = Message(
+            topic="{{method.topic}}".format(server.instance_id),
+            payload=method_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos=1,
+            retain=False,
+            content_type="application/json",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # Verify that handler was called with correct arguments
+        assert received_args is not None, "Handler for method '{{method_name|snake_case}}' was not called"
+        assert method_data == received_args, f"Handler arguments {received_args} do not match expected {method_data}"
+
+        # Verify that a response message was published
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for method '{{method_name|snake_case}}'."
+
+        resp_msg = published_list[0]
+        assert resp_msg.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        assert resp_msg.topic == response_topic, "Response topic does not match expected value"
+
+        # Verify response payload
+        resp_payload = json.loads(resp_msg.payload.decode('utf-8'))
+        {%if method.return_arg_list|length > 1%}
+        expected_resp_dict = to_jsonified_dict(handler_callback_data)
+        {%elif method.return_arg_list|length == 1 %}
+        expected_return_obj = {{method_name|UpperCamelCase}}MethodResponse({{method.return_arg_list[0].name|snake_case}}=handler_callback_data)
+        expected_resp_dict = to_jsonified_dict(expected_return_obj)
+        {%else%}
+        expected_resp_dict = {} # type: Dict[str, Any]
+        {%endif-%}
+        assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
+    {%endfor%}
+{%endif%}

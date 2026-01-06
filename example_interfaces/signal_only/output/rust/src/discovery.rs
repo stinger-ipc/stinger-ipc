@@ -220,7 +220,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SignalOnlyDiscovery<C> {
     fn try_publish_discovered_service(
         service_in_discovery: &ServiceInDiscovery,
         notification_tx: &broadcast::Sender<DiscoveredService>,
-        #[cfg(feature = "metrics")] metrics: &Arc<Mutex<SimpleDiscoveryMetrics>>,
+        #[cfg(feature = "metrics")] metrics: &Arc<Mutex<SignalOnlyDiscoveryMetrics>>,
     ) {
         // Check if this completes the discovery
 
@@ -231,7 +231,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SignalOnlyDiscovery<C> {
             let _ = notification_tx.send(discovered);
             #[cfg(feature = "metrics")]
             {
-                let metrics_guard = metrics.lock().unwrap();
+                let mut metrics_guard = metrics.lock().unwrap();
                 metrics_guard.set_time_of_first_discovery();
             }
         }
@@ -241,7 +241,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SignalOnlyDiscovery<C> {
         mut message_rx: broadcast::Receiver<MqttMessage>,
         instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
         notification_tx: broadcast::Sender<DiscoveredService>,
-        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
+        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SignalOnlyDiscoveryMetrics>>,
     ) -> JoinHandle<()> {
         tokio::spawn(async move {
             debug!("Listening for discovery messages");
@@ -261,7 +261,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> SignalOnlyDiscovery<C> {
         message: MqttMessage,
         instances_in_discovery: &Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
         notification_tx: &broadcast::Sender<DiscoveredService>,
-        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SimpleDiscoveryMetrics>>,
+        #[cfg(feature = "metrics")] metrics: Arc<Mutex<SignalOnlyDiscoveryMetrics>>,
     ) {
         if message.payload.is_empty() {
             info!("Service represented by {} is now offline", message.topic);

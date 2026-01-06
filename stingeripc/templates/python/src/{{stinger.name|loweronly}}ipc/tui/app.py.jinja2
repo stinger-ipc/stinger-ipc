@@ -1,0 +1,46 @@
+"""Main TUI application for {{stinger.name|UpperCamelCase}}IPC."""
+
+from typing import Optional
+from textual.app import App # typing: ignore
+from textual.screen import Screen # typing: ignore
+from pyqttier.connection import Mqtt5Connection
+from {{stinger.name|loweronly}}ipc.client import {{stinger.name|UpperCamelCase}}Client
+
+
+class {{stinger.name|UpperCamelCase}}IPCApp(App):
+    """A Textual app for {{stinger.name|UpperCamelCase}}IPC client interface."""
+    
+    # Store the MQTT connection and client globally
+    mqtt_connection: Optional[Mqtt5Connection] = None
+    {{stinger.name|snake_case}}_client: Optional[{{stinger.name|UpperCamelCase}}Client] = None
+    
+    CSS = """
+    Screen {
+        align: center middle;
+    }
+    """
+    
+    def on_mount(self) -> None:
+        """Start with the connection screen."""
+        # Import screens here to avoid circular imports
+        from {{stinger.name|loweronly}}ipc.tui.connection import ConnectionScreen
+        from {{stinger.name|loweronly}}ipc.tui.discovery import DiscoveryScreen
+        from {{stinger.name|loweronly}}ipc.tui.client import ClientScreen
+        
+        # Install screens
+        self.install_screen(ConnectionScreen(), name="connection")
+        self.install_screen(DiscoveryScreen(), name="discovery")
+        self.install_screen(ClientScreen(), name="client")
+        
+        # Start with connection screen
+        self.push_screen("connection")
+
+
+def main() -> None:
+    """Run the TUI application."""
+    app = {{stinger.name|UpperCamelCase}}IPCApp()
+    app.run()
+
+
+if __name__ == "__main__":
+    main()

@@ -3,7 +3,7 @@ from time import sleep
 import concurrent.futures as futures
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
-from testableipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from testableipc.client import TestableClient, TestableClientBuilder, TestableClientDiscoverer
 from testableipc.interface_types import *
 import threading
@@ -191,7 +191,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -223,7 +223,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -297,7 +297,7 @@ def request_loop(client: TestableClient):
         sleep(5)
 
         print("Making call to 'call_three_date_times'")
-        future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=None)
+        future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
@@ -475,7 +475,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -507,7 +507,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -576,7 +576,7 @@ def request_loop(client: TestableClient):
 if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport)
+    conn = Mqtt5Connection(transport)
 
     client_builder = TestableClientBuilder()
 
@@ -590,14 +590,14 @@ if __name__ == "__main__":
         """
         @param value int The integer value.
         """
-        print(f"Got a 'singleInt' signal: value={ value } ")
+        print(f"Got a 'singleInt' signal: value={ value} ")
 
     @client_builder.receive_single_optional_int
     def print_singleOptionalInt_receipt(value: Optional[int]):
         """
         @param value Optional[int] The integer value.
         """
-        print(f"Got a 'singleOptionalInt' signal: value={ value } ")
+        print(f"Got a 'singleOptionalInt' signal: value={ value} ")
 
     @client_builder.receive_three_integers
     def print_threeIntegers_receipt(first: int, second: int, third: Optional[int]):
@@ -606,21 +606,21 @@ if __name__ == "__main__":
         @param second int The second integer value.
         @param third Optional[int] The third integer value.
         """
-        print(f"Got a 'threeIntegers' signal: first={ first } second={ second } third={ third } ")
+        print(f"Got a 'threeIntegers' signal: first={ first} second={ second} third={ third} ")
 
     @client_builder.receive_single_string
     def print_singleString_receipt(value: str):
         """
         @param value str The string value.
         """
-        print(f"Got a 'singleString' signal: value={ value } ")
+        print(f"Got a 'singleString' signal: value={ value} ")
 
     @client_builder.receive_single_optional_string
     def print_singleOptionalString_receipt(value: Optional[str]):
         """
         @param value Optional[str] The string value.
         """
-        print(f"Got a 'singleOptionalString' signal: value={ value } ")
+        print(f"Got a 'singleOptionalString' signal: value={ value} ")
 
     @client_builder.receive_three_strings
     def print_threeStrings_receipt(first: str, second: str, third: Optional[str]):
@@ -629,21 +629,21 @@ if __name__ == "__main__":
         @param second str The second string value.
         @param third Optional[str] The third string value.
         """
-        print(f"Got a 'threeStrings' signal: first={ first } second={ second } third={ third } ")
+        print(f"Got a 'threeStrings' signal: first={ first} second={ second} third={ third} ")
 
     @client_builder.receive_single_enum
     def print_singleEnum_receipt(value: Numbers):
         """
         @param value Numbers The enum value.
         """
-        print(f"Got a 'singleEnum' signal: value={ value } ")
+        print(f"Got a 'singleEnum' signal: value={ value} ")
 
     @client_builder.receive_single_optional_enum
     def print_singleOptionalEnum_receipt(value: Optional[Numbers]):
         """
         @param value Optional[Numbers] The enum value.
         """
-        print(f"Got a 'singleOptionalEnum' signal: value={ value } ")
+        print(f"Got a 'singleOptionalEnum' signal: value={ value} ")
 
     @client_builder.receive_three_enums
     def print_threeEnums_receipt(first: Numbers, second: Numbers, third: Optional[Numbers]):
@@ -652,21 +652,21 @@ if __name__ == "__main__":
         @param second Numbers The second enum value.
         @param third Optional[Numbers] The third enum value.
         """
-        print(f"Got a 'threeEnums' signal: first={ first } second={ second } third={ third } ")
+        print(f"Got a 'threeEnums' signal: first={ first} second={ second} third={ third} ")
 
     @client_builder.receive_single_struct
     def print_singleStruct_receipt(value: AllTypes):
         """
         @param value AllTypes The struct value.
         """
-        print(f"Got a 'singleStruct' signal: value={ value } ")
+        print(f"Got a 'singleStruct' signal: value={ value} ")
 
     @client_builder.receive_single_optional_struct
     def print_singleOptionalStruct_receipt(value: AllTypes):
         """
         @param value AllTypes The struct value.
         """
-        print(f"Got a 'singleOptionalStruct' signal: value={ value } ")
+        print(f"Got a 'singleOptionalStruct' signal: value={ value} ")
 
     @client_builder.receive_three_structs
     def print_threeStructs_receipt(first: AllTypes, second: AllTypes, third: AllTypes):
@@ -675,21 +675,21 @@ if __name__ == "__main__":
         @param second AllTypes The second struct value.
         @param third AllTypes The third struct value.
         """
-        print(f"Got a 'threeStructs' signal: first={ first } second={ second } third={ third } ")
+        print(f"Got a 'threeStructs' signal: first={ first} second={ second} third={ third} ")
 
     @client_builder.receive_single_date_time
     def print_singleDateTime_receipt(value: datetime):
         """
         @param value datetime The date and time value.
         """
-        print(f"Got a 'singleDateTime' signal: value={ value } ")
+        print(f"Got a 'singleDateTime' signal: value={ value} ")
 
     @client_builder.receive_single_optional_datetime
     def print_singleOptionalDatetime_receipt(value: Optional[datetime]):
         """
         @param value Optional[datetime] The date and time value.
         """
-        print(f"Got a 'singleOptionalDatetime' signal: value={ value } ")
+        print(f"Got a 'singleOptionalDatetime' signal: value={ value} ")
 
     @client_builder.receive_three_date_times
     def print_threeDateTimes_receipt(first: datetime, second: datetime, third: Optional[datetime]):
@@ -698,21 +698,21 @@ if __name__ == "__main__":
         @param second datetime The second date and time value.
         @param third Optional[datetime] The third date and time value.
         """
-        print(f"Got a 'threeDateTimes' signal: first={ first } second={ second } third={ third } ")
+        print(f"Got a 'threeDateTimes' signal: first={ first} second={ second} third={ third} ")
 
     @client_builder.receive_single_duration
     def print_singleDuration_receipt(value: timedelta):
         """
         @param value timedelta The duration value.
         """
-        print(f"Got a 'singleDuration' signal: value={ value } ")
+        print(f"Got a 'singleDuration' signal: value={ value} ")
 
     @client_builder.receive_single_optional_duration
     def print_singleOptionalDuration_receipt(value: Optional[timedelta]):
         """
         @param value Optional[timedelta] The duration value.
         """
-        print(f"Got a 'singleOptionalDuration' signal: value={ value } ")
+        print(f"Got a 'singleOptionalDuration' signal: value={ value} ")
 
     @client_builder.receive_three_durations
     def print_threeDurations_receipt(first: timedelta, second: timedelta, third: Optional[timedelta]):
@@ -721,21 +721,21 @@ if __name__ == "__main__":
         @param second timedelta The second duration value.
         @param third Optional[timedelta] The third duration value.
         """
-        print(f"Got a 'threeDurations' signal: first={ first } second={ second } third={ third } ")
+        print(f"Got a 'threeDurations' signal: first={ first} second={ second} third={ third} ")
 
     @client_builder.receive_single_binary
     def print_singleBinary_receipt(value: bytes):
         """
         @param value bytes The binary value.
         """
-        print(f"Got a 'singleBinary' signal: value={ value } ")
+        print(f"Got a 'singleBinary' signal: value={ value!r} ")
 
     @client_builder.receive_single_optional_binary
     def print_singleOptionalBinary_receipt(value: bytes):
         """
         @param value bytes The binary value.
         """
-        print(f"Got a 'singleOptionalBinary' signal: value={ value } ")
+        print(f"Got a 'singleOptionalBinary' signal: value={ value!r} ")
 
     @client_builder.receive_three_binaries
     def print_threeBinaries_receipt(first: bytes, second: bytes, third: bytes):
@@ -744,21 +744,21 @@ if __name__ == "__main__":
         @param second bytes The second binary value.
         @param third bytes The third binary value.
         """
-        print(f"Got a 'threeBinaries' signal: first={ first } second={ second } third={ third } ")
+        print(f"Got a 'threeBinaries' signal: first={ first!r} second={ second!r} third={ third!r} ")
 
     @client_builder.receive_single_array_of_integers
     def print_singleArrayOfIntegers_receipt(values: List[int]):
         """
         @param values List[int] The array of integers.
         """
-        print(f"Got a 'singleArrayOfIntegers' signal: values={ values } ")
+        print(f"Got a 'singleArrayOfIntegers' signal: values={ values} ")
 
     @client_builder.receive_single_optional_array_of_strings
     def print_singleOptionalArrayOfStrings_receipt(values: List[str]):
         """
         @param values List[str] The array of strings.
         """
-        print(f"Got a 'singleOptionalArrayOfStrings' signal: values={ values } ")
+        print(f"Got a 'singleOptionalArrayOfStrings' signal: values={ values} ")
 
     @client_builder.receive_array_of_every_type
     def print_arrayOfEveryType_receipt(
@@ -782,7 +782,7 @@ if __name__ == "__main__":
         @param eighth_of_binaries List[bytes] The eighth array of binary values.
         """
         print(
-            f"Got a 'arrayOfEveryType' signal: first_of_integers={ first_of_integers } second_of_floats={ second_of_floats } third_of_strings={ third_of_strings } fourth_of_enums={ fourth_of_enums } fifth_of_structs={ fifth_of_structs } sixth_of_datetimes={ sixth_of_datetimes } seventh_of_durations={ seventh_of_durations } eighth_of_binaries={ eighth_of_binaries } "
+            f"Got a 'arrayOfEveryType' signal: first_of_integers={ first_of_integers} second_of_floats={ second_of_floats} third_of_strings={ third_of_strings} fourth_of_enums={ fourth_of_enums} fifth_of_structs={ fifth_of_structs} sixth_of_datetimes={ sixth_of_datetimes} seventh_of_durations={ seventh_of_durations} eighth_of_binaries={ eighth_of_binaries!r} "
         )
 
     @client_builder.read_write_integer_updated
@@ -893,12 +893,12 @@ if __name__ == "__main__":
     @client_builder.read_write_binary_updated
     def print_new_read_write_binary_value(value: bytes):
         """ """
-        print(f"Property 'read_write_binary' has been updated to: {value}")
+        print(f"Property 'read_write_binary' has been updated to: {value!r}")
 
     @client_builder.read_write_optional_binary_updated
     def print_new_read_write_optional_binary_value(value: bytes):
         """ """
-        print(f"Property 'read_write_optional_binary' has been updated to: {value}")
+        print(f"Property 'read_write_optional_binary' has been updated to: {value!r}")
 
     @client_builder.read_write_two_binaries_updated
     def print_new_read_write_two_binaries_value(value: ReadWriteTwoBinariesProperty):

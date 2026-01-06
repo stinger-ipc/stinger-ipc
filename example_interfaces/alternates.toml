@@ -1,0 +1,6 @@
+
+[python]
+python37 = true
+
+[properties]
+stinger_owned_values = false

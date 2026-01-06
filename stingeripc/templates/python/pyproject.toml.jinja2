@@ -1,23 +1,45 @@
 [project]
-name = "{{stinger.name|hyphen_case}}-ipc"
+name = "{{stinger.name|hyphen_case}}{%if config.python.python37 %}-37{%endif%}-ipc"
 version = "{{stinger.version}}"
 description = "{{stinger.title}}"
-requires-python = ">=3.9"
+requires-python = {%if config.python.python37%}">=3.7"{%else%}">=3.9"{%endif%}
 dependencies = [
-    "pydantic>=2.11.7",
-    "paho-mqtt>=2.0.1",
+    "pydantic{%if config.python.python37%}==2.5.3{%else%}>=2.11.7{%endif%}",
+    "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
+    "pyqttier>=0.2.5",
+    "stinger-python-utils>=0.1.5",
+    {%if config.python.python37%}"typing-extensions>=4.0.0",{%endif%}
 ]
 
+{%if not config.python.python37%}
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+    "mypy>=1.19.1",
+]
+{%endif%}
+
+{%if config.python.python37%}
 [project.optional-dependencies]
 tui = ["textual"]
+{%endif%}
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+{%if not config.python.python37%}
 [project.scripts]
 {{stinger.name|hyphen_case}}-tui = "{{stinger.name|snake_case}}ipc.tui.app:main"
+{%endif%}
 
 [tool.setuptools.package-data]
 packages = ["{{stinger.name|snake_case}}ipc"]
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = [
+    "textual.*",
+]
+ignore_missing_imports = true

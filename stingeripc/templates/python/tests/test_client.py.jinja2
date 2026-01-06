@@ -1,0 +1,100 @@
+"""
+Tests for {{stinger.name}} client.
+"""
+import pytest
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
+{%if config.python.python37 %}
+UTC = timezone.utc
+{%endif%}
+from {{stinger.name | loweronly}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance
+{%if stinger.properties | length > 0 -%}
+from {{stinger.name | loweronly}}ipc.property import {{stinger.name | UpperCamelCase}}InitialPropertyValues
+{%endif-%}
+from {{stinger.name | loweronly}}ipc.interface_types import *
+from pyqttier.mock import MockConnection
+import json
+from typing import Dict, Any
+
+def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
+    """Convert a Pydantic model to a JSON-serializable dict."""
+    json_str = model.model_dump_json(by_alias=True)
+    return json.loads(json_str)
+
+{%if stinger.properties | length > 0 %}
+@pytest.fixture
+def initial_property_values():
+    initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
+        {%-for prop_name, prop in stinger.properties.items()%}
+        {{prop_name|snake_case}}={%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
+            {%-for arg in prop.arg_list%}
+            {{arg.name|snake_case}}={{arg.get_random_example_value()}},
+            {%-endfor%}
+        ){%else%}{{prop.arg_list[0].get_random_example_value()}}
+        {%-endif%},
+        {%-endfor%}
+    )
+    return initial_property_values
+{%endif%}
+
+@pytest.fixture
+def mock_connection():
+    """Fixture providing a mock MQTT connection."""
+    conn = MockConnection()
+    return conn
+
+
+@pytest.fixture
+def client(mock_connection{%if stinger.properties | length > 0 %}, initial_property_values{%endif%}):
+    """Fixture providing a {{stinger.name}} client with mocked connection."""
+    mock_discovery = DiscoveredInstance(
+        instance_id="test_instance",
+        {%if stinger.properties | length > 0 -%}
+        initial_property_values=initial_property_values,
+        {%endif%}{# any properties #}   
+    )
+    client = {{stinger.name | UpperCamelCase}}Client(
+        connection=mock_connection,
+        instance_info=mock_discovery,
+    )
+    return client
+
+
+class TestClient:
+    """Tests for client initialization."""
+
+    def test_client_initializes(self, client):
+        """Test that client initializes successfully."""
+        assert client is not None, "Client failed to initialize"
+        assert client.service_id == "test_instance", "Client service_id does not match expected value"
+
+{%if stinger.properties | length > 0 %}
+class TestClientProperties:
+
+    def test_client_properties_initialization(self, client, initial_property_values):
+        """Test that client properties are initialized correctly."""
+        {%for prop_name, prop in stinger.properties.items()%}
+        assert hasattr(client, '{{prop_name|snake_case}}'), "Client missing property '{{prop_name|snake_case}}'"
+        {%-if prop.arg_list|length > 1 or not prop.arg_list[0].optional%}
+        assert client.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
+        {%-endif%}
+        assert client.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
+        {%endfor%}
+{%endif%}
+{%if stinger.methods | length > 0 %}
+class TestClientMethods:
+
+    {%for method_name, method in stinger.methods.items()%}
+    def test_{{method_name|snake_case}}_method_call_sends_request(self, mock_connection, client):
+        kwargs = {
+        {%-for arg in method.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value()}},
+        {%endfor-%}
+        } # type: Dict[str, Any]
+        client.{{method_name|snake_case}}(**kwargs)
+        assert len(mock_connection.published_messages) == 1, "No message was published for '{{method_name|snake_case}}' method call"
+        message = mock_connection.published_messages[0]
+        assert message.topic.endswith("/method/{{method_name|lowerCamelCase}}"), f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
+    {%endfor%}
+{%endif%}

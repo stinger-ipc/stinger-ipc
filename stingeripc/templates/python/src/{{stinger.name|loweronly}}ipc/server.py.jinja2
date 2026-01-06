@@ -1,0 +1,523 @@
+"""
+DO NOT MODIFY THIS FILE. {# Unless you see this comment, in which case you are modifying the template. #} It is automatically generated and changes will be over-written
+on the next generation.
+
+This is the Server for the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+"""
+
+import json
+import logging
+import threading
+from time import sleep
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
+{%if config.python.python37 %}
+UTC = timezone.utc
+{%endif%}
+import isodate
+import functools
+from concurrent.futures import Future
+logging.basicConfig(level=logging.DEBUG)
+from pydantic import BaseModel, ValidationError
+from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
+from pyqttier.interface import IBrokerConnection
+from pyqttier.message import Message
+from stinger_python_utils.message_creator import MessageCreator
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+    StingerMethodException,
+    ServerSerializationErrorStingerMethodException,
+    ServerDeserializationErrorStingerMethodException,
+    OutOfSyncStingerMethodException,
+    stinger_exception_factory,
+)
+from .interface_types import *
+{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
+{%if stinger.properties | length > 0 %}
+{%if config.properties.stinger_owned_values%}
+from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
+{%else%}
+from .property import {{stinger.name|UpperCamelCase}}PropertyAccess
+{%endif%}
+
+
+T = TypeVar('T')
+
+@dataclass
+class PropertyControls(Generic[T]):
+    """
+    Controls for a server property.  Generic[T] must be a single value or a pydantic BaseModel for multi-argument properties.
+    """
+    {%-if config.properties.stinger_owned_values%}
+    value: T
+    mutex = threading.RLock()
+    version: int = -1
+    callbacks: List[Callable[[T], None]] = field(default_factory=list)
+
+    def get_value(self) -> T:
+        with self.mutex:
+            return self.value
+
+    def set_value(self, new_value: T) -> T:
+        with self.mutex:
+            self.value = new_value
+            return self.value
+    {%else%}
+    mutex = threading.RLock()
+    getter: Callable[[], T]
+    setter: Callable[[T], None]
+    version: int = -1
+
+    def get_value(self) -> T:
+        return self.getter()
+
+    def set_value(self, new_value: T) -> None:
+        self.setter(new_value)
+    {%endif%}
+{%endif%} {# end any property#}
+
+class {{stinger.python.server_class_name}}:
+
+    def __init__(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, {%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}{%endif%}):
+        self._logger = logging.getLogger(f'{{stinger.python.server_class_name}}:{instance_id}')
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
+        self._instance_id = instance_id
+        self._service_advert_topic = "{{stinger.interface_info_topic}}".format(self._instance_id)
+        self._re_advertise_server_interval_seconds = 120 # every two minutes
+        self._conn = connection
+        self._running = True
+        self._conn.add_message_callback(self._receive_message)
+        {%for prop_name, prop in stinger.properties.items()%}
+        {%-if config.properties.stinger_owned_values%}
+        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}] = PropertyControls(value=initial_property_values.{{prop_name|snake_case}}, version=initial_property_values.{{prop_name|snake_case}}_version)
+        {%else-%}
+        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_class}}{%else%}{{prop.python_class}}{%endif%}] = PropertyControls(getter=property_access.{{prop_name|snake_case}}_getter, {%if not prop.read_only%}setter=property_access.{{prop_name|snake_case}}_setter{%endif%})
+        {%endif-%}
+        {%if not prop.read_only-%}
+        self._conn.subscribe("{{prop.update_topic}}".format(self._instance_id), self._receive_{{prop_name|snake_case}}_update_request_message)
+        {%endif%}{# end read_only prop -#}
+        {%endfor-%}
+        {%-for method_name, method in stinger.methods.items()%}
+        self._conn.subscribe("{{method.topic}}".format(self._instance_id), self._process_{{method_name | snake_case}}_call)
+        self._method_{{method_name|snake_case}}_handler = None # type: Optional[{{method_type_annotation(method)}}]
+        {%endfor%}
+        {%-if stinger.properties|length > 0 %}
+        self._publish_all_properties()
+        {%-endif%}
+        self._logger.debug("Starting interface advertisement thread")
+        self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info, daemon=True)
+        self._advertise_thread.start()
+
+    def __del__(self):
+        self.shutdown()
+
+    def shutdown(self, timeout: float=5.0):
+        """Gracefully shutdown the server and stop the advertisement thread."""
+        if not self._running:
+            return
+        self._running = False
+        self._conn.unpublish_retained(self._service_advert_topic)
+        if hasattr(self, '_advertise_thread') and self._advertise_thread.is_alive():
+            self._advertise_thread.join(timeout=timeout)
+
+    @property
+    def instance_id(self) -> str:
+        """ The instance ID of this server instance. """
+        return self._instance_id
+
+    def _loop_publishing_interface_info(self):
+        """ We have a discovery topic separate from the MQTT client discovery topic.
+        We publish it periodically, but with a Message Expiry interval."""
+        while self._running:
+            if self._conn.is_connected():
+                self.publish_interface_info()
+                time_left = self._re_advertise_server_interval_seconds
+                while self._running and time_left > 0:
+                    sleep(4)
+                    time_left -= 4
+            else:
+                sleep(2)
+            
+    def publish_interface_info(self):
+        """ Publishes the interface info message to the interface info topic with an expiry interval. """
+        data = InterfaceInfo(
+            instance=self._instance_id,
+            connection_topic=(self._conn.online_topic or ""),
+        timestamp=datetime.now(UTC).isoformat()
+        )
+        expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
+        topic = self._service_advert_topic
+        self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
+        msg = MessageCreator.status_message(topic, data, expiry)
+        self._conn.publish(msg)
+
+    {%if stinger.properties|length > 0%}
+    {%-for prop_name, prop in stinger.properties.items()%}
+    def publish_{{prop_name|snake_case}}_value(self, *_, **__):
+        """ Publishes the current value of the '{{prop_name}}' property.
+
+        Accepts unused args and kwargs to make this a usable callback for application code.
+        {%if config.properties.stinger_owned_values%}
+        Since we won't automatically publish a property value unless it changes, this method is
+        useful for unit tests where we want to force re-publishing the property value to check the
+        published value in the unit test.
+        {%endif%}
+        """
+        with self._property_{{prop_name|snake_case}}.mutex:
+            self._property_{{prop_name|snake_case}}.version += 1
+            {%- if prop.arg_list | length == 1 %}
+            {{prop_name|snake_case}}_prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
+            {%- else %}
+            {{prop_name|snake_case}}_prop_obj = self._property_{{prop_name|snake_case}}.get_value()
+            {%- endif %}
+            state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), {{prop_name|snake_case}}_prop_obj, self._property_{{prop_name|snake_case}}.version)
+            self._conn.publish(state_msg)
+    {%-endfor%}
+
+    def _publish_all_properties(self):
+        """ Publishes the current value of all properties.
+        """
+        {%-for prop_name, prop in stinger.properties.items()%}
+        self.publish_{{prop_name|snake_case}}_value()
+        {%-endfor%}
+    {%-endif%}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    {%if not prop.read_only%}
+    def _receive_{{prop_name|snake_case}}_update_request_message(self, message: Message):
+        """ When the MQTT client receives a message to the `{{prop.update_topic}}` topic
+        in order to update the `{{prop_name}}` property, this method is called to process that message
+        and update the value of the property.
+        """
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
+        prop_version = int(prop_version_str)
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
+
+        try:
+            if int(prop_version) != int(self._property_{{prop_name|snake_case}}.version):
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_{{prop_name|snake_case}}.version}' of the '{{prop_name}}' property")
+
+            if content_type is None:
+                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                content_type = "application/json"
+
+            if content_type != "application/json":
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{{prop_name}}' property")
+
+            recv_prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
+
+            {% if prop.arg_list | length > 1-%}
+            prop_value = recv_prop_obj # type: {{prop_name|UpperCamelCase}}Property
+            {%else-%}
+            prop_value = recv_prop_obj.{{prop.arg_list[0].name}}
+            {%endif-%}
+            with self._property_{{prop_name|snake_case}}.mutex:
+                self._property_{{prop_name|snake_case}}.version += 1
+                self._property_{{prop_name|snake_case}}.set_value(prop_value)
+                {% if prop.arg_list | length == 1%}
+                current_prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
+                {%else%}
+                current_prop_obj = self._property_{{prop_name|snake_case}}.get_value() # type: {{prop_name|UpperCamelCase}}Property
+                {%endif%}
+                state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), current_prop_obj, self._property_{{prop_name|snake_case}}.version)
+                self._conn.publish(state_msg)
+            
+                if response_topic is not None:
+                    self._logger.debug("Sending property update response for to %s", response_topic)
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_{{prop_name|snake_case}}.version), MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(prop_resp_msg)
+                else:
+                    self._logger.debug("No response topic provided for property update of %s", message.topic)
+
+            {%if config.properties.stinger_owned_values%}{# only call callbacks if we have stinger-owned values#}
+            for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
+                {%if prop.arg_list | length == 1%}
+                {{prop_name|snake_case}}_callback(current_prop_obj.{{prop.arg_list[0].name|snake_case}})
+                {%else%}
+                {{prop_name|snake_case}}_callback(current_prop_obj)
+                {%endif%}
+            {%endif%}
+        except Exception as e:
+            self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
+            if response_topic is not None:
+                {%- if prop.arg_list | length == 1%}
+                prop_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
+                {%-else%}
+                prop_obj = self._property_{{prop_name|snake_case}}.get_value()
+                {%-endif%}
+                if isinstance(e, (json.JSONDecodeError, ValidationError)):
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                elif isinstance(e, StingerMethodException):
+                    return_code = e.return_code
+                else:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_{{prop_name|snake_case}}.version), return_code.value, correlation_id, str(e))
+                self._conn.publish(prop_resp_msg)
+    {%endif%}{# not read only#}
+    {%endfor%}{# end property loop #}
+
+    def _receive_message(self, message: Message):
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
+        self._logger.warning("Received unexpected message: %s", message)
+
+    {%for sig_name, sig in stinger.signals.items()-%}
+    def emit_{{sig_name|snake_case}}(self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        """ Server application code should call this method to emit the '{{sig_name}}' signal.
+
+        {{sig_name|UpperCamelCase}}SignalPayload is a pydantic BaseModel which will validate the arguments.
+        """
+        {%for arg in sig.arg_list%}
+        assert isinstance({{arg.name|snake_case}}, {{arg.python_type}}){%if arg.optional%} or {{arg.name|snake_case}} is None{%endif%}, f"The '{{arg.name}}' argument must be of type {{arg.python_annotation}}, but was {type({{arg.name|snake_case}})}"
+        {%endfor%}
+
+        payload = {{sig_name|UpperCamelCase}}SignalPayload({%-for arg in sig.arg_list%}
+            {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
+        {%endfor%})
+        sig_msg = MessageCreator.signal_message("{{sig.topic}}".format(self._instance_id), payload)
+        self._conn.publish(sig_msg)
+
+    {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
+        """ This is a decorator to decorate a method that will handle the '{{method_name}}' method calls.
+        """
+        if self._method_{{method_name|snake_case}}_handler is None and handler is not None:
+            self._method_{{method_name|snake_case}}_handler = handler
+        else:
+            raise Exception("Method handler already set")
+
+    def _process_{{method_name | snake_case}}_call(self, message: Message):
+        """ This processes a call to the '{{method_name}}' method.  It deserializes the payload to find the method arguments,
+        then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
+        """
+        try:
+            payload = {{method_name|UpperCamelCase}}MethodRequest.model_validate_json(message.payload)
+        except (json.JSONDecodeError, ValidationError) as e:
+            self._logger.warning("Deserialization error while handling {{method_name}}: %s", e)
+            correlation_id = message.correlation_data
+            response_topic = message.response_topic
+            return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+            if response_topic:
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                self._conn.publish(err_msg)
+            return
+        correlation_id = message.correlation_data
+        response_topic = message.response_topic
+
+        if self._method_{{method_name|snake_case}}_handler is not None:
+            method_args = [{%for arg in method.arg_list %}payload.{{arg.name|snake_case}}, {%endfor%}] # type: List[Any]
+            
+            return_json = ""
+            debug_msg = None # type: Optional[str]
+            try:
+                {%if method.return_arg_list|length > 0 %}return_values = {%endif%}self._method_{{method_name|snake_case}}_handler(*method_args)
+                
+                {%if method.return_arg_list|length == 0%}
+                return_data = "{}"
+                {%elif method.return_arg_list|length == 1 %}
+                if not isinstance(return_values, {{method.return_arg_list[0].python_local_type}}){% if method.return_arg_list[0].optional %} and return_values is not None{% endif %}:
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.return_arg_list[0].python_class}}, but was {type(return_values)}")
+                ret_obj = {{method_name|UpperCamelCase}}MethodResponse({{method.return_arg_list[0].name}}=return_values)
+                return_data = ret_obj
+                {%else%}
+                if not isinstance(return_values, {{method_name|UpperCamelCase}}MethodResponse):
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method_name|UpperCamelCase}}MethodResponse, but was {type(return_values)}")
+                return_data = return_values
+                {%endif%}
+            except (json.JSONDecodeError, ValidationError) as e:
+                self._logger.warning("Deserialization error while handling {{method_name}}: %s", e)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
+            except StingerMethodException as sme:
+                self._logger.warning("StingerMethodException while handling {{method_name}}: %s", sme)
+                if response_topic is not None:
+                    return_code = sme.return_code
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    self._conn.publish(err_msg)
+            except Exception as e:
+                self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
+                if response_topic is not None:
+                    return_code = MethodReturnCode.SERVER_ERROR
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    self._conn.publish(err_msg)
+            else:
+                if response_topic is not None:
+                    msg = MessageCreator.response_message(response_topic, return_data, MethodReturnCode.SUCCESS.value, correlation_id)
+                    self._conn.publish(msg)
+        else:
+            self._logger.warning("No handler registered for method {{method_name}}")
+            if response_topic is not None:
+                return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for '{{method_name}}' method")
+                self._conn.publish(err_msg)
+
+    {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    {%if prop.arg_list | length == 1%}
+    {%-set arg = prop.arg_list[0] %}
+    @property
+    def {{prop_name | snake_case}}(self) -> {%if arg.optional%}{{prop.python_annotation}}{%else%}Optional[{{prop.python_annotation}}]{%endif%}:
+        """ This property returns the last received ({{prop.python_annotation}}) value for the '{{prop_name}}' property.
+        {%if not config.properties.stinger_owned_values%}
+        This calls back into the application code to get the current value of the property.
+        {%-endif%}
+        """
+        return self._property_{{prop_name|snake_case}}.get_value()
+
+    @{{prop_name | snake_case}}.setter
+    def {{prop_name | snake_case}}(self, {{arg.name|snake_case}}: {{prop.python_annotation}}):
+        """ This property sets (publishes) a new {{prop.python_annotation}} value for the '{{prop_name}}' property.
+        {%if not config.properties.stinger_owned_values%}
+        This call the setter callback into the application code to set the property value.
+        {%-endif%}
+        """
+        if {%if arg.optional%}({{arg.name|snake_case}} is not None) and {%endif%}(not isinstance({{arg.name|snake_case}}, {{prop.python_local_type}})):
+            raise ValueError(f"The value must be {{prop.python_class}} {%if arg.optional%}or None{%endif%}.")
+
+        value_updated = False
+        with self._property_{{prop_name|snake_case}}.mutex:
+            if {{arg.name|snake_case}} != self._property_{{prop_name|snake_case}}.get_value():
+                value_updated = True
+                self._property_{{prop_name|snake_case}}.set_value({{arg.name|snake_case}})
+                self._property_{{prop_name|snake_case}}.version += 1
+                prop_obj = {{prop_name|UpperCamelCase}}Property({{arg.name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
+                state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), prop_obj, self._property_{{prop_name|snake_case}}.version)
+                self._conn.publish(state_msg)
+        {%if config.properties.stinger_owned_values%}{# only call callbacks if it is a stinger-owned value#}
+        if value_updated:
+            for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
+                {{prop_name|snake_case}}_callback(prop_obj.{{arg.name|snake_case}})
+        {%endif%}
+
+    {%-else%} {# property with multiple arguments #}
+    @property
+    def {{prop_name | snake_case}}(self) -> {{prop.python_annotation}}:
+        """ This property returns the last received value for the '{{prop_name}}' property.
+        The '{{prop_name}}' property contains multiple values, so we operate on the full 
+        `{{prop_name|UpperCamelCase}}Property` structure.
+        {%if not config.properties.stinger_owned_values%}
+        This calls back into the application code to get the current value of the property.
+        {%endif%}
+        """
+        return self._property_{{prop_name|snake_case}}.get_value()
+
+    @{{prop_name | snake_case}}.setter
+    def {{prop_name | snake_case}}(self, value: {{prop_name|UpperCamelCase}}Property):
+        """ This property sets (publishes) a new value structure for the '{{prop_name}}' property.
+        {%if not config.properties.stinger_owned_values%}
+        This call the setter callback into the application code to set the property value.
+        {%-endif%}
+        """
+        if not isinstance(value, {{prop_name|UpperCamelCase}}Property):
+            raise ValueError(f"The value must be {{prop.python_class}}.")
+
+            value_updated = False
+            with self._property_{{prop_name|snake_case}}.mutex:
+                if value != self._property_{{prop_name|snake_case}}.get_value():
+                    value_updated = True
+                    self._property_{{prop_name|snake_case}}.set_value(value)
+                    self._property_{{prop_name|snake_case}}.version += 1
+                    state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), self._property_{{prop_name|snake_case}}.get_value(), self._property_{{prop_name|snake_case}}.version)
+                    self._conn.publish(state_msg)
+            {%if config.properties.stinger_owned_values%}{# only call callbacks if it is a stinger-owned value#}
+            if value_updated:
+                for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
+                    {{prop_name|snake_case}}_callback(self._property_{{prop_name|snake_case}}.get_value())
+            {%endif%}
+    {%endif%}
+
+    def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        """ This method sets (publishes) a new value for the '{{prop_name}}' property.
+        """
+        {%-for arg in prop.arg_list%}
+        if not isinstance({{arg.name|snake_case}}, {{arg.python_class}}){%if arg.optional%} and {{arg.name|snake_case}} is not None{%endif%}:
+            raise ValueError(f"The '{{arg.name|snake_case}}' value must be {{arg.python_annotation}}.")
+        {%-endfor%}
+
+        {%if prop.arg_list | length > 1%}
+        obj = {{prop.python_local_type}}({%for arg in prop.arg_list%}
+            {{arg.name}}={{arg.name|snake_case}},
+            {%endfor%}
+        )
+        {%else%}
+        obj = {{prop.arg_list[0].name | snake_case}}
+        {%endif%}
+
+        # Use the property.setter to do that actual work.
+        self.{{prop_name|snake_case}} = obj
+
+    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+        """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
+        """
+        {%-if prop.arg_list | length > 1%}
+        def wrapper(value: {{prop_name|UpperCamelCase}}Property):
+            handler({%for arg in prop.arg_list %}value.{{arg.name|snake_case}}, {%endfor%})
+        self._property_{{prop_name|snake_case}}.callbacks.append(wrapper)
+        {%-else%}
+        self._property_{{prop_name|snake_case}}.callbacks.append(handler)
+        {%-endif%}
+    {%endfor%}
+
+class {{stinger.python.server_class_name}}Builder:
+    """
+    This is a builder for the {{stinger.python.server_class_name}}.  It is used to create a server with the desired parameters.
+    """
+
+    def __init__(self):
+        {%if (stinger.methods|length + stinger.properties|length) == 0 %}pass{%endif%}
+        {%for method_name, method in stinger.methods.items()%}
+        self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
+        {%-endfor%}
+        {%for prop_name, property in stinger.properties.items()%}
+        self._{{prop_name|snake_case}}_property_callbacks: List[Callable[[{%for arg in property.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]] = []
+        {%-endfor%}
+    {%for method_name, method in stinger.methods.items()%}
+    def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+        if self._{{method_name|snake_case}}_method_handler is None and handler is not None:
+            self._{{method_name|snake_case}}_method_handler = wrapper
+        else:
+            raise Exception("Method handler already set")
+        return wrapper
+    {%endfor%}
+    {%for prop_name, prop in stinger.properties.items()%}
+    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+        """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
+        """
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+        self._{{prop_name|snake_case}}_property_callbacks.append(wrapper)
+        return wrapper
+    {%endfor%}
+    def build(self, connection: IBrokerConnection, instance_id: str, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues, {%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{%endif%}binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
+        new_server = {{stinger.python.server_class_name}}(connection, instance_id, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values{%else%}property_access{%endif%}{%endif%})
+        {%for method_name, method in stinger.methods.items()%}
+        if self._{{method_name|snake_case}}_method_handler is not None:
+            if binding:
+                new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler.__get__(binding, binding.__class__))
+            else:
+                new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler)
+        {%-endfor%}
+        {%for prop_name, prop in stinger.properties.items()%}
+        for {{prop_name|snake_case}}_callback in self._{{prop_name|snake_case}}_property_callbacks:
+            if binding:
+                new_server.on_{{prop_name|snake_case}}_updated({{prop_name|snake_case}}_callback.__get__(binding, binding.__class__))
+            else:
+                new_server.on_{{prop_name|snake_case}}_updated({{prop_name|snake_case}}_callback)
+        {%endfor%}
+        return new_server
+

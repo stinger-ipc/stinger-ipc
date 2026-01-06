@@ -3,7 +3,7 @@ from time import sleep
 import concurrent.futures as futures
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
-from fullipc.connection import MqttBrokerConnection, MqttTransport, MqttTransportType
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from fullipc.client import FullClient, FullClientBuilder, FullClientDiscoverer
 from fullipc.interface_types import *
 import threading
@@ -13,7 +13,7 @@ client_builder = FullClientBuilder()
 
 class SuperAwesomeDoerOfThings:
 
-    def __init__(self, label: str, connection: MqttBrokerConnection):
+    def __init__(self, label: str, connection: Mqtt5Connection):
         self.counter = 0
         self.label = label
         discovery = FullClientDiscoverer(connection, client_builder, build_binding=self)  # The build binding will bind all @client_builder decorated methods to this instance.
@@ -105,7 +105,7 @@ class SuperAwesomeDoerOfThings:
             self.client.last_birthdays = LastBirthdaysProperty(
                 mom=datetime.now(UTC),
                 dad=datetime.now(UTC),
-                sister=datetime.now(UTC),
+                sister=None,
                 brothers_age=42,
             )
 
@@ -115,7 +115,7 @@ class SuperAwesomeDoerOfThings:
 if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
-    conn = MqttBrokerConnection(transport)
+    conn = Mqtt5Connection(transport)
 
     doer1 = SuperAwesomeDoerOfThings("Doer1", conn)
 

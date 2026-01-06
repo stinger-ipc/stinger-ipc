@@ -1,0 +1,22 @@
+{%if not config.properties.stinger_owned_values%}
+from typing import Callable, Optional
+{%endif%}
+from pydantic import BaseModel
+from .interface_types import *
+
+{%if stinger.properties | length > 0 %}
+class {{stinger.name|UpperCamelCase}}InitialPropertyValues(BaseModel):
+    {%for prop_name, prop in stinger.properties.items()%}
+    {{prop_name | snake_case}}: {{prop.python_annotation}}
+    {{prop_name | snake_case}}_version: int = 0
+    {%endfor%}
+{%if not config.properties.stinger_owned_values%}
+class {{stinger.name|UpperCamelCase}}PropertyAccess(BaseModel):
+    {%for prop_name, prop in stinger.properties.items()%}
+    {{prop_name | snake_case}}_getter: Callable[[], {{prop.python_annotation}}]
+    {%if not prop.read_only%}
+    {{prop_name | snake_case}}_setter: Callable[[{{prop.python_annotation}}], None]
+    {%endif%}
+    {%endfor%}
+{%endif%}
+{%endif%}

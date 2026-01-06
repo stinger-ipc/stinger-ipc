@@ -19,6 +19,7 @@ use tokio::sync::oneshot;
 
 use async_trait::async_trait;
 use std::any::Any;
+
 use std::sync::{Arc, Mutex};
 use tokio::sync::Mutex as AsyncMutex;
 
@@ -27,12 +28,12 @@ use tokio::sync::{broadcast, watch};
 
 use crate::property::FullInitialPropertyValues;
 use std::sync::atomic::{AtomicU32, Ordering};
+use stinger_rwlock_watch::RwLockWatch;
 
 use std::future::Future;
 use std::pin::Pin;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError, MqttPublishSuccess};
-use stinger_rwlock_watch::RwLockWatch;
 #[allow(unused_imports)]
 use stinger_rwlock_watch::{CommitResult, WriteRequestLockWatch};
 use tokio::task::JoinError;

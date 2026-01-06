@@ -12,7 +12,7 @@ import yaml
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface
 from stingeripc.filtering import filter_by_consumer
-import tomllib
+from stingeripc.config import load_config, StingerConfig
 import logging
 import yaml
 import yamlloader
@@ -41,8 +41,9 @@ def main(
 
     config_obj = None
     if config:
-        with config.open("rb") as f:
-            config_obj = tomllib.load(f)
+        config_obj = load_config(config)
+    else:
+        config_obj = StingerConfig()
 
     print(f"🟢   [bold cyan]LOAD:[/bold cyan] {inname}")
     if consumer:
@@ -105,7 +106,7 @@ def main(
                 code_templator.add_template_package(pkg_name)
                 web_templator.add_template_package(pkg_name)
                 pkg_path = importlib.resources.files(pkg_name)
-                template_dirs.append(Path(pkg_path))
+                template_dirs.append(Path(str(pkg_path)))
             except ModuleNotFoundError as e:
                 raise RuntimeError(f"Template package not found: {pkg_name}") from e
     
@@ -126,9 +127,12 @@ def main(
         for entry in os.listdir(src_walker):
             src_entry = src_walker / entry
             dest_entry = dest_walker / entry
-            if '{{' in entry and '}}' in entry:
+            if ('{{' in entry and '}}' in entry) or ('{%' in entry and '%}' in entry):
                 rendered_entry_name = code_templator.render_string(entry, **params)
-                dest_entry = dest_walker / rendered_entry_name
+                if len(rendered_entry_name) > 0:
+                    dest_entry = dest_walker / rendered_entry_name
+                else:
+                    continue
             if entry.endswith(".jinja2"):
                 dest_path_str = str(dest_entry)[:-len(".jinja2")]
                 dest_path = Path(dest_path_str).relative_to(outdir)
@@ -151,13 +155,16 @@ def main(
             src_entry = src_walker / entry
             dest_entry = dest_walker / entry
             print(f"🚶  [white]ENTRY[/white]: {src_entry.relative_to(template_dir)}")
-            if '{{' in entry and '}}' in entry:
+            if ('{{' in entry and '}}' in entry) or ('{%' in entry and '%}' in entry):
                 rendered_entry_name = code_templator.render_string(entry, **params)
+                if len(rendered_entry_name) == 0:
+                    print(f"👓   [grey]NAME[/grey]: {entry} -> [excluded]")
+                    continue
                 dest_entry = dest_walker / rendered_entry_name
                 print(f"👓   [grey]NAME[/grey]: {entry} -> {rendered_entry_name}")
-            if entry.endswith(".jinja2"):
+            if str(dest_entry).endswith(".jinja2") and '.jinja2' in str(src_entry):
                 dest_path_str = str(dest_entry)[:-len(".jinja2")]
-                template = src_entry.relative_to(template_dir)
+                template = str(src_entry.relative_to(template_dir))
                 dest_path = Path(dest_path_str).relative_to(outdir)
                 print(f"✨  [green]GENER[/green]: {dest_path}")
                 if dest_path_str.endswith(".html") or dest_path_str.endswith(".htm"):

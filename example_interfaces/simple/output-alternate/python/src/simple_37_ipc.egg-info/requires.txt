@@ -1,0 +1,9 @@
+pydantic==2.5.3
+paho-mqtt>=2.1.0
+isodate>=0.7.2
+pyqttier>=0.2.0
+stinger-python-utils>=0.1.4
+typing-extensions>=4.0.0
+
+[tui]
+textual

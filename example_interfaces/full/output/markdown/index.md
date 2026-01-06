@@ -23,11 +23,13 @@ The application code is responsible for creating and managing the connection obj
 <details>
   <summary>Python MQTT Connection Example</summary>
 
+Rather than including connection code in each generated client and server, Stinger-IPC for Python uses the [PYQTtier](https://pypi.org/project/pyqttier/) library to provide MQTT connection objects.  PYQTtier is a wrapper around the [paho-mqtt](https://pypi.org/project/paho-mqtt/) library and handles serialization, message queuing, and acknowledgments.
+
 ```python
-from connection import MqttBrokerConnection, MqttTransportType, MqttTransport
+from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 
 transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883) # Or: MqttTransport(MqttTransportType.UNIX, socket_path="/path/to/socket")
-connection_object = MqttBrokerConnection(transport)
+connection_object = Mqtt5Connection(transport)
 ```
 
 The `connection_object` will be passed to client and server constructors.
@@ -124,8 +126,13 @@ When constructing a server instance, a connection object and initial property va
 <details>
   <summary>Python Server Object Construction</summary>
 
+Because the server needs correct property values on initialization, a FullInitialPropertyValues object must be provided to
+the server constructor.
+
+
 ```python
-from fullipc.server import FullServer, FullInitialPropertyValues
+from fullipc.server import FullServer
+from fullipc.property import FullInitialPropertyValues
 
 # Ideally, you would load these initial property values from a configuration file or database.
 
@@ -185,6 +192,7 @@ initial_property_values = FullInitialPropertyValues(
 service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
 server = FullServer(connection_object, service_id, initial_property_values)
 ```
+
 
 The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
 
@@ -351,6 +359,9 @@ A full example can be viewed by looking at the generated `client/examples/client
 <details>
   <summary>Python Client Object Construction</summary>
 
+Because the client needs correct property values on initialization, a FullInitialPropertyValues object must be provided to
+the client constructor.  This object is generally created by the discovery mechanism.
+
 ```python
 from fullipc.server import FullServer, FullInitialPropertyValues
 
@@ -451,9 +462,9 @@ Log levels are re-used from the `syslog.h` header file, although no other syslog
 ```c++
 #include <syslog.h>
 
-auto connnection = std::make_shared<MqttBrokerConnection>(...);
-connnection->SetLogLevel(LOG_DEBUG);
-connnection->SetLogFunction([](int level, const char* msg)
+auto connection = std::make_shared<MqttBrokerConnection>(...);
+connection->SetLogLevel(LOG_DEBUG);
+connection->SetLogFunction([](int level, const char* msg)
 {
     std::cout << "[" << level << "] " << msg << std::endl;
 });
