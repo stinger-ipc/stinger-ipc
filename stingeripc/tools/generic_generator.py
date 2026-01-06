@@ -10,7 +10,7 @@ import importlib.resources
 
 import yaml
 from stevedore import ExtensionManager
-from stingeripc import StingerInterface
+from stingeripc import StingerInterface, __version__
 from stingeripc.filtering import filter_by_consumer
 from stingeripc.config import load_config, StingerConfig
 import logging
@@ -60,6 +60,9 @@ def main(
         "stinger": stinger, 
         "config": config_obj,
         "consumer": consumer,
+        "generator": {
+            "version": __version__,
+        }
     }
 
     if outdir.is_file():
