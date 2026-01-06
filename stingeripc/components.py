@@ -28,15 +28,16 @@ RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "op
 class LanguageSymbolMixin:
 
     def __init__(self):
-        mgr = ExtensionManager(
+        mgr: ExtensionManager = ExtensionManager(
             namespace="stinger_symbols",
             invoke_on_load=True,
         )
         for ext in mgr:
             domain = ext.name
-            symbols = ext.obj.for_model(self.__class__.__name__, self)
-            if symbols is not None:
-                setattr(self, domain, symbols)
+            if ext.obj is not None:
+                symbols = ext.obj.for_model(self.__class__.__name__, self)
+                if symbols is not None:
+                    setattr(self, domain, symbols)
 
 class Arg:
 

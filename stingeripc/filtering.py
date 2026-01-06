@@ -3,7 +3,7 @@ For both functions, the interface provided is the raw dictionary parsed from the
 
 """
 import semantic_version
-from typing import Dict, Any, Set
+from typing import Dict, Any, Set, cast
 from copy import deepcopy
 from stingeripc.components import StingerSpec
 
@@ -68,9 +68,10 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
     used_structs: Set[str] = set()
     
     # Filter signals
-    if "signals" in filtered:
+    filtered_dict = cast(Dict[str, Any], filtered)  # StingerSpec acts as dict-like
+    if "signals" in filtered_dict:
         filtered_signals = {}
-        for signal_name, signal_spec in filtered["signals"].items():
+        for signal_name, signal_spec in filtered_dict["signals"].items():
             consumers = signal_spec.get("consumers", [])
             # If no consumers specified, include for all consumers
             # If consumers specified, only include if consumer_name is in the list
@@ -79,24 +80,24 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
                 # Collect types used in payload
                 payload = signal_spec.get("payload", [])
                 _collect_used_types(payload, used_enums, used_structs)
-        filtered["signals"] = filtered_signals
+        filtered_dict["signals"] = filtered_signals
     
     # Filter properties
-    if "properties" in filtered:
+    if "properties" in filtered_dict:
         filtered_properties = {}
-        for prop_name, prop_spec in filtered["properties"].items():
+        for prop_name, prop_spec in filtered_dict["properties"].items():
             consumers = prop_spec.get("consumers", [])
             if consumer_name in consumers:
                 filtered_properties[prop_name] = prop_spec
                 # Collect types used in values
                 values = prop_spec.get("values", [])
                 _collect_used_types(values, used_enums, used_structs)
-        filtered["properties"] = filtered_properties
+        filtered_dict["properties"] = filtered_properties
     
     # Filter methods
-    if "methods" in filtered:
+    if "methods" in filtered_dict:
         filtered_methods = {}
-        for method_name, method_spec in filtered["methods"].items():
+        for method_name, method_spec in filtered_dict["methods"].items():
             consumers = method_spec.get("consumers", [])
             if consumer_name in consumers:
                 filtered_methods[method_name] = method_spec
@@ -106,41 +107,42 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
                 # Collect types used in return values
                 return_values = method_spec.get("returnValues", [])
                 _collect_used_types(return_values, used_enums, used_structs)
-        filtered["methods"] = filtered_methods
+        filtered_dict["methods"] = filtered_methods
     
     # Now collect dependencies from used structs
-    if "structures" in interface:
+    interface_dict = cast(Dict[str, Any], interface)  # StingerSpec acts as dict-like
+    if "structures" in interface_dict:
         # Keep iterating until no new structs are added
         prev_struct_count = -1
         while len(used_structs) != prev_struct_count:
             prev_struct_count = len(used_structs)
             for struct_name in list(used_structs):
-                if struct_name in interface["structures"]:
+                if struct_name in interface_dict["structures"]:
                     _collect_struct_dependencies(
-                        interface["structures"][struct_name], 
+                        interface_dict["structures"][struct_name], 
                         used_enums, 
                         used_structs
                     )
     
     # Filter enums to only include used ones
-    if "enums" in filtered:
+    if "enums" in filtered_dict:
         filtered_enums = {
             enum_name: enum_spec
-            for enum_name, enum_spec in filtered["enums"].items()
+            for enum_name, enum_spec in filtered_dict["enums"].items()
             if enum_name in used_enums
         }
-        filtered["enums"] = filtered_enums
+        filtered_dict["enums"] = filtered_enums
     
     # Filter structs to only include used ones
-    if "structures" in filtered:
+    if "structures" in filtered_dict:
         filtered_structs = {
             struct_name: struct_spec
-            for struct_name, struct_spec in filtered["structures"].items()
+            for struct_name, struct_spec in filtered_dict["structures"].items()
             if struct_name in used_structs
         }
-        filtered["structures"] = filtered_structs
+        filtered_dict["structures"] = filtered_structs
     
-    return filtered
+    return filtered_dict
 
 def check_version_consistency(interface: Dict[str, Any]) -> None:
     """

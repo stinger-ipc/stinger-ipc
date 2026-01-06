@@ -469,12 +469,13 @@ class StingerToAsyncApi:
 
     def _add_servers(self):
         info_topic, _ = self._stinger.interface_info
-        for broker_name, broker_spec in self._stinger.brokers.items():
-            svr = Server(broker_name)
-            if broker_spec.hostname is not None and broker_spec.port is not None:
-                svr.set_host(broker_spec.hostname, broker_spec.port)
-            svr.set_lwt_topic(info_topic)
-            self._asyncapi.add_server(svr)
+        if hasattr(self._stinger, 'brokers'):
+            for broker_name, broker_spec in self._stinger.brokers.items():
+                svr = Server(broker_name)
+                if broker_spec.hostname is not None and broker_spec.port is not None:
+                    svr.set_host(broker_spec.hostname, broker_spec.port)
+                svr.set_lwt_topic(info_topic)
+                self._asyncapi.add_server(svr)
 
     def _add_enums(self):
         for enum_name, enum_spec in self._stinger.enums.items():
@@ -534,7 +535,7 @@ class StingerToAsyncApi:
             self._asyncapi.add_message(call_msg)
 
             resp_ch = Channel(
-                method_spec.response_topic("{client_id}"),
+                method_spec.response_topic(self._stinger.name, "{client_id}"),
                 f"{method_name}Response",
                 Direction.SERVER_PUBLISHES,
             )

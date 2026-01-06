@@ -67,7 +67,7 @@ def main(
     
     print(f"📁 [bold cyan]OUTPUT:[/bold cyan] {outdir}")
     
-    mgr = ExtensionManager(
+    mgr: ExtensionManager = ExtensionManager(
         namespace="stinger_symbols",
         invoke_on_load=False,
         on_load_failure_callback=lambda mgr, ext, exc: print(f"❌[bold red]EXTFAIL:[/bold red] {ext.name} : {exc}"),

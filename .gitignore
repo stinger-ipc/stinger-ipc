@@ -30,5 +30,5 @@ example_interfaces/*/output-*/python/uv.lock
 build/
 
 .coverage
-
+.mypy_cache/
 .task/

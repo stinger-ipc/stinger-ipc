@@ -119,3 +119,16 @@ class ArgPrimitiveType(Enum):
         elif arg_type == cls.STRING:
             return "String"
         raise InvalidStingerStructure("Unhandled arg type")
+
+    @classmethod
+    def to_protobuf_type(cls, arg_type: ArgPrimitiveType) -> str:
+        """Convert ArgPrimitiveType to protobuf type string."""
+        if arg_type == cls.BOOLEAN:
+            return "bool"
+        elif arg_type == cls.INTEGER:
+            return "int32"
+        elif arg_type == cls.FLOAT:
+            return "float"
+        elif arg_type == cls.STRING:
+            return "string"
+        raise InvalidStingerStructure("Unhandled arg type")
