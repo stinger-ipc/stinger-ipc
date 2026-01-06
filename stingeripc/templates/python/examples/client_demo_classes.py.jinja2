@@ -17,7 +17,9 @@ class SuperAwesomeDoerOfThings:
         self.label = label
         discovery = {{stinger.python.client_class_name}}Discoverer(connection, client_builder, build_binding=self) # The build binding will bind all @client_builder decorated methods to this instance.
         self.client = discovery.get_singleton_client().result()
+        {% if (stinger.methods|length + stinger.properties_rw|length) > 0%}
         threading.Thread(target=self.request_loop, daemon=True).start()
+        {%endif%}
 
     {%for sig_name, sig in stinger.signals.items()%}
     @client_builder.receive_{{sig_name | snake_case }}
