@@ -68,8 +68,8 @@ if __name__ == '__main__':
         exit(1)
 
     sleep(2)
-
+    {% if (stinger.methods|length + stinger.properties_rw|length) > 0%}
     threading.Thread(target=request_loop, args=(client,), daemon=True).start()
-
+    {%endif%}
     print("Ctrl-C will stop the program.")
     signal.pause()
