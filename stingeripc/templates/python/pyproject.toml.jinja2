@@ -20,7 +20,7 @@ dev = [
 ]
 {%endif%}
 
-{%if config.python.python37%}
+{%if not config.python.python37%}
 [project.optional-dependencies]
 tui = ["textual"]
 {%endif%}
