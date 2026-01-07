@@ -16,7 +16,7 @@ tasks:
       - task: rust:check
       - task: markdown:generate
       - task: web:generate
-      - task: protobuf:generate
+      - task: protobuf:check
 
   validate:*:
     desc: Validate a specific interface schema
@@ -215,13 +215,18 @@ tasks:
   
   protobuf:generate:*:
     desc: Generate Protobuf code for an interface
+    deps:
+      - task: validate:{{index .MATCH 0}}
     sources:
-      - stingeripc/**/*.py
+      - stingeripc/*/*.py
+      - stingeripc/tools/*
+      - stingeripc/symbols/protobuf.py
       - stingeripc/templates/protobuf/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
       - example_interfaces/{{.IFACE}}/output/protobuf/**
     cmds:
+      - mkdir -p ./example_interfaces/{{.IFACE}}/output/protobuf/
       - uv run stinger generate {{.CLI_ARGS}} --language protobuf ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/protobuf/
     vars:
       IFACE: '{{index .MATCH 0}}'
@@ -232,6 +237,23 @@ tasks:
       - for: { var: INTERFACES }
         task: protobuf:generate:{{ .ITEM }}
   
+  protobuf:check:*:
+    desc: Check Protobuf code for an interface
+    deps:
+      - task: protobuf:generate:{{index .MATCH 0}}
+    sources:
+      - example_interfaces/{{.IFACE}}/output/protobuf/**
+    cmds:
+      - protoc --proto_path=./example_interfaces/{{.IFACE}}/output/protobuf/ --descriptor_set_out=/dev/null ./example_interfaces/{{.IFACE}}/output/protobuf/*.proto
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  protobuf:check:
+    desc: Check Protobuf code for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: protobuf:check:{{ .ITEM }}
+
   clean:
     desc: Clean all generated files
     cmds:

@@ -109,7 +109,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -150,7 +150,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -223,7 +223,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -297,7 +297,7 @@ def request_loop(client: TestableClient):
         sleep(5)
 
         print("Making call to 'call_three_date_times'")
-        future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
+        future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=None)
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
@@ -441,7 +441,7 @@ def request_loop(client: TestableClient):
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=None,
+            optional_date_time=datetime.now(UTC),
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],

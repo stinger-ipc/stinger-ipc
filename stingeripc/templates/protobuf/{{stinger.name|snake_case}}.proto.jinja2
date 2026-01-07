@@ -10,7 +10,7 @@ package {{stinger.name | snake_case}};
 {%-elif arg.arg_type.name.lower() == 'struct'%}
 {%if arg.optional%}optional {%endif%}{{arg.pb.data_type}} {{arg.name}} = {{index}};
 {%-elif arg.arg_type.name.lower() == 'array'%}
-{%if arg.optional%}optional {%endif%}repeated {{arg.pb.item_type}} {{arg.name}} = {{index}};
+repeated {{arg.pb.item_type}} {{arg.name}} = {{index}};
 {%-elif arg.arg_type.name.lower() == 'datetime'%}
 {%if arg.optional%}optional {%endif%}string {{arg.name}} = {{index}};  // ISO 8601 format
 {%-elif arg.arg_type.name.lower() == 'duration'%}

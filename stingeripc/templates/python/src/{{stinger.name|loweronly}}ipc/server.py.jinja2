@@ -11,6 +11,7 @@ TODO: Get license text from stinger file
 import json
 import logging
 import threading
+import signal
 from time import sleep
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
@@ -108,11 +109,16 @@ class {{stinger.python.server_class_name}}:
         {%-if stinger.properties|length > 0 %}
         self._publish_all_properties()
         {%-endif%}
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
         self._logger.debug("Starting interface advertisement thread")
         self._advertise_thread = threading.Thread(target=self._loop_publishing_interface_info, daemon=True)
         self._advertise_thread.start()
 
     def __del__(self):
+        self.shutdown()
+
+    def _signal_handler(self, signum, frame):
         self.shutdown()
 
     def shutdown(self, timeout: float=5.0):

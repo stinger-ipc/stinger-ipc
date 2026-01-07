@@ -1324,11 +1324,6 @@ class InterfaceStruct(LanguageSymbolMixin):
         return f"InterfaceStruct(name={self.name})"
 
 
-class MqttTransportProtocol(Enum):
-    TCP = 0
-    WEBSOCKETS = 1
-
-
 class StingerSpec(LanguageSymbolMixin):
 
     def __init__(self, topic_creator: InterfaceTopicCreator, interface: dict[str, Any]):

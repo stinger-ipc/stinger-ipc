@@ -36,19 +36,19 @@ message AllTypes {
     optional string OptionalDuration = 15;  // ISO 8601 duration format
     optional string OptionalBinary = 16;  // base64 encoded binary
     repeated int32 array_of_integers = 17;
-    optional repeated int32 optional_array_of_integers = 18;
+    repeated int32 optional_array_of_integers = 18;
     repeated string array_of_strings = 19;
-    optional repeated string optional_array_of_strings = 20;
+    repeated string optional_array_of_strings = 20;
     repeated Numbers array_of_enums = 21;
-    optional repeated Numbers optional_array_of_enums = 22;
-    repeated  array_of_datetimes = 23;
-    optional repeated  optional_array_of_datetimes = 24;
-    repeated  array_of_durations = 25;
-    optional repeated  optional_array_of_durations = 26;
-    repeated  array_of_binaries = 27;
-    optional repeated  optional_array_of_binaries = 28;
+    repeated Numbers optional_array_of_enums = 22;
+    repeated string array_of_datetimes = 23;
+    repeated string optional_array_of_datetimes = 24;
+    repeated string array_of_durations = 25;
+    repeated string optional_array_of_durations = 26;
+    repeated string array_of_binaries = 27;
+    repeated string optional_array_of_binaries = 28;
     repeated Entry array_of_entry_objects = 29;
-    optional repeated Entry optional_array_of_entry_objects = 30;
+    repeated Entry optional_array_of_entry_objects = 30;
 }
 
 
@@ -159,7 +159,7 @@ message SingleArrayOfIntegersSignal {
 }
 
 message SingleOptionalArrayOfStringsSignal {
-    optional repeated string values = 1;
+    repeated string values = 1;
 }
 
 message ArrayOfEveryTypeSignal {
@@ -168,9 +168,9 @@ message ArrayOfEveryTypeSignal {
     repeated string third_of_strings = 3;
     repeated Numbers fourth_of_enums = 4;
     repeated Entry fifth_of_structs = 5;
-    repeated  sixth_of_datetimes = 6;
-    repeated  seventh_of_durations = 7;
-    repeated  eighth_of_binaries = 8;
+    repeated string sixth_of_datetimes = 6;
+    repeated string seventh_of_durations = 7;
+    repeated string eighth_of_binaries = 8;
 }
 
 
@@ -284,7 +284,7 @@ message ReadWriteListOfStringsProperty {
 
 message ReadWriteListsProperty {
     repeated Numbers the_list = 1;
-    optional repeated  optionalList = 2;
+    repeated string optionalList = 2;
 }
 
 
@@ -500,19 +500,19 @@ message CallOneListOfIntegersResponse {
 }
 
 message CallOptionalListOfFloatsRequest {
-    optional repeated float input1 = 1;
+    repeated float input1 = 1;
 }
 
 message CallOptionalListOfFloatsResponse {
-    optional repeated float output1 = 1;
+    repeated float output1 = 1;
 }
 
 message CallTwoListsRequest {
     repeated Numbers input1 = 1;
-    optional repeated string input2 = 2;
+    repeated string input2 = 2;
 }
 
 message CallTwoListsResponse {
     repeated Numbers output1 = 1;
-    optional repeated string output2 = 2;
+    repeated string output2 = 2;
 }

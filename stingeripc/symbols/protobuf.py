@@ -18,6 +18,12 @@ class ProtocolBufferSymbolsProvider(ISymbolsProvider):
             return ProtocolBufferEnumSymbols(model)
         elif model_class_name == "InterfaceStruct":
             return ProtocolBufferStructSymbols(model)
+        elif model_class_name == "ArgDateTime":
+            return ProtocolBufferArgFitsInStringSymbols(model)
+        elif model_class_name == "ArgDuration":
+            return ProtocolBufferArgFitsInStringSymbols(model)
+        elif model_class_name == "ArgBinary":
+            return ProtocolBufferArgFitsInStringSymbols(model)
         return None
 
 class ProtocolBufferEnumSymbols(ModelSymbols):
@@ -63,3 +69,9 @@ class ProtocolBufferArgStructSymbols(ModelSymbols):
     @property
     def data_type(self) -> str:
         return self._model.struct.pb.message_name
+
+class ProtocolBufferArgFitsInStringSymbols(ModelSymbols):
+
+    @property
+    def data_type(self) -> str:
+        return "string"
