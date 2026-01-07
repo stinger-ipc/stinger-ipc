@@ -6,7 +6,7 @@ package weather;
 
 
 enum WeatherCondition {
-    WEATHER_CONDITION_UNSPECIFIED = 0;
+    WEATHER_CONDITION_UNSPECIFIED = 0; 
     RAINY = 1;
     SUNNY = 2;
     PARTLY_CLOUDY = 3;

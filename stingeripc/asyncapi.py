@@ -478,19 +478,7 @@ class StingerToAsyncApi:
                 self._asyncapi.add_server(svr)
 
     def _add_enums(self):
-        for enum_name, enum_spec in self._stinger.enums.items():
-            schema_name = f"enum_{enum_name}"
-            description = [f"The {enum_name} enum has the following values:"]
-            accepted_values = []
-            for i, enum_value in enumerate(enum_spec.values):
-                description.append(f"{i} - {enum_value}")
-                accepted_values.append(i)
-            json_schema = {
-                "type": "integer",
-                "description": "\n ".join(description),
-                "enum": accepted_values,
-            }
-            self._asyncapi.add_schema(schema_name, json_schema)
+        ...
 
     def _add_signals(self):
         for sig_name, sig_spec in self._stinger.signals.items():

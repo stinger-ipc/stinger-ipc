@@ -10,6 +10,14 @@ TODO: Get license text from stinger file
 
 #pragma once
 
+#include <map>
+#include <string>
+
+/** 
+ * @enum WeatherCondition
+ * @brief This enum contains the possible weather conditions that can be reported.
+
+ */
 enum class WeatherCondition
 {
     RAINY = 1,
@@ -20,4 +28,18 @@ enum class WeatherCondition
     WINDY = 6,
     SNOWY = 7
 };
-static const char *weatherConditionStrings[] = { "WeatherCondition", "rainy", "sunny", "partly_cloudy", "mostly_cloudy", "overcast", "windy", "snowy" };
+static const std::map<int, std::string> weatherConditionStrings = {
+    { 1, "rainy" },
+
+    { 2, "sunny" },
+
+    { 3, "partly_cloudy" },
+
+    { 4, "mostly_cloudy" },
+
+    { 5, "overcast" },
+
+    { 6, "windy" },
+
+    { 7, "snowy" }
+};

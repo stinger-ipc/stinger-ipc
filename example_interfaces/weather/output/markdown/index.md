@@ -1346,7 +1346,8 @@ if daily_forecast_refresh_interval_watch_rx.changed().await.is_ok() {
 
 ### Enum `WeatherCondition`
 
-<a name="Enum-WeatherCondition"></a>_No description exists for this enumeration._
+<a name="Enum-WeatherCondition"></a>This enum contains the possible weather conditions that can be reported.
+
 
 * rainy (1)
 * sunny (2)

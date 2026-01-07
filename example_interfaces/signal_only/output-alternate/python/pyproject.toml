@@ -15,9 +15,6 @@ dependencies = [
 
 
 
-[project.optional-dependencies]
-tui = ["textual"]
-
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

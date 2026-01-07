@@ -56,6 +56,7 @@ properties:
         values:
           type: array
           uniqueItems: true
+          minItems: 1
           items:
             type: object
             properties:
@@ -64,6 +65,7 @@ properties:
                 pattern: "^[a-zA-Z0-9_-]+$"
               description:
                 type: string
+              documentation: false
               value:
                 type: integer
             required:
@@ -75,6 +77,7 @@ properties:
               A semantic version that can be used to determine data consistency in this specification.
         documentation:
           $ref: "#/$defs/documentation"
+        description: false
       required:
         - values
 

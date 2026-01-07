@@ -55,8 +55,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     $scope.enums = {
         {%-for enum_name, enum in stinger.enums.items() %}
         "{{enum_name | lowerCamelCase}}": [
-            {%-for e in enum.values %}
-            {"name": "{{e}}", "id": {{loop.index}} }{%if not loop.last%},{%endif%}
+            {%-for enum_item in enum.items %}
+            {"name": "{{enum_item.name}}", "id": {{enum_item.integer}} }{%if not loop.last%},{%endif%}
             {%endfor-%}
         ]{%if not loop.last%},{%endif%}
     {%endfor-%} };

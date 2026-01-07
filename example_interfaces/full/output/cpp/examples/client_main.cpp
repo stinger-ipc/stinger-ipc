@@ -10,6 +10,7 @@
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
+#include "enums.hpp"
 #include "interface_exceptions.hpp"
 
 int main(int argc, char** argv)
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
     client.registerTodayIsCallback([](int dayOfMonth, DayOfTheWeek dayOfWeek)
                                    {
                                        std::cout << "Received TODAY_IS signal: "
-                                                 << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << dayOfTheWeekStrings[static_cast<int>(dayOfWeek)] << std::endl;
+                                                 << "dayOfMonth=" << dayOfMonth << " | " << "dayOfWeek=" << dayOfTheWeekStrings.at(static_cast<int>(dayOfWeek)) << std::endl;
                                    });
 
     client.registerRandomWordCallback([](std::string word, std::chrono::time_point<std::chrono::system_clock> time)

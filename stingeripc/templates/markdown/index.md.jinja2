@@ -680,12 +680,10 @@ if {{prop_name|snake_case}}_watch_rx.changed().await.is_ok() {
 {#- ------------------------------------------------------- -#}
 ### Enum `{{ie.class_name }}`
 
-<a name="Enum-{{ie.class_name}}"></a>{{ie.description or "_No description exists for this enumeration._"}}
+<a name="Enum-{{ie.class_name}}"></a>{{ie.documentation or "_No description exists for this enumeration._"}}
 
-{%for value in ie.values -%}
-* {{value}} ({{loop.index}}) 
-{%- if ie.value_description(loop.index) %}
-  - {{ie.value_description(loop.index)}}{% endif %}
+{%for enum_item in ie.items -%}
+* {{enum_item.name}} ({{enum_item.integer}}){%- if enum_item.description %} - {{enum_item.description}}{% endif %}
 {%endfor%}
 {%endfor%}
 {#- ------------------------------------------------------- #}

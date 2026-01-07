@@ -10,16 +10,34 @@ tasks:
   default:
     desc: Generate and compile all interfaces
     deps:
-      - task: python:generate-all
-      - task: python:unittest-all
-      - task: cpp:compile-all
-      - task: rust:check-all
-      - task: markdown:generate-all
-      - task: web:generate-all
-      - task: protobuf:generate-all
+      - task: python:generate
+      - task: python:unittest
+      - task: cpp:compile
+      - task: rust:check
+      - task: markdown:generate
+      - task: web:generate
+      - task: protobuf:generate
 
+  validate:*:
+    desc: Validate a specific interface schema
+    sources:
+      - schemas/schema.yaml
+      - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
+    cmds:
+      - uv run stinger validate ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  validate:
+    desc: Validate all interface schemas
+    deps:
+      - for: { var: INTERFACES }
+        task: validate:{{ .ITEM }}
+    
   python:generate:*:
     desc: Generate Python code for an interface
+    deps:
+      - task: validate:{{index .MATCH 0}}
     sources:
       - stingeripc/**/*.py
       - stingeripc/templates/python/**
@@ -35,6 +53,8 @@ tasks:
 
   python-alternate:generate:*:
     desc: Generate Python code for an interface with alternative settings
+    deps:
+      - task: validate:{{index .MATCH 0}}
     sources:
       - stingeripc/**/*.py
       - stingeripc/templates/python/**
@@ -48,7 +68,7 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
 
-  python:generate-all:
+  python:generate:
     desc: Generate Python code for all interfaces
     deps:
       - for: { var: INTERFACES }
@@ -69,7 +89,7 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
 
-  python:unittest-all:
+  python:unittest:
     desc: Run Python unit tests for all interfaces
     deps:
       - for: { var: INTERFACES }
@@ -78,7 +98,9 @@ tasks:
   cpp:generate:*:
     desc: Generate C++ code for an interface
     sources:
-      - stingeripc/**/*.py
+      - stingeripc/*.py
+      - stingeripc/tools/*
+      - stingeripc/tests/*
       - stingeripc/templates/cpp/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
@@ -88,6 +110,12 @@ tasks:
       - clang-format --style=file:clang-format-config.yaml ./example_interfaces/{{.IFACE}}/output/cpp/include/*.hpp ./example_interfaces/{{.IFACE}}/output/cpp/src/*.cpp ./example_interfaces/{{.IFACE}}/output/cpp/examples/*.cpp -i
     vars:
       IFACE: '{{index .MATCH 0}}'
+
+  cpp:generate:
+    desc: Generate C++ code for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: cpp:generate:{{ .ITEM }}
 
   cpp:compile:*:
     desc: Compile C++ code for an interface
@@ -101,7 +129,7 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
 
-  cpp:compile-all:
+  cpp:compile:
     desc: Compile C++ code for all interfaces
     deps:
       - for: { var: INTERFACES }
@@ -110,7 +138,7 @@ tasks:
   rust:generate:*:
     desc: Generate Rust code for an interface
     sources:
-      - stingeripc/**/*.py
+      - stingeripc/*.py
       - stingeripc/templates/rust/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
@@ -120,6 +148,12 @@ tasks:
       - cd ./example_interfaces/{{.IFACE}}/output/rust/ && cargo fmt
     vars:
       IFACE: '{{index .MATCH 0}}'
+
+  rust:generate:
+    desc: Generate Rust code for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: rust:generate:{{ .ITEM }}
 
   rust:check:*:
     desc: Check Rust code for an interface
@@ -135,7 +169,7 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
 
-  rust:check-all:
+  rust:check:
     desc: Check Rust code for all interfaces
     deps:
       - for: { var: INTERFACES }
@@ -144,7 +178,7 @@ tasks:
   markdown:generate:*:
     desc: Generate markdown documentation for an interface
     sources:
-      - stingeripc/**/*.py
+      - stingeripc/*.py
       - stingeripc/templates/markdown/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
@@ -154,7 +188,7 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
   
-  markdown:generate-all:
+  markdown:generate:
     desc: Generate markdown documentation for all interfaces
     deps:
       - for: { var: INTERFACES }
@@ -173,7 +207,7 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
   
-  web:generate-all:
+  web:generate:
     desc: Generate web documentation for all interfaces
     deps:
       - for: { var: INTERFACES }
@@ -192,7 +226,7 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
 
-  protobuf:generate-all:
+  protobuf:generate:
     desc: Generate Protobuf code for all interfaces
     deps:
       - for: { var: INTERFACES }

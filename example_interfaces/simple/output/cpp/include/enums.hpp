@@ -10,10 +10,22 @@ TODO: Get license text from stinger file
 
 #pragma once
 
+#include <map>
+#include <string>
+
+/** 
+ * @enum Gender
+ */
 enum class Gender
 {
     MALE = 1,
     FEMALE = 2,
     OTHER = 3
 };
-static const char *genderStrings[] = { "Gender", "male", "female", "other" };
+static const std::map<int, std::string> genderStrings = {
+    { 1, "male" },
+
+    { 2, "female" },
+
+    { 3, "other" }
+};

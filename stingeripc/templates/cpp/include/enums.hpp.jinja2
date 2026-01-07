@@ -10,11 +10,20 @@ TODO: Get license text from stinger file
 
 #pragma once
 
+#include <map>
+#include <string>
+
 {%for ie_name, ie in stinger.enums.items() %}
+/** 
+ * @enum {{ie_name | UpperCamelCase }}{%if ie.documentation %}
+ * @brief {{ie.documentation}}{%endif%}
+ */
 enum class {{ie_name | UpperCamelCase }} {
-    {%-for value in ie.values %}
-    {{value | CONST_CASE}} = {{loop.index}}{%if not loop.last%},{%endif%}
+    {%-for item in ie.items %}
+    {{item.name | CONST_CASE}} = {{item.integer}}{%if not loop.last%},{%endif%} {%if item.description%}// {{item.description}}{%endif%}
     {%-endfor%}
 };
-static const char *{{ie_name | camelCase }}Strings[] = {"{{ie_name | UpperCamelCase }}", {%for value in ie.values %}"{{value}}"{%if not loop.last%}, {%endif%}{%endfor%} };
+static const std::map<int, std::string> {{ie_name | camelCase }}Strings = { {%-for item in ie.items %}
+    { {{-item.integer}}, "{{item.name}}"}{%if not loop.last%}, {%endif%}
+{%endfor-%} };
 {%endfor%}

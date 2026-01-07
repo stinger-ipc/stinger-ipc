@@ -433,8 +433,11 @@ impl MethodReturnCode {
 #[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(into = "u32", try_from = "u32")]
 pub enum {{ie_name | UpperCamelCase }} {
-    {%-for value in ie.values %}
-    {{value | UpperCamelCase}} = {{loop.index}}{%if not loop.last%},{%endif%}
+    {%-for enum_item in ie.items %}
+    {%- if enum_item.description %}
+    /// {{ enum_item.description }}
+    {%- endif %}
+    {{enum_item.name | UpperCamelCase}} = {{enum_item.integer}}{%if not loop.last%},{%endif%}
     {%-endfor%}
 }
 

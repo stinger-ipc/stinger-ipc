@@ -1298,15 +1298,25 @@ if last_birthdays_watch_rx.changed().await.is_ok() {
 
 ### Enum `DayOfTheWeek`
 
-<a name="Enum-DayOfTheWeek"></a>_No description exists for this enumeration._
+<a name="Enum-DayOfTheWeek"></a>The days of the week.
 
-* Sunday (1)
+* Sunday (1) - First day of the week.
 * Monday (2)
 * Tuesday (3)
 * Wednesday (4)
 * Thursday (5)
 * Friday (6)
 * Saturday (7)
+
+### Enum `MultiplesOfTen`
+
+<a name="Enum-MultiplesOfTen"></a>Enumeration of multiples of ten.
+
+* Ten (10) - First multiple of ten.
+* Twenty (20) - Second multiple of ten.
+* Thirty (30)
+* Forty (40)
+* Fifty (50)
 
 
 ## Structures

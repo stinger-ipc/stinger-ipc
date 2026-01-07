@@ -10,6 +10,7 @@
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
+#include "enums.hpp"
 #include "interface_exceptions.hpp"
 
 int main(int argc, char** argv)
@@ -68,7 +69,7 @@ int main(int argc, char** argv)
         std::cout << "Received {{sig_name|CONST_CASE}} signal: "
                   << {%for arg in sig.arg_list%}
                       "{{arg.name}}=" << {%-if arg.arg_type.name.lower() == 'enum'-%}
-                                            {{arg.enum.name | camelCase }}Strings[static_cast<int>({%if arg.optional%}*{%endif%}{{arg.name|lowerCamelCase}})]
+                                            {{arg.enum.name | camelCase }}Strings.at(static_cast<int>({%if arg.optional%}*{%endif%}{{arg.name|lowerCamelCase}}))
                                         {%-elif arg.arg_type.name.lower() == 'datetime' or arg.arg_type.name.lower() == 'duration' or arg.arg_type.name.lower() == 'binary'-%}
                                             {{arg.name|lowerCamelCase}}Str
                                         {%-elif arg.arg_type.name.lower() == 'struct'-%}
@@ -108,7 +109,7 @@ int main(int argc, char** argv)
                         {%-for arg in prop.arg_list-%}
                         "{{arg.name}}=" << {%if arg.optional%} "None"{%else%}
                             {%-if arg.arg_type.name.lower() == 'enum'%}
-                                {{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name|lowerCamelCase}})]
+                                {{arg.enum.name | camelCase }}Strings.at(static_cast<int>({{arg.name|lowerCamelCase}}))
                             {%elif arg.arg_type.name.lower() == 'struct'-%}
                                 "[{{arg.cpp_type}} object]"
                             {%elif arg.arg_type.name.lower() == 'datetime'%}
@@ -169,7 +170,7 @@ int main(int argc, char** argv)
                     {%-elif arg.arg_type.name.lower() == "duration"%}
                     durationToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
                     {%-elif arg.arg_type.name.lower() == "enum"%}
-                    {{arg.enum.name | camelCase }}Strings[static_cast<int>({%if arg.optional%}*{%endif%}{{var_name}})]
+                    {{arg.enum.name | camelCase }}Strings.at(static_cast<int>({%if arg.optional%}*{%endif%}{{var_name}}))
                     {%-elif arg.arg_type.name.lower() == "struct"%}
                     "[{{arg.cpp_type}} object]"
                     {%-elif arg.arg_type.name.lower() == "binary"%}

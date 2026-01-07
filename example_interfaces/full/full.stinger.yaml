@@ -36,7 +36,7 @@ structures:
 enums:
 
   dayOfTheWeek:
-    description: The days of the week.
+    documentation: The days of the week.
     values:
       - name: Sunday
         description: First day of the week.
@@ -46,6 +46,22 @@ enums:
       - name: Thursday
       - name: Friday
       - name: Saturday
+
+  multiplesOfTen:
+    documentation: Enumeration of multiples of ten.
+    values:
+      - name: Ten
+        value: 10
+        description: First multiple of ten.
+      - name: Twenty
+        value: 20
+        description: Second multiple of ten.
+      - name: Thirty
+        value: 30
+      - name: Forty
+        value: 40
+      - name: Fifty
+        value: 50
 
 signals:
   

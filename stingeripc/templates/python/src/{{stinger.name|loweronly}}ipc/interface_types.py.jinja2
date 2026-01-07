@@ -74,9 +74,11 @@ class InterfaceInfo(BaseModel):
 
 {%for ie_name, ie in stinger.enums.items() %}
 class {{ie_name | UpperCamelCase }}(IntEnum):
-    """ Interface enum `{{ie_name}}`."""
-    {%-for value in ie.values %}
-    {{value | CONST_CASE}} = {{loop.index}}
+    """ Interface enum `{{ie_name}}`.
+    {{ ie.documentation or "_No description exists for this enumeration._" }}
+    """
+    {%-for item in ie.items %}
+    {{item.name | CONST_CASE}} = {{item.integer}}
     {%-endfor%}
 {%endfor%}
 

@@ -23,10 +23,10 @@ package {{stinger.name | snake_case}};
 {%endmacro%}
 
 {%for i_enum_name, i_enum in stinger.enums.items()%}
-enum {{i_enum.pb.message_name}} {
-    {{i_enum_name | CONST_CASE}}_UNSPECIFIED = 0; 
-    {%-for value in i_enum.values %}
-    {{value | CONST_CASE}} = {{loop.index}};
+enum {{i_enum.pb.message_name}} { {%- if not i_enum.has_value(0) %}
+    {{i_enum_name | CONST_CASE}}_UNSPECIFIED = 0; {%endif%}
+    {%-for item in i_enum.items %}
+    {{item.name | CONST_CASE}} = {{item.integer}};
     {%-endfor%}
 }
 {%endfor%}

@@ -10,10 +10,22 @@ TODO: Get license text from stinger file
 
 #pragma once
 
+#include <map>
+#include <string>
+
+/** 
+ * @enum Numbers
+ */
 enum class Numbers
 {
-    ONE = 1,
+    ONE = 1, // The number one
     TWO = 2,
-    THREE = 3
+    THREE = 3 // Value two has no description.
 };
-static const char *numbersStrings[] = { "Numbers", "one", "two", "three" };
+static const std::map<int, std::string> numbersStrings = {
+    { 1, "one" },
+
+    { 2, "two" },
+
+    { 3, "three" }
+};

@@ -67,6 +67,18 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             {"name": "Friday", "id": 6 },
             
             {"name": "Saturday", "id": 7 }
+            ],
+    
+        "multiplesOfTen": [
+            {"name": "Ten", "id": 10 },
+            
+            {"name": "Twenty", "id": 20 },
+            
+            {"name": "Thirty", "id": 30 },
+            
+            {"name": "Forty", "id": 40 },
+            
+            {"name": "Fifty", "id": 50 }
             ]
     };
 

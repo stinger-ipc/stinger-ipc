@@ -9,3 +9,6 @@ TODO: Get license text from stinger file
 */
 
 #pragma once
+
+#include <map>
+#include <string>

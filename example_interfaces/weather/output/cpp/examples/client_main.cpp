@@ -10,6 +10,7 @@
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
+#include "enums.hpp"
 #include "interface_exceptions.hpp"
 
 int main(int argc, char** argv)
@@ -59,7 +60,7 @@ int main(int argc, char** argv)
 
     client.registerCurrentConditionPropertyCallback([](WeatherCondition condition, std::string description)
                                                     {
-                                                        std::cout << "Received update for current_condition property: " << "condition=" << weatherConditionStrings[static_cast<int>(condition)]
+                                                        std::cout << "Received update for current_condition property: " << "condition=" << weatherConditionStrings.at(static_cast<int>(condition))
                                                                   << " | " << "description=" << description /* unhandled arg type*/ << std::endl;
                                                     });
 

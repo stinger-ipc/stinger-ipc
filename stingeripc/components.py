@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from enum import Enum
 import random
 from abc import abstractmethod
@@ -313,18 +314,18 @@ class ArgEnum(Arg, LanguageSymbolMixin):
     def get_random_example_value(self, lang="python", seed: int = 2) -> str:
         random_state = random.getstate()
         random.seed(seed)
-        value = random.choice(self._enum.values)
+        random_enum_item = random.choice(self._enum.items)
         if lang == "python":
-            retval = f"{self._enum.class_name}.{stringmanip.const_case(value) }"
+            retval = f"{self._enum.class_name}.{stringmanip.const_case(random_enum_item.name) }"
         elif lang == "c++":
-            retval = f"{self._enum.class_name}::{stringmanip.const_case(value)}"
+            retval = f"{self._enum.class_name}::{stringmanip.const_case(random_enum_item.name)}"
         elif lang == "rust":
             if self.optional:
-                retval = f"Some({self._enum.class_name}::{stringmanip.upper_camel_case(value)})"
+                retval = f"Some({self._enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)})"
             else:
-                retval = f"{self._enum.class_name}::{stringmanip.upper_camel_case(value)}"
+                retval = f"{self._enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)}"
         elif lang == "json":
-            retval = str(random.randint(1, len(self._enum.values)))
+            retval = str(random.randint(1, len(self._enum.items)))
         random.setstate(random_state)
         return retval
 
@@ -1150,16 +1151,28 @@ class Property(InterfaceComponent, LanguageSymbolMixin):
 
 class InterfaceEnum(LanguageSymbolMixin):
 
+    @dataclass
+    class EnumItem:
+        name: str
+        integer: int
+        description: Optional[str] = None
+
     def __init__(self, name: str):
         LanguageSymbolMixin.__init__(self)
         self._name = name
-        self._values: list[str] = []
-        self._value_descriptions: list[str | None] = []
+        self._items: list[InterfaceEnum.EnumItem] = []
         self._documentation: Optional[str] = None
 
-    def add_value(self, value: str, description: Optional[str] = None):
-        self._values.append(value)
-        self._value_descriptions.append(description.strip() if description is not None else None)
+    def add_item(self, value: str, integer: Optional[int] = None, description: Optional[str] = None):
+        integer_value = integer or ((max([i.integer for i in self._items]) + 1) if len(self._items) > 0 else 1)
+        item = InterfaceEnum.EnumItem(name=value, integer=integer_value, description=description)
+        self._items.append(item)
+
+    def has_value(self, integer: int) -> bool:
+        for item in self._items:
+            if item.integer == integer:
+                return True
+        return False
 
     @property
     def name(self):
@@ -1194,13 +1207,14 @@ class InterfaceEnum(LanguageSymbolMixin):
         return stringmanip.upper_camel_case(self.name)
 
     @property
-    def values(self):
-        return self._values
-    
-    def value_description(self, index: int) -> str | None:
-        if index < 0 or index >= len(self._value_descriptions):
-            return None
-        return self._value_descriptions[index]
+    def items(self) -> list[EnumItem]:
+        if self.has_value(0) and self._items[0].integer != 0:
+            # Rearrange so that the item with integer value 0 is first. This is because .proto files require an initial 0-value.
+            rearranged_items = [item for item in self._items if item.integer == 0]
+            rearranged_items.extend([item for item in self._items if item.integer != 0])
+            return rearranged_items
+        else:
+            return self._items
 
     @classmethod
     def new_enum_from_stinger(cls, name, enum_spec: YamlIfaceEnum) -> InterfaceEnum:
@@ -1213,7 +1227,16 @@ class InterfaceEnum(LanguageSymbolMixin):
                     raise InvalidStingerStructure(
                         f"InterfaceEnum '{name}' item descriptions must be strings."
                     )
-                ie.add_value(enum_obj["name"], description=value_description)
+                value_integer = enum_obj.get("value", None)
+                if value_integer is not None and not isinstance(value_integer, int):
+                    raise InvalidStingerStructure(
+                        f"InterfaceEnum '{name}' item values must be integers."
+                    )
+                if value_integer is not None and ie.has_value(value_integer):
+                    raise InvalidStingerStructure(
+                        f"InterfaceEnum '{name}' already has an item with value {value_integer}."
+                    )
+                ie.add_item(enum_obj["name"], integer=value_integer, description=value_description)
             else:
                 raise InvalidStingerStructure(
                     f"InterfaceEnum '{name}' items must have string names."

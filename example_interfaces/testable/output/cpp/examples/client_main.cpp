@@ -10,6 +10,7 @@
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
+#include "enums.hpp"
 #include "interface_exceptions.hpp"
 
 int main(int argc, char** argv)
@@ -85,19 +86,19 @@ int main(int argc, char** argv)
     client.registerSingleEnumCallback([](Numbers value)
                                       {
                                           std::cout << "Received SINGLE_ENUM signal: "
-                                                    << "value=" << numbersStrings[static_cast<int>(value)] << std::endl;
+                                                    << "value=" << numbersStrings.at(static_cast<int>(value)) << std::endl;
                                       });
 
     client.registerSingleOptionalEnumCallback([](std::optional<Numbers> value)
                                               {
                                                   std::cout << "Received SINGLE_OPTIONAL_ENUM signal: "
-                                                            << "value=" << numbersStrings[static_cast<int>(*value)] << std::endl;
+                                                            << "value=" << numbersStrings.at(static_cast<int>(*value)) << std::endl;
                                               });
 
     client.registerThreeEnumsCallback([](Numbers first, Numbers second, std::optional<Numbers> third)
                                       {
                                           std::cout << "Received THREE_ENUMS signal: "
-                                                    << "first=" << numbersStrings[static_cast<int>(first)] << " | " << "second=" << numbersStrings[static_cast<int>(second)] << " | " << "third=" << numbersStrings[static_cast<int>(*third)] << std::endl;
+                                                    << "first=" << numbersStrings.at(static_cast<int>(first)) << " | " << "second=" << numbersStrings.at(static_cast<int>(second)) << " | " << "third=" << numbersStrings.at(static_cast<int>(*third)) << std::endl;
                                       });
 
     client.registerSingleStructCallback([](AllTypes value)
@@ -300,13 +301,13 @@ int main(int argc, char** argv)
 
     client.registerReadOnlyEnumPropertyCallback([](Numbers value)
                                                 {
-                                                    std::cout << "Received update for read_only_enum property: " << "value=" << numbersStrings[static_cast<int>(value)]
+                                                    std::cout << "Received update for read_only_enum property: " << "value=" << numbersStrings.at(static_cast<int>(value))
                                                               << std::endl;
                                                 });
 
     client.registerReadWriteEnumPropertyCallback([](Numbers value)
                                                  {
-                                                     std::cout << "Received update for read_write_enum property: " << "value=" << numbersStrings[static_cast<int>(value)]
+                                                     std::cout << "Received update for read_write_enum property: " << "value=" << numbersStrings.at(static_cast<int>(value))
                                                                << std::endl;
                                                  });
 
@@ -317,7 +318,7 @@ int main(int argc, char** argv)
 
     client.registerReadWriteTwoEnumsPropertyCallback([](Numbers first, std::optional<Numbers> second)
                                                      {
-                                                         std::cout << "Received update for read_write_two_enums property: " << "first=" << numbersStrings[static_cast<int>(first)]
+                                                         std::cout << "Received update for read_write_two_enums property: " << "first=" << numbersStrings.at(static_cast<int>(first))
                                                                    << " | " << "second=" << "None" << std::endl;
                                                      });
 
@@ -676,7 +677,7 @@ int main(int argc, char** argv)
             if (success)
             {
                 std::cout << "CALL_ONE_ENUM Response: "
-                          << " output1=" << numbersStrings[static_cast<int>(returnValue)] << std::endl;
+                          << " output1=" << numbersStrings.at(static_cast<int>(returnValue)) << std::endl;
             }
         }
     }
@@ -709,7 +710,7 @@ int main(int argc, char** argv)
                           << " output1=";
                 if (returnValue)
                 {
-                    std::cout << numbersStrings[static_cast<int>(*returnValue)];
+                    std::cout << numbersStrings.at(static_cast<int>(*returnValue));
                 }
                 else
                 {
@@ -746,10 +747,10 @@ int main(int argc, char** argv)
             if (success)
             {
                 std::cout << "CALL_THREE_ENUMS Response: "
-                          << " output1=" << numbersStrings[static_cast<int>(returnValue.output1)] << " output2=" << numbersStrings[static_cast<int>(returnValue.output2)] << " output3=";
+                          << " output1=" << numbersStrings.at(static_cast<int>(returnValue.output1)) << " output2=" << numbersStrings.at(static_cast<int>(returnValue.output2)) << " output3=";
                 if (returnValue.output3)
                 {
-                    std::cout << numbersStrings[static_cast<int>(*returnValue.output3)];
+                    std::cout << numbersStrings.at(static_cast<int>(*returnValue.output3));
                 }
                 else
                 {
