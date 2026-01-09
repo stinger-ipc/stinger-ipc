@@ -73,10 +73,12 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
     
     input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
 
+    error_count = 0
     for error in validator.iter_errors(input_obj):
+        error_count += 1
         print(f"Error: {error}")
         print(f"Location: {error.instance_path}")
-    sys.exit(0)
+    sys.exit(error_count)
 
 @app.command()
 def hello():
