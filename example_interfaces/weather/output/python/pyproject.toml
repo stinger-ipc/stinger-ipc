@@ -2,6 +2,7 @@
 name = "weather-ipc"
 version = "0.1.2"
 description = "NWS weather forecast"
+
 requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.11.7",
@@ -36,6 +37,9 @@ weather-tui = "weatheripc.tui.app:main"
 
 [tool.setuptools.package-data]
 packages = ["weatheripc"]
+
+[stinger-ipc]
+generator_version = "0.6.11"
 
 [tool.mypy]
 [[tool.mypy.overrides]]

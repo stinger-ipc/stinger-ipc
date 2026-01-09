@@ -19,6 +19,7 @@ class StingerConfig(BaseModel):
     """Root configuration model for Stinger IPC code generation."""
     python: PythonConfig = Field(default_factory=PythonConfig, description="Python generation options")
     properties: PropertyConfig = Field(default_factory=PropertyConfig, description="Property generation options")
+    model_config = {"strict": True}
 
 
 def load_config(config_path: Path) -> StingerConfig:

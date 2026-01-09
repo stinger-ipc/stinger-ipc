@@ -15,6 +15,7 @@ properties:
           - "0.0.7"
           - "0.0.8"
           - "0.0.9"
+          - "0.1.0"
     required:
       - version
 
@@ -39,6 +40,7 @@ properties:
         maxLength: 32
       documentation:
         $ref: "#/$defs/documentation"
+      description: false
       license:
         type: string
         description: "The license or copyright under which this interface is provided.  All generated code will be subject to this license."
@@ -64,7 +66,7 @@ properties:
                 type: string
                 pattern: "^[a-zA-Z0-9_-]+$"
               description:
-                type: string
+                $ref: "#/$defs/enumValueDescription"
               documentation: false
               value:
                 type: integer
@@ -92,6 +94,7 @@ properties:
           $ref: "#/$defs/payload"
         documentation:
           $ref: "#/$defs/documentation"
+        description: false
         version:
             type: string
             pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
@@ -142,7 +145,8 @@ properties:
         value:
           type: ["string", "number", "boolean"]
         description:
-          type: string
+          $ref: "#/$defs/constantValueDescription"
+        documentation: false
       required:
         - type
         - value
@@ -155,12 +159,30 @@ $defs:
 
   documentation:
     type: string
+    description: "Documentation.  May be multi-line.  May be markdown formatted."
 
+  argDescription:
+    type: string
+    description: "A short description of an argument as a single line."
+    maxLength: 256
+    pattern: "^[^\n\r]*$"
   payload:
     type: array
     uniqueItems: true
     items:
       $ref: "#/$defs/arg"
+
+  enumValueDescription:
+    type: string
+    description: "A short description of an enum value as a single line."
+    maxLength: 256
+    pattern: "^[^\n\r]*$"
+
+  constantValueDescription:
+    type: string
+    description: "A short description of a constant value as a single line."
+    maxLength: 256
+    pattern: "^[^\n\r]*$"
 
   genericArg:
     type: object
@@ -175,8 +197,8 @@ $defs:
         type: boolean
         default: false
       description:
-        type: string
-        pattern: "^[^\n\r]*$"
+        $ref: "#/$defs/argDescription"
+      documentation: false
       schema:
         type: object
         description: A JSON schema which further constrains the value.
@@ -297,6 +319,7 @@ $defs:
     properties:
       documentation:
         $ref: "#/$defs/documentation"
+      description: false
       payload:
         $ref: "#/$defs/payload"
       consumers:
@@ -326,6 +349,7 @@ $defs:
     properties:
       documentation:
         $ref: "#/$defs/documentation"
+      description: false
       values:
         type: array
         uniqueItems: true
@@ -366,6 +390,7 @@ $defs:
     properties:
       documentation:
         $ref: "#/$defs/documentation"
+      description: false
       arguments:
         $ref: "#/$defs/payload"
       returnValues:

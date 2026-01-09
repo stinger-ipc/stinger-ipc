@@ -2,6 +2,7 @@
 name = "testable-ipc"
 version = "0.0.1"
 description = "Interface for testing"
+
 requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.11.7",
@@ -36,6 +37,9 @@ testable-tui = "testableipc.tui.app:main"
 
 [tool.setuptools.package-data]
 packages = ["testableipc"]
+
+[stinger-ipc]
+generator_version = "0.6.11"
 
 [tool.mypy]
 [[tool.mypy.overrides]]

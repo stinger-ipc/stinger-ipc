@@ -2,6 +2,7 @@
 name = "full-ipc"
 version = "0.0.2"
 description = "Example Interface"
+
 requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.11.7",
@@ -36,6 +37,9 @@ full-tui = "fullipc.tui.app:main"
 
 [tool.setuptools.package-data]
 packages = ["fullipc"]
+
+[stinger-ipc]
+generator_version = "0.6.11"
 
 [tool.mypy]
 [[tool.mypy.overrides]]

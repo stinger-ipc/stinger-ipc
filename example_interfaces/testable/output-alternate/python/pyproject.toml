@@ -2,6 +2,7 @@
 name = "testable-37-ipc"
 version = "0.0.1"
 description = "Interface for testing"
+
 requires-python = ">=3.7"
 dependencies = [
     "pydantic==2.5.3",
@@ -24,6 +25,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
 packages = ["testableipc"]
+
+[stinger-ipc]
+generator_version = "0.6.10"
 
 [tool.mypy]
 [[tool.mypy.overrides]]

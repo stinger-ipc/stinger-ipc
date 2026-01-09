@@ -41,9 +41,13 @@ def main(
 
     config_obj = None
     if config:
+        print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config}")
         config_obj = load_config(config)
     else:
         config_obj = StingerConfig()
+    assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
+    for k,v in config_obj.model_dump().items():
+        print(f"🔧{k:>10.10}: {v}")
 
     print(f"🟢   [bold cyan]LOAD:[/bold cyan] {inname}")
     if consumer:

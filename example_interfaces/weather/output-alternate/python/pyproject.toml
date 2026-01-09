@@ -2,6 +2,7 @@
 name = "weather-37-ipc"
 version = "0.1.2"
 description = "NWS weather forecast"
+
 requires-python = ">=3.7"
 dependencies = [
     "pydantic==2.5.3",
@@ -24,6 +25,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
 packages = ["weatheripc"]
+
+[stinger-ipc]
+generator_version = "0.6.10"
 
 [tool.mypy]
 [[tool.mypy.overrides]]

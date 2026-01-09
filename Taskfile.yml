@@ -39,6 +39,7 @@ tasks:
     deps:
       - task: validate:{{index .MATCH 0}}
     sources:
+      - pyproject.toml
       - stingeripc/**/*.py
       - stingeripc/templates/python/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
@@ -98,6 +99,7 @@ tasks:
   cpp:generate:*:
     desc: Generate C++ code for an interface
     sources:
+      - pyproject.toml
       - stingeripc/*.py
       - stingeripc/tools/*
       - stingeripc/tests/*
@@ -138,6 +140,7 @@ tasks:
   rust:generate:*:
     desc: Generate Rust code for an interface
     sources:
+      - pyproject.toml
       - stingeripc/*.py
       - stingeripc/templates/rust/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
