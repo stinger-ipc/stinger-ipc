@@ -16,8 +16,7 @@ from stingeripc.interface import StingerInterface
 from . import cpp_generator
 from . import generic_generator
 
-app = typer.Typer(help="stinger-ipc generator CLI")
-
+app = typer.Typer(help="Stinger-IPC Tool")
 
 @app.command()
 def generate(
@@ -75,9 +74,13 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
 
     error_count = 0
     for error in validator.iter_errors(input_obj):
+        if error_count == 0:
+            print(f"❌  [bold red]Validation errors found in {input_file}:[/bold red]")
         error_count += 1
         print(f"Error: {error}")
         print(f"Location: {error.instance_path}")
+    if error_count == 0:
+        print(f"✅  [bold green]No validation errors found in {input_file}[/bold green]")
     sys.exit(error_count)
 
 @app.command()
