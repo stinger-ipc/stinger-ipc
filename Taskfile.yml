@@ -52,20 +52,41 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
 
-  python-alternate:generate:*:
+  python37:generate:*:
+    desc: Generate Python 3.7 code for an interface with alternative settings
+    deps:
+      - task: validate:{{index .MATCH 0}}
+    sources:
+      - pyproject.toml
+      - stingeripc/*.py
+      - stingeripc/tools/*.py
+      - stingeripc/templates/python/**
+      - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
+    generates:
+      - example_interfaces/{{.IFACE}}/output/python37/**
+    cmds:
+      - mkdir -p ./example_interfaces/{{.IFACE}}/output/python37/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/python37/
+      - uv run black ./example_interfaces/{{.IFACE}}/output/python37/
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python-alt1:generate:*:
     desc: Generate Python code for an interface with alternative settings
     deps:
       - task: validate:{{index .MATCH 0}}
     sources:
-      - stingeripc/**/*.py
+      - pyproject.toml
+      - stingeripc/*.py
+      - stingeripc/tools/*.py
       - stingeripc/templates/python/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
-      - example_interfaces/{{.IFACE}}/output-alternate/python/**
+      - example_interfaces/{{.IFACE}}/output/python-alt1/**
     cmds:
-      - mkdir -p ./example_interfaces/{{.IFACE}}/output-alternate/python/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/alternates.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output-alternate/python/
-      - uv run black ./example_interfaces/{{.IFACE}}/output-alternate/python/
+      - mkdir -p ./example_interfaces/{{.IFACE}}/output/python-alt1/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/app-owned-props.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/python-alt1/
+      - uv run black ./example_interfaces/{{.IFACE}}/output/python-alt1/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -75,7 +96,9 @@ tasks:
       - for: { var: INTERFACES }
         task: python:generate:{{ .ITEM }}
       - for: { var: INTERFACES }
-        task: python-alternate:generate:{{ .ITEM }}
+        task: python37:generate:{{ .ITEM }}
+      - for: { var: INTERFACES }
+        task: python-alt1:generate:{{ .ITEM }}
 
   python:unittest:*:
     desc: Run Python unit tests for an interface
@@ -90,11 +113,67 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
 
+  python-alt1:unittest:*:
+    desc: Run Python unit tests for an interface generated with alternative settings
+    dir: example_interfaces/{{.IFACE}}/output/python-alt1/
+    deps:
+      - task: python-alt1:generate:{{index .MATCH 0}}
+    sources:
+      - example_interfaces/{{.IFACE}}/output/python-alt1/tests/*.py
+      - example_interfaces/{{.IFACE}}/output/python-alt1/src/*.py
+    cmds:
+      - uv run pytest -vv
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
   python:unittest:
     desc: Run Python unit tests for all interfaces
     deps:
       - for: { var: INTERFACES }
         task: python:unittest:{{ .ITEM }}
+      - for: { var: INTERFACES }
+        task: python-alt1:unittest:{{ .ITEM }}
+
+  python:mypy:*:
+    desc: Run mypy type checking for an interface
+    dir: example_interfaces/{{.IFACE}}/output/python/
+    deps:
+      - task: python:generate:{{index .MATCH 0}}
+    sources:
+      - ./src/**
+      - ./tests/**
+    cmds:
+      - uv run mypy ./src/ ./tests/
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+    
+  python-alt1:mypy:*:
+    desc: Run mypy type checking for an interface generated with alternative settings
+    dir: example_interfaces/{{.IFACE}}/output/python-alt1/
+    deps:
+      - task: python-alt1:generate:{{index .MATCH 0}}
+    sources:
+      - ./src/**
+      - ./tests/**
+    cmds:
+      - uv run mypy ./src/ ./tests/
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python:mypy:
+    desc: Run mypy type checking for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: python:mypy:{{ .ITEM }}
+      - for: { var: INTERFACES }
+        task: python-alt1:mypy:{{ .ITEM }}
+
+  python:
+    desc: Run all python releated tasks
+    deps:
+      - task: python:generate
+      - task: python:unittest
+      - task: python:mypy
 
   cpp:generate:*:
     desc: Generate C++ code for an interface

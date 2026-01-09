@@ -1,0 +1,37 @@
+[project]
+name = "signal-only-37-ipc"
+version = "0.0.1"
+description = "SignalOnly"
+
+requires-python = ">=3.7"
+dependencies = [
+    "pydantic==2.5.3",
+    "paho-mqtt>=2.1.0",
+    "isodate>=0.7.2",
+    "pyqttier>=0.2.5",
+    "stinger-python-utils>=0.1.5",
+    "typing-extensions>=4.0.0",
+]
+
+
+
+
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+
+[tool.setuptools.package-data]
+packages = ["signal_onlyipc"]
+
+[stinger-ipc]
+generator_version = "0.6.12"
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = [
+    "textual.*",
+]
+ignore_missing_imports = true

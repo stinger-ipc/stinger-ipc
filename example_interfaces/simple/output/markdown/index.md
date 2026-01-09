@@ -446,12 +446,12 @@ Client <<-- Server: Response(Parameters)
 
 ### Method `trade_numbers`
 
-_No documentation for this method_
+A simple method which trades favorite numbers.
 
 #### Request Parameters
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|  your_number  | integer  ||
+|  your_number  | integer  |Your favorite number.|
 
 #### Return Parameters
 
@@ -522,7 +522,7 @@ _No documentation is available for this property_
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|      name     |  string  ||
+|      name     |  string  |The name of the school where the person studies.|
 
 ### Code Examples
 
@@ -595,5 +595,5 @@ Structures are a group of values and may be used as an argument in signals, meth
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|      name     |  string  ||
-|     gender    |[Enum Gender](#enum-Gender)||
+|      name     |  string  |The name of the person|
+|     gender    |[Enum Gender](#enum-Gender)|The gender of the person.|

@@ -1,5 +1,5 @@
 stingeripc:
-  version: 0.0.7
+  version: 0.1.0
 
 interface:
   name: Simple
@@ -13,11 +13,11 @@ structures:
     members:
       - name: name
         type: string
-        documentation: The name of the person
+        description: The name of the person
       - name: gender
         type: enum
         enumName: gender
-        documentation: The gender of the person.
+        description: The gender of the person.
 
 enums:
 
@@ -38,20 +38,20 @@ signals:
 methods:
 
   trade_numbers:
-    description: A simple method which trades favorite numbers.
+    documentation: A simple method which trades favorite numbers.
     arguments:
       - name: your_number
         type: integer
-        documentation: Your favorite number.
+        description: Your favorite number.
     returnValues:
       - name: my_number
         type: integer
-        documentation: My favorite number
-
+        description: My favorite number
+  
 properties:
 
   school:
     values:
       - name: name
         type: string
-        documentation: The name of the school where the person studies.
+        description: The name of the school where the person studies.

@@ -183,7 +183,7 @@ class SuperAwesomeDoerOfThings:
         print(f"{self.label}-{self.counter} printing signal 'read_write_struct' : value={value}")
 
     @client_builder.read_write_optional_struct_updated
-    def print_new_read_write_optional_struct_value(self, value: AllTypes):
+    def print_new_read_write_optional_struct_value(self, value: Optional[AllTypes]):
         print(f"{self.label}-{self.counter} printing signal 'read_write_optional_struct' : value={value}")
 
     @client_builder.read_write_two_structs_updated
@@ -235,7 +235,7 @@ class SuperAwesomeDoerOfThings:
         print(f"{self.label}-{self.counter} printing signal 'read_write_binary' : value={value!r}")
 
     @client_builder.read_write_optional_binary_updated
-    def print_new_read_write_optional_binary_value(self, value: bytes):
+    def print_new_read_write_optional_binary_value(self, value: Optional[bytes]):
         print(f"{self.label}-{self.counter} printing signal 'read_write_optional_binary' : value={value!r}")
 
     @client_builder.read_write_two_binaries_updated
@@ -716,7 +716,7 @@ class SuperAwesomeDoerOfThings:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -779,7 +779,7 @@ class SuperAwesomeDoerOfThings:
 
             self.client.read_write_datetime = datetime.now(UTC)
 
-            self.client.read_write_optional_datetime = datetime.now(UTC)
+            self.client.read_write_optional_datetime = None
 
             self.client.read_write_two_datetimes = ReadWriteTwoDatetimesProperty(
                 first=datetime.now(UTC),

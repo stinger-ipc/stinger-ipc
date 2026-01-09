@@ -150,7 +150,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -191,7 +191,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -408,7 +408,7 @@ def request_loop(client: TestableClient):
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -441,7 +441,7 @@ def request_loop(client: TestableClient):
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=None,
+            optional_date_time=datetime.now(UTC),
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -507,7 +507,7 @@ def request_loop(client: TestableClient):
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -662,18 +662,18 @@ if __name__ == "__main__":
         print(f"Got a 'singleStruct' signal: value={ value} ")
 
     @client_builder.receive_single_optional_struct
-    def print_singleOptionalStruct_receipt(value: AllTypes):
+    def print_singleOptionalStruct_receipt(value: Optional[AllTypes]):
         """
-        @param value AllTypes The struct value.
+        @param value Optional[AllTypes] The struct value.
         """
         print(f"Got a 'singleOptionalStruct' signal: value={ value} ")
 
     @client_builder.receive_three_structs
-    def print_threeStructs_receipt(first: AllTypes, second: AllTypes, third: AllTypes):
+    def print_threeStructs_receipt(first: AllTypes, second: AllTypes, third: Optional[AllTypes]):
         """
         @param first AllTypes The first struct value.
         @param second AllTypes The second struct value.
-        @param third AllTypes The third struct value.
+        @param third Optional[AllTypes] The third struct value.
         """
         print(f"Got a 'threeStructs' signal: first={ first} second={ second} third={ third} ")
 
@@ -731,18 +731,18 @@ if __name__ == "__main__":
         print(f"Got a 'singleBinary' signal: value={ value!r} ")
 
     @client_builder.receive_single_optional_binary
-    def print_singleOptionalBinary_receipt(value: bytes):
+    def print_singleOptionalBinary_receipt(value: Optional[bytes]):
         """
-        @param value bytes The binary value.
+        @param value Optional[bytes] The binary value.
         """
         print(f"Got a 'singleOptionalBinary' signal: value={ value!r} ")
 
     @client_builder.receive_three_binaries
-    def print_threeBinaries_receipt(first: bytes, second: bytes, third: bytes):
+    def print_threeBinaries_receipt(first: bytes, second: bytes, third: Optional[bytes]):
         """
         @param first bytes The first binary value.
         @param second bytes The second binary value.
-        @param third bytes The third binary value.
+        @param third Optional[bytes] The third binary value.
         """
         print(f"Got a 'threeBinaries' signal: first={ first!r} second={ second!r} third={ third!r} ")
 
@@ -754,9 +754,9 @@ if __name__ == "__main__":
         print(f"Got a 'singleArrayOfIntegers' signal: values={ values} ")
 
     @client_builder.receive_single_optional_array_of_strings
-    def print_singleOptionalArrayOfStrings_receipt(values: List[str]):
+    def print_singleOptionalArrayOfStrings_receipt(values: Optional[List[str]]):
         """
-        @param values List[str] The array of strings.
+        @param values Optional[List[str]] The array of strings.
         """
         print(f"Got a 'singleOptionalArrayOfStrings' signal: values={ values} ")
 
@@ -831,7 +831,7 @@ if __name__ == "__main__":
         print(f"Property 'read_write_struct' has been updated to: {value}")
 
     @client_builder.read_write_optional_struct_updated
-    def print_new_read_write_optional_struct_value(value: AllTypes):
+    def print_new_read_write_optional_struct_value(value: Optional[AllTypes]):
         """ """
         print(f"Property 'read_write_optional_struct' has been updated to: {value}")
 
@@ -896,7 +896,7 @@ if __name__ == "__main__":
         print(f"Property 'read_write_binary' has been updated to: {value!r}")
 
     @client_builder.read_write_optional_binary_updated
-    def print_new_read_write_optional_binary_value(value: bytes):
+    def print_new_read_write_optional_binary_value(value: Optional[bytes]):
         """ """
         print(f"Property 'read_write_optional_binary' has been updated to: {value!r}")
 

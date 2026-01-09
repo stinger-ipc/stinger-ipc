@@ -5,7 +5,7 @@ import yamlloader
 from .components import StingerSpec, InvalidStingerStructure
 from .topic import InterfaceTopicCreator
 
-VERSION_SUPPORTED = "0.0.7"
+VERSIONS_SUPPORTED = ["0.0.7", "0.1.0"]
 
 
 class StingerInterface(StingerSpec):
@@ -21,10 +21,10 @@ class StingerInterface(StingerSpec):
         if (
             "stingeripc" not in stinger_spec
             or "version" not in stinger_spec["stingeripc"]
-            or stinger_spec["stingeripc"]["version"] not in [VERSION_SUPPORTED]
+            or stinger_spec["stingeripc"]["version"] not in VERSIONS_SUPPORTED
         ):
             raise InvalidStingerStructure(
-                f"Provided Stinger Spec does not claim to be version {VERSION_SUPPORTED}"
+                f"Provided Stinger Spec does not claim to be in {VERSIONS_SUPPORTED}"
             )
         if "interface" not in stinger_spec or "name" not in stinger_spec["interface"]:
             raise InvalidStingerStructure(

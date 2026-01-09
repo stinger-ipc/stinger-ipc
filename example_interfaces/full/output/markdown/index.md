@@ -493,7 +493,7 @@ _No documentation for this signal_
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|   dayOfMonth  | integer  ||
+|   dayOfMonth  | integer  |The calendar day of the month.|
 |   dayOfWeek   |[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
 
 #### Code Examples
@@ -868,7 +868,7 @@ Hold a temperature for a specified duration.
 #### Request Parameters
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|temperature_celsius|  number  ||
+|temperature_celsius|  number  |The temperature to hold in degrees Celsius.|
 
 #### Return Parameters
 
@@ -1236,7 +1236,7 @@ This is to test a property with multiple datetime values.
 |      mom      |          ||
 |      dad      |          ||
 |     sister    |           (optional)||
-|  brothers_age | integer   (optional)||
+|  brothers_age | integer   (optional)|The age of my brothers in years.|
 
 ### Code Examples
 
@@ -1329,10 +1329,10 @@ Structures are a group of values and may be used as an argument in signals, meth
 
 | Name          | Type     |Description|
 |---------------|----------|-----------|
-|     drink     | boolean  ||
-|    sandwich   |  string  ||
-|    crackers   |  number  ||
+|     drink     | boolean  |Whether or not lunch comes with a drink|
+|    sandwich   |  string  |The type of sandwich which will be served.|
+|    crackers   |  number  |The number of crackers that come with lunch.|
 |      day      |[Enum DayOfTheWeek](#enum-DayOfTheWeek)||
 |  order_number | integer   (optional)||
-| time_of_lunch |          ||
-|duration_of_lunch|          ||
+| time_of_lunch |          |The time when lunch is served.|
+|duration_of_lunch|          |The amount of time lunch lasts.|

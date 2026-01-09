@@ -129,11 +129,12 @@ class PropertyEditModal(ModalScreen[bool]):
                     {%else%}
                     {%-for arg in prop.arg_list%}
                     input_widget_{{arg.name|snake_case}} = self.query_one("#property_input_{{arg.name|snake_case}}", Input)
-                    new_value_{{arg.name|snake_case}} = {{from_input_string(arg, "input_widget_" + arg.name|snake_case + ".value")}}
+                    # {{arg.name}} should be {{arg.type}}
+                    new_{{prop_name|snake_case}}_value_{{arg.name|snake_case}} = {{from_input_string(arg, "input_widget_" + arg.name|snake_case + ".value")}}
                     {%endfor%}
                     new_{{prop_name|snake_case}}_value = {{prop_name|UpperCamelCase}}Property(
                         {%-for arg in prop.arg_list%}
-                        {{arg.name|snake_case}}=new_value_{{arg.name|snake_case}},
+                        {{arg.name|snake_case}}=new_{{prop_name|snake_case}}_value_{{arg.name|snake_case}},
                         {%-endfor%}
                     )
                     {%endif%}
@@ -491,31 +492,43 @@ class ClientScreen(Screen):
                     
                     values = []
                     {%if prop.arg_list|length == 1%}
-                    {%if prop.arg_list[0].arg_type.name == 'DATETIME'%}
-                    values.append(f"{value.isoformat() if value else 'None'}")
-                    {%elif prop.arg_list[0].arg_type.name == 'ENUM'%}
-                    values.append(f"{value.name if value else 'None'} ({value.value if value else 'None'})")
-                    {%elif prop.arg_list[0].arg_type.name == 'STRUCT'%}
-                    {%for mem in prop.arg_list[0].struct.members %}
-                    values.append(f"[bold]{{prop.arg_list[0].name}}.{{mem.name}}[/bold]: { value.{{mem.name|snake_case}} }") 
-                    {%endfor%}
-                    {%else%}
-                    values.append(f"{value}")  # {{prop.arg_list[0].arg_type.name}}
-                    {%endif%}
-                    {%else%}
+                    # Single value
+                    if value is None:
+                        values.append("None")
+                    else:
+                        {%if prop.arg_list[0].arg_type.name == 'DATETIME'%}
+                        values.append(f"{value.isoformat() if value else 'None'}") # datetime
+                        {%elif prop.arg_list[0].arg_type.name == 'ENUM'%}
+                        values.append(f"{value.name if value else 'None'} ({value.value if value else 'None'})") # enum
+                        {%elif prop.arg_list[0].arg_type.name == 'BINARY'%}
+                        values.append(f"{value!r}")  # binary
+                        {%elif prop.arg_list[0].arg_type.name == 'STRUCT'%}
+                        {%for mem in prop.arg_list[0].struct.members %}
+                        values.append(f"[bold]{{prop.arg_list[0].name}}.{{mem.name}}[/bold]: { value.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }") # struct member {{mem.arg_type.name}}
+                        {%endfor%}
+                        {%else%}
+                        values.append(f"{value}")  # other - {{prop.arg_list[0].arg_type.name}}
+                        {%endif%}
+                    {%else%}{# multiple values #}
+                    # Multiple values
                     {%- for arg in prop.arg_list %}
                     {%if arg.arg_type.name == 'DATETIME'%}
-                    line = (f"[bold]{{arg.name}}[/bold]: { value.{{arg.name}}.isoformat() if value.{{arg.name|snake_case}} else 'None' }")
+                    line = (f"[bold]{{arg.name}}[/bold]: { value.{{arg.name}}.isoformat() if value.{{arg.name|snake_case}} else 'None' }") # Datetime
                     values.append(line)
                     {%elif arg.arg_type.name == 'ENUM'%}
-                    line = (f"[bold]{{arg.name}}[/bold]: { value.{{arg.name}}.name if value.{{arg.name|snake_case}} else 'None' } ({ value.{{arg.name}}.value if value.{{arg.name|snake_case}} else 'None' })")
+                    line = (f"[bold]{{arg.name}}[/bold]: { value.{{arg.name}}.name if value.{{arg.name|snake_case}} else 'None' } ({ value.{{arg.name}}.value if value.{{arg.name|snake_case}} else 'None' })") # Enum
                     values.append(line)
+                    {%elif arg.arg_type.name == 'BINARY'%}
+                    values.append(f"[bold]{{arg.name}}[/bold]: { value.{{arg.name|snake_case}}!r }") # Binary
                     {%elif arg.arg_type.name == 'STRUCT'%}
-                    {%for mem in arg.struct.members %}
-                    values.append(f"[bold]{{arg.name}}.{{mem.name}}[/bold]: { value.{{arg.name|snake_case}}.{{mem.name|snake_case}} }") 
-                    {%endfor%}
+                    if value.{{arg.name|snake_case}} is None:
+                        values.append(f"[bold]{{arg.name}}[/bold]: None")
+                    else:
+                        {%for mem in arg.struct.members -%}
+                        values.append(f"[bold]{{arg.name}}.{{mem.name}}[/bold]: { value.{{arg.name|snake_case}}.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }") # Struct Member
+                        {%endfor%}
                     {%else%}
-                    line = (f"[bold]{{arg.name}}[/bold]: { value.{{arg.name|snake_case}} }") # {{arg.arg_type.name}}
+                    line = (f"[bold]{{arg.name}}[/bold]: { value.{{arg.name|snake_case}} }") # Other - {{arg.arg_type.name}}
                     values.append(line)
                     {%endif%}
                     {%- endfor %}

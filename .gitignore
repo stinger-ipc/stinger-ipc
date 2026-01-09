@@ -15,17 +15,16 @@ Cargo.lock
 example_interfaces/*/output/cpp/build/*
 
 # Python generated code
-example_interfaces/*/output/python/__pycache__/
-example_interfaces/*/output/python/*.egg-info/
-example_interfaces/*/output/python/dist/
-example_interfaces/*/output/python/src/*.egg-info/
-example_interfaces/*/output/python/uv.lock
-example_interfaces/*/output-*/python/__pycache__/
-example_interfaces/*/output-*/python/*.egg-info/
-example_interfaces/*/output-*/python/dist/
-example_interfaces/*/output-*/python/src/*.egg-info/
-example_interfaces/*/output-*/python/uv.lock
-
+example_interfaces/*/output/python*/__pycache__/
+example_interfaces/*/output/python*/.egg-info/
+example_interfaces/*/output/python*/dist/
+example_interfaces/*/output/python*/src/*.egg-info/
+example_interfaces/*/output/python*/uv.lock
+example_interfaces/*/output-*/python*/__pycache__/
+example_interfaces/*/output-*/python*/.egg-info/
+example_interfaces/*/output-*/python*/dist/
+example_interfaces/*/output-*/python*/src/*.egg-info/
+example_interfaces/*/output-*/python*/uv.lock
 .vscode/
 build/
 

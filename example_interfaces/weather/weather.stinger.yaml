@@ -33,7 +33,7 @@ structures:
       - name: condition
         type: enum
         enumName: weather_condition
-    description: |
+    documentation: |
       This structure contains the forecast for a single hour.
 
   forecast_for_day:
@@ -51,7 +51,7 @@ structures:
         type: string
       - name: end_time
         type: string
-    description: |
+    documentation: |
       This structure contains the forecast for a single day.  The high or low temperature
       may be missing for the current day.
 

@@ -102,8 +102,8 @@ class {{stinger.python.client_class_name}}:
     def {{prop_name}}(self, value: {{prop_spec.python_annotation}}):
         """ Serializes and publishes the '{{prop_name}}' property.
         """
-        if not isinstance(value, {{prop_spec.python_local_type}}):
-            raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}")
+        if not isinstance(value, {{prop_spec.python_local_type}}){%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} and value is not None{%endif%}:
+            raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}{%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} or None{%endif%}.")
         {%if prop_spec.arg_list | length > 1 -%}
         property_obj = value
         {%else-%}

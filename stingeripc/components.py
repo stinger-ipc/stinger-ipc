@@ -466,6 +466,12 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         return self._interface_struct.python_local_type
 
     @property
+    def python_annotation(self) -> str:
+        if self.optional:
+            return f"Optional[{self.python_type}]"
+        return self.python_type
+
+    @property
     def rust_type(self) -> str:
         if self.optional:
             return f"Option<{self._interface_struct.rust_type}>"
@@ -669,6 +675,12 @@ class ArgBinary(Arg, LanguageSymbolMixin):
         return "bytes"
 
     @property
+    def python_annotation(self) -> str:
+        if self.optional:
+            return f"Optional[{self.python_type}]"
+        return self.python_type
+
+    @property
     def rust_type(self) -> str:
         if self.optional:
             return "Option<Vec<u8>>"
@@ -730,7 +742,9 @@ class ArgArray(Arg, LanguageSymbolMixin):
 
     @property
     def python_annotation(self) -> str:
-        return f"List[{self.element.python_type}]"
+        if self.optional:
+            return f"Optional[List[{self.element.python_annotation}]]"
+        return f"List[{self.element.python_annotation}]"
 
     @property
     def python_type(self) -> str:
@@ -1453,7 +1467,7 @@ class StingerSpec(LanguageSymbolMixin):
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if "version" not in stinger["stingeripc"]:
             raise InvalidStingerStructure("Stinger spec version not present")
-        if stinger["stingeripc"]["version"] not in ["0.0.7"]:
+        if stinger["stingeripc"]["version"] not in ["0.0.7", "0.1.0"]:
             raise InvalidStingerStructure(
                 f"Unsupported stinger spec version {stinger['stingeripc']['version']}"
             )

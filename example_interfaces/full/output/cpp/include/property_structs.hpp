@@ -72,5 +72,5 @@ struct LastBirthdaysProperty
     std::chrono::time_point<std::chrono::system_clock> mom;
     std::chrono::time_point<std::chrono::system_clock> dad;
     std::optional<std::chrono::time_point<std::chrono::system_clock>> sister;
-    std::optional<int> brothersAge;
+    std::optional<int> brothersAge; ///< The age of my brothers in years.
 };

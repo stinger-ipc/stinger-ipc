@@ -18,5 +18,5 @@ struct SchoolProperty
 {
     static SchoolProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    std::string name;
+    std::string name; ///< The name of the school where the person studies.
 };

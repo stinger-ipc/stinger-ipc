@@ -10,16 +10,17 @@ interface:
 structures:
 
   lunch:
+    documentation: Structure representing a lunch order.
     members:
       - name: drink
         type: boolean
-        documentation: Whether or not lunch comes with a drink
+        description: Whether or not lunch comes with a drink
       - name: sandwich
         type: string
-        documentation: The type of sandwich which will be served.
+        description: The type of sandwich which will be served.
       - name: crackers
         type: float
-        documentation: The number of crackers that come with lunch.
+        description: The number of crackers that come with lunch.
       - name: day
         type: enum
         enumName: dayOfTheWeek
@@ -28,10 +29,10 @@ structures:
         optional: true
       - name: time_of_lunch
         type: datetime
-        documentation: The time when lunch is served.
+        description: The time when lunch is served.
       - name: duration_of_lunch
         type: duration
-        documentation: The amount of time lunch lasts.
+        description: The amount of time lunch lasts.
 
 enums:
 
@@ -69,7 +70,7 @@ signals:
     payload:
       - name: dayOfMonth
         type: integer
-        documentation: The calendar day of the month.
+        description: The calendar day of the month.
       - name: dayOfWeek
         type: enum
         enumName: dayOfTheWeek
@@ -118,7 +119,7 @@ methods:
     arguments:
       - name: temperature_celsius
         type: float
-        documentation: The temperature to hold in degrees Celsius.
+        description: The temperature to hold in degrees Celsius.
     returnValues:
       - name: success
         type: boolean
@@ -178,4 +179,4 @@ properties:
       - name: brothers_age
         type: integer
         optional: true
-        documentation: The age of my brothers in years.
+        description: The age of my brothers in years.
