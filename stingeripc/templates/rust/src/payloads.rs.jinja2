@@ -456,7 +456,7 @@ impl From<{{ie_name | UpperCamelCase }}> for i32 {
 
 impl TryFrom<i32> for {{ie_name | UpperCamelCase }} {
     type Error = String;
-    fn try_from(v: i32) -> Result<Self, Self::Error> {
+    fn try_from(v: i32) -> Result<Self, <Self as TryFrom<i32>>::Error> {
         {{ie_name | UpperCamelCase }}::from_i32(v).ok_or_else(|| format!("Invalid {{ie_name | UpperCamelCase }} value: {}", v))
     }
 }

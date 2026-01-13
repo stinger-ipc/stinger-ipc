@@ -297,7 +297,7 @@ def request_loop(client: TestableClient):
         sleep(5)
 
         print("Making call to 'call_three_date_times'")
-        future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=None)
+        future_resp = client.call_three_date_times(input1=datetime.now(UTC), input2=datetime.now(UTC), input3=datetime.now(UTC))
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
