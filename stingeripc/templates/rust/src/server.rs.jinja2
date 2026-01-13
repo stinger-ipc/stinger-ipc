@@ -602,8 +602,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                 let _ = interface_publisher.publish(msg).await;
             }
         });
-
+        {%if stinger.properties|length > 0 %}
         let properties = self.properties.clone();
+        {%endif%}
         let loop_task = tokio::spawn(async move {
             loop {
                 match message_receiver.recv().await {

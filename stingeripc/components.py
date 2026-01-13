@@ -1178,7 +1178,7 @@ class InterfaceEnum(LanguageSymbolMixin):
         self._documentation: Optional[str] = None
 
     def add_item(self, value: str, integer: Optional[int] = None, description: Optional[str] = None):
-        integer_value = integer or ((max([i.integer for i in self._items]) + 1) if len(self._items) > 0 else 1)
+        integer_value = integer if integer is not None else ((max([i.integer for i in self._items]) + 1) if len(self._items) > 0 else 1)
         item = InterfaceEnum.EnumItem(name=value, integer=integer_value, description=description)
         self._items.append(item)
 

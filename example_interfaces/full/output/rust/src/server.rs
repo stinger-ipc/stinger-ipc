@@ -1879,6 +1879,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         });
 
         let properties = self.properties.clone();
+
         let loop_task = tokio::spawn(async move {
             loop {
                 match message_receiver.recv().await {

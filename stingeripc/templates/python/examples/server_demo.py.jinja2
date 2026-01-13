@@ -38,6 +38,7 @@ class {{stinger.name|UpperCamelCase}}PropertyOwnership:
     {%-if not prop.read_only%}
     def set_property_{{prop_name|snake_case}}(self, value: {{prop.python_annotation}}):
         """Set the value for the '{{prop_name|snake_case}}' property."""
+        print(f"~~> Received update for '{{prop_name}}' property: {value}")
         self._{{prop_name|snake_case}} = value
     {%-endif%} {# end read only #}
     {%endfor%} {# end property foreach #}
@@ -89,13 +90,14 @@ if __name__ == '__main__':
         print(f"--> Running {{method_name | snake_case}}({%for arg in method.arg_list %}{ {{-arg.name-}}{% if 'bytes' in arg.python_annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%})'")
         return {{method.get_return_value_random_example_value('python')}}
     {%endfor%}
-
+    {%if config.properties.stinger_owned_values %}
     {%for prop_name, prop in stinger.properties.items()%}
     @server.on_{{prop_name | snake_case}}_updated
     def on_{{prop_name | snake_case}}_update({%for arg in prop.arg_list %}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ Example callback for when the '{{prop_name}}' property is updated. """
         print(f"~~> Received update for '{{prop_name}}' property: {%for arg in prop.arg_list %}{ {{arg.name}}= }{%if not loop.last%}, {%endif%}{%endfor%}")
     {%endfor%}
+    {%endif%}
 
     print("Ctrl-C will stop the program.")
 

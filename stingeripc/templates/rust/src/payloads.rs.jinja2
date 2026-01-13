@@ -429,9 +429,9 @@ impl MethodReturnCode {
 // --- ENUMERATIONS ---
 
 {%for ie_name, ie in stinger.enums.items() %}
-#[repr(u32)]
+#[repr(i32)]
 #[derive(Debug, FromPrimitive, ToPrimitive, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(into = "u32", try_from = "u32")]
+#[serde(into = "i32", try_from = "i32")]
 pub enum {{ie_name | UpperCamelCase }} {
     {%-for enum_item in ie.items %}
     {%- if enum_item.description %}
@@ -443,28 +443,21 @@ pub enum {{ie_name | UpperCamelCase }} {
 
 #[allow(dead_code)]
 impl {{ie_name | UpperCamelCase }} {
-    pub fn from_u32(value: u32) -> Option<Self> {
-        FromPrimitive::from_u32(value)
+    pub fn from_i32(value: i32) -> Option<Self> {
+        FromPrimitive::from_i32(value)
     }
 }
 
-impl From<{{ie_name | UpperCamelCase }}> for u32 {
-    fn from(s: {{ie_name | UpperCamelCase }}) -> u32 {
-        s as u32
+impl From<{{ie_name | UpperCamelCase }}> for i32 {
+    fn from(s: {{ie_name | UpperCamelCase }}) -> i32 {
+        s as i32
     }
 }
 
-{#
-impl From<u32> for {{ie_name | UpperCamelCase }} {
-    fn from(s: u32) -> {{ie_name | UpperCamelCase }} {
-        {{ie_name | UpperCamelCase }}::from_u32(s).unwrap()
-    }
-}#}
-
-impl TryFrom<u32> for {{ie_name | UpperCamelCase }} {
+impl TryFrom<i32> for {{ie_name | UpperCamelCase }} {
     type Error = String;
-    fn try_from(v: u32) -> Result<Self, Self::Error> {
-        {{ie_name | UpperCamelCase }}::from_u32(v).ok_or_else(|| format!("Invalid {{ie_name | UpperCamelCase }} value: {}", v))
+    fn try_from(v: i32) -> Result<Self, Self::Error> {
+        {{ie_name | UpperCamelCase }}::from_i32(v).ok_or_else(|| format!("Invalid {{ie_name | UpperCamelCase }} value: {}", v))
     }
 }
 

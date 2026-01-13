@@ -27,7 +27,7 @@ build-backend = "setuptools.build_meta"
 packages = ["testableipc"]
 
 [stinger-ipc]
-generator_version = "0.6.12"
+generator_version = "0.6.13"
 
 [tool.mypy]
 [[tool.mypy.overrides]]
