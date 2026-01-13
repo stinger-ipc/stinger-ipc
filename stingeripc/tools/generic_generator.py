@@ -7,7 +7,7 @@ from typing import Optional, Any
 from pathlib import Path
 from rich import print
 import importlib.resources
-
+import re
 import yaml
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface, __version__
@@ -108,14 +108,22 @@ def main(
     # Add template packages
     if template_pkg:
         for pkg_name in template_pkg:
+            pattern = r"^([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-.]+)"
+            match = re.search(pattern, pkg_name)
+            if match:
+                package_name = match.group(1)
+                template_subdir = match.group(2).replace('.', '/')
+            else:
+                package_name = pkg_name
+                template_subdir = ''
             try:
-                print(f"[bold cyan]TEMPLATES:[/bold cyan] {pkg_name}")
-                code_templator.add_template_package(pkg_name)
-                web_templator.add_template_package(pkg_name)
-                pkg_path = importlib.resources.files(pkg_name)
-                template_dirs.append(Path(str(pkg_path)))
+                print(f"[bold cyan]TEMPLATES:[/bold cyan] {package_name} {template_subdir}")
+                code_templator.add_template_package(package_name, template_subdir)
+                web_templator.add_template_package(package_name, template_subdir)
+                pkg_path = importlib.resources.files(package_name)
+                template_dirs.append(Path(str(pkg_path)) / Path(template_subdir))
             except ModuleNotFoundError as e:
-                raise RuntimeError(f"Template package not found: {pkg_name}") from e
+                raise RuntimeError(f"Template package not found: {package_name}") from e
     
     # Add language-based template directory if language is specified
     if language:
