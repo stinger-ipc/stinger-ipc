@@ -244,7 +244,8 @@ class Arg:
         raise RuntimeError(f"unknown arg type: {arg_spec['type']}")
 
     @abstractmethod
-    def get_random_example_value(self, lang="python", seed: int = 0): ...
+    def get_random_example_value(self, lang="python", seed: int = 0):
+        pass
 
 
 class ArgEnum(Arg, LanguageSymbolMixin):
@@ -326,6 +327,8 @@ class ArgEnum(Arg, LanguageSymbolMixin):
                 retval = f"{self._enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)}"
         elif lang == "json":
             retval = str(random.randint(1, len(self._enum.items)))
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            retval = getattr(self, lang).get_random_example_value(seed=seed)
         random.setstate(random_state)
         return retval
 
@@ -522,6 +525,8 @@ class ArgStruct(Arg, LanguageSymbolMixin):
             )
         elif lang == "json":
             return "{" + ", ".join([f'"{k}": {v}' for k, v in example_list.items()]) + "}"
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            return getattr(self, lang).get_random_example_value(seed=seed)
         return None
 
     def __str__(self) -> str:
@@ -588,6 +593,8 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
             return "std::chrono::system_clock::now()"
         elif lang == "json":
             return '"1990-07-08T16:20:00Z"'
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            return getattr(self, lang).get_random_example_value(seed=seed)
         return None
 
     def __str__(self) -> str:
@@ -653,6 +660,8 @@ class ArgDuration(Arg, LanguageSymbolMixin):
                 retval = f"chrono::Duration::seconds({random.randint(1, 3600)})"
         elif lang in ["c++", "cpp"]:
             retval = f"std::chrono::duration<double>({random.randint(1, 3600)})"
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            retval = getattr(self, lang).get_random_example_value(seed=seed)
         random.setstate(random_state)
         return retval
 
@@ -713,6 +722,8 @@ class ArgBinary(Arg, LanguageSymbolMixin):
             return 'vec![101, 120, 97, 109, 112, 108, 101]'  # "example" in ASCII bytes
         elif lang in ["c++", "cpp"]:
             return 'std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            return getattr(self, lang).get_random_example_value(seed=seed)
         return None
 
     def __str__(self) -> str:
@@ -775,7 +786,9 @@ class ArgArray(Arg, LanguageSymbolMixin):
                 return f"Some(vec![{example_value}, {example_value2}, {example_value3}])"
             return f"vec![{example_value}, {example_value2}]"
         elif lang in ["c++", "cpp"]:
-            return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value2}}}"
+            return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            return getattr(self, lang).get_random_example_value(seed=seed)
         return None
 
     def __str__(self) -> str:
@@ -999,9 +1012,9 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
                 return f"{self.return_value_python_type}({s})"
             else:
                 raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
-        if lang == "c++" or lang == "cpp":
+        if lang in ["c++", "cpp", "qt"]:
             if self._return_value is None:
-                return "null"
+                return "nullptr"
             elif isinstance(self._return_value, Arg):
                 return self._return_value.get_random_example_value(lang, seed)
             elif isinstance(self._return_value, list):

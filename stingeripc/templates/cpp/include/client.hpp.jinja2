@@ -25,8 +25,6 @@ TODO: Get license text from stinger file
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
 
-{%macro prop_value_type(prop) -%}{%if prop.arg_list|length > 1%}struct {%endif%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
-
 {%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
 
 class {{stinger.cpp.client_class_name}} {

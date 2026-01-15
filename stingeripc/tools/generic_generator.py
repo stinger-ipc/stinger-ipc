@@ -66,7 +66,8 @@ def main(
         "consumer": consumer,
         "generator": {
             "version": __version__,
-        }
+        },
+        "templates": dict(),
     }
 
     if outdir.is_file():
@@ -108,7 +109,7 @@ def main(
     # Add template packages
     if template_pkg:
         for pkg_name in template_pkg:
-            pattern = r"^([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-.]+)"
+            pattern = r"^([a-zA-Z0-9_\-]+)\.([a-zA-Z0-9_\-.]+)"
             match = re.search(pattern, pkg_name)
             if match:
                 package_name = match.group(1)
@@ -122,6 +123,17 @@ def main(
                 web_templator.add_template_package(package_name, template_subdir)
                 pkg_path = importlib.resources.files(package_name)
                 template_dirs.append(Path(str(pkg_path)) / Path(template_subdir))
+
+                # Try to import package and get version
+                try:
+                    pkg_module = importlib.import_module(package_name)
+                    if hasattr(pkg_module, '__version__'):
+                        if package_name not in params['templates']:
+                            params['templates'][package_name] = {}
+                        params['templates'][package_name]['version'] = pkg_module.__version__
+                except Exception:
+                    pass  # Silently ignore if we can't get version
+                
             except ModuleNotFoundError as e:
                 raise RuntimeError(f"Template package not found: {package_name}") from e
     

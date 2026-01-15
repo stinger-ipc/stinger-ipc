@@ -79,6 +79,8 @@ int main(int argc, char** argv)
                                         {
                                         }
 
+                                        std::cout << "Periodic update iteration " << loopCount << " complete. Sleeping for 59 ...\n";
+
                                         // Sleep in 1-second increments so we can stop quickly
                                         for (int i = 0; i < 59 && keepRunning; ++i)
                                         {

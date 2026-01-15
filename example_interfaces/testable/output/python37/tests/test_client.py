@@ -178,7 +178,7 @@ def initial_property_values():
             second=Numbers.ONE,
         ),
         read_write_datetime=datetime.now(UTC),
-        read_write_optional_datetime=datetime.now(UTC),
+        read_write_optional_datetime=None,
         read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
             first=datetime.now(UTC),
             second=datetime.now(UTC),

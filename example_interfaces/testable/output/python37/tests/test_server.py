@@ -159,7 +159,7 @@ class TestableServerSetup:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -1605,7 +1605,7 @@ class TestTestableServerProperties:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -2025,7 +2025,7 @@ class TestTestableServerProperties:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -2130,7 +2130,7 @@ class TestTestableServerProperties:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -3308,7 +3308,7 @@ class TestTestableServerProperties:
         # Create and simulate receiving a property update message
         prop_data = {
             "first": datetime.now(UTC),
-            "second": datetime.now(UTC),
+            "second": None,
         }
         prop_obj = ReadWriteTwoDatetimesProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
@@ -5232,7 +5232,7 @@ class TestTestableServerSignals:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -5348,7 +5348,7 @@ class TestTestableServerSignals:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -5407,7 +5407,7 @@ class TestTestableServerSignals:
     def test_server_emit_single_optional_datetime(self, server, mock_connection):
         """Test that the server can emit the 'single_optional_datetime' signal."""
         signal_data = {
-            "value": None,
+            "value": datetime.now(UTC),
         }  # type: Dict[str, Any]
         server.emit_single_optional_datetime(**signal_data)
 
@@ -6191,7 +6191,7 @@ class TestTestableServerMethods:
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=None,
+            optional_date_time=datetime.now(UTC),
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -6236,7 +6236,7 @@ class TestTestableServerMethods:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -6305,7 +6305,7 @@ class TestTestableServerMethods:
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -6420,7 +6420,7 @@ class TestTestableServerMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],

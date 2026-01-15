@@ -39,7 +39,7 @@ simple-tui = "simpleipc.tui.app:main"
 packages = ["simpleipc"]
 
 [stinger-ipc]
-generator_version = "0.6.14"
+generator_version = "0.6.15"
 
 [tool.mypy]
 [[tool.mypy.overrides]]
