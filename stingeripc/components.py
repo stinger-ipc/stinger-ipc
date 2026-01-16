@@ -329,6 +329,8 @@ class ArgEnum(Arg, LanguageSymbolMixin):
             retval = str(random.randint(1, len(self._enum.items)))
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             retval = getattr(self, lang).get_random_example_value(seed=seed)
+        else:
+            raise RuntimeError(f"Unknown language for enum random example value: {lang}")
         random.setstate(random_state)
         return retval
 

@@ -13,9 +13,6 @@ class ModelSymbols:
     
     def __init__(self, model):
         self._model = model
-
-    def get_random_example_value(self, seed: int = 2) -> str:
-        raise NotImplementedError("Subclasses must implement get_random_example_value()")
     
 class RustSymbolsProvider(ISymbolsProvider):
 
