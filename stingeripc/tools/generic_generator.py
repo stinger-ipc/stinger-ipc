@@ -179,6 +179,8 @@ def main(
     def recursive_render_templates(template_dir, src_walker: Path, dest_walker: Path):
         print(f"🚶   [green]WALK[/green]: {src_walker}")
         for entry in os.listdir(src_walker):
+            if entry.endswith('partials'):
+                continue
             src_entry = src_walker / entry
             dest_entry = dest_walker / entry
             print(f"🚶  [white]ENTRY[/white]: {src_entry.relative_to(template_dir)}")
