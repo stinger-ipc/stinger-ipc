@@ -1,5 +1,6 @@
 """MQTT Connection screen for configuring broker connection."""
 
+import ssl
 from textual.app import ComposeResult  # typing: ignore
 from textual.screen import Screen  # typing: ignore
 from textual.widgets import Header, Footer, Input, Button, Static, Checkbox  # typing: ignore
@@ -97,7 +98,17 @@ class ConnectionScreen(Screen):
             # Create the MQTT connection
             transport = MqttTransport(MqttTransportType.TCP, ip_address, port)
             if use_tls:
-                transport.enable_tls()
+                # Get TLS configuration from command line args
+                tls_config = getattr(self.app, 'tls_config', {})
+                ca_certs = tls_config.get('cafile') or tls_config.get('capath')
+                certfile = tls_config.get('cert')
+                cert_reqs = ssl.CERT_NONE if tls_config.get('insecure') else ssl.CERT_REQUIRED
+                
+                transport.enable_tls(
+                    ca_certs=ca_certs,
+                    certfile=certfile,
+                    cert_reqs=cert_reqs,
+                )
             conn = Mqtt5Connection(transport, credentials=credentials)
 
             # Store connection in app for use by other screens
