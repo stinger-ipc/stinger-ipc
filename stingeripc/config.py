@@ -5,6 +5,13 @@ from pathlib import Path
 from typing import Optional
 import tomllib
 
+class ServerConfig(BaseModel):
+    """Configuration options for generating server/provider code."""
+    enabled: bool = Field(default=True, description="Whether to generate server code")
+
+class ClientConfig(BaseModel):
+    """Configuration options for generating client code."""
+    enabled: bool = Field(default=True, description="Whether to generate client code")
 
 class PropertyConfig(BaseModel):
     """Configuration options for properties."""
@@ -19,6 +26,8 @@ class StingerConfig(BaseModel):
     """Root configuration model for Stinger IPC code generation."""
     python: PythonConfig = Field(default_factory=PythonConfig, description="Python generation options")
     properties: PropertyConfig = Field(default_factory=PropertyConfig, description="Property generation options")
+    server: ServerConfig = Field(default_factory=ServerConfig, description="Server code generation options")
+    client: ClientConfig = Field(default_factory=ClientConfig, description="Client code generation options")
     model_config = {"strict": True}
 
 
