@@ -54,9 +54,9 @@ if sys.version_info >= (3, 9):
     from typing import Annotated
 else:
     from typing_extensions import Annotated
-{%-else%}
+{%-else%}{# not python 3.7#}
 from typing import Annotated
-{%-endif%}
+{%-endif%}{# python version check #}
 
 def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
     """ If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
@@ -65,14 +65,15 @@ def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
     return value
 
 class InterfaceInfo(BaseModel):
-    interface_name: str = Field(default="{{stinger.name}}")
+    interface_name: str = Field(default="{{stinger.name}}") # hi
     title: str = Field(default="{{stinger.title or stinger.name}}")
     version: str = Field(default="{{stinger.version}}")
     instance: str
     connection_topic: str
     timestamp: str
 
-{%for ie_name, ie in stinger.enums.items() %}
+# There are {{stinger.enums|length}} enum definitions
+{%-for ie_name, ie in stinger.enums.items() %}
 class {{ie_name | UpperCamelCase }}(IntEnum):
     """ Interface enum `{{ie_name}}`.
     {{ ie.documentation or "_No description exists for this enumeration._" }}
@@ -82,12 +83,14 @@ class {{ie_name | UpperCamelCase }}(IntEnum):
     {%-endfor%}
 {%endfor%}
 
+# There are {{stinger.structs|length}} struct definitions
 {%-for istruct_name, istruct in stinger.structs.items() %}
 class {{istruct_name | UpperCamelCase }}(BaseModel):
     """ Interface struct `{{istruct_name}}`. """
     {{field_list(istruct.members)|indent(4)}}
 {%endfor%}
 
+# There are {{stinger.signals|length}} signal definitions
 {%-for signal_name, signal in stinger.signals.items()%}
 class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
     """ Interface signal `{{signal_name}}`. {%if signal.documentation%}
@@ -97,6 +100,7 @@ class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
     {{field_list(signal.arg_list)|indent(4)}}
 {%endfor%}
 
+# There are {{stinger.properties|length}} property definitions
 {%-for prop_name, prop in stinger.properties.items()%}
 class {{prop_name|UpperCamelCase}}Property(BaseModel):
     """ Interface property `{{prop_name}}` (multi-value struct).{%if prop.documentation%}
@@ -106,6 +110,7 @@ class {{prop_name|UpperCamelCase}}Property(BaseModel):
     {{field_list(prop.arg_list)|indent(4)}}
 {%endfor%}
 
+# There are {{stinger.methods|length}} method definitions
 {%- for method_name, method in stinger.methods.items()%}
 class {{method_name|UpperCamelCase}}MethodRequest(BaseModel):
     """ Interface method `{{method_name}}` request object. {%if method.documentation%}
@@ -113,7 +118,6 @@ class {{method_name|UpperCamelCase}}MethodRequest(BaseModel):
     {{method.documentation}}{%endif%}
     """
     {{field_list(method.arg_list)|indent(4)}}
-
 
 class {{method_name|UpperCamelCase}}MethodResponse(BaseModel):
     """ Interface method `{{method_name}}` response object. {%if method.documentation%}

@@ -34,7 +34,7 @@ build-backend = "setuptools.build_meta"
 
 {%if not config.python.python37%}
 [project.scripts]
-{{stinger.name|hyphen_case}}-tui = "{{stinger.name|snake_case}}ipc.tui.app:main"
+{{stinger.name|hyphen_case}}-tui = "{{stinger.name|loweronly}}ipc.tui.app:main"
 {%endif%}
 
 [tool.setuptools.package-data]

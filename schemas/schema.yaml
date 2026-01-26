@@ -83,6 +83,8 @@ properties:
       required:
         - values
 
+  enumerations: false # Use 'enums' instead
+
   structures:
     type: object
     propertyNames:
@@ -107,6 +109,9 @@ properties:
           properties:
             members:
               $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
+
+  structs: false # Use 'structures' instead
+
   signals:
     type: object
     propertyNames:
@@ -114,12 +119,16 @@ properties:
     additionalProperties:
       $ref: "#/$defs/signal"
 
+  sigs: false # Use 'signals' instead
+
   properties:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
     additionalProperties:
       $ref: "#/$defs/property"
+
+  props: false # Use 'properties' instead
 
   methods:
     type: object
@@ -150,6 +159,8 @@ properties:
       required:
         - type
         - value
+
+  const: false # Use 'constants' instead
 
 required:
   - stingeripc

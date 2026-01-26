@@ -345,14 +345,18 @@ class {{stinger.python.client_class_name}}Discoverer:
         self._logger.setLevel(logging.DEBUG)
         service_discovery_topic = "{{stinger.interface_info_topic}}".format('+')
         self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
+        {%-if stinger.properties|length > 0%}
         self._conn.subscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value", self._process_property_value_message)
+        {%-endif%}
         self._mutex = threading.Lock()
         self._pending_futures : List[futures.Future] = []
         self._removed_service_callbacks: List[Callable[[str], None]] = []
         
         # For partially discovered services
         self._discovered_interface_infos = dict() # type: Dict[str, InterfaceInfo]
+        {%-if stinger.properties|length > 0%}
         self._discovered_properties = dict() # type: Dict[str, Dict[str, Any]]
+        {%-endif%}
 
         # For fully discovered services
         self._discovered_services: Dict[str, DiscoveredInstance] = {}
@@ -402,16 +406,16 @@ class {{stinger.python.client_class_name}}Discoverer:
         return fut
 
     def _check_for_fully_discovered(self, instance_id: str):
-        """ Checks if all properties have been discovered for the given instance ID.
+        """ Checks if interface info {%if stinger.properties|length > 0%}and all properties have{%else%}has{%endif%} been discovered for the given instance ID.
         """
         with self._mutex:
-            if (instance_id in self._discovered_properties
+            if ({%if stinger.properties|length > 0%}instance_id in self._discovered_properties
                     and len(self._discovered_properties[instance_id]) == {{(stinger.properties | length)*2}}
-                    and instance_id in self._discovered_interface_infos):
+                    and {%endif%}instance_id in self._discovered_interface_infos):
 
                 entry = DiscoveredInstance(
                     instance_id=instance_id,
-                    {%if stinger.properties | length > 0 %}initial_property_values={{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id]){%endif%}
+                    {%if stinger.properties|length > 0 %}initial_property_values={{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id]){%endif%}
                 )
                 is_new_entry = not instance_id in self._discovered_services
 
@@ -453,11 +457,13 @@ class {{stinger.python.client_class_name}}Discoverer:
                         del self._discovered_services[instance_id]
                     if instance_id in self._discovered_interface_infos:
                         del self._discovered_interface_infos[instance_id]
+                    {%- if stinger.properties|length > 0 %}
                     if instance_id in self._discovered_properties:
                         del self._discovered_properties[instance_id]
+                    {%-endif%}
                     for cb in self._removed_service_callbacks:
                         cb(instance_id)
-
+    {%if stinger.properties|length > 0%}
     def _process_property_value_message(self, message: Message):
         """ Processes a property value message for discovery purposes.
         """
@@ -485,3 +491,4 @@ class {{stinger.python.client_class_name}}Discoverer:
 
         except Exception as e:
             self._logger.warning("Failed to process property value message: %s", e)
+    {%endif%}
