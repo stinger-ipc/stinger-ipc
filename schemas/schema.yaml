@@ -22,12 +22,14 @@ properties:
 
   interface:
     type: object
-    parameters:
+    properties:
       name:
         type: string
         pattern: "^[a-zA-Z0-9_-]+$"
         maxLength: 32
         description: "A short token that will be used to create class names, folder names, filenames, etc."
+        not: 
+          $ref: "#/$defs/reservedKeywords"
       title:
         type: string
         maxLength: 64
@@ -45,6 +47,12 @@ properties:
       license:
         type: string
         description: "The license or copyright under which this interface is provided.  All generated code will be subject to this license."
+      enums: false # 'enums' is allowed only at the top level
+      structures: false # 'structures' is allowed only at the top level
+      signals: false # 'signals' is allowed only at the top level
+      properties: false # 'properties' is allowed only at the top level
+      methods: false # 'methods' is allowed only at the top level
+      constants: false # 'constants' is allowed only at the top level
     required:
       - name
       - version
@@ -53,6 +61,8 @@ properties:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       type: object
       properties:
@@ -92,6 +102,8 @@ properties:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       type: object
       properties:
@@ -121,6 +133,8 @@ properties:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       $ref: "#/$defs/signal"
 
@@ -131,6 +145,8 @@ properties:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       $ref: "#/$defs/property"
 
@@ -141,6 +157,8 @@ properties:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       $ref: "#/$defs/method"
 
@@ -150,6 +168,8 @@ properties:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       type: object
       properties:
@@ -177,6 +197,10 @@ required:
   - interface
 
 $defs:
+
+  reservedKeywords:
+    type: string
+    enum: ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
 
   documentation:
     type: string
@@ -214,6 +238,8 @@ $defs:
       name:
         type: string
         pattern: "^[a-zA-Z0-9_-]+$"
+        not: 
+          $ref: "#/$defs/reservedKeywords"
       optional:
         type: boolean
         default: false
