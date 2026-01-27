@@ -336,6 +336,16 @@ tasks:
       - for: { var: INTERFACES }
         task: protobuf:check:{{ .ITEM }}
 
+  generate:
+    desc: Generate code and documentation for all interfaces
+    deps:
+      - task: python:generate
+      - task: cpp:generate
+      - task: rust:generate
+      - task: markdown:generate
+      - task: web:generate
+      - task: protobuf:generate
+
   clean:
     desc: Clean all generated files
     cmds:
