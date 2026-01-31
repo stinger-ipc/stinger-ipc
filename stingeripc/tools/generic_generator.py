@@ -26,7 +26,7 @@ def main(
     template_pkg: Annotated[Optional[list[str]], typer.Option(help="Python package(s) containing templates")] = None,
     template_path: Annotated[Optional[list[Path]], typer.Option(help="Filesystem path(s) to template directories")] = None,
     consumer: Annotated[Optional[str], typer.Option("--consumer", help="Consumer name/identifier")] = None,
-    config: Annotated[Optional[Path], typer.Option("--config", help="TOML configuration file", exists=True, file_okay=True, dir_okay=False, readable=True)] = None,
+    config: Annotated[list[Path], typer.Option("--config", help="TOML configuration file(s) - later files override earlier ones", exists=True, file_okay=True, dir_okay=False, readable=True)] = [],
 ):
     """Generate output for a Stinger interface.
     
@@ -39,12 +39,14 @@ def main(
             "At least one of: --language, --template-pkg, or --template-path must be provided"
         )
 
-    config_obj = None
+    # Load and merge configuration files
+    config_obj = StingerConfig()
     if config:
-        print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config}")
-        config_obj = load_config(config)
-    else:
-        config_obj = StingerConfig()
+        for config_file in config:
+            print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
+            file_config = load_config(config_file)
+            # Merge configs - later files override earlier ones
+            config_obj = config_obj.model_copy(update=file_config.model_dump(exclude_unset=True))
     assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
     for k,v in config_obj.model_dump().items():
         print(f"🔧{k:>10.10}: {v}")
