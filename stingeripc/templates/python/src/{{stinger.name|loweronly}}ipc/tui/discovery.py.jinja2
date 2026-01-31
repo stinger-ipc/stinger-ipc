@@ -7,6 +7,7 @@ from textual.widgets import Header, Footer, Static, Button # typing: ignore
 from textual.containers import Grid, Container # typing: ignore
 from textual.reactive import reactive # typing: ignore
 from {{stinger.name|loweronly}}ipc.client import {{stinger.name|UpperCamelCase}}ClientDiscoverer, DiscoveredInstance, {{stinger.name|UpperCamelCase}}Client
+from {{stinger.name|loweronly}}ipc.tui.helpers import get_package_version
 import logging
 
 logger = logging.getLogger(__name__)
@@ -74,7 +75,8 @@ class DiscoveryScreen(Screen):
     def compose(self) -> ComposeResult:
         """Compose the discovery screen widgets."""
         yield Header()
-        yield Static("Discovered Servers", id="title")
+        pkg_name, pkg_ver = get_package_version()
+        yield Static(f"Discovered Servers [{pkg_name}=={pkg_ver}]", id="title")
         with Container(id="instances_container"):
             yield Grid(id="instances_grid")
         yield Footer()
@@ -93,6 +95,7 @@ class DiscoveryScreen(Screen):
         
         # Subscribe to newly discovered services
         self.discoverer.add_discovered_service_callback(self._on_service_discovered)
+        self.discoverer.set_discovered_interface_info_callback(self._on_interface_info_received)
         
         # Initialize the list with currently known instances
         initial_instances = self.discoverer.get_service_instance_ids()
@@ -101,6 +104,10 @@ class DiscoveryScreen(Screen):
         # Populate the grid
         self._update_grid()
     
+    def _on_interface_info_received(self, interface_info) -> None:
+        """Callback when new interface info is received."""
+        pass  # Currently not used in this screen
+
     def _on_service_discovered(self, instance: DiscoveredInstance) -> None:
         """Callback when a new service is discovered."""
         # Use call_from_thread to safely update from MQTT callback thread

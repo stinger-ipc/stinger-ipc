@@ -354,6 +354,9 @@ class {{stinger.python.client_class_name}}Discoverer:
         
         # For partially discovered services
         self._discovered_interface_infos = dict() # type: Dict[str, InterfaceInfo]
+
+        # This is used in the TUI to get notified of new interface info before it is fully discovered
+        self._discovered_interface_info_callback = None # type: Optional[Callable[[InterfaceInfo], None]]
         {%-if stinger.properties|length > 0%}
         self._discovered_properties = dict() # type: Dict[str, Dict[str, Any]]
         {%-endif%}
@@ -375,6 +378,12 @@ class {{stinger.python.client_class_name}}Discoverer:
         """
         with self._mutex:
             self._removed_service_callbacks.append(callback)
+
+    def set_discovered_interface_info_callback(self, callback: Callable[[InterfaceInfo], None]):
+        """ Sets a callback to be called when new interface info is discovered (even if not fully discovered).
+        """
+        with self._mutex:
+            self._discovered_interface_info_callback = callback
 
     def get_service_instance_ids(self) -> List[str]:
         """ Returns a list of currently discovered service instance IDs.
@@ -444,6 +453,8 @@ class {{stinger.python.client_class_name}}Discoverer:
                 service_info = InterfaceInfo.model_validate_json(message.payload)
                 with self._mutex:
                     self._discovered_interface_infos[service_info.instance] = service_info
+                if self._discovered_interface_info_callback is not None:
+                    self._discovered_interface_info_callback(service_info)
             except Exception as e:
                 self._logger.warning("Failed to process service discovery message: %s", e)
             self._check_for_fully_discovered(service_info.instance)
