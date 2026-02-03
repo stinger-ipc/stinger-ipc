@@ -418,6 +418,7 @@ class ClientScreen(Screen):
             with VerticalScroll(id="middle_pane"):
                 yield Static("Properties", classes="pane_title")
                 # Properties will be added dynamically
+
             with VerticalScroll(id="right_pane"):
                 yield Static("Signals", classes="pane_title")
                 yield RichLog(id="signals_log", highlight=True, markup=True)
@@ -434,7 +435,6 @@ class ClientScreen(Screen):
 
         # Add method buttons
         self._add_method_buttons()
-
         # Register all signal handlers
         self._register_signal_handlers()
 

@@ -7,6 +7,7 @@ from textual.widgets import Header, Footer, Static, Button  # typing: ignore
 from textual.containers import Grid, Container  # typing: ignore
 from textual.reactive import reactive  # typing: ignore
 from weatheripc.client import WeatherClientDiscoverer, DiscoveredInstance, WeatherClient
+from weatheripc.tui.helpers import get_package_version
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,15 @@ class DiscoveryScreen(Screen):
         background: $accent 20%;
     }
     
+    .incomplete_instance {
+        height: 5;
+        border: dashed $warning;
+        text-align: center;
+        content-align: center middle;
+        color: $text-muted;
+        text-style: italic;
+    }
+
     Static.no_servers {
         height: 5;
         text-align: center;
@@ -66,6 +76,7 @@ class DiscoveryScreen(Screen):
 
     # Reactive variable to track discovered instances
     discovered_instances: reactive[Set[str]] = reactive(set())
+    incomplete_interfaces: reactive[Set[str]] = reactive(set())
 
     def __init__(self):
         """Initialize the discovery screen."""
@@ -75,7 +86,9 @@ class DiscoveryScreen(Screen):
     def compose(self) -> ComposeResult:
         """Compose the discovery screen widgets."""
         yield Header()
-        yield Static("Discovered Servers", id="title")
+        pkg_name, pkg_ver = get_package_version()
+        title_text = f"Discovered Servers \\[{pkg_name}=={pkg_ver}]"
+        yield Static(title_text, id="title")
         with Container(id="instances_container"):
             yield Grid(id="instances_grid")
         yield Footer()
@@ -94,6 +107,7 @@ class DiscoveryScreen(Screen):
 
         # Subscribe to newly discovered services
         self.discoverer.add_discovered_service_callback(self._on_service_discovered)
+        self.discoverer.set_discovered_interface_info_callback(self._on_interface_info_received)
 
         # Initialize the list with currently known instances
         initial_instances = self.discoverer.get_service_instance_ids()
@@ -102,13 +116,37 @@ class DiscoveryScreen(Screen):
         # Populate the grid
         self._update_grid()
 
+    def _on_interface_info_received(self, interface_info) -> None:
+        """Callback when new interface info is received."""
+        logger.debug("Discovered interface info for instance %s", interface_info)
+        # Extract instance_id from interface_info (assuming it has an instance_id attribute)
+        if hasattr(interface_info, "instance_id"):
+            instance_id = interface_info.instance_id
+            # Use call_from_thread to safely update from MQTT callback thread
+            self.app.call_from_thread(self._add_incomplete_interface, instance_id)
+
     def _on_service_discovered(self, instance: DiscoveredInstance) -> None:
         """Callback when a new service is discovered."""
         # Use call_from_thread to safely update from MQTT callback thread
         self.app.call_from_thread(self._add_instance, instance.instance_id)
 
+    def _add_incomplete_interface(self, instance_id: str) -> None:
+        """Add an incomplete interface (called on main thread)."""
+        # Only add if not already fully discovered
+        if instance_id not in self.discovered_instances:
+            new_incomplete = self.incomplete_interfaces.copy()
+            new_incomplete.add(instance_id)
+            self.incomplete_interfaces = new_incomplete
+
     def _add_instance(self, instance_id: str) -> None:
         """Add an instance to the discovered set (called on main thread)."""
+        # Remove from incomplete if present
+        if instance_id in self.incomplete_interfaces:
+            new_incomplete = self.incomplete_interfaces.copy()
+            new_incomplete.discard(instance_id)
+            self.incomplete_interfaces = new_incomplete
+
+        # Add to fully discovered
         new_instances = self.discovered_instances.copy()
         new_instances.add(instance_id)
         self.discovered_instances = new_instances
@@ -117,18 +155,28 @@ class DiscoveryScreen(Screen):
         """React to changes in discovered instances."""
         self._update_grid()
 
+    def watch_incomplete_interfaces(self, old_interfaces: Set[str], new_interfaces: Set[str]) -> None:
+        """React to changes in incomplete interfaces."""
+        self._update_grid()
+
     def _update_grid(self) -> None:
         """Update the grid display with current instances."""
         grid = self.query_one("#instances_grid", Grid)
         grid.remove_children()
 
-        if not self.discovered_instances:
-            grid.mount(Static("No servers discovered yet...", classes="no_servers"))
+        if not self.discovered_instances and not self.incomplete_interfaces:
+            grid.mount(Static("No instances discovered yet...", classes="no_servers"))
         else:
+            # Show fully discovered instances first (clickable)
             for instance_id in sorted(self.discovered_instances):
                 btn = Button(instance_id, classes="instance_box")
                 btn.instance_id = instance_id  # Store instance_id on the button
                 grid.mount(btn)
+
+            # Show incomplete interfaces (non-clickable)
+            for instance_id in sorted(self.incomplete_interfaces):
+                static = Static(f"{instance_id}\n(discovering...)", classes="incomplete_instance")
+                grid.mount(static)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle instance box click."""

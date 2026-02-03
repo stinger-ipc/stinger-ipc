@@ -4,8 +4,25 @@ import argparse
 from typing import Optional, Dict, Any
 from textual.app import App # typing: ignore
 from textual.screen import Screen # typing: ignore
+from textual.command import Provider, Hit  # typing: ignore
 from pyqttier.connection import Mqtt5Connection
 from {{stinger.name|loweronly}}ipc.client import {{stinger.name|UpperCamelCase}}Client
+
+
+class LogsCommandProvider(Provider):
+    """Command provider for showing logs."""
+
+    async def search(self, query: str):
+        """Search for log-related commands."""
+        matcher = self.matcher(query)
+        
+        if matcher.match("logs") or matcher.match("show logs") or matcher.match("view logs"):
+            yield Hit(
+                score=matcher.match("show logs"),
+                match_display="Show Logs",
+                command=lambda: self.app.push_screen("logs"),
+                help="View application logs for debugging"
+            )
 
 
 class {{stinger.name|UpperCamelCase}}IPCApp(App):
@@ -18,6 +35,8 @@ class {{stinger.name|UpperCamelCase}}IPCApp(App):
     # Store TLS configuration
     tls_config: Dict[str, Any] = dict()
     
+    COMMANDS = {LogsCommandProvider}
+
     CSS = """
     Screen {
         align: center middle;
@@ -30,11 +49,16 @@ class {{stinger.name|UpperCamelCase}}IPCApp(App):
         from {{stinger.name|loweronly}}ipc.tui.connection import ConnectionScreen
         from {{stinger.name|loweronly}}ipc.tui.discovery import DiscoveryScreen
         from {{stinger.name|loweronly}}ipc.tui.client import ClientScreen
+        from {{stinger.name|loweronly}}ipc.tui.logs import LogsScreen, install_log_handler
         
+        # Install log capture handler
+        install_log_handler()
+
         # Install screens
         self.install_screen(ConnectionScreen(), name="connection")
         self.install_screen(DiscoveryScreen(), name="discovery")
         self.install_screen(ClientScreen(), name="client")
+        self.install_screen(LogsScreen(), name="logs")
         
         # Start with connection screen
         self.push_screen("connection")

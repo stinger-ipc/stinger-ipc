@@ -269,7 +269,7 @@ class ClientScreen(Screen):
     }
     
     #right_pane {
-        width: 50%;
+        width: 80%;
         padding: 1;
     }
     
@@ -333,9 +333,7 @@ class ClientScreen(Screen):
             with VerticalScroll(id="left_pane"):
                 yield Static("Methods", classes="pane_title")
                 # Method buttons will be added dynamically
-            with VerticalScroll(id="middle_pane"):
-                yield Static("Properties", classes="pane_title")
-                # Properties will be added dynamically
+
             with VerticalScroll(id="right_pane"):
                 yield Static("Signals", classes="pane_title")
                 yield RichLog(id="signals_log", highlight=True, markup=True)
@@ -352,12 +350,8 @@ class ClientScreen(Screen):
 
         # Add method buttons
         self._add_method_buttons()
-
         # Register all signal handlers
         self._register_signal_handlers()
-
-        # Register all property handlers
-        self._register_property_handlers()
 
     def _add_method_buttons(self) -> None:
         """Add buttons for all call_* methods."""
@@ -410,28 +404,6 @@ class ClientScreen(Screen):
         self.client.receive_maybe_number(make_handler("maybe_number"))
         self.client.receive_maybe_name(make_handler("maybe_name"))
         self.client.receive_now(make_handler("now"))
-
-    def _register_property_handlers(self) -> None:
-        """Register callbacks for all *_changed methods and create property displays."""
-        pane = self.query_one("#middle_pane", VerticalScroll)
-
-        # Define property registration helper
-        def register_property(prop_name: str, changed_method_name: str, is_writable: bool = False):
-            # Create a Static widget for this property
-            prop_widget = Static(id=f"prop_{prop_name}")
-            prop_widget.add_class("property_item")
-
-            # Add writable or readonly class
-            if is_writable:
-                prop_widget.add_class("writable")
-                prop_widget.can_focus = True
-                prop_widget.property_name = prop_name  # Store for click handling
-            else:
-                prop_widget.add_class("readonly")
-
-            pane.mount(prop_widget)
-
-        # Register all properties
 
     def on_click(self, event) -> None:
         """Handle clicks on property widgets."""

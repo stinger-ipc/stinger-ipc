@@ -316,13 +316,13 @@ class ClientScreen(Screen):
     }
     
     #middle_pane {
-        width: 30%;
+        width: {%if stinger.signals|length > 0%}30%{%else%}80%{%endif%};
         border-right: solid $primary;
         padding: 1;
     }
     
     #right_pane {
-        width: 50%;
+        width: {%if stinger.properties|length > 0%}50%{%else%}80%{%endif%};
         padding: 1;
     }
     
@@ -386,12 +386,16 @@ class ClientScreen(Screen):
             with VerticalScroll(id="left_pane"):
                 yield Static("Methods", classes="pane_title")
                 # Method buttons will be added dynamically
+            {%if stinger.properties|length > 0 -%}
             with VerticalScroll(id="middle_pane"):
                 yield Static("Properties", classes="pane_title")
                 # Properties will be added dynamically
+            {%endif%}
+            {%if stinger.signals | length > 0 -%}
             with VerticalScroll(id="right_pane"):
                 yield Static("Signals", classes="pane_title")
                 yield RichLog(id="signals_log", highlight=True, markup=True)
+            {%-endif%}
         yield Footer()
     
     def on_mount(self) -> None:
@@ -405,12 +409,14 @@ class ClientScreen(Screen):
         
         # Add method buttons
         self._add_method_buttons()
-        
+        {%if stinger.signals | length > 0 -%}
         # Register all signal handlers
         self._register_signal_handlers()
-        
+        {%endif%}
+        {%if stinger.properties | length > 0 -%}
         # Register all property handlers
         self._register_property_handlers()
+        {%endif%}
     
     def _add_method_buttons(self) -> None:
         """Add buttons for all call_* methods."""
@@ -438,7 +444,7 @@ class ClientScreen(Screen):
             # Show modal for method call
             modal = MethodCallModal(method_name, method_params, self.client)
             self.app.push_screen(modal)
-    
+    {%if stinger.signals | length > 0 -%}
     def _register_signal_handlers(self) -> None:
         """Register callbacks for all receive_* methods."""
         log = self.query_one("#signals_log", RichLog)
@@ -464,7 +470,8 @@ class ClientScreen(Screen):
         {%-for signal_name, signal in stinger.signals.items()%}
         self.client.receive_{{signal_name|snake_case}}(make_handler("{{signal_name|snake_case}}"))
         {%-endfor%}
-    
+    {%endif%}{# end signal handler registration#}
+    {%if stinger.properties | length > 0 -%}
     def _register_property_handlers(self) -> None:
         """Register callbacks for all *_changed methods and create property displays."""
         pane = self.query_one("#middle_pane", VerticalScroll)
@@ -506,6 +513,9 @@ class ClientScreen(Screen):
                         {%for mem in prop.arg_list[0].struct.members %}
                         values.append(f"[bold]{{prop.arg_list[0].name}}.{{mem.name}}[/bold]: { value.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }") # struct member {{mem.arg_type.name}}
                         {%endfor%}
+                        {%elif prop.arg_list[0].arg_type.name == 'ARRAY'%}
+                        for i, item in enumerate(value or []):
+                            values.append(f"[bold]{{prop.arg_list[0].name}}[{i}][/bold]: { item }") # array item
                         {%else%}
                         values.append(f"{value}")  # other - {{prop.arg_list[0].arg_type.name}}
                         {%endif%}
@@ -527,6 +537,9 @@ class ClientScreen(Screen):
                         {%for mem in arg.struct.members -%}
                         values.append(f"[bold]{{arg.name}}.{{mem.name}}[/bold]: { value.{{arg.name|snake_case}}.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }") # Struct Member
                         {%endfor%}
+                    {%elif arg.arg_type.name == 'ARRAY'%}
+                    for i, item in enumerate(value.{{arg.name|snake_case}} or []):
+                        values.append(f"[bold]{{arg.name}}[{i}][/bold]: { item }") # Array Item
                     {%else%}
                     line = (f"[bold]{{arg.name}}[/bold]: { value.{{arg.name|snake_case}} }") # Other - {{arg.arg_type.name}}
                     values.append(line)
@@ -544,13 +557,12 @@ class ClientScreen(Screen):
                 assert self.client is not None, "Client must be initialized"
                 self.client.{{prop_name|snake_case}}_changed(on_{{prop_name|snake_case}}_updated, call_immediately=True)
             {%endfor%}
-            
 
-        
         # Register all properties
         {%-for property_name, property in stinger.properties.items()%}
         register_property("{{property_name|snake_case}}", "{{property_name|snake_case}}_changed", is_writable={{(not property.read_only) and 'True' or 'False'}})
         {%-endfor%}
+    {%endif%}
     
     def on_click(self, event) -> None:
         """Handle clicks on property widgets."""

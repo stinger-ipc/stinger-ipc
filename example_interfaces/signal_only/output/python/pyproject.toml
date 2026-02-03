@@ -9,7 +9,7 @@ dependencies = [
     "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
     "pyqttier>=0.2.5",
-    "stinger-python-utils>=0.1.5",
+    "stinger-python-utils>=0.1.7",
     
 ]
 
@@ -34,14 +34,14 @@ build-backend = "setuptools.build_meta"
 
 
 [project.scripts]
-signal-only-tui = "signal_onlyipc.tui.app:main"
+signal-only-tui = "signalonlyipc.tui.app:main"
 
 
 [tool.setuptools.package-data]
 packages = ["signal_onlyipc"]
 
 [stinger-ipc]
-generator_version = "0.6.19"
+generator_version = "0.6.23"
 
 [tool.mypy]
 [[tool.mypy.overrides]]

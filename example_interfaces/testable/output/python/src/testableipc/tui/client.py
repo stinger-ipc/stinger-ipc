@@ -661,6 +661,7 @@ class ClientScreen(Screen):
             with VerticalScroll(id="middle_pane"):
                 yield Static("Properties", classes="pane_title")
                 # Properties will be added dynamically
+
             with VerticalScroll(id="right_pane"):
                 yield Static("Signals", classes="pane_title")
                 yield RichLog(id="signals_log", highlight=True, markup=True)
@@ -677,7 +678,6 @@ class ClientScreen(Screen):
 
         # Add method buttons
         self._add_method_buttons()
-
         # Register all signal handlers
         self._register_signal_handlers()
 
@@ -1612,7 +1612,8 @@ class ClientScreen(Screen):
                         values.append("None")
                     else:
 
-                        values.append(f"{value}")  # other - ARRAY
+                        for i, item in enumerate(value or []):
+                            values.append(f"[bold]value[{i}][/bold]: { item }")  # array item
 
                     value_str = "\n".join(values)
 
@@ -1632,11 +1633,11 @@ class ClientScreen(Screen):
 
                     # Multiple values
 
-                    line = f"[bold]the_list[/bold]: { value.the_list }"  # Other - ARRAY
-                    values.append(line)
+                    for i, item in enumerate(value.the_list or []):
+                        values.append(f"[bold]the_list[{i}][/bold]: { item }")  # Array Item
 
-                    line = f"[bold]optionalList[/bold]: { value.optional_list }"  # Other - ARRAY
-                    values.append(line)
+                    for i, item in enumerate(value.optional_list or []):
+                        values.append(f"[bold]optionalList[{i}][/bold]: { item }")  # Array Item
 
                     value_str = "\n".join(values)
 
