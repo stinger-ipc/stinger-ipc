@@ -1,6 +1,6 @@
 """Configuration models for Stinger IPC."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from pathlib import Path
 from typing import Optional
 import tomllib
@@ -21,6 +21,19 @@ class PythonConfig(BaseModel):
     """Python-specific configuration options."""
     python37: bool = Field(default=False, description="Generate Python 3.7 compatible code")
 
+class TopicConfig(BaseModel):
+    """ Configuration for which topic schemas to use """
+    signals: str = Field(default="{interface_name}/{service_id}/signal/{signal_name}", description="Topic template for signals")
+    property_values: str = Field(default="{interface_name}/{service_id}/property/{property_name}/value", description="Topic template for property values")
+    property_updates: str = Field(default="{interface_name}/{service_id}/property/{property_name}/update", description="Topic template for property updates")
+    property_update_response: str = Field(default="client/{client_id}/{interface_name}/responses", description="Topic template for property update responses")
+    method_requests: str = Field(default="{interface_name}/{service_id}/method/{method_name}/request", description="Topic template for method requests")
+    method_responses: str = Field(default="client/{client_id}/{interface_name}/responses", description="Topic template for method responses")
+
+class LanguagePluginConfig(BaseModel):
+    """ Configuration for languages that are provided via plugins """
+    name: str = Field(..., description="Name of the language plugin")
+    model_config = ConfigDict(extra='allow')
 
 class StingerConfig(BaseModel):
     """Root configuration model for Stinger IPC code generation."""
@@ -28,7 +41,9 @@ class StingerConfig(BaseModel):
     properties: PropertyConfig = Field(default_factory=PropertyConfig, description="Property generation options")
     server: ServerConfig = Field(default_factory=ServerConfig, description="Server code generation options")
     client: ClientConfig = Field(default_factory=ClientConfig, description="Client code generation options")
-    model_config = {"strict": True}
+    topics: TopicConfig = Field(default_factory=TopicConfig, description="Topic schema configuration")
+    language: dict[str, LanguagePluginConfig] = Field(default_factory=dict, description="Language plugin configurations")
+    model_config = ConfigDict(strict=True)
 
 
 def load_config(config_path: Path) -> StingerConfig:
