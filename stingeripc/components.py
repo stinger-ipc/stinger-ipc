@@ -4,12 +4,7 @@ from enum import Enum
 import random
 from abc import abstractmethod
 from typing import Any, Optional, Mapping
-from .topic import (
-    SignalTopicCreator,
-    InterfaceTopicCreator,
-    MethodTopicCreator,
-    PropertyTopicCreator,
-)
+
 from .lang_symb import *
 from .args import ArgType, ArgPrimitiveType
 from .exceptions import InvalidStingerStructure
@@ -1401,8 +1396,7 @@ class StingerSpec(LanguageSymbolMixin):
             15: "Service Unavailable",
         }
 
-    @property
-    def interface_info_topic(self) -> str:
+    def interface_info_topic(self, placeholder='{}') -> str:
         return self._topic_creator.interface_info_topic()
 
     @property
@@ -1476,7 +1470,7 @@ class StingerSpec(LanguageSymbolMixin):
 
     @classmethod
     def new_spec_from_stinger(
-        cls, topic_creator, stinger: dict[str, Any]
+        cls, stinger: dict[str, Any]
     ) -> StingerSpec:
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
@@ -1487,7 +1481,7 @@ class StingerSpec(LanguageSymbolMixin):
                 f"Unsupported stinger spec version {stinger['stingeripc']['version']}"
             )
 
-        stinger_spec = StingerSpec(topic_creator, stinger["interface"])
+        stinger_spec = StingerSpec(stinger["interface"])
 
         # Enums must come before other components because other components may use enum values.
         try:
@@ -1522,7 +1516,6 @@ class StingerSpec(LanguageSymbolMixin):
             if "signals" in stinger:
                 for signal_name, signal_spec in stinger["signals"].items():
                     signal = Signal.new_signal_from_stinger(
-                        topic_creator.signal_topic_creator(),
                         signal_name,
                         signal_spec,
                         stinger_spec,
@@ -1540,7 +1533,6 @@ class StingerSpec(LanguageSymbolMixin):
             if "methods" in stinger:
                 for method_name, method_spec in stinger["methods"].items():
                     method = Method.new_method_from_stinger(
-                        topic_creator.method_topic_creator(),
                         method_name,
                         method_spec,
                         stinger_spec,
@@ -1558,7 +1550,6 @@ class StingerSpec(LanguageSymbolMixin):
             if "properties" in stinger:
                 for prop_name, prop_spec in stinger["properties"].items():
                     prop = Property.new_method_from_stinger(
-                        topic_creator.property_topic_creator(),
                         prop_name,
                         prop_spec,
                         stinger_spec,

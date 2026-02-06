@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field, ConfigDict
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 import tomllib
 
 class ServerConfig(BaseModel):
@@ -23,12 +23,14 @@ class PythonConfig(BaseModel):
 
 class TopicConfig(BaseModel):
     """ Configuration for which topic schemas to use """
+    params: List[str] = Field(default_factory=list, description="List of parameters to include in topic templates")
     signals: str = Field(default="{interface_name}/{service_id}/signal/{signal_name}", description="Topic template for signals")
     property_values: str = Field(default="{interface_name}/{service_id}/property/{property_name}/value", description="Topic template for property values")
     property_updates: str = Field(default="{interface_name}/{service_id}/property/{property_name}/update", description="Topic template for property updates")
     property_update_response: str = Field(default="client/{client_id}/{interface_name}/responses", description="Topic template for property update responses")
     method_requests: str = Field(default="{interface_name}/{service_id}/method/{method_name}/request", description="Topic template for method requests")
     method_responses: str = Field(default="client/{client_id}/{interface_name}/responses", description="Topic template for method responses")
+    interface_discovery: str = Field(default="{interface_name}/{service_id}/interface", description="Topic template for interface discovery")
 
 class LanguagePluginConfig(BaseModel):
     """ Configuration for languages that are provided via plugins """

@@ -472,23 +472,28 @@ class {{stinger.python.client_class_name}}Discoverer:
         property_name = message.topic.split('/')[3]
         user_properties  = message.user_properties or {}
         prop_version = user_properties.get("PropertyVersion", "-1")
-        try:
-            prop_obj = json.loads(message.payload)
-            with self._mutex:
-                if instance_id not in self._discovered_properties:
-                    self._discovered_properties[instance_id] = dict()
-                {%for prop_name, prop in stinger.properties.items()%}
-                {%if not loop.first%}el{%endif%}if property_name == "{{prop_name|lowerCamelCase}}":
-                    {%if prop.arg_list|length == 1%}
-                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}"] = prop_obj.get("{{prop.arg_list[0].name}}")
-                    {%else%}
-                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}"] = prop_obj
-                    {%endif%}
+
+        with self._mutex:
+            if instance_id not in self._discovered_properties:
+                self._discovered_properties[instance_id] = dict()
+            {%for prop_name, prop in stinger.properties.items()%}
+            {%if not loop.first%}el{%endif%}if property_name == "{{prop_name|lowerCamelCase}}":
+                try:
+                    {{prop_name|snake_case}}_prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
+                except Exception as e:
+                    self._logger.warning("Failed to deserialize property '{{prop_name}}' value message:\n%s\n%s", message.payload, e)
+                    return
+                try:
+                    {%if prop.arg_list|length == 1 -%}
+                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}"] = {{prop_name|snake_case}}_prop_obj.{{prop.arg_list[0].name}}
+                    {%else-%}
+                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}"] = {{prop_name|snake_case}}_prop_obj
+                    {%endif-%}
                     self._discovered_properties[instance_id]["{{prop_name|snake_case}}_version"] = prop_version
+                except Exception as e:
+                    self._logger.warning("Failed to process property '{{prop_name}}' value message: %s", e)
+                    return
                 {%endfor%}
             
             self._check_for_fully_discovered(instance_id)
-
-        except Exception as e:
-            self._logger.warning("Failed to process property value message: %s", e)
     {%endif%}

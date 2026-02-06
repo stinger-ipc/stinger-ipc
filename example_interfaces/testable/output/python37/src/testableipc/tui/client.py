@@ -1632,11 +1632,11 @@ class ClientScreen(Screen):
 
                     # Multiple values
 
-                    line = f"[bold]the_list[/bold]: { value.the_list }"  # Other - ARRAY
-                    values.append(line)
+                    for i, the_list_item in enumerate(value.the_list or []):
+                        values.append(f"[bold]the_list[{i}][/bold]: { the_list_item  }")  # Array Item
 
-                    line = f"[bold]optionalList[/bold]: { value.optional_list }"  # Other - ARRAY
-                    values.append(line)
+                    for i, optional_list_item in enumerate(value.optional_list or []):
+                        values.append(f"[bold]optionalList[{i}][/bold]: { optional_list_item  }")  # Array Item
 
                     value_str = "\n".join(values)
 

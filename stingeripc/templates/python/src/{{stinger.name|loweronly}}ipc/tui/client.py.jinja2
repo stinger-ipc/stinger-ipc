@@ -527,6 +527,9 @@ class ClientScreen(Screen):
                         {%for mem in arg.struct.members -%}
                         values.append(f"[bold]{{arg.name}}.{{mem.name}}[/bold]: { value.{{arg.name|snake_case}}.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }") # Struct Member
                         {%endfor%}
+                    {%elif arg.arg_type.name == 'ARRAY'%}
+                    for i, {{arg.name|snake_case}}_item in enumerate(value.{{arg.name|snake_case}} or []):
+                        values.append(f"[bold]{{arg.name}}[{i}][/bold]: { {{arg.name|snake_case}}_item  }") # Array Item
                     {%else%}
                     line = (f"[bold]{{arg.name}}[/bold]: { value.{{arg.name|snake_case}} }") # Other - {{arg.arg_type.name}}
                     values.append(line)
