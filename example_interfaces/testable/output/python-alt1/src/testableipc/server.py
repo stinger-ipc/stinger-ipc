@@ -64,175 +64,320 @@ class PropertyControls(Generic[T]):
 
 class TestableServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str, property_access: TestablePropertyAccess):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, property_access: TestablePropertyAccess, prefix: str):
         self._logger = logging.getLogger(f"TestableServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing TestableServer instance %s", instance_id)
-        self._instance_id = instance_id
-        self._service_advert_topic = "testable/{}/interface".format(self._instance_id)
-        self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
+        self._instance_id = instance_id
+        self._topic_param_prefix = prefix  # type: str
+        self._service_advert_topic = "{prefix}/testable/{service_id}/interface".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        self._re_advertise_server_interval_seconds = 120
         self._running = True
         self._conn.add_message_callback(self._receive_message)
         self._property_read_write_integer: PropertyControls[int] = PropertyControls(getter=property_access.read_write_integer_getter, setter=property_access.read_write_integer_setter, version=1)
-        self._conn.subscribe("testable/{}/property/readWriteInteger/setValue".format(self._instance_id), self._receive_read_write_integer_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_integer/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_integer_update_request_message,
+        )
         self._property_read_only_integer: PropertyControls[int] = PropertyControls(getter=property_access.read_only_integer_getter, version=1)
         self._property_read_write_optional_integer: PropertyControls[Optional[int]] = PropertyControls(
             getter=property_access.read_write_optional_integer_getter, setter=property_access.read_write_optional_integer_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteOptionalInteger/setValue".format(self._instance_id), self._receive_read_write_optional_integer_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_optional_integer/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_optional_integer_update_request_message,
+        )
         self._property_read_write_two_integers: PropertyControls[ReadWriteTwoIntegersProperty] = PropertyControls(
             getter=property_access.read_write_two_integers_getter, setter=property_access.read_write_two_integers_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteTwoIntegers/setValue".format(self._instance_id), self._receive_read_write_two_integers_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_two_integers/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_two_integers_update_request_message,
+        )
         self._property_read_only_string: PropertyControls[str] = PropertyControls(getter=property_access.read_only_string_getter, version=1)
         self._property_read_write_string: PropertyControls[str] = PropertyControls(getter=property_access.read_write_string_getter, setter=property_access.read_write_string_setter, version=1)
-        self._conn.subscribe("testable/{}/property/readWriteString/setValue".format(self._instance_id), self._receive_read_write_string_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_string/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_string_update_request_message,
+        )
         self._property_read_write_optional_string: PropertyControls[Optional[str]] = PropertyControls(
             getter=property_access.read_write_optional_string_getter, setter=property_access.read_write_optional_string_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteOptionalString/setValue".format(self._instance_id), self._receive_read_write_optional_string_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_optional_string/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_optional_string_update_request_message,
+        )
         self._property_read_write_two_strings: PropertyControls[ReadWriteTwoStringsProperty] = PropertyControls(
             getter=property_access.read_write_two_strings_getter, setter=property_access.read_write_two_strings_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteTwoStrings/setValue".format(self._instance_id), self._receive_read_write_two_strings_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_two_strings/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_two_strings_update_request_message,
+        )
         self._property_read_write_struct: PropertyControls[AllTypes] = PropertyControls(getter=property_access.read_write_struct_getter, setter=property_access.read_write_struct_setter, version=1)
-        self._conn.subscribe("testable/{}/property/readWriteStruct/setValue".format(self._instance_id), self._receive_read_write_struct_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_struct/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_struct_update_request_message,
+        )
         self._property_read_write_optional_struct: PropertyControls[Optional[AllTypes]] = PropertyControls(
             getter=property_access.read_write_optional_struct_getter, setter=property_access.read_write_optional_struct_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteOptionalStruct/setValue".format(self._instance_id), self._receive_read_write_optional_struct_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_optional_struct/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_optional_struct_update_request_message,
+        )
         self._property_read_write_two_structs: PropertyControls[ReadWriteTwoStructsProperty] = PropertyControls(
             getter=property_access.read_write_two_structs_getter, setter=property_access.read_write_two_structs_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteTwoStructs/setValue".format(self._instance_id), self._receive_read_write_two_structs_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_two_structs/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_two_structs_update_request_message,
+        )
         self._property_read_only_enum: PropertyControls[Numbers] = PropertyControls(getter=property_access.read_only_enum_getter, version=1)
         self._property_read_write_enum: PropertyControls[Numbers] = PropertyControls(getter=property_access.read_write_enum_getter, setter=property_access.read_write_enum_setter, version=1)
-        self._conn.subscribe("testable/{}/property/readWriteEnum/setValue".format(self._instance_id), self._receive_read_write_enum_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_enum/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_enum_update_request_message,
+        )
         self._property_read_write_optional_enum: PropertyControls[Optional[Numbers]] = PropertyControls(
             getter=property_access.read_write_optional_enum_getter, setter=property_access.read_write_optional_enum_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteOptionalEnum/setValue".format(self._instance_id), self._receive_read_write_optional_enum_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_optional_enum/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_optional_enum_update_request_message,
+        )
         self._property_read_write_two_enums: PropertyControls[ReadWriteTwoEnumsProperty] = PropertyControls(
             getter=property_access.read_write_two_enums_getter, setter=property_access.read_write_two_enums_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteTwoEnums/setValue".format(self._instance_id), self._receive_read_write_two_enums_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_two_enums/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_two_enums_update_request_message,
+        )
         self._property_read_write_datetime: PropertyControls[datetime] = PropertyControls(
             getter=property_access.read_write_datetime_getter, setter=property_access.read_write_datetime_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteDatetime/setValue".format(self._instance_id), self._receive_read_write_datetime_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_datetime/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_datetime_update_request_message,
+        )
         self._property_read_write_optional_datetime: PropertyControls[Optional[datetime]] = PropertyControls(
             getter=property_access.read_write_optional_datetime_getter, setter=property_access.read_write_optional_datetime_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteOptionalDatetime/setValue".format(self._instance_id), self._receive_read_write_optional_datetime_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_optional_datetime/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_optional_datetime_update_request_message,
+        )
         self._property_read_write_two_datetimes: PropertyControls[ReadWriteTwoDatetimesProperty] = PropertyControls(
             getter=property_access.read_write_two_datetimes_getter, setter=property_access.read_write_two_datetimes_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteTwoDatetimes/setValue".format(self._instance_id), self._receive_read_write_two_datetimes_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_two_datetimes/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_two_datetimes_update_request_message,
+        )
         self._property_read_write_duration: PropertyControls[timedelta] = PropertyControls(
             getter=property_access.read_write_duration_getter, setter=property_access.read_write_duration_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteDuration/setValue".format(self._instance_id), self._receive_read_write_duration_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_duration/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_duration_update_request_message,
+        )
         self._property_read_write_optional_duration: PropertyControls[Optional[timedelta]] = PropertyControls(
             getter=property_access.read_write_optional_duration_getter, setter=property_access.read_write_optional_duration_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteOptionalDuration/setValue".format(self._instance_id), self._receive_read_write_optional_duration_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_optional_duration/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_optional_duration_update_request_message,
+        )
         self._property_read_write_two_durations: PropertyControls[ReadWriteTwoDurationsProperty] = PropertyControls(
             getter=property_access.read_write_two_durations_getter, setter=property_access.read_write_two_durations_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteTwoDurations/setValue".format(self._instance_id), self._receive_read_write_two_durations_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_two_durations/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_two_durations_update_request_message,
+        )
         self._property_read_write_binary: PropertyControls[bytes] = PropertyControls(getter=property_access.read_write_binary_getter, setter=property_access.read_write_binary_setter, version=1)
-        self._conn.subscribe("testable/{}/property/readWriteBinary/setValue".format(self._instance_id), self._receive_read_write_binary_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_binary/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_binary_update_request_message,
+        )
         self._property_read_write_optional_binary: PropertyControls[Optional[bytes]] = PropertyControls(
             getter=property_access.read_write_optional_binary_getter, setter=property_access.read_write_optional_binary_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteOptionalBinary/setValue".format(self._instance_id), self._receive_read_write_optional_binary_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_optional_binary/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_optional_binary_update_request_message,
+        )
         self._property_read_write_two_binaries: PropertyControls[ReadWriteTwoBinariesProperty] = PropertyControls(
             getter=property_access.read_write_two_binaries_getter, setter=property_access.read_write_two_binaries_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteTwoBinaries/setValue".format(self._instance_id), self._receive_read_write_two_binaries_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_two_binaries/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_two_binaries_update_request_message,
+        )
         self._property_read_write_list_of_strings: PropertyControls[List[str]] = PropertyControls(
             getter=property_access.read_write_list_of_strings_getter, setter=property_access.read_write_list_of_strings_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteListOfStrings/setValue".format(self._instance_id), self._receive_read_write_list_of_strings_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_list_of_strings/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_list_of_strings_update_request_message,
+        )
         self._property_read_write_lists: PropertyControls[ReadWriteListsProperty] = PropertyControls(
             getter=property_access.read_write_lists_getter, setter=property_access.read_write_lists_setter, version=1
         )
-        self._conn.subscribe("testable/{}/property/readWriteLists/setValue".format(self._instance_id), self._receive_read_write_lists_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/property/read_write_lists/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_read_write_lists_update_request_message,
+        )
 
-        self._conn.subscribe("testable/{}/method/callWithNothing".format(self._instance_id), self._process_call_with_nothing_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callWithNothing/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_with_nothing_call,
+        )
         self._method_call_with_nothing_handler = None  # type: Optional[Callable[[], None]]
 
-        self._conn.subscribe("testable/{}/method/callOneInteger".format(self._instance_id), self._process_call_one_integer_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOneInteger/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_one_integer_call,
+        )
         self._method_call_one_integer_handler = None  # type: Optional[Callable[[int], int]]
 
-        self._conn.subscribe("testable/{}/method/callOptionalInteger".format(self._instance_id), self._process_call_optional_integer_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOptionalInteger/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_optional_integer_call,
+        )
         self._method_call_optional_integer_handler = None  # type: Optional[Callable[[Optional[int]], Optional[int]]]
 
-        self._conn.subscribe("testable/{}/method/callThreeIntegers".format(self._instance_id), self._process_call_three_integers_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callThreeIntegers/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_three_integers_call,
+        )
         self._method_call_three_integers_handler = None  # type: Optional[Callable[[int, int, Optional[int]], CallThreeIntegersMethodResponse]]
 
-        self._conn.subscribe("testable/{}/method/callOneString".format(self._instance_id), self._process_call_one_string_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOneString/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_one_string_call,
+        )
         self._method_call_one_string_handler = None  # type: Optional[Callable[[str], str]]
 
-        self._conn.subscribe("testable/{}/method/callOptionalString".format(self._instance_id), self._process_call_optional_string_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOptionalString/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_optional_string_call,
+        )
         self._method_call_optional_string_handler = None  # type: Optional[Callable[[Optional[str]], Optional[str]]]
 
-        self._conn.subscribe("testable/{}/method/callThreeStrings".format(self._instance_id), self._process_call_three_strings_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callThreeStrings/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_three_strings_call,
+        )
         self._method_call_three_strings_handler = None  # type: Optional[Callable[[str, Optional[str], str], CallThreeStringsMethodResponse]]
 
-        self._conn.subscribe("testable/{}/method/callOneEnum".format(self._instance_id), self._process_call_one_enum_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOneEnum/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_one_enum_call,
+        )
         self._method_call_one_enum_handler = None  # type: Optional[Callable[[Numbers], Numbers]]
 
-        self._conn.subscribe("testable/{}/method/callOptionalEnum".format(self._instance_id), self._process_call_optional_enum_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOptionalEnum/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_optional_enum_call,
+        )
         self._method_call_optional_enum_handler = None  # type: Optional[Callable[[Optional[Numbers]], Optional[Numbers]]]
 
-        self._conn.subscribe("testable/{}/method/callThreeEnums".format(self._instance_id), self._process_call_three_enums_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callThreeEnums/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_three_enums_call,
+        )
         self._method_call_three_enums_handler = None  # type: Optional[Callable[[Numbers, Numbers, Optional[Numbers]], CallThreeEnumsMethodResponse]]
 
-        self._conn.subscribe("testable/{}/method/callOneStruct".format(self._instance_id), self._process_call_one_struct_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOneStruct/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_one_struct_call,
+        )
         self._method_call_one_struct_handler = None  # type: Optional[Callable[[AllTypes], AllTypes]]
 
-        self._conn.subscribe("testable/{}/method/callOptionalStruct".format(self._instance_id), self._process_call_optional_struct_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOptionalStruct/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_optional_struct_call,
+        )
         self._method_call_optional_struct_handler = None  # type: Optional[Callable[[Optional[AllTypes]], Optional[AllTypes]]]
 
-        self._conn.subscribe("testable/{}/method/callThreeStructs".format(self._instance_id), self._process_call_three_structs_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callThreeStructs/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_three_structs_call,
+        )
         self._method_call_three_structs_handler = None  # type: Optional[Callable[[Optional[AllTypes], AllTypes, AllTypes], CallThreeStructsMethodResponse]]
 
-        self._conn.subscribe("testable/{}/method/callOneDateTime".format(self._instance_id), self._process_call_one_date_time_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOneDateTime/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_one_date_time_call,
+        )
         self._method_call_one_date_time_handler = None  # type: Optional[Callable[[datetime], datetime]]
 
-        self._conn.subscribe("testable/{}/method/callOptionalDateTime".format(self._instance_id), self._process_call_optional_date_time_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOptionalDateTime/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_optional_date_time_call,
+        )
         self._method_call_optional_date_time_handler = None  # type: Optional[Callable[[Optional[datetime]], Optional[datetime]]]
 
-        self._conn.subscribe("testable/{}/method/callThreeDateTimes".format(self._instance_id), self._process_call_three_date_times_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callThreeDateTimes/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_three_date_times_call,
+        )
         self._method_call_three_date_times_handler = None  # type: Optional[Callable[[datetime, datetime, Optional[datetime]], CallThreeDateTimesMethodResponse]]
 
-        self._conn.subscribe("testable/{}/method/callOneDuration".format(self._instance_id), self._process_call_one_duration_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOneDuration/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_one_duration_call,
+        )
         self._method_call_one_duration_handler = None  # type: Optional[Callable[[timedelta], timedelta]]
 
-        self._conn.subscribe("testable/{}/method/callOptionalDuration".format(self._instance_id), self._process_call_optional_duration_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOptionalDuration/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_optional_duration_call,
+        )
         self._method_call_optional_duration_handler = None  # type: Optional[Callable[[Optional[timedelta]], Optional[timedelta]]]
 
-        self._conn.subscribe("testable/{}/method/callThreeDurations".format(self._instance_id), self._process_call_three_durations_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callThreeDurations/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_three_durations_call,
+        )
         self._method_call_three_durations_handler = None  # type: Optional[Callable[[timedelta, timedelta, Optional[timedelta]], CallThreeDurationsMethodResponse]]
 
-        self._conn.subscribe("testable/{}/method/callOneBinary".format(self._instance_id), self._process_call_one_binary_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOneBinary/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_one_binary_call,
+        )
         self._method_call_one_binary_handler = None  # type: Optional[Callable[[bytes], bytes]]
 
-        self._conn.subscribe("testable/{}/method/callOptionalBinary".format(self._instance_id), self._process_call_optional_binary_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOptionalBinary/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_optional_binary_call,
+        )
         self._method_call_optional_binary_handler = None  # type: Optional[Callable[[Optional[bytes]], Optional[bytes]]]
 
-        self._conn.subscribe("testable/{}/method/callThreeBinaries".format(self._instance_id), self._process_call_three_binaries_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callThreeBinaries/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_three_binaries_call,
+        )
         self._method_call_three_binaries_handler = None  # type: Optional[Callable[[bytes, bytes, Optional[bytes]], CallThreeBinariesMethodResponse]]
 
-        self._conn.subscribe("testable/{}/method/callOneListOfIntegers".format(self._instance_id), self._process_call_one_list_of_integers_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOneListOfIntegers/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_one_list_of_integers_call,
+        )
         self._method_call_one_list_of_integers_handler = None  # type: Optional[Callable[[List[int]], List[int]]]
 
-        self._conn.subscribe("testable/{}/method/callOptionalListOfFloats".format(self._instance_id), self._process_call_optional_list_of_floats_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callOptionalListOfFloats/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_optional_list_of_floats_call,
+        )
         self._method_call_optional_list_of_floats_handler = None  # type: Optional[Callable[[Optional[List[float]]], Optional[List[float]]]]
 
-        self._conn.subscribe("testable/{}/method/callTwoLists".format(self._instance_id), self._process_call_two_lists_call)
+        self._conn.subscribe(
+            "{prefix}/testable/{service_id}/method/callTwoLists/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_call_two_lists_call,
+        )
         self._method_call_two_lists_handler = None  # type: Optional[Callable[[List[Numbers], Optional[List[str]]], CallTwoListsMethodResponse]]
 
         self._publish_all_properties()
@@ -277,7 +422,12 @@ class TestableServer:
 
     def publish_interface_info(self):
         """Publishes the interface info message to the interface info topic with an expiry interval."""
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
+        data = TestableInterfaceInfo(
+            instance=self._instance_id,
+            connection_topic=(self._conn.online_topic or ""),
+            timestamp=datetime.now(UTC).isoformat(),
+            prefix=self._topic_param_prefix,
+        )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
@@ -294,7 +444,9 @@ class TestableServer:
             self._property_read_write_integer.version += 1
             read_write_integer_prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteInteger/value".format(self._instance_id), read_write_integer_prop_obj, self._property_read_write_integer.version
+                "{prefix}/testable/{service_id}/property/read_write_integer/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_integer_prop_obj,
+                self._property_read_write_integer.version,
             )
             self._conn.publish(state_msg)
 
@@ -308,7 +460,9 @@ class TestableServer:
             self._property_read_only_integer.version += 1
             read_only_integer_prop_obj = ReadOnlyIntegerProperty(value=self._property_read_only_integer.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readOnlyInteger/value".format(self._instance_id), read_only_integer_prop_obj, self._property_read_only_integer.version
+                "{prefix}/testable/{service_id}/property/read_only_integer/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_only_integer_prop_obj,
+                self._property_read_only_integer.version,
             )
             self._conn.publish(state_msg)
 
@@ -322,7 +476,9 @@ class TestableServer:
             self._property_read_write_optional_integer.version += 1
             read_write_optional_integer_prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteOptionalInteger/value".format(self._instance_id), read_write_optional_integer_prop_obj, self._property_read_write_optional_integer.version
+                "{prefix}/testable/{service_id}/property/read_write_optional_integer/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_optional_integer_prop_obj,
+                self._property_read_write_optional_integer.version,
             )
             self._conn.publish(state_msg)
 
@@ -336,7 +492,9 @@ class TestableServer:
             self._property_read_write_two_integers.version += 1
             read_write_two_integers_prop_obj = self._property_read_write_two_integers.get_value()
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteTwoIntegers/value".format(self._instance_id), read_write_two_integers_prop_obj, self._property_read_write_two_integers.version
+                "{prefix}/testable/{service_id}/property/read_write_two_integers/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_two_integers_prop_obj,
+                self._property_read_write_two_integers.version,
             )
             self._conn.publish(state_msg)
 
@@ -349,7 +507,11 @@ class TestableServer:
         with self._property_read_only_string.mutex:
             self._property_read_only_string.version += 1
             read_only_string_prop_obj = ReadOnlyStringProperty(value=self._property_read_only_string.get_value())
-            state_msg = MessageCreator.property_state_message("testable/{}/property/readOnlyString/value".format(self._instance_id), read_only_string_prop_obj, self._property_read_only_string.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/testable/{service_id}/property/read_only_string/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_only_string_prop_obj,
+                self._property_read_only_string.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_read_write_string_value(self, *_, **__):
@@ -362,7 +524,9 @@ class TestableServer:
             self._property_read_write_string.version += 1
             read_write_string_prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteString/value".format(self._instance_id), read_write_string_prop_obj, self._property_read_write_string.version
+                "{prefix}/testable/{service_id}/property/read_write_string/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_string_prop_obj,
+                self._property_read_write_string.version,
             )
             self._conn.publish(state_msg)
 
@@ -376,7 +540,9 @@ class TestableServer:
             self._property_read_write_optional_string.version += 1
             read_write_optional_string_prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteOptionalString/value".format(self._instance_id), read_write_optional_string_prop_obj, self._property_read_write_optional_string.version
+                "{prefix}/testable/{service_id}/property/read_write_optional_string/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_optional_string_prop_obj,
+                self._property_read_write_optional_string.version,
             )
             self._conn.publish(state_msg)
 
@@ -390,7 +556,9 @@ class TestableServer:
             self._property_read_write_two_strings.version += 1
             read_write_two_strings_prop_obj = self._property_read_write_two_strings.get_value()
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteTwoStrings/value".format(self._instance_id), read_write_two_strings_prop_obj, self._property_read_write_two_strings.version
+                "{prefix}/testable/{service_id}/property/read_write_two_strings/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_two_strings_prop_obj,
+                self._property_read_write_two_strings.version,
             )
             self._conn.publish(state_msg)
 
@@ -404,7 +572,9 @@ class TestableServer:
             self._property_read_write_struct.version += 1
             read_write_struct_prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteStruct/value".format(self._instance_id), read_write_struct_prop_obj, self._property_read_write_struct.version
+                "{prefix}/testable/{service_id}/property/read_write_struct/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_struct_prop_obj,
+                self._property_read_write_struct.version,
             )
             self._conn.publish(state_msg)
 
@@ -418,7 +588,9 @@ class TestableServer:
             self._property_read_write_optional_struct.version += 1
             read_write_optional_struct_prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteOptionalStruct/value".format(self._instance_id), read_write_optional_struct_prop_obj, self._property_read_write_optional_struct.version
+                "{prefix}/testable/{service_id}/property/read_write_optional_struct/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_optional_struct_prop_obj,
+                self._property_read_write_optional_struct.version,
             )
             self._conn.publish(state_msg)
 
@@ -432,7 +604,9 @@ class TestableServer:
             self._property_read_write_two_structs.version += 1
             read_write_two_structs_prop_obj = self._property_read_write_two_structs.get_value()
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteTwoStructs/value".format(self._instance_id), read_write_two_structs_prop_obj, self._property_read_write_two_structs.version
+                "{prefix}/testable/{service_id}/property/read_write_two_structs/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_two_structs_prop_obj,
+                self._property_read_write_two_structs.version,
             )
             self._conn.publish(state_msg)
 
@@ -445,7 +619,11 @@ class TestableServer:
         with self._property_read_only_enum.mutex:
             self._property_read_only_enum.version += 1
             read_only_enum_prop_obj = ReadOnlyEnumProperty(value=self._property_read_only_enum.get_value())
-            state_msg = MessageCreator.property_state_message("testable/{}/property/readOnlyEnum/value".format(self._instance_id), read_only_enum_prop_obj, self._property_read_only_enum.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/testable/{service_id}/property/read_only_enum/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_only_enum_prop_obj,
+                self._property_read_only_enum.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_read_write_enum_value(self, *_, **__):
@@ -457,7 +635,11 @@ class TestableServer:
         with self._property_read_write_enum.mutex:
             self._property_read_write_enum.version += 1
             read_write_enum_prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.get_value())
-            state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteEnum/value".format(self._instance_id), read_write_enum_prop_obj, self._property_read_write_enum.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/testable/{service_id}/property/read_write_enum/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_enum_prop_obj,
+                self._property_read_write_enum.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_read_write_optional_enum_value(self, *_, **__):
@@ -470,7 +652,9 @@ class TestableServer:
             self._property_read_write_optional_enum.version += 1
             read_write_optional_enum_prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteOptionalEnum/value".format(self._instance_id), read_write_optional_enum_prop_obj, self._property_read_write_optional_enum.version
+                "{prefix}/testable/{service_id}/property/read_write_optional_enum/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_optional_enum_prop_obj,
+                self._property_read_write_optional_enum.version,
             )
             self._conn.publish(state_msg)
 
@@ -484,7 +668,9 @@ class TestableServer:
             self._property_read_write_two_enums.version += 1
             read_write_two_enums_prop_obj = self._property_read_write_two_enums.get_value()
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteTwoEnums/value".format(self._instance_id), read_write_two_enums_prop_obj, self._property_read_write_two_enums.version
+                "{prefix}/testable/{service_id}/property/read_write_two_enums/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_two_enums_prop_obj,
+                self._property_read_write_two_enums.version,
             )
             self._conn.publish(state_msg)
 
@@ -498,7 +684,9 @@ class TestableServer:
             self._property_read_write_datetime.version += 1
             read_write_datetime_prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteDatetime/value".format(self._instance_id), read_write_datetime_prop_obj, self._property_read_write_datetime.version
+                "{prefix}/testable/{service_id}/property/read_write_datetime/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_datetime_prop_obj,
+                self._property_read_write_datetime.version,
             )
             self._conn.publish(state_msg)
 
@@ -512,7 +700,9 @@ class TestableServer:
             self._property_read_write_optional_datetime.version += 1
             read_write_optional_datetime_prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), read_write_optional_datetime_prop_obj, self._property_read_write_optional_datetime.version
+                "{prefix}/testable/{service_id}/property/read_write_optional_datetime/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_optional_datetime_prop_obj,
+                self._property_read_write_optional_datetime.version,
             )
             self._conn.publish(state_msg)
 
@@ -526,7 +716,9 @@ class TestableServer:
             self._property_read_write_two_datetimes.version += 1
             read_write_two_datetimes_prop_obj = self._property_read_write_two_datetimes.get_value()
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), read_write_two_datetimes_prop_obj, self._property_read_write_two_datetimes.version
+                "{prefix}/testable/{service_id}/property/read_write_two_datetimes/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_two_datetimes_prop_obj,
+                self._property_read_write_two_datetimes.version,
             )
             self._conn.publish(state_msg)
 
@@ -540,7 +732,9 @@ class TestableServer:
             self._property_read_write_duration.version += 1
             read_write_duration_prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteDuration/value".format(self._instance_id), read_write_duration_prop_obj, self._property_read_write_duration.version
+                "{prefix}/testable/{service_id}/property/read_write_duration/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_duration_prop_obj,
+                self._property_read_write_duration.version,
             )
             self._conn.publish(state_msg)
 
@@ -554,7 +748,9 @@ class TestableServer:
             self._property_read_write_optional_duration.version += 1
             read_write_optional_duration_prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteOptionalDuration/value".format(self._instance_id), read_write_optional_duration_prop_obj, self._property_read_write_optional_duration.version
+                "{prefix}/testable/{service_id}/property/read_write_optional_duration/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_optional_duration_prop_obj,
+                self._property_read_write_optional_duration.version,
             )
             self._conn.publish(state_msg)
 
@@ -568,7 +764,9 @@ class TestableServer:
             self._property_read_write_two_durations.version += 1
             read_write_two_durations_prop_obj = self._property_read_write_two_durations.get_value()
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteTwoDurations/value".format(self._instance_id), read_write_two_durations_prop_obj, self._property_read_write_two_durations.version
+                "{prefix}/testable/{service_id}/property/read_write_two_durations/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_two_durations_prop_obj,
+                self._property_read_write_two_durations.version,
             )
             self._conn.publish(state_msg)
 
@@ -582,7 +780,9 @@ class TestableServer:
             self._property_read_write_binary.version += 1
             read_write_binary_prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteBinary/value".format(self._instance_id), read_write_binary_prop_obj, self._property_read_write_binary.version
+                "{prefix}/testable/{service_id}/property/read_write_binary/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_binary_prop_obj,
+                self._property_read_write_binary.version,
             )
             self._conn.publish(state_msg)
 
@@ -596,7 +796,9 @@ class TestableServer:
             self._property_read_write_optional_binary.version += 1
             read_write_optional_binary_prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteOptionalBinary/value".format(self._instance_id), read_write_optional_binary_prop_obj, self._property_read_write_optional_binary.version
+                "{prefix}/testable/{service_id}/property/read_write_optional_binary/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_optional_binary_prop_obj,
+                self._property_read_write_optional_binary.version,
             )
             self._conn.publish(state_msg)
 
@@ -610,7 +812,9 @@ class TestableServer:
             self._property_read_write_two_binaries.version += 1
             read_write_two_binaries_prop_obj = self._property_read_write_two_binaries.get_value()
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteTwoBinaries/value".format(self._instance_id), read_write_two_binaries_prop_obj, self._property_read_write_two_binaries.version
+                "{prefix}/testable/{service_id}/property/read_write_two_binaries/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_two_binaries_prop_obj,
+                self._property_read_write_two_binaries.version,
             )
             self._conn.publish(state_msg)
 
@@ -624,7 +828,9 @@ class TestableServer:
             self._property_read_write_list_of_strings.version += 1
             read_write_list_of_strings_prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.get_value())
             state_msg = MessageCreator.property_state_message(
-                "testable/{}/property/readWriteListOfStrings/value".format(self._instance_id), read_write_list_of_strings_prop_obj, self._property_read_write_list_of_strings.version
+                "{prefix}/testable/{service_id}/property/read_write_list_of_strings/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_list_of_strings_prop_obj,
+                self._property_read_write_list_of_strings.version,
             )
             self._conn.publish(state_msg)
 
@@ -637,7 +843,11 @@ class TestableServer:
         with self._property_read_write_lists.mutex:
             self._property_read_write_lists.version += 1
             read_write_lists_prop_obj = self._property_read_write_lists.get_value()
-            state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteLists/value".format(self._instance_id), read_write_lists_prop_obj, self._property_read_write_lists.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/testable/{service_id}/property/read_write_lists/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                read_write_lists_prop_obj,
+                self._property_read_write_lists.version,
+            )
             self._conn.publish(state_msg)
 
     def _publish_all_properties(self):
@@ -670,7 +880,7 @@ class TestableServer:
         self.publish_read_write_lists_value()
 
     def _receive_read_write_integer_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteInteger/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e1b320>>` topic
         in order to update the `read_write_integer` property, this method is called to process that message
         and update the value of the property.
         """
@@ -688,7 +898,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -703,7 +913,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteInteger/value".format(self._instance_id), current_prop_obj, self._property_read_write_integer.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_integer/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_integer.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -729,7 +942,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_integer_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteOptionalInteger/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e1b0e0>>` topic
         in order to update the `read_write_optional_integer` property, this method is called to process that message
         and update the value of the property.
         """
@@ -747,7 +960,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -762,9 +975,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalInteger/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_integer.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_integer/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_integer.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -790,7 +1004,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_integers_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteTwoIntegers/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e1b3e0>>` topic
         in order to update the `read_write_two_integers` property, this method is called to process that message
         and update the value of the property.
         """
@@ -808,7 +1022,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -823,9 +1037,10 @@ class TestableServer:
 
                 current_prop_obj = self._property_read_write_two_integers.get_value()  # type: ReadWriteTwoIntegersProperty
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteTwoIntegers/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_integers.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_integers/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_integers.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -851,7 +1066,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_string_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteString/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e1b440>>` topic
         in order to update the `read_write_string` property, this method is called to process that message
         and update the value of the property.
         """
@@ -869,7 +1084,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -884,7 +1099,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteString/value".format(self._instance_id), current_prop_obj, self._property_read_write_string.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_string/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_string.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -910,7 +1128,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_string_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteOptionalString/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e1b710>>` topic
         in order to update the `read_write_optional_string` property, this method is called to process that message
         and update the value of the property.
         """
@@ -928,7 +1146,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -943,9 +1161,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalString/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_string.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_string/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_string.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -971,7 +1190,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_strings_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteTwoStrings/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e1bce0>>` topic
         in order to update the `read_write_two_strings` property, this method is called to process that message
         and update the value of the property.
         """
@@ -989,7 +1208,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1004,9 +1223,10 @@ class TestableServer:
 
                 current_prop_obj = self._property_read_write_two_strings.get_value()  # type: ReadWriteTwoStringsProperty
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteTwoStrings/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_strings.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_strings/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_strings.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1032,7 +1252,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_struct_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteStruct/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e1bef0>>` topic
         in order to update the `read_write_struct` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1050,7 +1270,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1065,7 +1285,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteStruct/value".format(self._instance_id), current_prop_obj, self._property_read_write_struct.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_struct/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_struct.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1091,7 +1314,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_struct_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteOptionalStruct/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e1bd70>>` topic
         in order to update the `read_write_optional_struct` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1109,7 +1332,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1124,9 +1347,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalStruct/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_struct.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_struct/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_struct.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1152,7 +1376,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_structs_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteTwoStructs/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e1b6b0>>` topic
         in order to update the `read_write_two_structs` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1170,7 +1394,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1185,9 +1409,10 @@ class TestableServer:
 
                 current_prop_obj = self._property_read_write_two_structs.get_value()  # type: ReadWriteTwoStructsProperty
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteTwoStructs/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_structs.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_structs/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_structs.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1213,7 +1438,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_enum_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteEnum/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60110>>` topic
         in order to update the `read_write_enum` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1229,7 +1454,7 @@ class TestableServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_enum.version}' of the 'read_write_enum' property")
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1244,7 +1469,8 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteEnum/value".format(self._instance_id), current_prop_obj, self._property_read_write_enum.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_enum/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_enum.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1270,7 +1496,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_enum_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteOptionalEnum/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60320>>` topic
         in order to update the `read_write_optional_enum` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1288,7 +1514,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1303,9 +1529,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalEnum/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_enum.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_enum/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_enum.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1331,7 +1558,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_enums_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteTwoEnums/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60470>>` topic
         in order to update the `read_write_two_enums` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1349,7 +1576,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1364,9 +1591,10 @@ class TestableServer:
 
                 current_prop_obj = self._property_read_write_two_enums.get_value()  # type: ReadWriteTwoEnumsProperty
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteTwoEnums/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_enums.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_enums/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_enums.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1392,7 +1620,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_datetime_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteDatetime/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e606b0>>` topic
         in order to update the `read_write_datetime` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1410,7 +1638,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1425,9 +1653,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteDatetime/value".format(self._instance_id), current_prop_obj, self._property_read_write_datetime.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_datetime/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_datetime.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1453,7 +1682,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_datetime_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteOptionalDatetime/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60230>>` topic
         in order to update the `read_write_optional_datetime` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1471,7 +1700,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1486,9 +1715,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_datetime.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_datetime/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_datetime.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1514,7 +1744,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_datetimes_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteTwoDatetimes/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60740>>` topic
         in order to update the `read_write_two_datetimes` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1532,7 +1762,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1547,9 +1777,10 @@ class TestableServer:
 
                 current_prop_obj = self._property_read_write_two_datetimes.get_value()  # type: ReadWriteTwoDatetimesProperty
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteTwoDatetimes/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_datetimes.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_datetimes/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_datetimes.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1575,7 +1806,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_duration_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteDuration/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e603b0>>` topic
         in order to update the `read_write_duration` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1593,7 +1824,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1608,9 +1839,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteDuration/value".format(self._instance_id), current_prop_obj, self._property_read_write_duration.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_duration/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_duration.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1636,7 +1868,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_duration_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteOptionalDuration/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60530>>` topic
         in order to update the `read_write_optional_duration` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1654,7 +1886,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1669,9 +1901,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalDuration/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_duration.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_duration/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_duration.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1697,7 +1930,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_durations_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteTwoDurations/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60860>>` topic
         in order to update the `read_write_two_durations` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1715,7 +1948,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1730,9 +1963,10 @@ class TestableServer:
 
                 current_prop_obj = self._property_read_write_two_durations.get_value()  # type: ReadWriteTwoDurationsProperty
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteTwoDurations/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_durations.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_durations/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_durations.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1758,7 +1992,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_binary_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteBinary/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60ad0>>` topic
         in order to update the `read_write_binary` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1776,7 +2010,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1791,7 +2025,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.get_value())
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteBinary/value".format(self._instance_id), current_prop_obj, self._property_read_write_binary.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_binary/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_binary.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1817,7 +2054,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_optional_binary_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteOptionalBinary/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60590>>` topic
         in order to update the `read_write_optional_binary` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1835,7 +2072,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1850,9 +2087,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalBinary/value".format(self._instance_id), current_prop_obj, self._property_read_write_optional_binary.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_binary/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_binary.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1878,7 +2116,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_two_binaries_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteTwoBinaries/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60dd0>>` topic
         in order to update the `read_write_two_binaries` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1896,7 +2134,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1911,9 +2149,10 @@ class TestableServer:
 
                 current_prop_obj = self._property_read_write_two_binaries.get_value()  # type: ReadWriteTwoBinariesProperty
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteTwoBinaries/value".format(self._instance_id), current_prop_obj, self._property_read_write_two_binaries.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_binaries/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_binaries.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -1939,7 +2178,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_list_of_strings_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteListOfStrings/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e60e60>>` topic
         in order to update the `read_write_list_of_strings` property, this method is called to process that message
         and update the value of the property.
         """
@@ -1957,7 +2196,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -1972,9 +2211,10 @@ class TestableServer:
 
                 current_prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteListOfStrings/value".format(self._instance_id), current_prop_obj, self._property_read_write_list_of_strings.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_list_of_strings/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_list_of_strings.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -2000,7 +2240,7 @@ class TestableServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_read_write_lists_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `testable/{}/property/readWriteLists/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7925a9e610a0>>` topic
         in order to update the `read_write_lists` property, this method is called to process that message
         and update the value of the property.
         """
@@ -2018,7 +2258,7 @@ class TestableServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -2033,7 +2273,10 @@ class TestableServer:
 
                 current_prop_obj = self._property_read_write_lists.get_value()  # type: ReadWriteListsProperty
 
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteLists/value".format(self._instance_id), current_prop_obj, self._property_read_write_lists.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_lists/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_lists.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -2071,7 +2314,8 @@ class TestableServer:
         """
 
         payload = EmptySignalPayload()
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/empty".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/empty".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_int(self, value: int):
@@ -2085,7 +2329,8 @@ class TestableServer:
         payload = SingleIntSignalPayload(
             value=value,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleInt".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleInt".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_optional_int(self, value: Optional[int]):
@@ -2099,7 +2344,8 @@ class TestableServer:
         payload = SingleOptionalIntSignalPayload(
             value=value if value is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleOptionalInt".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleOptionalInt".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_three_integers(self, first: int, second: int, third: Optional[int]):
@@ -2119,7 +2365,8 @@ class TestableServer:
             second=second,
             third=third if third is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/threeIntegers".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/threeIntegers".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_string(self, value: str):
@@ -2133,7 +2380,8 @@ class TestableServer:
         payload = SingleStringSignalPayload(
             value=value,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleString".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleString".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_optional_string(self, value: Optional[str]):
@@ -2147,7 +2395,8 @@ class TestableServer:
         payload = SingleOptionalStringSignalPayload(
             value=value if value is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleOptionalString".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleOptionalString".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_three_strings(self, first: str, second: str, third: Optional[str]):
@@ -2167,7 +2416,8 @@ class TestableServer:
             second=second,
             third=third if third is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/threeStrings".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/threeStrings".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_enum(self, value: Numbers):
@@ -2181,7 +2431,8 @@ class TestableServer:
         payload = SingleEnumSignalPayload(
             value=value,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleEnum".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleEnum".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_optional_enum(self, value: Optional[Numbers]):
@@ -2195,7 +2446,8 @@ class TestableServer:
         payload = SingleOptionalEnumSignalPayload(
             value=value if value is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleOptionalEnum".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleOptionalEnum".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_three_enums(self, first: Numbers, second: Numbers, third: Optional[Numbers]):
@@ -2215,7 +2467,8 @@ class TestableServer:
             second=second,
             third=third if third is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/threeEnums".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/threeEnums".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_struct(self, value: AllTypes):
@@ -2229,7 +2482,8 @@ class TestableServer:
         payload = SingleStructSignalPayload(
             value=value,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleStruct".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleStruct".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_optional_struct(self, value: Optional[AllTypes]):
@@ -2243,7 +2497,8 @@ class TestableServer:
         payload = SingleOptionalStructSignalPayload(
             value=value if value is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleOptionalStruct".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleOptionalStruct".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_three_structs(self, first: AllTypes, second: AllTypes, third: Optional[AllTypes]):
@@ -2263,7 +2518,8 @@ class TestableServer:
             second=second,
             third=third if third is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/threeStructs".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/threeStructs".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_date_time(self, value: datetime):
@@ -2277,7 +2533,8 @@ class TestableServer:
         payload = SingleDateTimeSignalPayload(
             value=value,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleDateTime".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleDateTime".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_optional_datetime(self, value: Optional[datetime]):
@@ -2291,7 +2548,8 @@ class TestableServer:
         payload = SingleOptionalDatetimeSignalPayload(
             value=value if value is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleOptionalDatetime".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleOptionalDatetime".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_three_date_times(self, first: datetime, second: datetime, third: Optional[datetime]):
@@ -2311,7 +2569,8 @@ class TestableServer:
             second=second,
             third=third if third is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/threeDateTimes".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/threeDateTimes".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_duration(self, value: timedelta):
@@ -2325,7 +2584,8 @@ class TestableServer:
         payload = SingleDurationSignalPayload(
             value=value,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleDuration".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleDuration".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_optional_duration(self, value: Optional[timedelta]):
@@ -2339,7 +2599,8 @@ class TestableServer:
         payload = SingleOptionalDurationSignalPayload(
             value=value if value is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleOptionalDuration".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleOptionalDuration".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_three_durations(self, first: timedelta, second: timedelta, third: Optional[timedelta]):
@@ -2359,7 +2620,8 @@ class TestableServer:
             second=second,
             third=third if third is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/threeDurations".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/threeDurations".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_binary(self, value: bytes):
@@ -2373,7 +2635,8 @@ class TestableServer:
         payload = SingleBinarySignalPayload(
             value=value,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleBinary".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleBinary".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_optional_binary(self, value: Optional[bytes]):
@@ -2387,7 +2650,8 @@ class TestableServer:
         payload = SingleOptionalBinarySignalPayload(
             value=value if value is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleOptionalBinary".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleOptionalBinary".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_three_binaries(self, first: bytes, second: bytes, third: Optional[bytes]):
@@ -2407,7 +2671,8 @@ class TestableServer:
             second=second,
             third=third if third is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/threeBinaries".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/threeBinaries".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_array_of_integers(self, values: List[int]):
@@ -2421,7 +2686,8 @@ class TestableServer:
         payload = SingleArrayOfIntegersSignalPayload(
             values=values,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleArrayOfIntegers".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleArrayOfIntegers".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_single_optional_array_of_strings(self, values: Optional[List[str]]):
@@ -2435,7 +2701,8 @@ class TestableServer:
         payload = SingleOptionalArrayOfStringsSignalPayload(
             values=values if values is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/singleOptionalArrayOfStrings".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/singleOptionalArrayOfStrings".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_array_of_every_type(
@@ -2480,7 +2747,8 @@ class TestableServer:
             seventh_of_durations=seventh_of_durations,
             eighth_of_binaries=eighth_of_binaries,
         )
-        sig_msg = MessageCreator.signal_message("testable/{}/signal/arrayOfEveryType".format(self._instance_id), payload)
+        signal_topic = "{prefix}/testable/{service_id}/signal/arrayOfEveryType".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def handle_call_with_nothing(self, handler: Callable[[], None]):
@@ -4234,7 +4502,10 @@ class TestableServer:
                 self._property_read_write_integer.set_value(value)
                 self._property_read_write_integer.version += 1
                 prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteInteger/value".format(self._instance_id), prop_obj, self._property_read_write_integer.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_integer/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_integer.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_integer(self, value: int):
@@ -4271,7 +4542,10 @@ class TestableServer:
                 self._property_read_only_integer.set_value(value)
                 self._property_read_only_integer.version += 1
                 prop_obj = ReadOnlyIntegerProperty(value=self._property_read_only_integer.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readOnlyInteger/value".format(self._instance_id), prop_obj, self._property_read_only_integer.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_only_integer/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_only_integer.version)
                 self._conn.publish(state_msg)
 
     def set_read_only_integer(self, value: int):
@@ -4308,9 +4582,10 @@ class TestableServer:
                 self._property_read_write_optional_integer.set_value(value)
                 self._property_read_write_optional_integer.version += 1
                 prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalInteger/value".format(self._instance_id), prop_obj, self._property_read_write_optional_integer.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_integer/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_integer.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_optional_integer(self, value: Optional[int]):
@@ -4349,9 +4624,10 @@ class TestableServer:
                     value_updated = True
                     self._property_read_write_two_integers.set_value(value)
                     self._property_read_write_two_integers.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "testable/{}/property/readWriteTwoIntegers/value".format(self._instance_id), self._property_read_write_two_integers.get_value(), self._property_read_write_two_integers.version
+                    prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_integers/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_integers.get_value(), self._property_read_write_two_integers.version)
                     self._conn.publish(state_msg)
 
     def set_read_write_two_integers(self, first: int, second: Optional[int]):
@@ -4393,7 +4669,10 @@ class TestableServer:
                 self._property_read_only_string.set_value(value)
                 self._property_read_only_string.version += 1
                 prop_obj = ReadOnlyStringProperty(value=self._property_read_only_string.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readOnlyString/value".format(self._instance_id), prop_obj, self._property_read_only_string.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_only_string/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_only_string.version)
                 self._conn.publish(state_msg)
 
     def set_read_only_string(self, value: str):
@@ -4430,7 +4709,10 @@ class TestableServer:
                 self._property_read_write_string.set_value(value)
                 self._property_read_write_string.version += 1
                 prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteString/value".format(self._instance_id), prop_obj, self._property_read_write_string.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_string/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_string.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_string(self, value: str):
@@ -4467,9 +4749,10 @@ class TestableServer:
                 self._property_read_write_optional_string.set_value(value)
                 self._property_read_write_optional_string.version += 1
                 prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalString/value".format(self._instance_id), prop_obj, self._property_read_write_optional_string.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_string/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_string.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_optional_string(self, value: Optional[str]):
@@ -4508,9 +4791,10 @@ class TestableServer:
                     value_updated = True
                     self._property_read_write_two_strings.set_value(value)
                     self._property_read_write_two_strings.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "testable/{}/property/readWriteTwoStrings/value".format(self._instance_id), self._property_read_write_two_strings.get_value(), self._property_read_write_two_strings.version
+                    prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_strings/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_strings.get_value(), self._property_read_write_two_strings.version)
                     self._conn.publish(state_msg)
 
     def set_read_write_two_strings(self, first: str, second: Optional[str]):
@@ -4552,7 +4836,10 @@ class TestableServer:
                 self._property_read_write_struct.set_value(value)
                 self._property_read_write_struct.version += 1
                 prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteStruct/value".format(self._instance_id), prop_obj, self._property_read_write_struct.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_struct/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_struct.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_struct(self, value: AllTypes):
@@ -4589,9 +4876,10 @@ class TestableServer:
                 self._property_read_write_optional_struct.set_value(value)
                 self._property_read_write_optional_struct.version += 1
                 prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalStruct/value".format(self._instance_id), prop_obj, self._property_read_write_optional_struct.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_struct/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_struct.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_optional_struct(self, value: Optional[AllTypes]):
@@ -4630,9 +4918,10 @@ class TestableServer:
                     value_updated = True
                     self._property_read_write_two_structs.set_value(value)
                     self._property_read_write_two_structs.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "testable/{}/property/readWriteTwoStructs/value".format(self._instance_id), self._property_read_write_two_structs.get_value(), self._property_read_write_two_structs.version
+                    prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_structs/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_structs.get_value(), self._property_read_write_two_structs.version)
                     self._conn.publish(state_msg)
 
     def set_read_write_two_structs(self, first: AllTypes, second: Optional[AllTypes]):
@@ -4674,7 +4963,8 @@ class TestableServer:
                 self._property_read_only_enum.set_value(value)
                 self._property_read_only_enum.version += 1
                 prop_obj = ReadOnlyEnumProperty(value=self._property_read_only_enum.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readOnlyEnum/value".format(self._instance_id), prop_obj, self._property_read_only_enum.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_only_enum/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_only_enum.version)
                 self._conn.publish(state_msg)
 
     def set_read_only_enum(self, value: Numbers):
@@ -4711,7 +5001,8 @@ class TestableServer:
                 self._property_read_write_enum.set_value(value)
                 self._property_read_write_enum.version += 1
                 prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteEnum/value".format(self._instance_id), prop_obj, self._property_read_write_enum.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_enum/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_enum.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_enum(self, value: Numbers):
@@ -4748,9 +5039,10 @@ class TestableServer:
                 self._property_read_write_optional_enum.set_value(value)
                 self._property_read_write_optional_enum.version += 1
                 prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalEnum/value".format(self._instance_id), prop_obj, self._property_read_write_optional_enum.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_enum/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_enum.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_optional_enum(self, value: Optional[Numbers]):
@@ -4789,9 +5081,10 @@ class TestableServer:
                     value_updated = True
                     self._property_read_write_two_enums.set_value(value)
                     self._property_read_write_two_enums.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "testable/{}/property/readWriteTwoEnums/value".format(self._instance_id), self._property_read_write_two_enums.get_value(), self._property_read_write_two_enums.version
+                    prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_enums/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_enums.get_value(), self._property_read_write_two_enums.version)
                     self._conn.publish(state_msg)
 
     def set_read_write_two_enums(self, first: Numbers, second: Optional[Numbers]):
@@ -4833,7 +5126,10 @@ class TestableServer:
                 self._property_read_write_datetime.set_value(value)
                 self._property_read_write_datetime.version += 1
                 prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_datetime.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_datetime/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_datetime.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_datetime(self, value: datetime):
@@ -4870,9 +5166,10 @@ class TestableServer:
                 self._property_read_write_optional_datetime.set_value(value)
                 self._property_read_write_optional_datetime.version += 1
                 prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalDatetime/value".format(self._instance_id), prop_obj, self._property_read_write_optional_datetime.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_datetime/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_datetime.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_optional_datetime(self, value: Optional[datetime]):
@@ -4911,11 +5208,10 @@ class TestableServer:
                     value_updated = True
                     self._property_read_write_two_datetimes.set_value(value)
                     self._property_read_write_two_datetimes.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "testable/{}/property/readWriteTwoDatetimes/value".format(self._instance_id),
-                        self._property_read_write_two_datetimes.get_value(),
-                        self._property_read_write_two_datetimes.version,
+                    prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_datetimes/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_datetimes.get_value(), self._property_read_write_two_datetimes.version)
                     self._conn.publish(state_msg)
 
     def set_read_write_two_datetimes(self, first: datetime, second: Optional[datetime]):
@@ -4957,7 +5253,10 @@ class TestableServer:
                 self._property_read_write_duration.set_value(value)
                 self._property_read_write_duration.version += 1
                 prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteDuration/value".format(self._instance_id), prop_obj, self._property_read_write_duration.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_duration/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_duration.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_duration(self, value: timedelta):
@@ -4994,9 +5293,10 @@ class TestableServer:
                 self._property_read_write_optional_duration.set_value(value)
                 self._property_read_write_optional_duration.version += 1
                 prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalDuration/value".format(self._instance_id), prop_obj, self._property_read_write_optional_duration.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_duration/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_duration.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_optional_duration(self, value: Optional[timedelta]):
@@ -5035,11 +5335,10 @@ class TestableServer:
                     value_updated = True
                     self._property_read_write_two_durations.set_value(value)
                     self._property_read_write_two_durations.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "testable/{}/property/readWriteTwoDurations/value".format(self._instance_id),
-                        self._property_read_write_two_durations.get_value(),
-                        self._property_read_write_two_durations.version,
+                    prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_durations/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_durations.get_value(), self._property_read_write_two_durations.version)
                     self._conn.publish(state_msg)
 
     def set_read_write_two_durations(self, first: timedelta, second: Optional[timedelta]):
@@ -5081,7 +5380,10 @@ class TestableServer:
                 self._property_read_write_binary.set_value(value)
                 self._property_read_write_binary.version += 1
                 prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.get_value())
-                state_msg = MessageCreator.property_state_message("testable/{}/property/readWriteBinary/value".format(self._instance_id), prop_obj, self._property_read_write_binary.version)
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_binary/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_binary.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_binary(self, value: bytes):
@@ -5118,9 +5420,10 @@ class TestableServer:
                 self._property_read_write_optional_binary.set_value(value)
                 self._property_read_write_optional_binary.version += 1
                 prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteOptionalBinary/value".format(self._instance_id), prop_obj, self._property_read_write_optional_binary.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_binary/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_binary.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_optional_binary(self, value: Optional[bytes]):
@@ -5159,9 +5462,10 @@ class TestableServer:
                     value_updated = True
                     self._property_read_write_two_binaries.set_value(value)
                     self._property_read_write_two_binaries.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "testable/{}/property/readWriteTwoBinaries/value".format(self._instance_id), self._property_read_write_two_binaries.get_value(), self._property_read_write_two_binaries.version
+                    prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_binaries/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_binaries.get_value(), self._property_read_write_two_binaries.version)
                     self._conn.publish(state_msg)
 
     def set_read_write_two_binaries(self, first: bytes, second: Optional[bytes]):
@@ -5203,9 +5507,10 @@ class TestableServer:
                 self._property_read_write_list_of_strings.set_value(value)
                 self._property_read_write_list_of_strings.version += 1
                 prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "testable/{}/property/readWriteListOfStrings/value".format(self._instance_id), prop_obj, self._property_read_write_list_of_strings.version
+                prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_list_of_strings/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_list_of_strings.version)
                 self._conn.publish(state_msg)
 
     def set_read_write_list_of_strings(self, value: List[str]):
@@ -5244,9 +5549,10 @@ class TestableServer:
                     value_updated = True
                     self._property_read_write_lists.set_value(value)
                     self._property_read_write_lists.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "testable/{}/property/readWriteLists/value".format(self._instance_id), self._property_read_write_lists.get_value(), self._property_read_write_lists.version
+                    prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_lists/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_lists.get_value(), self._property_read_write_lists.version)
                     self._conn.publish(state_msg)
 
     def set_read_write_lists(self, the_list: List[Numbers], optional_list: Optional[List[datetime]]):

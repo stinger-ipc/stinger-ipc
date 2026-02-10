@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
-    server = WeatherServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), initial_property_values)
+    server = WeatherServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), initial_property_values, prefix="example")
 
     @server.handle_refresh_daily_forecast
     def refresh_daily_forecast() -> None:

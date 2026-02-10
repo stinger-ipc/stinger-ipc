@@ -1,6 +1,5 @@
 from stingeripc.components import StingerSpec, Signal
-from stingeripc.topic import InterfaceTopicCreator
-
+from stingeripc.config import StingerConfig
 import unittest
 
 class TestSpecCreateManually(unittest.TestCase):
@@ -9,9 +8,8 @@ class TestSpecCreateManually(unittest.TestCase):
             "name": "test_interface",
             "version": "1.2.3",
         }
-        itc = InterfaceTopicCreator(self.interface['name'])
-        self.spec = StingerSpec(itc, self.interface)
-        signal = Signal(itc.signal_topic_creator(), "mySignal")
+        self.spec = StingerSpec(self.interface, StingerConfig())
+        signal = Signal("mySignal", self.spec)
         self.spec.add_signal(signal)
 
     def test_create_spec(self):
@@ -40,14 +38,16 @@ class TestSpecCreateFromStructure(unittest.TestCase):
                 }
             },
             "enums": {
-                "milk": [
-                    {"name": "one percent"},
-                    {"name": "two percent"},
-                ]
+                "milk": {
+                    "values": [
+                        {"name": "one percent"},
+                        {"name": "two percent"},
+                    ]
+                }
             }
         }
-        itc = InterfaceTopicCreator(self.stinger['interface']['name'])
-        self.spec = StingerSpec.new_spec_from_stinger(itc, self.stinger)
+
+        self.spec = StingerSpec.new_spec_from_stinger(self.stinger, StingerConfig())
 
     def test_create_spec(self):
         self.assertIsNotNone(self.spec)

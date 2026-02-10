@@ -65,21 +65,26 @@ class PropertyControls(Generic[T]):
 
 class SimpleServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, prefix: str):
         self._logger = logging.getLogger(f"SimpleServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SimpleServer instance %s", instance_id)
-        self._instance_id = instance_id
-        self._service_advert_topic = "simple/{}/interface".format(self._instance_id)
-        self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
+        self._instance_id = instance_id
+        self._topic_template_kwargs = {
+            "client_id": self._conn.client_id,
+            "service_id": instance_info.instance_id,
+            "prefix": instance_info.info.prefix,
+        }
+        self._service_advert_topic = "{prefix}/Simple/{service_id}/interface".format(**self._topic_template_kwargs)
+        self._re_advertise_server_interval_seconds = 120
         self._running = True
         self._conn.add_message_callback(self._receive_message)
 
         self._property_school: PropertyControls[str] = PropertyControls(value=initial_property_values.school, version=initial_property_values.school_version)
-        self._conn.subscribe("simple/{}/property/school/setValue".format(self._instance_id), self._receive_school_update_request_message)
+        self._conn.subscribe("{prefix}/Simple/{service_id}/property/school/update".format(**self._topic_template_kwargs), self._receive_school_update_request_message)
 
-        self._conn.subscribe("simple/{}/method/tradeNumbers".format(self._instance_id), self._process_trade_numbers_call)
+        self._conn.subscribe("{prefix}/Simple/{service_id}/method/trade_numbers/request".format(**self._topic_template_kwargs), self._process_trade_numbers_call)
         self._method_trade_numbers_handler = None  # type: Optional[Callable[[int], int]]
 
         self._publish_all_properties()
@@ -124,7 +129,12 @@ class SimpleServer:
 
     def publish_interface_info(self):
         """Publishes the interface info message to the interface info topic with an expiry interval."""
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
+        data = SimpleInterfaceInfo(
+            instance=self._instance_id,
+            connection_topic=(self._conn.online_topic or ""),
+            timestamp=datetime.now(UTC).isoformat(),
+            prefix=self._topic_param_prefix,
+        )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
@@ -144,7 +154,9 @@ class SimpleServer:
         with self._property_school.mutex:
             self._property_school.version += 1
             school_prop_obj = SchoolProperty(name=self._property_school.get_value())
-            state_msg = MessageCreator.property_state_message("simple/{}/property/school/value".format(self._instance_id), school_prop_obj, self._property_school.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/Simple/{service_id}/property/school/value".format(**self._topic_template_kwargs), school_prop_obj, self._property_school.version
+            )
             self._conn.publish(state_msg)
 
     def _publish_all_properties(self):
@@ -152,7 +164,7 @@ class SimpleServer:
         self.publish_school_value()
 
     def _receive_school_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `simple/{}/property/school/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7808aa2b5b80>>` topic
         in order to update the `school` property, this method is called to process that message
         and update the value of the property.
         """
@@ -168,7 +180,7 @@ class SimpleServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_school.version}' of the 'school' property")
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -183,7 +195,8 @@ class SimpleServer:
 
                 current_prop_obj = SchoolProperty(name=self._property_school.get_value())
 
-                state_msg = MessageCreator.property_state_message("simple/{}/property/school/value".format(self._instance_id), current_prop_obj, self._property_school.version)
+                prop_value_topic = "{prefix}/Simple/{service_id}/property/school/value".format(**self._topic_template_kwargs)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_school.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -225,7 +238,8 @@ class SimpleServer:
         payload = PersonEnteredSignalPayload(
             person=person,
         )
-        sig_msg = MessageCreator.signal_message("simple/{}/signal/personEntered".format(self._instance_id), payload)
+        signal_topic = "{prefix}/Simple/{service_id}/signal/person_entered".format(**self._topic_template_kwargs)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def handle_trade_numbers(self, handler: Callable[[int], int]):
@@ -315,7 +329,8 @@ class SimpleServer:
                 self._property_school.set_value(name)
                 self._property_school.version += 1
                 prop_obj = SchoolProperty(name=self._property_school.get_value())
-                state_msg = MessageCreator.property_state_message("simple/{}/property/school/value".format(self._instance_id), prop_obj, self._property_school.version)
+                prop_value_topic = "{prefix}/Simple/{service_id}/property/school/value".format(**self._topic_template_kwargs)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_school.version)
                 self._conn.publish(state_msg)
 
         if value_updated:

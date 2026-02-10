@@ -41,14 +41,15 @@ from .interface_types import *
 
 class SignalOnlyServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, prefix: str):
         self._logger = logging.getLogger(f"SignalOnlyServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SignalOnlyServer instance %s", instance_id)
-        self._instance_id = instance_id
-        self._service_advert_topic = "signalOnly/{}/interface".format(self._instance_id)
-        self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
+        self._instance_id = instance_id
+        self._topic_param_prefix = prefix  # type: str
+        self._service_advert_topic = "{prefix}/SignalOnly/{service_id}/interface".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        self._re_advertise_server_interval_seconds = 120
         self._running = True
         self._conn.add_message_callback(self._receive_message)
 
@@ -93,7 +94,12 @@ class SignalOnlyServer:
 
     def publish_interface_info(self):
         """Publishes the interface info message to the interface info topic with an expiry interval."""
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
+        data = SignalOnlyInterfaceInfo(
+            instance=self._instance_id,
+            connection_topic=(self._conn.online_topic or ""),
+            timestamp=datetime.now(UTC).isoformat(),
+            prefix=self._topic_param_prefix,
+        )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
@@ -121,7 +127,8 @@ class SignalOnlyServer:
             two=two,
             three=three,
         )
-        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/anotherSignal".format(self._instance_id), payload)
+        signal_topic = "{prefix}/SignalOnly/{service_id}/signal/anotherSignal".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_bark(self, word: str):
@@ -135,7 +142,8 @@ class SignalOnlyServer:
         payload = BarkSignalPayload(
             word=word,
         )
-        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/bark".format(self._instance_id), payload)
+        signal_topic = "{prefix}/SignalOnly/{service_id}/signal/bark".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_maybe_number(self, number: Optional[int]):
@@ -149,7 +157,8 @@ class SignalOnlyServer:
         payload = MaybeNumberSignalPayload(
             number=number if number is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/maybeNumber".format(self._instance_id), payload)
+        signal_topic = "{prefix}/SignalOnly/{service_id}/signal/maybe_number".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_maybe_name(self, name: Optional[str]):
@@ -163,7 +172,8 @@ class SignalOnlyServer:
         payload = MaybeNameSignalPayload(
             name=name if name is not None else None,
         )
-        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/maybeName".format(self._instance_id), payload)
+        signal_topic = "{prefix}/SignalOnly/{service_id}/signal/maybe_name".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_now(self, timestamp: datetime):
@@ -177,7 +187,8 @@ class SignalOnlyServer:
         payload = NowSignalPayload(
             timestamp=timestamp,
         )
-        sig_msg = MessageCreator.signal_message("signalOnly/{}/signal/now".format(self._instance_id), payload)
+        signal_topic = "{prefix}/SignalOnly/{service_id}/signal/now".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
 

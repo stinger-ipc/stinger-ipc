@@ -30,10 +30,11 @@ from stinger_python_utils.return_codes import (
     stinger_exception_factory,
 )
 from .interface_types import *
+from . import semver
 {%if stinger.properties | length > 0 %}
 from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
 {%endif%}
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -50,6 +51,7 @@ logging.basicConfig(level=logging.DEBUG)
 class DiscoveredInstance(BaseModel):
     instance_id: str
     {%if stinger.properties | length > 0 %}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}
+    info: {{stinger.name|UpperCamelCase}}InterfaceInfo
 
 
 class {{stinger.python.client_class_name}}:
@@ -63,24 +65,32 @@ class {{stinger.python.client_class_name}}:
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
-        {%if stinger.methods | length > 0 %}
+        self._topic_template_kwargs = {
+            "client_id": self._conn.client_id,
+            "service_id": instance_info.instance_id,
+            {%- for topic_param in config.topics.params %}
+            "{{topic_param|snake_case}}": instance_info.info.{{topic_param|snake_case}},
+            {%-endfor%}
+        }
+        {%-if stinger.methods | length > 0 %}
         self._pending_method_responses: Dict[str, Callable[..., None]] = {}
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
         self._property_{{prop_name|snake_case}} = instance_info.initial_property_values.{{prop_name|snake_case}}  # type: {{prop_spec.python_annotation}}
         self._property_{{prop_name|snake_case}}_mutex = threading.Lock()
         self._property_{{prop_name|snake_case}}_version = instance_info.initial_property_values.{{prop_name|snake_case}}_version
-        self._conn.subscribe("{{prop_spec.value_topic}}".format(self._service_id), self._receive_{{prop_name | snake_case}}_property_update_message)
+        self._conn.subscribe("{{prop_spec.value_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name | snake_case}}_property_update_message)
         self._changed_value_callbacks_for_{{prop_name}}: List[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
         {%-for sig_name in stinger.signals.keys()-%}
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}: List[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
         {%endfor-%}
         {%-if stinger.methods|length > 0-%}
-        self._conn.subscribe(f"{{stinger.all_methods_response_topic('{self._conn.client_id}')}}", self._receive_any_method_response_message)
+        self._all_methods_response_topic = "{{stinger.all_methods_response_topic()}}".format(**self._topic_template_kwargs)
+        self._conn.subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
         {%endif%}
         {%if stinger.properties|length > 0%}
-        self._property_response_topic = f"{{stinger.all_properties_response_topic('{self._conn.client_id}')}}"
+        self._property_response_topic = "{{stinger.all_properties_response_topic()}}".format(**self._topic_template_kwargs)
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
         {%endif%}
 
@@ -112,7 +122,7 @@ class {{stinger.python.client_class_name}}:
         self._logger.debug("Setting '{{prop_name}}' property to %s", property_obj)
         with self._property_{{prop_name|snake_case}}_mutex:
             req_msg = MessageCreator.property_update_request_message(
-                "{{prop_spec.update_topic}}".format(self._service_id), 
+                "{{prop_spec.update_topic()}}".format(**self._topic_template_kwargs),
                 property_obj, 
                 str(self._property_{{prop_name|snake_case}}_version), 
                 self._property_response_topic,
@@ -224,7 +234,7 @@ class {{stinger.python.client_class_name}}:
         """
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
         if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) == 1:
-            self._conn.subscribe("{{sig.topic}}".format(self._service_id), self._receive_{{sig_name|snake_case}}_signal_message)
+            self._conn.subscribe("{{sig.topic()}}".format(**self._topic_template_kwargs), self._receive_{{sig_name|snake_case}}_signal_message)
         return handler
     {%endfor%}
 
@@ -239,8 +249,7 @@ class {{stinger.python.client_class_name}}:
             {{arg.name}}={{arg.name|snake_case}},{%endfor%}
         )
         self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
-        response_topic = f"{{stinger.all_methods_response_topic('{self._conn.client_id}')}}"
-        req_msg = MessageCreator.request_message("{{method.topic}}".format(self._service_id), payload, response_topic, correlation_id)
+        req_msg = MessageCreator.request_message("{{method.request_topic()}}".format(**self._topic_template_kwargs), payload, self._all_methods_response_topic, correlation_id)
         self._conn.publish(req_msg)
         return fut
 
@@ -343,17 +352,17 @@ class {{stinger.python.client_class_name}}Discoverer:
         self._build_binding = build_binding
         self._logger = logging.getLogger('{{stinger.python.client_class_name}}Discoverer')
         self._logger.setLevel(logging.DEBUG)
-        service_discovery_topic = "{{stinger.interface_info_topic}}".format('+')
+        service_discovery_topic = "{{stinger.interface_info_topic()}}".format(client_id='+', service_id='+', {% for topic_param in config.topics.params %}{{topic_param}}='+', {% endfor %})
         self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
         {%-if stinger.properties|length > 0%}
-        self._conn.subscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value", self._process_property_value_message)
+        self._conn.subscribe("{{stinger.all_properties_value_topic()}}".format(client_id='+', service_id='+', {% for topic_param in config.topics.params %}{{topic_param}}='+', {% endfor %}), self._process_property_value_message)
         {%-endif%}
         self._mutex = threading.Lock()
         self._pending_futures : List[futures.Future] = []
         self._removed_service_callbacks: List[Callable[[str], None]] = []
         
         # For partially discovered services
-        self._discovered_interface_infos = dict() # type: Dict[str, InterfaceInfo]
+        self._discovered_interface_infos = dict() # type: Dict[str, {{stinger.name|UpperCamelCase}}InterfaceInfo]
         {%-if stinger.properties|length > 0%}
         self._discovered_properties = dict() # type: Dict[str, Dict[str, Any]]
         {%-endif%}
@@ -415,7 +424,8 @@ class {{stinger.python.client_class_name}}Discoverer:
 
                 entry = DiscoveredInstance(
                     instance_id=instance_id,
-                    {%if stinger.properties|length > 0 %}initial_property_values={{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id]){%endif%}
+                    {%if stinger.properties|length > 0 %}initial_property_values={{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id]){%endif%},
+                    info=self._discovered_interface_infos[instance_id]
                 )
                 is_new_entry = not instance_id in self._discovered_services
 
@@ -441,9 +451,20 @@ class {{stinger.python.client_class_name}}Discoverer:
         self._logger.debug("Processing service discovery message on topic %s", message.topic)
         if len(message.payload) > 0:
             try:
-                service_info = InterfaceInfo.model_validate_json(message.payload)
+                service_info = {{stinger.name|UpperCamelCase}}InterfaceInfo.model_validate_json(message.payload)
+                if not semver.is_compatible(service_info.version):
+                    self._logger.warning("Discovered service %s has incompatible version %s.", service_info.instance, service_info.version)
                 with self._mutex:
                     self._discovered_interface_infos[service_info.instance] = service_info
+            except ValidationError as e:
+                self._logger.warning("Discovery message did not match expected format: %s", e)
+                try:
+                    raw_info = json.loads(message.payload)
+                    instance_id = raw_info.get("instance", "unknown")
+                    version = raw_info.get("version", "0.0.0")
+                    self._logger.error("Discovery message for instance '%s' has incompatible version %s.", instance_id, version)
+                except Exception as e2:
+                    self._logger.warning("Failed to parse discovery message payload as JSON for error logging: %s", e2)
             except Exception as e:
                 self._logger.warning("Failed to process service discovery message: %s", e)
             self._check_for_fully_discovered(service_info.instance)
@@ -468,8 +489,10 @@ class {{stinger.python.client_class_name}}Discoverer:
         """ Processes a property value message for discovery purposes.
         """
         self._logger.debug("Processing property value message on topic %s", message.topic)
-        instance_id = message.topic.split('/')[1]
-        property_name = message.topic.split('/')[3]
+        instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}}
+        instance_id = message.topic.split('/')[instance_id_expected_index]
+        property_name_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "property_name")}}
+        property_name = message.topic.split('/')[property_name_expected_index]
         user_properties  = message.user_properties or {}
         prop_version = user_properties.get("PropertyVersion", "-1")
 
@@ -495,5 +518,5 @@ class {{stinger.python.client_class_name}}Discoverer:
                     return
                 {%endfor%}
             
-            self._check_for_fully_discovered(instance_id)
+        self._check_for_fully_discovered(instance_id)
     {%endif%}

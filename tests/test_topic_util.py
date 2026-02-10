@@ -1,4 +1,9 @@
-from stingeripc.topic_template import topic_template_fill_in, get_topic_arguments, is_valid_topic_template
+from stingeripc.topic_util import (
+    topic_template_fill_in,
+    get_topic_arguments,
+    is_valid_topic_template,
+    get_argument_position,
+)
 
 import unittest
 
@@ -228,6 +233,88 @@ class TestIsValidTopicTemplate(unittest.TestCase):
         template = "{interface_name!r}/{signal_name!s}"
         result = is_valid_topic_template(template, [])
         self.assertTrue(result)
+
+
+class TestGetArgumentPosition(unittest.TestCase):
+    def test_property_name_at_index_2(self):
+        """Test that property_name is at index 2 in the template."""
+        template = "{service_id}/properties/{property_name}/update"
+        result = get_argument_position(template, "property_name")
+        self.assertEqual(result, 2)
+
+    def test_nonexistent_argument_returns_none(self):
+        """Test that a nonexistent argument returns None."""
+        template = "{service_id}/properties/{property_name}/update"
+        result = get_argument_position(template, "property_name_2")
+        self.assertIsNone(result)
+
+    def test_first_argument_at_index_0(self):
+        """Test argument at the beginning of template."""
+        template = "{interface_name}/signal/{signal_name}"
+        result = get_argument_position(template, "interface_name")
+        self.assertEqual(result, 0)
+
+    def test_last_argument_position(self):
+        """Test argument at the end of template."""
+        template = "{interface_name}/signal/{signal_name}"
+        result = get_argument_position(template, "signal_name")
+        self.assertEqual(result, 2)
+
+    def test_single_argument_template(self):
+        """Test template with only one argument."""
+        template = "{service_id}"
+        result = get_argument_position(template, "service_id")
+        self.assertEqual(result, 0)
+
+    def test_no_slashes_template(self):
+        """Test template without slashes."""
+        template = "prefix{arg}suffix"
+        result = get_argument_position(template, "arg")
+        self.assertEqual(result, 0)
+
+    def test_multiple_slashes_before_argument(self):
+        """Test argument after multiple path segments."""
+        template = "a/b/c/d/{target}/e/f"
+        result = get_argument_position(template, "target")
+        self.assertEqual(result, 4)
+
+    def test_empty_template(self):
+        """Test with empty template."""
+        template = ""
+        result = get_argument_position(template, "anything")
+        self.assertIsNone(result)
+
+    def test_template_without_arguments(self):
+        """Test template with no placeholders."""
+        template = "static/path/to/resource"
+        result = get_argument_position(template, "anything")
+        self.assertIsNone(result)
+
+    def test_complex_template_multiple_arguments(self):
+        """Test complex template with multiple arguments."""
+        template = "{interface_name}/{service_id}/method/{method_name}/request"
+        self.assertEqual(get_argument_position(template, "interface_name"), 0)
+        self.assertEqual(get_argument_position(template, "service_id"), 1)
+        self.assertEqual(get_argument_position(template, "method_name"), 3)
+
+    def test_argument_with_format_spec(self):
+        """Test that format specs don't affect position."""
+        template = "{interface_name}/{value:.2f}/data"
+        result = get_argument_position(template, "value")
+        self.assertEqual(result, 1)
+
+    def test_argument_with_conversion(self):
+        """Test that conversions don't affect position."""
+        template = "{interface_name}/{name!r}/info"
+        result = get_argument_position(template, "name")
+        self.assertEqual(result, 1)
+
+    def test_consecutive_arguments_same_segment(self):
+        """Test multiple arguments in the same segment."""
+        template = "data/{interface_name}_{service_id}/resource"
+        # Both should be in segment 1
+        self.assertEqual(get_argument_position(template, "interface_name"), 1)
+        self.assertEqual(get_argument_position(template, "service_id"), 1)
 
 
 if __name__ == "__main__":

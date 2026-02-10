@@ -1,0 +1,7 @@
+[topics]
+params = ["prefix"]
+signals = "{prefix}/{interface_name}/{service_id}/signal/{signal_name}"
+property_values = "{prefix}/{interface_name}/{service_id}/property/{property_name}/value"
+property_updates = "{prefix}/{interface_name}/{service_id}/property/{property_name}/update"
+method_requests = "{prefix}/{interface_name}/{service_id}/method/{method_name}/request"
+interface_discovery = "{prefix}/{interface_name}/{service_id}/interface"

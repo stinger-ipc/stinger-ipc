@@ -40,7 +40,7 @@ class TestInvalidArgCreation(unittest.TestCase):
 
     def test_arg_name_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            Arg.new_arg_primitive_from_stinger({"type": "integer"})  
+            ArgPrimitive.new_arg_primitive_from_stinger({"type": "integer"})  
     
     def test_arg_primitive_type_missing(self):
         with self.assertRaises(InvalidStingerStructure):
@@ -48,7 +48,7 @@ class TestInvalidArgCreation(unittest.TestCase):
 
     def test_arg_type_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            Arg.new_arg_primitive_from_stinger({"name": "foo"})  
+            ArgPrimitive.new_arg_primitive_from_stinger({"name": "foo"})  
 
 class TestPythonTypes(unittest.TestCase):
 

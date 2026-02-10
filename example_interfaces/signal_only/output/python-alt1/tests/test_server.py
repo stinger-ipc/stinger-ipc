@@ -76,11 +76,11 @@ class TestSignalOnlyServerSignals:
         server.emit_another_signal(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("signalOnly/{}/signal/anotherSignal".format("+"))
+        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a3399520>>".format("+"))
         assert len(published_list) == 1, "No message was published for signal 'another_signal'"
 
         msg = published_list[0]
-        expected_topic = "signalOnly/{}/signal/anotherSignal".format(server.instance_id)
+        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a3399520>>".format(server.instance_id)
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -97,11 +97,11 @@ class TestSignalOnlyServerSignals:
         server.emit_bark(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("signalOnly/{}/signal/bark".format("+"))
+        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a37b38c0>>".format("+"))
         assert len(published_list) == 1, "No message was published for signal 'bark'"
 
         msg = published_list[0]
-        expected_topic = "signalOnly/{}/signal/bark".format(server.instance_id)
+        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a37b38c0>>".format(server.instance_id)
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -118,11 +118,11 @@ class TestSignalOnlyServerSignals:
         server.emit_maybe_number(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("signalOnly/{}/signal/maybeNumber".format("+"))
+        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a253abd0>>".format("+"))
         assert len(published_list) == 1, "No message was published for signal 'maybe_number'"
 
         msg = published_list[0]
-        expected_topic = "signalOnly/{}/signal/maybeNumber".format(server.instance_id)
+        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a253abd0>>".format(server.instance_id)
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -139,11 +139,11 @@ class TestSignalOnlyServerSignals:
         server.emit_maybe_name(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("signalOnly/{}/signal/maybeName".format("+"))
+        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a253ad20>>".format("+"))
         assert len(published_list) == 1, "No message was published for signal 'maybe_name'"
 
         msg = published_list[0]
-        expected_topic = "signalOnly/{}/signal/maybeName".format(server.instance_id)
+        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a253ad20>>".format(server.instance_id)
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -160,11 +160,11 @@ class TestSignalOnlyServerSignals:
         server.emit_now(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("signalOnly/{}/signal/now".format("+"))
+        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a253ab10>>".format("+"))
         assert len(published_list) == 1, "No message was published for signal 'now'"
 
         msg = published_list[0]
-        expected_topic = "signalOnly/{}/signal/now".format(server.instance_id)
+        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7318a253ab10>>".format(server.instance_id)
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload

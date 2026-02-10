@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
-    server = SimpleServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), property_access)
+    server = SimpleServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), property_access, prefix="example")
 
     @server.handle_trade_numbers
     def trade_numbers(your_number: int) -> int:

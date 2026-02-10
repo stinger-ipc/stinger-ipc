@@ -81,7 +81,7 @@ if __name__ == '__main__':
     
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
-    server = {{stinger.python.server_class_name}}(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"){%if stinger.properties | length > 0 %}, {% if config.properties.stinger_owned_values %}initial_property_values{%else%}property_access{%endif%}{%endif%})
+    server = {{stinger.python.server_class_name}}(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"){%if stinger.properties | length > 0 %}, {% if config.properties.stinger_owned_values %}initial_property_values{%else%}property_access{%endif%}{%endif%}{%for topic_param in config.topics.params %}, {{topic_param|snake_case}}="example"{% endfor %})
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}} 

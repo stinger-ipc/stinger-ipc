@@ -64,40 +64,67 @@ class PropertyControls(Generic[T]):
 
 class FullServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str, property_access: FullPropertyAccess):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, property_access: FullPropertyAccess, prefix: str):
         self._logger = logging.getLogger(f"FullServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing FullServer instance %s", instance_id)
-        self._instance_id = instance_id
-        self._service_advert_topic = "full/{}/interface".format(self._instance_id)
-        self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
+        self._instance_id = instance_id
+        self._topic_param_prefix = prefix  # type: str
+        self._service_advert_topic = "{prefix}/Full/{service_id}/interface".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        self._re_advertise_server_interval_seconds = 120
         self._running = True
         self._conn.add_message_callback(self._receive_message)
         self._property_favorite_number: PropertyControls[int] = PropertyControls(getter=property_access.favorite_number_getter, setter=property_access.favorite_number_setter, version=1)
-        self._conn.subscribe("full/{}/property/favoriteNumber/setValue".format(self._instance_id), self._receive_favorite_number_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/Full/{service_id}/property/favorite_number/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_favorite_number_update_request_message,
+        )
         self._property_favorite_foods: PropertyControls[FavoriteFoodsProperty] = PropertyControls(getter=property_access.favorite_foods_getter, setter=property_access.favorite_foods_setter, version=1)
-        self._conn.subscribe("full/{}/property/favoriteFoods/setValue".format(self._instance_id), self._receive_favorite_foods_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/Full/{service_id}/property/favorite_foods/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_favorite_foods_update_request_message,
+        )
         self._property_lunch_menu: PropertyControls[LunchMenuProperty] = PropertyControls(getter=property_access.lunch_menu_getter, version=1)
         self._property_family_name: PropertyControls[str] = PropertyControls(getter=property_access.family_name_getter, setter=property_access.family_name_setter, version=1)
-        self._conn.subscribe("full/{}/property/familyName/setValue".format(self._instance_id), self._receive_family_name_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/Full/{service_id}/property/family_name/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_family_name_update_request_message,
+        )
         self._property_last_breakfast_time: PropertyControls[datetime] = PropertyControls(
             getter=property_access.last_breakfast_time_getter, setter=property_access.last_breakfast_time_setter, version=1
         )
-        self._conn.subscribe("full/{}/property/lastBreakfastTime/setValue".format(self._instance_id), self._receive_last_breakfast_time_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/Full/{service_id}/property/last_breakfast_time/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_last_breakfast_time_update_request_message,
+        )
         self._property_last_birthdays: PropertyControls[LastBirthdaysProperty] = PropertyControls(getter=property_access.last_birthdays_getter, setter=property_access.last_birthdays_setter, version=1)
-        self._conn.subscribe("full/{}/property/lastBirthdays/setValue".format(self._instance_id), self._receive_last_birthdays_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/Full/{service_id}/property/last_birthdays/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_last_birthdays_update_request_message,
+        )
 
-        self._conn.subscribe("full/{}/method/addNumbers".format(self._instance_id), self._process_add_numbers_call)
+        self._conn.subscribe(
+            "{prefix}/Full/{service_id}/method/addNumbers/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix), self._process_add_numbers_call
+        )
         self._method_add_numbers_handler = None  # type: Optional[Callable[[int, int, Optional[int]], int]]
 
-        self._conn.subscribe("full/{}/method/doSomething".format(self._instance_id), self._process_do_something_call)
+        self._conn.subscribe(
+            "{prefix}/Full/{service_id}/method/doSomething/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_do_something_call,
+        )
         self._method_do_something_handler = None  # type: Optional[Callable[[str], DoSomethingMethodResponse]]
 
-        self._conn.subscribe("full/{}/method/whatTimeIsIt".format(self._instance_id), self._process_what_time_is_it_call)
+        self._conn.subscribe(
+            "{prefix}/Full/{service_id}/method/what_time_is_it/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_what_time_is_it_call,
+        )
         self._method_what_time_is_it_handler = None  # type: Optional[Callable[[], datetime]]
 
-        self._conn.subscribe("full/{}/method/holdTemperature".format(self._instance_id), self._process_hold_temperature_call)
+        self._conn.subscribe(
+            "{prefix}/Full/{service_id}/method/hold_temperature/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_hold_temperature_call,
+        )
         self._method_hold_temperature_handler = None  # type: Optional[Callable[[float], bool]]
 
         self._publish_all_properties()
@@ -142,7 +169,12 @@ class FullServer:
 
     def publish_interface_info(self):
         """Publishes the interface info message to the interface info topic with an expiry interval."""
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
+        data = FullInterfaceInfo(
+            instance=self._instance_id,
+            connection_topic=(self._conn.online_topic or ""),
+            timestamp=datetime.now(UTC).isoformat(),
+            prefix=self._topic_param_prefix,
+        )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
@@ -158,7 +190,11 @@ class FullServer:
         with self._property_favorite_number.mutex:
             self._property_favorite_number.version += 1
             favorite_number_prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-            state_msg = MessageCreator.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), favorite_number_prop_obj, self._property_favorite_number.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/Full/{service_id}/property/favorite_number/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                favorite_number_prop_obj,
+                self._property_favorite_number.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_favorite_foods_value(self, *_, **__):
@@ -170,7 +206,11 @@ class FullServer:
         with self._property_favorite_foods.mutex:
             self._property_favorite_foods.version += 1
             favorite_foods_prop_obj = self._property_favorite_foods.get_value()
-            state_msg = MessageCreator.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), favorite_foods_prop_obj, self._property_favorite_foods.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/Full/{service_id}/property/favorite_foods/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                favorite_foods_prop_obj,
+                self._property_favorite_foods.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_lunch_menu_value(self, *_, **__):
@@ -182,7 +222,11 @@ class FullServer:
         with self._property_lunch_menu.mutex:
             self._property_lunch_menu.version += 1
             lunch_menu_prop_obj = self._property_lunch_menu.get_value()
-            state_msg = MessageCreator.property_state_message("full/{}/property/lunchMenu/value".format(self._instance_id), lunch_menu_prop_obj, self._property_lunch_menu.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/Full/{service_id}/property/lunch_menu/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                lunch_menu_prop_obj,
+                self._property_lunch_menu.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_family_name_value(self, *_, **__):
@@ -194,7 +238,11 @@ class FullServer:
         with self._property_family_name.mutex:
             self._property_family_name.version += 1
             family_name_prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-            state_msg = MessageCreator.property_state_message("full/{}/property/familyName/value".format(self._instance_id), family_name_prop_obj, self._property_family_name.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/Full/{service_id}/property/family_name/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                family_name_prop_obj,
+                self._property_family_name.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_last_breakfast_time_value(self, *_, **__):
@@ -207,7 +255,9 @@ class FullServer:
             self._property_last_breakfast_time.version += 1
             last_breakfast_time_prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
             state_msg = MessageCreator.property_state_message(
-                "full/{}/property/lastBreakfastTime/value".format(self._instance_id), last_breakfast_time_prop_obj, self._property_last_breakfast_time.version
+                "{prefix}/Full/{service_id}/property/last_breakfast_time/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                last_breakfast_time_prop_obj,
+                self._property_last_breakfast_time.version,
             )
             self._conn.publish(state_msg)
 
@@ -220,7 +270,11 @@ class FullServer:
         with self._property_last_birthdays.mutex:
             self._property_last_birthdays.version += 1
             last_birthdays_prop_obj = self._property_last_birthdays.get_value()
-            state_msg = MessageCreator.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), last_birthdays_prop_obj, self._property_last_birthdays.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/Full/{service_id}/property/last_birthdays/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                last_birthdays_prop_obj,
+                self._property_last_birthdays.version,
+            )
             self._conn.publish(state_msg)
 
     def _publish_all_properties(self):
@@ -233,7 +287,7 @@ class FullServer:
         self.publish_last_birthdays_value()
 
     def _receive_favorite_number_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `full/{}/property/favoriteNumber/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7d2dece53e90>>` topic
         in order to update the `favorite_number` property, this method is called to process that message
         and update the value of the property.
         """
@@ -249,7 +303,7 @@ class FullServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_favorite_number.version}' of the 'favorite_number' property")
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -264,7 +318,8 @@ class FullServer:
 
                 current_prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
 
-                state_msg = MessageCreator.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), current_prop_obj, self._property_favorite_number.version)
+                prop_value_topic = "{prefix}/Full/{service_id}/property/favorite_number/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_favorite_number.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -290,7 +345,7 @@ class FullServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_favorite_foods_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `full/{}/property/favoriteFoods/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7d2dece98320>>` topic
         in order to update the `favorite_foods` property, this method is called to process that message
         and update the value of the property.
         """
@@ -306,7 +361,7 @@ class FullServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_favorite_foods.version}' of the 'favorite_foods' property")
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -321,7 +376,8 @@ class FullServer:
 
                 current_prop_obj = self._property_favorite_foods.get_value()  # type: FavoriteFoodsProperty
 
-                state_msg = MessageCreator.property_state_message("full/{}/property/favoriteFoods/value".format(self._instance_id), current_prop_obj, self._property_favorite_foods.version)
+                prop_value_topic = "{prefix}/Full/{service_id}/property/favorite_foods/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_favorite_foods.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -347,7 +403,7 @@ class FullServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_family_name_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `full/{}/property/familyName/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7d2dece98800>>` topic
         in order to update the `family_name` property, this method is called to process that message
         and update the value of the property.
         """
@@ -363,7 +419,7 @@ class FullServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_family_name.version}' of the 'family_name' property")
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -378,7 +434,8 @@ class FullServer:
 
                 current_prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
 
-                state_msg = MessageCreator.property_state_message("full/{}/property/familyName/value".format(self._instance_id), current_prop_obj, self._property_family_name.version)
+                prop_value_topic = "{prefix}/Full/{service_id}/property/family_name/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_family_name.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -402,7 +459,7 @@ class FullServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_last_breakfast_time_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `full/{}/property/lastBreakfastTime/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7d2dece98410>>` topic
         in order to update the `last_breakfast_time` property, this method is called to process that message
         and update the value of the property.
         """
@@ -420,7 +477,7 @@ class FullServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -435,7 +492,8 @@ class FullServer:
 
                 current_prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
 
-                state_msg = MessageCreator.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), current_prop_obj, self._property_last_breakfast_time.version)
+                prop_value_topic = "{prefix}/Full/{service_id}/property/last_breakfast_time/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_last_breakfast_time.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -461,7 +519,7 @@ class FullServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_last_birthdays_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `full/{}/property/lastBirthdays/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x7d2dece98c20>>` topic
         in order to update the `last_birthdays` property, this method is called to process that message
         and update the value of the property.
         """
@@ -477,7 +535,7 @@ class FullServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_last_birthdays.version}' of the 'last_birthdays' property")
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -492,7 +550,8 @@ class FullServer:
 
                 current_prop_obj = self._property_last_birthdays.get_value()  # type: LastBirthdaysProperty
 
-                state_msg = MessageCreator.property_state_message("full/{}/property/lastBirthdays/value".format(self._instance_id), current_prop_obj, self._property_last_birthdays.version)
+                prop_value_topic = "{prefix}/Full/{service_id}/property/last_birthdays/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_last_birthdays.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -535,7 +594,8 @@ class FullServer:
             day_of_month=day_of_month,
             day_of_week=day_of_week,
         )
-        sig_msg = MessageCreator.signal_message("full/{}/signal/todayIs".format(self._instance_id), payload)
+        signal_topic = "{prefix}/Full/{service_id}/signal/todayIs".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def emit_random_word(self, word: str, time: datetime):
@@ -552,7 +612,8 @@ class FullServer:
             word=word,
             time=time,
         )
-        sig_msg = MessageCreator.signal_message("full/{}/signal/randomWord".format(self._instance_id), payload)
+        signal_topic = "{prefix}/Full/{service_id}/signal/randomWord".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
@@ -854,7 +915,8 @@ class FullServer:
                 self._property_favorite_number.set_value(number)
                 self._property_favorite_number.version += 1
                 prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-                state_msg = MessageCreator.property_state_message("full/{}/property/favoriteNumber/value".format(self._instance_id), prop_obj, self._property_favorite_number.version)
+                prop_value_topic = "{prefix}/Full/{service_id}/property/favorite_number/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_favorite_number.version)
                 self._conn.publish(state_msg)
 
     def set_favorite_number(self, number: int):
@@ -893,9 +955,8 @@ class FullServer:
                     value_updated = True
                     self._property_favorite_foods.set_value(value)
                     self._property_favorite_foods.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "full/{}/property/favoriteFoods/value".format(self._instance_id), self._property_favorite_foods.get_value(), self._property_favorite_foods.version
-                    )
+                    prop_value_topic = "{prefix}/Full/{service_id}/property/favorite_foods/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_favorite_foods.get_value(), self._property_favorite_foods.version)
                     self._conn.publish(state_msg)
 
     def set_favorite_foods(self, drink: str, slices_of_pizza: int, breakfast: Optional[str]):
@@ -942,9 +1003,8 @@ class FullServer:
                     value_updated = True
                     self._property_lunch_menu.set_value(value)
                     self._property_lunch_menu.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "full/{}/property/lunchMenu/value".format(self._instance_id), self._property_lunch_menu.get_value(), self._property_lunch_menu.version
-                    )
+                    prop_value_topic = "{prefix}/Full/{service_id}/property/lunch_menu/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_lunch_menu.get_value(), self._property_lunch_menu.version)
                     self._conn.publish(state_msg)
 
     def set_lunch_menu(self, monday: Lunch, tuesday: Lunch):
@@ -986,7 +1046,8 @@ class FullServer:
                 self._property_family_name.set_value(family_name)
                 self._property_family_name.version += 1
                 prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-                state_msg = MessageCreator.property_state_message("full/{}/property/familyName/value".format(self._instance_id), prop_obj, self._property_family_name.version)
+                prop_value_topic = "{prefix}/Full/{service_id}/property/family_name/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_family_name.version)
                 self._conn.publish(state_msg)
 
     def set_family_name(self, family_name: str):
@@ -1023,7 +1084,8 @@ class FullServer:
                 self._property_last_breakfast_time.set_value(timestamp)
                 self._property_last_breakfast_time.version += 1
                 prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
-                state_msg = MessageCreator.property_state_message("full/{}/property/lastBreakfastTime/value".format(self._instance_id), prop_obj, self._property_last_breakfast_time.version)
+                prop_value_topic = "{prefix}/Full/{service_id}/property/last_breakfast_time/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_last_breakfast_time.version)
                 self._conn.publish(state_msg)
 
     def set_last_breakfast_time(self, timestamp: datetime):
@@ -1062,9 +1124,8 @@ class FullServer:
                     value_updated = True
                     self._property_last_birthdays.set_value(value)
                     self._property_last_birthdays.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "full/{}/property/lastBirthdays/value".format(self._instance_id), self._property_last_birthdays.get_value(), self._property_last_birthdays.version
-                    )
+                    prop_value_topic = "{prefix}/Full/{service_id}/property/last_birthdays/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_last_birthdays.get_value(), self._property_last_birthdays.version)
                     self._conn.publish(state_msg)
 
     def set_last_birthdays(self, mom: datetime, dad: datetime, sister: Optional[datetime], brothers_age: Optional[int]):

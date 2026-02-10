@@ -64,13 +64,16 @@ def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
         return base64.b64decode(value)
     return value
 
-class InterfaceInfo(BaseModel):
-    interface_name: str = Field(default="{{stinger.name}}") # hi
+class {{stinger.name|UpperCamelCase}}InterfaceInfo(BaseModel):
+    interface_name: str = Field(default="{{stinger.name}}")
     title: str = Field(default="{{stinger.title or stinger.name}}")
     version: str = Field(default="{{stinger.version}}")
     instance: str
     connection_topic: str
     timestamp: str
+    {%-for topic_param in config.topics.params%}
+    {{topic_param|snake_case}}: str
+    {%-endfor%}
 
 # There are {{stinger.enums|length}} enum definitions
 {%-for ie_name, ie in stinger.enums.items() %}

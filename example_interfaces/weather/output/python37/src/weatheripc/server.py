@@ -67,19 +67,23 @@ class PropertyControls(Generic[T]):
 
 class WeatherServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: WeatherInitialPropertyValues):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: WeatherInitialPropertyValues, prefix: str):
         self._logger = logging.getLogger(f"WeatherServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing WeatherServer instance %s", instance_id)
-        self._instance_id = instance_id
-        self._service_advert_topic = "weather/{}/interface".format(self._instance_id)
-        self._re_advertise_server_interval_seconds = 120  # every two minutes
         self._conn = connection
+        self._instance_id = instance_id
+        self._topic_param_prefix = prefix  # type: str
+        self._service_advert_topic = "{prefix}/weather/{service_id}/interface".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        self._re_advertise_server_interval_seconds = 120
         self._running = True
         self._conn.add_message_callback(self._receive_message)
 
         self._property_location: PropertyControls[LocationProperty] = PropertyControls(value=initial_property_values.location, version=initial_property_values.location_version)
-        self._conn.subscribe("weather/{}/property/location/setValue".format(self._instance_id), self._receive_location_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/weather/{service_id}/property/location/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_location_update_request_message,
+        )
 
         self._property_current_temperature: PropertyControls[float] = PropertyControls(value=initial_property_values.current_temperature, version=initial_property_values.current_temperature_version)
 
@@ -96,25 +100,43 @@ class WeatherServer:
         self._property_current_condition_refresh_interval: PropertyControls[int] = PropertyControls(
             value=initial_property_values.current_condition_refresh_interval, version=initial_property_values.current_condition_refresh_interval_version
         )
-        self._conn.subscribe("weather/{}/property/currentConditionRefreshInterval/setValue".format(self._instance_id), self._receive_current_condition_refresh_interval_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/weather/{service_id}/property/current_condition_refresh_interval/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_current_condition_refresh_interval_update_request_message,
+        )
 
         self._property_hourly_forecast_refresh_interval: PropertyControls[int] = PropertyControls(
             value=initial_property_values.hourly_forecast_refresh_interval, version=initial_property_values.hourly_forecast_refresh_interval_version
         )
-        self._conn.subscribe("weather/{}/property/hourlyForecastRefreshInterval/setValue".format(self._instance_id), self._receive_hourly_forecast_refresh_interval_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_hourly_forecast_refresh_interval_update_request_message,
+        )
 
         self._property_daily_forecast_refresh_interval: PropertyControls[int] = PropertyControls(
             value=initial_property_values.daily_forecast_refresh_interval, version=initial_property_values.daily_forecast_refresh_interval_version
         )
-        self._conn.subscribe("weather/{}/property/dailyForecastRefreshInterval/setValue".format(self._instance_id), self._receive_daily_forecast_refresh_interval_update_request_message)
+        self._conn.subscribe(
+            "{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/update".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._receive_daily_forecast_refresh_interval_update_request_message,
+        )
 
-        self._conn.subscribe("weather/{}/method/refreshDailyForecast".format(self._instance_id), self._process_refresh_daily_forecast_call)
+        self._conn.subscribe(
+            "{prefix}/weather/{service_id}/method/refresh_daily_forecast/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_refresh_daily_forecast_call,
+        )
         self._method_refresh_daily_forecast_handler = None  # type: Optional[Callable[[], None]]
 
-        self._conn.subscribe("weather/{}/method/refreshHourlyForecast".format(self._instance_id), self._process_refresh_hourly_forecast_call)
+        self._conn.subscribe(
+            "{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_refresh_hourly_forecast_call,
+        )
         self._method_refresh_hourly_forecast_handler = None  # type: Optional[Callable[[], None]]
 
-        self._conn.subscribe("weather/{}/method/refreshCurrentConditions".format(self._instance_id), self._process_refresh_current_conditions_call)
+        self._conn.subscribe(
+            "{prefix}/weather/{service_id}/method/refresh_current_conditions/request".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+            self._process_refresh_current_conditions_call,
+        )
         self._method_refresh_current_conditions_handler = None  # type: Optional[Callable[[], None]]
 
         self._publish_all_properties()
@@ -159,7 +181,12 @@ class WeatherServer:
 
     def publish_interface_info(self):
         """Publishes the interface info message to the interface info topic with an expiry interval."""
-        data = InterfaceInfo(instance=self._instance_id, connection_topic=(self._conn.online_topic or ""), timestamp=datetime.now(UTC).isoformat())
+        data = WeatherInterfaceInfo(
+            instance=self._instance_id,
+            connection_topic=(self._conn.online_topic or ""),
+            timestamp=datetime.now(UTC).isoformat(),
+            prefix=self._topic_param_prefix,
+        )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
@@ -179,7 +206,11 @@ class WeatherServer:
         with self._property_location.mutex:
             self._property_location.version += 1
             location_prop_obj = self._property_location.get_value()
-            state_msg = MessageCreator.property_state_message("weather/{}/property/location/value".format(self._instance_id), location_prop_obj, self._property_location.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/weather/{service_id}/property/location/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                location_prop_obj,
+                self._property_location.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_current_temperature_value(self, *_, **__):
@@ -196,7 +227,9 @@ class WeatherServer:
             self._property_current_temperature.version += 1
             current_temperature_prop_obj = CurrentTemperatureProperty(temperature_f=self._property_current_temperature.get_value())
             state_msg = MessageCreator.property_state_message(
-                "weather/{}/property/currentTemperature/value".format(self._instance_id), current_temperature_prop_obj, self._property_current_temperature.version
+                "{prefix}/weather/{service_id}/property/current_temperature/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                current_temperature_prop_obj,
+                self._property_current_temperature.version,
             )
             self._conn.publish(state_msg)
 
@@ -214,7 +247,9 @@ class WeatherServer:
             self._property_current_condition.version += 1
             current_condition_prop_obj = self._property_current_condition.get_value()
             state_msg = MessageCreator.property_state_message(
-                "weather/{}/property/currentCondition/value".format(self._instance_id), current_condition_prop_obj, self._property_current_condition.version
+                "{prefix}/weather/{service_id}/property/current_condition/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                current_condition_prop_obj,
+                self._property_current_condition.version,
             )
             self._conn.publish(state_msg)
 
@@ -231,7 +266,11 @@ class WeatherServer:
         with self._property_daily_forecast.mutex:
             self._property_daily_forecast.version += 1
             daily_forecast_prop_obj = self._property_daily_forecast.get_value()
-            state_msg = MessageCreator.property_state_message("weather/{}/property/dailyForecast/value".format(self._instance_id), daily_forecast_prop_obj, self._property_daily_forecast.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/weather/{service_id}/property/daily_forecast/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                daily_forecast_prop_obj,
+                self._property_daily_forecast.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_hourly_forecast_value(self, *_, **__):
@@ -247,7 +286,11 @@ class WeatherServer:
         with self._property_hourly_forecast.mutex:
             self._property_hourly_forecast.version += 1
             hourly_forecast_prop_obj = self._property_hourly_forecast.get_value()
-            state_msg = MessageCreator.property_state_message("weather/{}/property/hourlyForecast/value".format(self._instance_id), hourly_forecast_prop_obj, self._property_hourly_forecast.version)
+            state_msg = MessageCreator.property_state_message(
+                "{prefix}/weather/{service_id}/property/hourly_forecast/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                hourly_forecast_prop_obj,
+                self._property_hourly_forecast.version,
+            )
             self._conn.publish(state_msg)
 
     def publish_current_condition_refresh_interval_value(self, *_, **__):
@@ -264,7 +307,7 @@ class WeatherServer:
             self._property_current_condition_refresh_interval.version += 1
             current_condition_refresh_interval_prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
             state_msg = MessageCreator.property_state_message(
-                "weather/{}/property/currentConditionRefreshInterval/value".format(self._instance_id),
+                "{prefix}/weather/{service_id}/property/current_condition_refresh_interval/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
                 current_condition_refresh_interval_prop_obj,
                 self._property_current_condition_refresh_interval.version,
             )
@@ -284,7 +327,9 @@ class WeatherServer:
             self._property_hourly_forecast_refresh_interval.version += 1
             hourly_forecast_refresh_interval_prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
             state_msg = MessageCreator.property_state_message(
-                "weather/{}/property/hourlyForecastRefreshInterval/value".format(self._instance_id), hourly_forecast_refresh_interval_prop_obj, self._property_hourly_forecast_refresh_interval.version
+                "{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                hourly_forecast_refresh_interval_prop_obj,
+                self._property_hourly_forecast_refresh_interval.version,
             )
             self._conn.publish(state_msg)
 
@@ -302,7 +347,9 @@ class WeatherServer:
             self._property_daily_forecast_refresh_interval.version += 1
             daily_forecast_refresh_interval_prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
             state_msg = MessageCreator.property_state_message(
-                "weather/{}/property/dailyForecastRefreshInterval/value".format(self._instance_id), daily_forecast_refresh_interval_prop_obj, self._property_daily_forecast_refresh_interval.version
+                "{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix),
+                daily_forecast_refresh_interval_prop_obj,
+                self._property_daily_forecast_refresh_interval.version,
             )
             self._conn.publish(state_msg)
 
@@ -318,7 +365,7 @@ class WeatherServer:
         self.publish_daily_forecast_refresh_interval_value()
 
     def _receive_location_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `weather/{}/property/location/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x752c7e32f1d0>>` topic
         in order to update the `location` property, this method is called to process that message
         and update the value of the property.
         """
@@ -334,7 +381,7 @@ class WeatherServer:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_location.version}' of the 'location' property")
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -349,7 +396,8 @@ class WeatherServer:
 
                 current_prop_obj = self._property_location.get_value()  # type: LocationProperty
 
-                state_msg = MessageCreator.property_state_message("weather/{}/property/location/value".format(self._instance_id), current_prop_obj, self._property_location.version)
+                prop_value_topic = "{prefix}/weather/{service_id}/property/location/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_location.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -377,7 +425,7 @@ class WeatherServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_current_condition_refresh_interval_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `weather/{}/property/currentConditionRefreshInterval/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x752c7e32f4a0>>` topic
         in order to update the `current_condition_refresh_interval` property, this method is called to process that message
         and update the value of the property.
         """
@@ -395,7 +443,7 @@ class WeatherServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -410,9 +458,10 @@ class WeatherServer:
 
                 current_prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "weather/{}/property/currentConditionRefreshInterval/value".format(self._instance_id), current_prop_obj, self._property_current_condition_refresh_interval.version
+                prop_value_topic = "{prefix}/weather/{service_id}/property/current_condition_refresh_interval/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_current_condition_refresh_interval.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -444,7 +493,7 @@ class WeatherServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_hourly_forecast_refresh_interval_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `weather/{}/property/hourlyForecastRefreshInterval/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x752c7e32fdd0>>` topic
         in order to update the `hourly_forecast_refresh_interval` property, this method is called to process that message
         and update the value of the property.
         """
@@ -462,7 +511,7 @@ class WeatherServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -477,9 +526,10 @@ class WeatherServer:
 
                 current_prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "weather/{}/property/hourlyForecastRefreshInterval/value".format(self._instance_id), current_prop_obj, self._property_hourly_forecast_refresh_interval.version
+                prop_value_topic = "{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_hourly_forecast_refresh_interval.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -511,7 +561,7 @@ class WeatherServer:
                 self._conn.publish(prop_resp_msg)
 
     def _receive_daily_forecast_refresh_interval_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `weather/{}/property/dailyForecastRefreshInterval/setValue` topic
+        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x752c7e32f680>>` topic
         in order to update the `daily_forecast_refresh_interval` property, this method is called to process that message
         and update the value of the property.
         """
@@ -529,7 +579,7 @@ class WeatherServer:
                 )
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -544,9 +594,10 @@ class WeatherServer:
 
                 current_prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
 
-                state_msg = MessageCreator.property_state_message(
-                    "weather/{}/property/dailyForecastRefreshInterval/value".format(self._instance_id), current_prop_obj, self._property_daily_forecast_refresh_interval.version
+                prop_value_topic = "{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_daily_forecast_refresh_interval.version)
                 self._conn.publish(state_msg)
 
                 if response_topic is not None:
@@ -592,7 +643,8 @@ class WeatherServer:
         payload = CurrentTimeSignalPayload(
             current_time=current_time,
         )
-        sig_msg = MessageCreator.signal_message("weather/{}/signal/currentTime".format(self._instance_id), payload)
+        signal_topic = "{prefix}/weather/{service_id}/signal/current_time".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     def handle_refresh_daily_forecast(self, handler: Callable[[], None]):
@@ -808,9 +860,8 @@ class WeatherServer:
                     value_updated = True
                     self._property_location.set_value(value)
                     self._property_location.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "weather/{}/property/location/value".format(self._instance_id), self._property_location.get_value(), self._property_location.version
-                    )
+                    prop_value_topic = "{prefix}/weather/{service_id}/property/location/value".format(client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix)
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_location.get_value(), self._property_location.version)
                     self._conn.publish(state_msg)
 
             if value_updated:
@@ -861,7 +912,10 @@ class WeatherServer:
                 self._property_current_temperature.set_value(temperature_f)
                 self._property_current_temperature.version += 1
                 prop_obj = CurrentTemperatureProperty(temperature_f=self._property_current_temperature.get_value())
-                state_msg = MessageCreator.property_state_message("weather/{}/property/currentTemperature/value".format(self._instance_id), prop_obj, self._property_current_temperature.version)
+                prop_value_topic = "{prefix}/weather/{service_id}/property/current_temperature/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
+                )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_current_temperature.version)
                 self._conn.publish(state_msg)
 
         if value_updated:
@@ -903,9 +957,10 @@ class WeatherServer:
                     value_updated = True
                     self._property_current_condition.set_value(value)
                     self._property_current_condition.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "weather/{}/property/currentCondition/value".format(self._instance_id), self._property_current_condition.get_value(), self._property_current_condition.version
+                    prop_value_topic = "{prefix}/weather/{service_id}/property/current_condition/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_current_condition.get_value(), self._property_current_condition.version)
                     self._conn.publish(state_msg)
 
             if value_updated:
@@ -959,9 +1014,10 @@ class WeatherServer:
                     value_updated = True
                     self._property_daily_forecast.set_value(value)
                     self._property_daily_forecast.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "weather/{}/property/dailyForecast/value".format(self._instance_id), self._property_daily_forecast.get_value(), self._property_daily_forecast.version
+                    prop_value_topic = "{prefix}/weather/{service_id}/property/daily_forecast/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_daily_forecast.get_value(), self._property_daily_forecast.version)
                     self._conn.publish(state_msg)
 
             if value_updated:
@@ -1019,9 +1075,10 @@ class WeatherServer:
                     value_updated = True
                     self._property_hourly_forecast.set_value(value)
                     self._property_hourly_forecast.version += 1
-                    state_msg = MessageCreator.property_state_message(
-                        "weather/{}/property/hourlyForecast/value".format(self._instance_id), self._property_hourly_forecast.get_value(), self._property_hourly_forecast.version
+                    prop_value_topic = "{prefix}/weather/{service_id}/property/hourly_forecast/value".format(
+                        client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                     )
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_hourly_forecast.get_value(), self._property_hourly_forecast.version)
                     self._conn.publish(state_msg)
 
             if value_updated:
@@ -1080,9 +1137,10 @@ class WeatherServer:
                 self._property_current_condition_refresh_interval.set_value(seconds)
                 self._property_current_condition_refresh_interval.version += 1
                 prop_obj = CurrentConditionRefreshIntervalProperty(seconds=self._property_current_condition_refresh_interval.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "weather/{}/property/currentConditionRefreshInterval/value".format(self._instance_id), prop_obj, self._property_current_condition_refresh_interval.version
+                prop_value_topic = "{prefix}/weather/{service_id}/property/current_condition_refresh_interval/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_current_condition_refresh_interval.version)
                 self._conn.publish(state_msg)
 
         if value_updated:
@@ -1121,9 +1179,10 @@ class WeatherServer:
                 self._property_hourly_forecast_refresh_interval.set_value(seconds)
                 self._property_hourly_forecast_refresh_interval.version += 1
                 prop_obj = HourlyForecastRefreshIntervalProperty(seconds=self._property_hourly_forecast_refresh_interval.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "weather/{}/property/hourlyForecastRefreshInterval/value".format(self._instance_id), prop_obj, self._property_hourly_forecast_refresh_interval.version
+                prop_value_topic = "{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_hourly_forecast_refresh_interval.version)
                 self._conn.publish(state_msg)
 
         if value_updated:
@@ -1162,9 +1221,10 @@ class WeatherServer:
                 self._property_daily_forecast_refresh_interval.set_value(seconds)
                 self._property_daily_forecast_refresh_interval.version += 1
                 prop_obj = DailyForecastRefreshIntervalProperty(seconds=self._property_daily_forecast_refresh_interval.get_value())
-                state_msg = MessageCreator.property_state_message(
-                    "weather/{}/property/dailyForecastRefreshInterval/value".format(self._instance_id), prop_obj, self._property_daily_forecast_refresh_interval.version
+                prop_value_topic = "{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value".format(
+                    client_id=self._conn.client_id, service_id=self._instance_id, prefix=self._topic_param_prefix
                 )
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_daily_forecast_refresh_interval.version)
                 self._conn.publish(state_msg)
 
         if value_updated:

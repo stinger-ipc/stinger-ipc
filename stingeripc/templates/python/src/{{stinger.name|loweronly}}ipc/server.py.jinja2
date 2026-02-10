@@ -84,14 +84,21 @@ class PropertyControls(Generic[T]):
 
 class {{stinger.python.server_class_name}}:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, {%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}{%endif%}):
+    def __init__(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, {%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}{%endif%}{%for topic_param in config.topics.params %}, {{topic_param|snake_case}}: str{% endfor %}):
         self._logger = logging.getLogger(f'{{stinger.python.server_class_name}}:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
-        self._instance_id = instance_id
-        self._service_advert_topic = "{{stinger.interface_info_topic}}".format(self._instance_id)
-        self._re_advertise_server_interval_seconds = 120 # every two minutes
         self._conn = connection
+        self._instance_id = instance_id
+        self._topic_template_kwargs = {
+            "client_id": self._conn.client_id,
+            "service_id": instance_info.instance_id,
+            {%- for topic_param in config.topics.params %}
+            "{{topic_param|snake_case}}": instance_info.info.{{topic_param|snake_case}},
+            {%-endfor%}
+        }
+        self._service_advert_topic = "{{stinger.interface_info_topic()}}".format(**self._topic_template_kwargs)
+        self._re_advertise_server_interval_seconds = {{config.discovery.advert_interval_seconds}}
         self._running = True
         self._conn.add_message_callback(self._receive_message)
         {%for prop_name, prop in stinger.properties.items()%}
@@ -101,11 +108,11 @@ class {{stinger.python.server_class_name}}:
         self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_annotation}}{%else%}{{prop.python_annotation}}{%endif%}] = PropertyControls(getter=property_access.{{prop_name|snake_case}}_getter, {%if not prop.read_only%}setter=property_access.{{prop_name|snake_case}}_setter, {%endif%}version=1)
         {%endif-%}
         {%if not prop.read_only-%}
-        self._conn.subscribe("{{prop.update_topic}}".format(self._instance_id), self._receive_{{prop_name|snake_case}}_update_request_message)
+        self._conn.subscribe("{{prop.update_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name|snake_case}}_update_request_message)
         {%endif%}{# end read_only prop -#}
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()%}
-        self._conn.subscribe("{{method.topic}}".format(self._instance_id), self._process_{{method_name | snake_case}}_call)
+        self._conn.subscribe("{{method.request_topic()}}".format(**self._topic_template_kwargs), self._process_{{method_name | snake_case}}_call)
         self._method_{{method_name|snake_case}}_handler = None # type: Optional[{{method_type_annotation(method)}}]
         {%endfor%}
         {%-if stinger.properties|length > 0 %}
@@ -152,10 +159,13 @@ class {{stinger.python.server_class_name}}:
             
     def publish_interface_info(self):
         """ Publishes the interface info message to the interface info topic with an expiry interval. """
-        data = InterfaceInfo(
+        data = {{stinger.name|UpperCamelCase}}InterfaceInfo(
             instance=self._instance_id,
             connection_topic=(self._conn.online_topic or ""),
-        timestamp=datetime.now(UTC).isoformat()
+            timestamp=datetime.now(UTC).isoformat(),
+            {%- for topic_param in config.topics.params %}
+            {{topic_param|snake_case}}=self._topic_param_{{topic_param|snake_case}},
+            {%- endfor %}
         )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
@@ -182,7 +192,7 @@ class {{stinger.python.server_class_name}}:
             {%- else %}
             {{prop_name|snake_case}}_prop_obj = self._property_{{prop_name|snake_case}}.get_value()
             {%- endif %}
-            state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), {{prop_name|snake_case}}_prop_obj, self._property_{{prop_name|snake_case}}.version)
+            state_msg = MessageCreator.property_state_message("{{prop.value_topic()}}".format(**self._topic_template_kwargs), {{prop_name|snake_case}}_prop_obj, self._property_{{prop_name|snake_case}}.version)
             self._conn.publish(state_msg)
     {%-endfor%}
 
@@ -213,7 +223,7 @@ class {{stinger.python.server_class_name}}:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_{{prop_name|snake_case}}.version}' of the '{{prop_name}}' property")
 
             if content_type is None:
-                self._logger.warning("No content type provided in property update for %s.  Assuming application/json.", message.topic)
+                self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
                 content_type = "application/json"
 
             if content_type != "application/json":
@@ -234,7 +244,8 @@ class {{stinger.python.server_class_name}}:
                 {%else%}
                 current_prop_obj = self._property_{{prop_name|snake_case}}.get_value() # type: {{prop_name|UpperCamelCase}}Property
                 {%endif%}
-                state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), current_prop_obj, self._property_{{prop_name|snake_case}}.version)
+                prop_value_topic = "{{prop.value_topic()}}".format(**self._topic_template_kwargs)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_{{prop_name|snake_case}}.version)
                 self._conn.publish(state_msg)
             
                 if response_topic is not None:
@@ -289,7 +300,8 @@ class {{stinger.python.server_class_name}}:
         payload = {{sig_name|UpperCamelCase}}SignalPayload({%-for arg in sig.arg_list%}
             {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
         {%endfor%})
-        sig_msg = MessageCreator.signal_message("{{sig.topic}}".format(self._instance_id), payload)
+        signal_topic = "{{sig.topic()}}".format(**self._topic_template_kwargs)
+        sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
     {%endfor%}
@@ -400,7 +412,8 @@ class {{stinger.python.server_class_name}}:
                 self._property_{{prop_name|snake_case}}.set_value({{arg.name|snake_case}})
                 self._property_{{prop_name|snake_case}}.version += 1
                 prop_obj = {{prop_name|UpperCamelCase}}Property({{arg.name|snake_case}}=self._property_{{prop_name|snake_case}}.get_value())
-                state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), prop_obj, self._property_{{prop_name|snake_case}}.version)
+                prop_value_topic = "{{prop.value_topic()}}".format(**self._topic_template_kwargs)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_{{prop_name|snake_case}}.version)
                 self._conn.publish(state_msg)
         {%if config.properties.stinger_owned_values%}{# only call callbacks if it is a stinger-owned value#}
         if value_updated:
@@ -436,7 +449,8 @@ class {{stinger.python.server_class_name}}:
                     value_updated = True
                     self._property_{{prop_name|snake_case}}.set_value(value)
                     self._property_{{prop_name|snake_case}}.version += 1
-                    state_msg = MessageCreator.property_state_message("{{prop.value_topic}}".format(self._instance_id), self._property_{{prop_name|snake_case}}.get_value(), self._property_{{prop_name|snake_case}}.version)
+                    prop_value_topic = "{{prop.value_topic()}}".format(**self._topic_template_kwargs)
+                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_{{prop_name|snake_case}}.get_value(), self._property_{{prop_name|snake_case}}.version)
                     self._conn.publish(state_msg)
             {%if config.properties.stinger_owned_values%}{# only call callbacks if it is a stinger-owned value#}
             if value_updated:

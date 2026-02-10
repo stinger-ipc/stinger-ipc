@@ -24,13 +24,14 @@ def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
     return value
 
 
-class InterfaceInfo(BaseModel):
-    interface_name: str = Field(default="SignalOnly")  # hi
+class SignalOnlyInterfaceInfo(BaseModel):
+    interface_name: str = Field(default="SignalOnly")
     title: str = Field(default="SignalOnly")
     version: str = Field(default="0.0.1")
     instance: str
     connection_topic: str
     timestamp: str
+    prefix: str
 
 
 # There are 0 enum definitions

@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
-    server = FullServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), property_access)
+    server = FullServer(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"), property_access, prefix="example")
 
     @server.handle_add_numbers
     def add_numbers(first: int, second: int, third: Optional[int]) -> int:

@@ -84,3 +84,29 @@ def get_topic_arguments(template: str) -> list[str]:
         if field_name is not None and field_name not in arguments:
             arguments.append(field_name)
     return arguments
+
+
+def get_argument_position(template: str, argument: str) -> int | None:
+    """Get the position of an argument in the topic when split by '/'.
+    
+    Args:
+        template: The template string to search.
+        argument: The argument name to find.
+        
+    Returns:
+        The index of the segment containing the argument when the topic is split by '/',
+        or None if the argument is not in the template.
+    """
+    formatter = Formatter()
+    segment_index = 0
+    
+    for literal_text, field_name, _, _ in formatter.parse(template):
+        # Count slashes in literal text before this field
+        if literal_text:
+            segment_index += literal_text.count('/')
+        
+        if field_name is not None and field_name == argument:
+            return segment_index
+    
+    return None
+

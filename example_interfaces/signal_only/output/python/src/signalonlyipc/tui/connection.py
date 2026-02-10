@@ -99,11 +99,11 @@ class ConnectionScreen(Screen):
             transport = MqttTransport(MqttTransportType.TCP, ip_address, port)
             if use_tls:
                 # Get TLS configuration from command line args
-                tls_config = getattr(self.app, "tls_config", {})
-                ca_certs = tls_config.get("cafile") or tls_config.get("capath")
-                certfile = tls_config.get("cert")
-                cert_reqs = ssl.CERT_NONE if tls_config.get("insecure") else ssl.CERT_REQUIRED
-
+                tls_config = getattr(self.app, 'tls_config', {})
+                ca_certs = tls_config.get('cafile') or tls_config.get('capath')
+                certfile = tls_config.get('cert')
+                cert_reqs = ssl.CERT_NONE if tls_config.get('insecure') else ssl.CERT_REQUIRED
+                
                 transport.enable_tls(
                     ca_certs=ca_certs,
                     certfile=certfile,

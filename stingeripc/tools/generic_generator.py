@@ -10,7 +10,7 @@ import importlib.resources
 import re
 import yaml
 from stevedore import ExtensionManager
-from stingeripc import StingerInterface, __version__
+from stingeripc import StingerInterface, __version__, topic_util
 from stingeripc.filtering import filter_by_consumer
 from stingeripc.config import load_config, StingerConfig
 import logging
@@ -46,7 +46,10 @@ def main(
             print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
             file_config = load_config(config_file)
             # Merge configs - later files override earlier ones
-            config_obj = config_obj.model_copy(update=file_config.model_dump(exclude_unset=True))
+            # Use model_validate to ensure nested models are properly instantiated
+            merged_dict = config_obj.model_dump(exclude_unset=True)
+            merged_dict.update(file_config.model_dump(exclude_unset=True))
+            config_obj = StingerConfig.model_validate(merged_dict)
     assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
     for k,v in config_obj.model_dump().items():
         print(f"🔧{k:>10.10}: {v}")
@@ -57,10 +60,10 @@ def main(
         with inname.open(mode="r") as f:
             yaml_obj = yaml.load(f, Loader=yamlloader.ordereddict.Loader)
             stinger_yaml = filter_by_consumer(yaml_obj, consumer)
-            stinger = StingerInterface.from_dict(stinger_yaml)
+            stinger = StingerInterface.from_dict(stinger_yaml, config_obj)
     else:
         with inname.open(mode="r") as f:
-            stinger = StingerInterface.from_yaml(f)
+            stinger = StingerInterface.from_yaml(f, config_obj)
 
     params: dict[str, Any] = {
         "stinger": stinger, 
@@ -70,6 +73,9 @@ def main(
             "version": __version__,
         },
         "templates": dict(),
+        "utils": {
+            "topic_template_placeholder_index": topic_util.get_argument_position,
+        }
     }
 
     if outdir.is_file():

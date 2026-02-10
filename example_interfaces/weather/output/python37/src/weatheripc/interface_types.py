@@ -32,13 +32,14 @@ def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
     return value
 
 
-class InterfaceInfo(BaseModel):
-    interface_name: str = Field(default="weather")  # hi
+class WeatherInterfaceInfo(BaseModel):
+    interface_name: str = Field(default="weather")
     title: str = Field(default="NWS weather forecast")
     version: str = Field(default="0.1.2")
     instance: str
     connection_topic: str
     timestamp: str
+    prefix: str
 
 
 # There are 1 enum definitions
