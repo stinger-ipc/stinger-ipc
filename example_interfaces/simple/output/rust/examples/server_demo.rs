@@ -87,6 +87,7 @@ async fn main() {
         handlers.clone(),
         "rust-server-demo:1".to_string(),
         initial_property_values,
+        "example".to_string(),
     )
     .await;
 

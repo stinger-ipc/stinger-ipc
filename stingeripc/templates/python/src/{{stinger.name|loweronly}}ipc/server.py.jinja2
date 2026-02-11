@@ -92,12 +92,12 @@ class {{stinger.python.server_class_name}}:
         self._instance_id = instance_id
         self._topic_template_kwargs = {
             "client_id": self._conn.client_id,
-            "service_id": instance_info.instance_id,
+            "service_id": instance_id,
             {%- for topic_param in config.topics.params %}
-            "{{topic_param|snake_case}}": instance_info.info.{{topic_param|snake_case}},
+            "{{topic_param|snake_case}}": {{topic_param|snake_case}},
             {%-endfor%}
         }
-        self._service_advert_topic = "{{stinger.interface_info_topic()}}".format(**self._topic_template_kwargs)
+        self._service_advert_topic = "{{stinger.interface_info_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
         self._re_advertise_server_interval_seconds = {{config.discovery.advert_interval_seconds}}
         self._running = True
         self._conn.add_message_callback(self._receive_message)
@@ -108,11 +108,11 @@ class {{stinger.python.server_class_name}}:
         self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_annotation}}{%else%}{{prop.python_annotation}}{%endif%}] = PropertyControls(getter=property_access.{{prop_name|snake_case}}_getter, {%if not prop.read_only%}setter=property_access.{{prop_name|snake_case}}_setter, {%endif%}version=1)
         {%endif-%}
         {%if not prop.read_only-%}
-        self._conn.subscribe("{{prop.update_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name|snake_case}}_update_request_message)
+        self._conn.subscribe("{{prop.update_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name|snake_case}}_update_request_message) # type: ignore[str-format]
         {%endif%}{# end read_only prop -#}
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()%}
-        self._conn.subscribe("{{method.request_topic()}}".format(**self._topic_template_kwargs), self._process_{{method_name | snake_case}}_call)
+        self._conn.subscribe("{{method.request_topic()}}".format(**self._topic_template_kwargs), self._process_{{method_name | snake_case}}_call) # type: ignore[str-format]
         self._method_{{method_name|snake_case}}_handler = None # type: Optional[{{method_type_annotation(method)}}]
         {%endfor%}
         {%-if stinger.properties|length > 0 %}
@@ -164,7 +164,7 @@ class {{stinger.python.server_class_name}}:
             connection_topic=(self._conn.online_topic or ""),
             timestamp=datetime.now(UTC).isoformat(),
             {%- for topic_param in config.topics.params %}
-            {{topic_param|snake_case}}=self._topic_param_{{topic_param|snake_case}},
+            {{topic_param|snake_case}}=self._topic_template_kwargs["{{topic_param|snake_case}}"],
             {%- endfor %}
         )
         expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
@@ -531,8 +531,8 @@ class {{stinger.python.server_class_name}}Builder:
         return wrapper
     {%endfor%}
     {%endif%}{# only when stinger owned values #}
-    def build(self, connection: IBrokerConnection, instance_id: str, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues, {%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{%endif%}binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
-        new_server = {{stinger.python.server_class_name}}(connection, instance_id, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values{%else%}property_access{%endif%}{%endif%})
+    def build(self, connection: IBrokerConnection, instance_id: str, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues, {%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{%endif%}{%for topic_param in config.topics.params %}{{topic_param|snake_case}}: str, {% endfor %}binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
+        new_server = {{stinger.python.server_class_name}}(connection, instance_id, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values{%else%}property_access{%endif%},{%endif%} {%for topic_param in config.topics.params %}{{topic_param|snake_case}}, {% endfor %})
         {%for method_name, method in stinger.methods.items()%}
         if self._{{method_name|snake_case}}_method_handler is not None:
             if binding:

@@ -15,11 +15,13 @@ TODO: Get license text from stinger file
 use stinger_mqtt_trait::{Mqtt5PubSub};
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use crate::message;
-{%if stinger.methods|length > 0 -%}
 use std::collections::HashMap;
+{%if stinger.methods|length > 0 -%}
 use uuid::Uuid;
 {%endif-%}
 use serde_json;
+extern crate strfmt;
+use strfmt::strfmt;
 use crate::discovery::DiscoveredService;
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
@@ -112,10 +114,13 @@ pub struct {{stinger.rust.client_struct_name}}<C: Mqtt5PubSub> {
     {%endif%}
     /// Copy of MQTT Client ID
     pub client_id: String,
-    {%if stinger.methods | length > 0 %}
+
     /// Instance ID of the server
     service_instance_id: String,
-    {%endif%}
+    {% for topic_param in config.topics.params %}
+    /// The config indicates that topic templates may include a `{{topic_param}}` parameter, so we store it so we can create topics in code.
+    topic_param_{{topic_param | snake_case}}: String,
+    {% endfor %}
 }
 
 impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}}<C> {
@@ -129,15 +134,26 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
         let client_id = connection.get_client_id();
 
+        let mut topic_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), discovery_info.interface_info.instance.clone()),
+            ("client_id".to_string(), client_id.as_str().to_string()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), discovery_info.interface_info.{{topic_param | snake_case}}.as_str().to_string()),
+            {%-endfor%}
+        ]);
+
         {%if stinger.methods|length > 0%}
-        let topic_any_method_response = format!("{{stinger.all_methods_response_topic('{}')}}", client_id);
+        topic_map.insert("method_name".to_string(), "+".to_string());
+        let topic_any_method_response = strfmt("{{stinger.all_methods_response_topic()}}", &topic_map).unwrap();
         let subscription_id_any_method_response = connection.subscribe(topic_any_method_response, QoS::ExactlyOnce, message_received_tx.clone()).await;
         let subscription_id_any_method_response = subscription_id_any_method_response.unwrap_or(u32::MAX);
         {%endif%}
 
         // Subscribe to all the topics needed for signals.
         {%for signal_name, signal in stinger.signals.items()-%}
-        let topic_{{signal_name | snake_case}}_signal = format!("{{signal.topic}}", discovery_info.interface_info.instance);
+        topic_map.insert("signal_name".to_string(), "{{signal_name}}".to_string());
+        let topic_{{signal_name | snake_case}}_signal = strfmt("{{signal.topic()}}", &topic_map).unwrap();
         let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(topic_{{signal_name | snake_case}}_signal, QoS::ExactlyOnce, message_received_tx.clone()).await;
         let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or(u32::MAX);
         debug!("Subscription (id={}) to signal topic for '{{signal_name}}'", subscription_id_{{signal_name | snake_case}}_signal);
@@ -145,14 +161,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
         // Subscribe to all the topics needed for properties.
         {% for prop_name, prop in stinger.properties.items() %}
-        let topic_{{prop_name | snake_case}}_property_value = format!("{{prop.value_topic}}", discovery_info.interface_info.instance);
+        topic_map.insert("property_name".to_string(), "{{prop_name}}".to_string());
+        let topic_{{prop_name | snake_case}}_property_value = strfmt("{{prop.value_topic()}}", &topic_map).unwrap();
         let subscription_id_{{prop_name | snake_case}}_property_value = connection.subscribe(topic_{{prop_name | snake_case}}_property_value, QoS::AtLeastOnce, message_received_tx.clone()).await;
         let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or(u32::MAX);
         debug!("Subscription (id={}) to property value topic for '{{prop_name}}'", subscription_id_{{prop_name | snake_case}}_property_value);
         {% endfor %}
 
         {%if stinger.properties|length > 0 %}
-        let topic_any_property_update_response = format!("{{stinger.all_properties_response_topic('{}')}}", client_id);
+        topic_map.insert("property_name".to_string(), "+".to_string());
+        let topic_any_property_update_response = strfmt("{{stinger.all_properties_response_topic()}}", &topic_map).unwrap();
         let subscription_id_any_property_update_response = connection.subscribe(topic_any_property_update_response, QoS::AtLeastOnce, message_received_tx.clone()).await;
         let subscription_id_any_property_update_response = subscription_id_any_property_update_response.unwrap_or(u32::MAX);
         debug!("Subscription (id={}) to any property update response topic", subscription_id_any_property_update_response);
@@ -205,9 +223,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             subscription_ids: sub_ids,
             {%if stinger.signals | length > 0 %}signal_channels,{%endif%}
             client_id,
-            {%if stinger.methods | length > 0 %}
             service_instance_id: discovery_info.interface_info.instance,
-            {%endif%}
+            {%- for topic_param in config.topics.params %}
+            topic_param_{{topic_param | snake_case}}: discovery_info.interface_info.{{topic_param | snake_case}},
+            {%- endfor %}
         }
     }
 
@@ -238,10 +257,19 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             {{arg.name|snake_case}},
             {%-endfor%}
         };
-
-        let response_topic: String = format!("{{stinger.all_methods_response_topic('{}')}}", self.client_id);
-        let msg = message::request(&format!("{{method.topic}}", self.service_instance_id), &data, correlation_id, response_topic).unwrap();
-        info!("Sending request to topic '{}': {:?}", format!("{{method.topic}}", self.service_instance_id), data);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), self.service_instance_id.clone()),
+            ("method_name".to_string(), "{{method_name}}".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
+            {%-endfor%}
+        ]);
+        let request_topic: String = strfmt("{{method.request_topic()}}", &topic_param_map).unwrap();
+        let response_topic: String = strfmt("{{stinger.all_methods_response_topic()}}", &topic_param_map).unwrap();
+        let msg = message::request(&request_topic, &data, correlation_id, response_topic).unwrap();
+        info!("Sending request to topic '{}': {:?}", request_topic, data);
         let _ = self.mqtt_client.publish(msg).await;
         receiver
     }
@@ -361,9 +389,17 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         {%else%}
                         let payload_obj = value;
                         {%endif%}
-                        let topic: String = format!("{{prop.update_topic}}", instance_id_for_{{prop_name|snake_case}}_prop);
+                        let topic_param_map = HashMap::from([
+                            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+                            ("service_id".to_string(), instance_id_for_{{prop_name|snake_case}}_prop.clone()),
+                            ("property_name".to_string(), "{{prop_name}}".to_string()),
+                            {%-for topic_param in config.topics.params%}
+                            ("{{topic_param}}".to_string(), client_id_for_{{prop_name|snake_case}}_prop.clone()),
+                            {%-endfor%}
+                        ]);
+                        let topic: String = strfmt("{{prop.update_topic()}}", &topic_param_map).unwrap();
                         if let Some(responder) = opt_responder {
-                            let resp_topic = format!("{{stinger.all_properties_response_topic('{}')}}", client_id_for_{{prop_name|snake_case}}_prop);
+                            let resp_topic = strfmt("{{stinger.all_properties_response_topic()}}", &topic_param_map).unwrap();
                             let correlation_id = Uuid::new_v4();
                             let (sender, receiver) = oneshot::channel();
                             {

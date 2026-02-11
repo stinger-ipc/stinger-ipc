@@ -15,6 +15,8 @@ TODO: Get license text from stinger file
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 use bytes::Bytes;
+use std::collections::HashMap;
+use strfmt::strfmt;
 use tokio::sync::oneshot;
 
 use async_trait::async_trait;
@@ -138,7 +140,7 @@ pub struct WeatherServer<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
-
+    topic_param_prefix: String,
     #[cfg(feature = "metrics")]
     metrics: Arc<AsyncMutex<WeatherServerMetrics>>,
 }
@@ -149,6 +151,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         method_handlers: Arc<AsyncMutex<Box<dyn WeatherMethodHandlers<C>>>>,
         instance_id: String,
         initial_property_values: WeatherInitialPropertyValues,
+        prefix: String,
     ) -> Self {
         #[cfg(feature = "metrics")]
         let mut metrics = WeatherServerMetrics::default();
@@ -157,10 +160,24 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "weather".to_string()),
+            ("service_id".to_string(), instance_id.to_string()),
+            (
+                "client_id".to_string(),
+                connection.get_client_id().to_string(),
+            ),
+            ("prefix".to_string(), prefix.clone()),
+        ]);
+
         // Create method handler struct
         let subscription_id_refresh_daily_forecast_method_req = connection
             .subscribe(
-                format!("weather/{}/method/refreshDailyForecast", instance_id),
+                strfmt(
+                    "{prefix}/weather/{service_id}/method/refresh_daily_forecast/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -170,7 +187,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         let subscription_id_refresh_hourly_forecast_method_req = connection
             .subscribe(
-                format!("weather/{}/method/refreshHourlyForecast", instance_id),
+                strfmt(
+                    "{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -180,7 +201,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         let subscription_id_refresh_current_conditions_method_req = connection
             .subscribe(
-                format!("weather/{}/method/refreshCurrentConditions", instance_id),
+                strfmt(
+                    "{prefix}/weather/{service_id}/method/refresh_current_conditions/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -190,7 +215,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         let subscription_id_location_property_update = connection
             .subscribe(
-                format!("weather/{}/property/location/setValue", instance_id),
+                strfmt(
+                    "{prefix}/weather/{service_id}/property/location/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -198,38 +227,21 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         let subscription_id_location_property_update =
             subscription_id_location_property_update.unwrap_or(u32::MAX);
 
-        let subscription_id_current_condition_refresh_interval_property_update = connection
-            .subscribe(
-                format!(
-                    "weather/{}/property/currentConditionRefreshInterval/setValue",
-                    instance_id
-                ),
-                QoS::AtLeastOnce,
-                message_received_tx.clone(),
-            )
-            .await;
+        let subscription_id_current_condition_refresh_interval_property_update = connection.subscribe(strfmt("{prefix}/weather/{service_id}/property/current_condition_refresh_interval/update", &topic_param_map).unwrap(), QoS::AtLeastOnce, message_received_tx.clone()).await;
         let subscription_id_current_condition_refresh_interval_property_update =
             subscription_id_current_condition_refresh_interval_property_update.unwrap_or(u32::MAX);
 
-        let subscription_id_hourly_forecast_refresh_interval_property_update = connection
-            .subscribe(
-                format!(
-                    "weather/{}/property/hourlyForecastRefreshInterval/setValue",
-                    instance_id
-                ),
-                QoS::AtLeastOnce,
-                message_received_tx.clone(),
-            )
-            .await;
+        let subscription_id_hourly_forecast_refresh_interval_property_update = connection.subscribe(strfmt("{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/update", &topic_param_map).unwrap(), QoS::AtLeastOnce, message_received_tx.clone()).await;
         let subscription_id_hourly_forecast_refresh_interval_property_update =
             subscription_id_hourly_forecast_refresh_interval_property_update.unwrap_or(u32::MAX);
 
         let subscription_id_daily_forecast_refresh_interval_property_update = connection
             .subscribe(
-                format!(
-                    "weather/{}/property/dailyForecastRefreshInterval/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -314,7 +326,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         #[cfg(feature = "metrics")]
         let start_prop_publish_time = std::time::Instant::now();
         {
-            let topic = format!("weather/{}/property/location/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/weather/{service_id}/property/location/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.location,
@@ -325,7 +341,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         }
 
         {
-            let topic = format!("weather/{}/property/currentTemperature/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/weather/{service_id}/property/current_temperature/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = CurrentTemperatureProperty {
                 temperature_f: initial_property_values.current_temperature,
@@ -341,7 +361,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         }
 
         {
-            let topic = format!("weather/{}/property/currentCondition/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/weather/{service_id}/property/current_condition/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.current_condition,
@@ -352,7 +376,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         }
 
         {
-            let topic = format!("weather/{}/property/dailyForecast/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/weather/{service_id}/property/daily_forecast/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.daily_forecast,
@@ -363,7 +391,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         }
 
         {
-            let topic = format!("weather/{}/property/hourlyForecast/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/weather/{service_id}/property/hourly_forecast/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.hourly_forecast,
@@ -374,10 +406,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         }
 
         {
-            let topic = format!(
-                "weather/{}/property/currentConditionRefreshInterval/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/weather/{service_id}/property/current_condition_refresh_interval/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = CurrentConditionRefreshIntervalProperty {
                 seconds: initial_property_values.current_condition_refresh_interval,
@@ -393,10 +426,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         }
 
         {
-            let topic = format!(
-                "weather/{}/property/hourlyForecastRefreshInterval/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = HourlyForecastRefreshIntervalProperty {
                 seconds: initial_property_values.hourly_forecast_refresh_interval,
@@ -412,10 +446,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         }
 
         {
-            let topic = format!(
-                "weather/{}/property/dailyForecastRefreshInterval/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = DailyForecastRefreshIntervalProperty {
                 seconds: initial_property_values.daily_forecast_refresh_interval,
@@ -450,6 +485,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
             client_id: connection.get_client_id(),
             instance_id,
+            topic_param_prefix: prefix,
             #[cfg(feature = "metrics")]
             metrics: Arc::new(AsyncMutex::new(metrics)),
         }
@@ -511,7 +547,18 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
     /// Emits the current_time signal with the given arguments.
     pub async fn emit_current_time(&mut self, current_time: String) -> SentMessageFuture {
         let data = CurrentTimeSignalPayload { current_time };
-        let topic = format!("weather/{}/signal/currentTime", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "weather".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "current_time".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/weather/{service_id}/signal/current_time",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -524,7 +571,18 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         current_time: String,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = CurrentTimeSignalPayload { current_time };
-        let topic = format!("weather/{}/signal/currentTime", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "weather".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "current_time".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/weather/{service_id}/signal/current_time",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1388,6 +1446,13 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
     where
         C: 'static,
     {
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "weather".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
             self.msg_streamer_rx
@@ -1410,9 +1475,9 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         let props = self.properties.clone();
         {
             // Set up property change request handling task
-            let instance_id_for_location_prop = self.instance_id.clone();
             let mut publisher_for_location_prop = self.mqtt_client.clone();
             let location_prop_version = props.location_version.clone();
+            let topic_param_map_for_location = topic_param_map.clone();
             if let Some(mut rx_for_location_prop) = props.location.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_location_prop.recv().await {
@@ -1420,10 +1485,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
                         let version_value = location_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "weather/{}/property/location/value",
-                            instance_id_for_location_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/weather/{service_id}/property/location/value",
+                            &topic_param_map_for_location,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_location_prop.publish(msg).await;
@@ -1453,9 +1519,9 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_current_temperature_prop = self.instance_id.clone();
             let mut publisher_for_current_temperature_prop = self.mqtt_client.clone();
             let current_temperature_prop_version = props.current_temperature_version.clone();
+            let topic_param_map_for_current_temperature = topic_param_map.clone();
             if let Some(mut rx_for_current_temperature_prop) =
                 props.current_temperature.take_request_receiver()
             {
@@ -1469,10 +1535,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
                         let version_value = current_temperature_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "weather/{}/property/currentTemperature/value",
-                            instance_id_for_current_temperature_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/weather/{service_id}/property/current_temperature/value",
+                            &topic_param_map_for_current_temperature,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1503,9 +1570,9 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_current_condition_prop = self.instance_id.clone();
             let mut publisher_for_current_condition_prop = self.mqtt_client.clone();
             let current_condition_prop_version = props.current_condition_version.clone();
+            let topic_param_map_for_current_condition = topic_param_map.clone();
             if let Some(mut rx_for_current_condition_prop) =
                 props.current_condition.take_request_receiver()
             {
@@ -1517,10 +1584,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
                         let version_value = current_condition_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "weather/{}/property/currentCondition/value",
-                            instance_id_for_current_condition_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/weather/{service_id}/property/current_condition/value",
+                            &topic_param_map_for_current_condition,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1551,9 +1619,9 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_daily_forecast_prop = self.instance_id.clone();
             let mut publisher_for_daily_forecast_prop = self.mqtt_client.clone();
             let daily_forecast_prop_version = props.daily_forecast_version.clone();
+            let topic_param_map_for_daily_forecast = topic_param_map.clone();
             if let Some(mut rx_for_daily_forecast_prop) =
                 props.daily_forecast.take_request_receiver()
             {
@@ -1565,10 +1633,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
                         let version_value = daily_forecast_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "weather/{}/property/dailyForecast/value",
-                            instance_id_for_daily_forecast_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/weather/{service_id}/property/daily_forecast/value",
+                            &topic_param_map_for_daily_forecast,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1599,9 +1668,9 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_hourly_forecast_prop = self.instance_id.clone();
             let mut publisher_for_hourly_forecast_prop = self.mqtt_client.clone();
             let hourly_forecast_prop_version = props.hourly_forecast_version.clone();
+            let topic_param_map_for_hourly_forecast = topic_param_map.clone();
             if let Some(mut rx_for_hourly_forecast_prop) =
                 props.hourly_forecast.take_request_receiver()
             {
@@ -1613,10 +1682,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
                         let version_value = hourly_forecast_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "weather/{}/property/hourlyForecast/value",
-                            instance_id_for_hourly_forecast_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/weather/{service_id}/property/hourly_forecast/value",
+                            &topic_param_map_for_hourly_forecast,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1647,11 +1717,11 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_current_condition_refresh_interval_prop = self.instance_id.clone();
             let mut publisher_for_current_condition_refresh_interval_prop =
                 self.mqtt_client.clone();
             let current_condition_refresh_interval_prop_version =
                 props.current_condition_refresh_interval_version.clone();
+            let topic_param_map_for_current_condition_refresh_interval = topic_param_map.clone();
             if let Some(mut rx_for_current_condition_refresh_interval_prop) = props
                 .current_condition_refresh_interval
                 .take_request_receiver()
@@ -1666,10 +1736,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
                         let version_value = current_condition_refresh_interval_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "weather/{}/property/currentConditionRefreshInterval/value",
-                            instance_id_for_current_condition_refresh_interval_prop
-                        );
+                        let topic: String = strfmt("{prefix}/weather/{service_id}/property/current_condition_refresh_interval/value", &topic_param_map_for_current_condition_refresh_interval).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1702,10 +1769,10 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_hourly_forecast_refresh_interval_prop = self.instance_id.clone();
             let mut publisher_for_hourly_forecast_refresh_interval_prop = self.mqtt_client.clone();
             let hourly_forecast_refresh_interval_prop_version =
                 props.hourly_forecast_refresh_interval_version.clone();
+            let topic_param_map_for_hourly_forecast_refresh_interval = topic_param_map.clone();
             if let Some(mut rx_for_hourly_forecast_refresh_interval_prop) = props
                 .hourly_forecast_refresh_interval
                 .take_request_receiver()
@@ -1720,10 +1787,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
                         let version_value = hourly_forecast_refresh_interval_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "weather/{}/property/hourlyForecastRefreshInterval/value",
-                            instance_id_for_hourly_forecast_refresh_interval_prop
-                        );
+                        let topic: String = strfmt("{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/value", &topic_param_map_for_hourly_forecast_refresh_interval).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1756,10 +1820,10 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_daily_forecast_refresh_interval_prop = self.instance_id.clone();
             let mut publisher_for_daily_forecast_refresh_interval_prop = self.mqtt_client.clone();
             let daily_forecast_refresh_interval_prop_version =
                 props.daily_forecast_refresh_interval_version.clone();
+            let topic_param_map_for_daily_forecast_refresh_interval = topic_param_map.clone();
             if let Some(mut rx_for_daily_forecast_refresh_interval_prop) = props
                 .daily_forecast_refresh_interval
                 .take_request_receiver()
@@ -1774,10 +1838,7 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
 
                         let version_value = daily_forecast_refresh_interval_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "weather/{}/property/dailyForecastRefreshInterval/value",
-                            instance_id_for_daily_forecast_refresh_interval_prop
-                        );
+                        let topic: String = strfmt("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value", &topic_param_map_for_daily_forecast_refresh_interval).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1811,20 +1872,26 @@ impl<C: Mqtt5PubSub + Clone + Send> WeatherServer<C> {
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
+        let topic_param_map_for_info = topic_param_map.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(120));
             loop {
                 interval.tick().await;
-                let topic = format!("weather/{}/interface", instance_id);
+                let topic = strfmt(
+                    "{prefix}/weather/{service_id}/interface",
+                    &topic_param_map_for_info,
+                )
+                .unwrap();
                 let info = crate::interface::InterfaceInfoBuilder::default()
                     .interface_name("weather".to_string())
                     .title("NWS weather forecast".to_string())
                     .version("0.1.2".to_string())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
+                    .prefix(topic_param_map_for_info.get("prefix").unwrap().to_string())
                     .build()
                     .unwrap();
-                let msg = message::interface_online(&topic, &info, 150 /*seconds*/).unwrap();
+                let msg = message::interface_online(&topic, &info, 144 /*seconds*/).unwrap();
                 let _ = interface_publisher.publish(msg).await;
             }
         });

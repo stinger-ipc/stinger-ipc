@@ -615,6 +615,7 @@ pub struct {{prop_name | UpperCamelCase}}Property {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[allow(unused_imports)]
     use chrono::{DateTime, Utc};
 
     {%for prop_name, prop in stinger.properties.items()%}
@@ -625,7 +626,7 @@ mod tests {
             "{{arg.name}}": {{arg.get_random_example_value(lang="json")}} {%if not loop.last%},{%endif%}
         {%endfor-%} }"#;
 
-        let parsed: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(json_str).unwrap();
+        let _parsed: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(json_str).unwrap();
     }
     {%endfor%}
 
@@ -660,7 +661,6 @@ mod tests {
         
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct TestStruct {
-            #[serde(with = "base64_binary_format")]
             #[serde(serialize_with = "base64_binary_format::serialize_option")]
             #[serde(deserialize_with = "base64_binary_format::deserialize_option")]
             data: Option<Vec<u8>>,

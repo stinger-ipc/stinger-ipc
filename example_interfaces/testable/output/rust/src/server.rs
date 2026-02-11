@@ -15,6 +15,8 @@ TODO: Get license text from stinger file
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 use bytes::Bytes;
+use std::collections::HashMap;
+use strfmt::strfmt;
 use tokio::sync::oneshot;
 
 use async_trait::async_trait;
@@ -322,7 +324,7 @@ pub struct TestableServer<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
-
+    topic_param_prefix: String,
     #[cfg(feature = "metrics")]
     metrics: Arc<AsyncMutex<TestableServerMetrics>>,
 }
@@ -333,6 +335,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         method_handlers: Arc<AsyncMutex<Box<dyn TestableMethodHandlers<C>>>>,
         instance_id: String,
         initial_property_values: TestableInitialPropertyValues,
+        prefix: String,
     ) -> Self {
         #[cfg(feature = "metrics")]
         let mut metrics = TestableServerMetrics::default();
@@ -341,10 +344,24 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), instance_id.to_string()),
+            (
+                "client_id".to_string(),
+                connection.get_client_id().to_string(),
+            ),
+            ("prefix".to_string(), prefix.clone()),
+        ]);
+
         // Create method handler struct
         let subscription_id_call_with_nothing_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callWithNothing", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callWithNothing/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -354,7 +371,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_one_integer_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOneInteger", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOneInteger/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -364,7 +385,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_optional_integer_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOptionalInteger", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOptionalInteger/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -374,7 +399,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_three_integers_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callThreeIntegers", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callThreeIntegers/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -384,7 +413,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_one_string_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOneString", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOneString/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -394,7 +427,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_optional_string_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOptionalString", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOptionalString/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -404,7 +441,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_three_strings_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callThreeStrings", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callThreeStrings/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -414,7 +455,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_one_enum_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOneEnum", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOneEnum/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -424,7 +469,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_optional_enum_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOptionalEnum", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOptionalEnum/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -434,7 +483,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_three_enums_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callThreeEnums", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callThreeEnums/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -444,7 +497,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_one_struct_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOneStruct", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOneStruct/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -454,7 +511,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_optional_struct_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOptionalStruct", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOptionalStruct/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -464,7 +525,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_three_structs_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callThreeStructs", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callThreeStructs/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -474,7 +539,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_one_date_time_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOneDateTime", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOneDateTime/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -484,7 +553,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_optional_date_time_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOptionalDateTime", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOptionalDateTime/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -494,7 +567,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_three_date_times_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callThreeDateTimes", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callThreeDateTimes/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -504,7 +581,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_one_duration_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOneDuration", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOneDuration/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -514,7 +595,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_optional_duration_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOptionalDuration", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOptionalDuration/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -524,7 +609,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_three_durations_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callThreeDurations", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callThreeDurations/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -534,7 +623,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_one_binary_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOneBinary", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOneBinary/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -544,7 +637,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_optional_binary_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOptionalBinary", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOptionalBinary/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -554,7 +651,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_three_binaries_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callThreeBinaries", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callThreeBinaries/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -564,7 +665,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_one_list_of_integers_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOneListOfIntegers", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOneListOfIntegers/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -574,7 +679,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_optional_list_of_floats_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callOptionalListOfFloats", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callOptionalListOfFloats/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -584,7 +693,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_call_two_lists_method_req = connection
             .subscribe(
-                format!("testable/{}/method/callTwoLists", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/method/callTwoLists/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -594,10 +707,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_integer_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteInteger/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_integer/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -607,10 +721,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_optional_integer_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteOptionalInteger/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_optional_integer/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -620,10 +735,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_two_integers_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteTwoIntegers/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_two_integers/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -633,7 +749,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_string_property_update = connection
             .subscribe(
-                format!("testable/{}/property/readWriteString/setValue", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_string/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -643,10 +763,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_optional_string_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteOptionalString/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_optional_string/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -656,10 +777,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_two_strings_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteTwoStrings/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_two_strings/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -669,7 +791,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_struct_property_update = connection
             .subscribe(
-                format!("testable/{}/property/readWriteStruct/setValue", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_struct/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -679,10 +805,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_optional_struct_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteOptionalStruct/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_optional_struct/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -692,10 +819,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_two_structs_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteTwoStructs/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_two_structs/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -705,7 +833,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_enum_property_update = connection
             .subscribe(
-                format!("testable/{}/property/readWriteEnum/setValue", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_enum/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -715,10 +847,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_optional_enum_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteOptionalEnum/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_optional_enum/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -728,10 +861,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_two_enums_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteTwoEnums/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_two_enums/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -741,10 +875,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_datetime_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteDatetime/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_datetime/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -754,10 +889,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_optional_datetime_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteOptionalDatetime/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_optional_datetime/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -767,10 +903,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_two_datetimes_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteTwoDatetimes/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_two_datetimes/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -780,10 +917,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_duration_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteDuration/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_duration/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -793,10 +931,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_optional_duration_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteOptionalDuration/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_optional_duration/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -806,10 +945,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_two_durations_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteTwoDurations/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_two_durations/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -819,7 +959,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_binary_property_update = connection
             .subscribe(
-                format!("testable/{}/property/readWriteBinary/setValue", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_binary/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -829,10 +973,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_optional_binary_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteOptionalBinary/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_optional_binary/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -842,10 +987,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_two_binaries_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteTwoBinaries/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_two_binaries/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -855,10 +1001,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_list_of_strings_property_update = connection
             .subscribe(
-                format!(
-                    "testable/{}/property/readWriteListOfStrings/setValue",
-                    instance_id
-                ),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_list_of_strings/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -868,7 +1015,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         let subscription_id_read_write_lists_property_update = connection
             .subscribe(
-                format!("testable/{}/property/readWriteLists/setValue", instance_id),
+                strfmt(
+                    "{prefix}/testable/{service_id}/property/read_write_lists/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -1128,7 +1279,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         #[cfg(feature = "metrics")]
         let start_prop_publish_time = std::time::Instant::now();
         {
-            let topic = format!("testable/{}/property/readWriteInteger/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_integer/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteIntegerProperty {
                 value: initial_property_values.read_write_integer,
@@ -1144,7 +1299,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readOnlyInteger/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_only_integer/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadOnlyIntegerProperty {
                 value: initial_property_values.read_only_integer,
@@ -1160,10 +1319,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteOptionalInteger/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_optional_integer/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteOptionalIntegerProperty {
                 value: initial_property_values.read_write_optional_integer,
@@ -1179,10 +1339,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteTwoIntegers/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_two_integers/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_two_integers,
@@ -1193,7 +1354,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readOnlyString/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_only_string/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadOnlyStringProperty {
                 value: initial_property_values.read_only_string,
@@ -1209,7 +1374,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readWriteString/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_string/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteStringProperty {
                 value: initial_property_values.read_write_string,
@@ -1225,10 +1394,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteOptionalString/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_optional_string/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteOptionalStringProperty {
                 value: initial_property_values.read_write_optional_string,
@@ -1244,10 +1414,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteTwoStrings/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_two_strings/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_two_strings,
@@ -1258,7 +1429,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readWriteStruct/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_struct/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteStructProperty {
                 value: initial_property_values.read_write_struct,
@@ -1274,10 +1449,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteOptionalStruct/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_optional_struct/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteOptionalStructProperty {
                 value: initial_property_values.read_write_optional_struct,
@@ -1293,10 +1469,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteTwoStructs/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_two_structs/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_two_structs,
@@ -1307,7 +1484,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readOnlyEnum/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_only_enum/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadOnlyEnumProperty {
                 value: initial_property_values.read_only_enum,
@@ -1323,7 +1504,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readWriteEnum/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_enum/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteEnumProperty {
                 value: initial_property_values.read_write_enum,
@@ -1339,10 +1524,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteOptionalEnum/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_optional_enum/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteOptionalEnumProperty {
                 value: initial_property_values.read_write_optional_enum,
@@ -1358,7 +1544,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readWriteTwoEnums/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_two_enums/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_two_enums,
@@ -1369,7 +1559,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readWriteDatetime/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_datetime/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteDatetimeProperty {
                 value: initial_property_values.read_write_datetime,
@@ -1385,10 +1579,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteOptionalDatetime/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_optional_datetime/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteOptionalDatetimeProperty {
                 value: initial_property_values.read_write_optional_datetime,
@@ -1404,10 +1599,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteTwoDatetimes/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_two_datetimes/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_two_datetimes,
@@ -1418,7 +1614,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readWriteDuration/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_duration/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteDurationProperty {
                 value: initial_property_values.read_write_duration,
@@ -1434,10 +1634,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteOptionalDuration/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_optional_duration/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteOptionalDurationProperty {
                 value: initial_property_values.read_write_optional_duration,
@@ -1453,10 +1654,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteTwoDurations/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_two_durations/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_two_durations,
@@ -1467,7 +1669,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readWriteBinary/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_binary/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteBinaryProperty {
                 value: initial_property_values.read_write_binary,
@@ -1483,10 +1689,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteOptionalBinary/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_optional_binary/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteOptionalBinaryProperty {
                 value: initial_property_values.read_write_optional_binary,
@@ -1502,10 +1709,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteTwoBinaries/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_two_binaries/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_two_binaries,
@@ -1516,10 +1724,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!(
-                "testable/{}/property/readWriteListOfStrings/value",
-                instance_id
-            );
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_list_of_strings/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = ReadWriteListOfStringsProperty {
                 value: initial_property_values.read_write_list_of_strings,
@@ -1535,7 +1744,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         }
 
         {
-            let topic = format!("testable/{}/property/readWriteLists/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/testable/{service_id}/property/read_write_lists/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.read_write_lists,
@@ -1565,6 +1778,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             client_id: connection.get_client_id(),
             instance_id,
+            topic_param_prefix: prefix,
             #[cfg(feature = "metrics")]
             metrics: Arc::new(AsyncMutex::new(metrics)),
         }
@@ -1626,7 +1840,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the empty signal with the given arguments.
     pub async fn emit_empty(&mut self) -> SentMessageFuture {
         let data = EmptySignalPayload {};
-        let topic = format!("testable/{}/signal/empty", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "empty".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/empty",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1638,7 +1863,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         &mut self,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = EmptySignalPayload {};
-        let topic = format!("testable/{}/signal/empty", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "empty".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/empty",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1646,7 +1882,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the singleInt signal with the given arguments.
     pub async fn emit_single_int(&mut self, value: i32) -> SentMessageFuture {
         let data = SingleIntSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleInt", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleInt".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleInt",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1659,7 +1906,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: i32,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleIntSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleInt", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleInt".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleInt",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1667,7 +1925,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the singleOptionalInt signal with the given arguments.
     pub async fn emit_single_optional_int(&mut self, value: Option<i32>) -> SentMessageFuture {
         let data = SingleOptionalIntSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalInt", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleOptionalInt".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalInt",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1680,7 +1949,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<i32>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalIntSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalInt", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleOptionalInt".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalInt",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1699,7 +1979,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeIntegers", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeIntegers".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeIntegers",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1720,7 +2011,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeIntegers", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeIntegers".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeIntegers",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1728,7 +2030,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the singleString signal with the given arguments.
     pub async fn emit_single_string(&mut self, value: String) -> SentMessageFuture {
         let data = SingleStringSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleString", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleString".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleString",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1741,7 +2054,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: String,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleStringSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleString", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleString".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleString",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1752,7 +2076,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<String>,
     ) -> SentMessageFuture {
         let data = SingleOptionalStringSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalString", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalString".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalString",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1765,7 +2103,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<String>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalStringSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalString", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalString".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalString",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1784,7 +2136,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeStrings", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeStrings".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeStrings",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1805,7 +2168,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeStrings", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeStrings".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeStrings",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1813,7 +2187,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the singleEnum signal with the given arguments.
     pub async fn emit_single_enum(&mut self, value: Numbers) -> SentMessageFuture {
         let data = SingleEnumSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleEnum", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleEnum".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleEnum",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1826,7 +2211,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Numbers,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleEnumSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleEnum", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleEnum".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleEnum",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1834,7 +2230,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the singleOptionalEnum signal with the given arguments.
     pub async fn emit_single_optional_enum(&mut self, value: Option<Numbers>) -> SentMessageFuture {
         let data = SingleOptionalEnumSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalEnum", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleOptionalEnum".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalEnum",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1847,7 +2254,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<Numbers>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalEnumSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalEnum", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleOptionalEnum".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalEnum",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1866,7 +2284,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeEnums", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeEnums".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeEnums",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1887,7 +2316,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeEnums", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeEnums".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeEnums",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1895,7 +2335,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the singleStruct signal with the given arguments.
     pub async fn emit_single_struct(&mut self, value: AllTypes) -> SentMessageFuture {
         let data = SingleStructSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleStruct", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleStruct".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleStruct",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1908,7 +2359,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: AllTypes,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleStructSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleStruct", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleStruct".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleStruct",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1919,7 +2381,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<AllTypes>,
     ) -> SentMessageFuture {
         let data = SingleOptionalStructSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalStruct", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalStruct".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalStruct",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1932,7 +2408,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<AllTypes>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalStructSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalStruct", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalStruct".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalStruct",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1951,7 +2441,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeStructs", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeStructs".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeStructs",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1972,7 +2473,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeStructs", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeStructs".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeStructs",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1983,7 +2495,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
         let data = SingleDateTimeSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleDateTime", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleDateTime".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleDateTime",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -1996,7 +2519,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: chrono::DateTime<chrono::Utc>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleDateTimeSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleDateTime", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleDateTime".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleDateTime",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2007,10 +2541,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<chrono::DateTime<chrono::Utc>>,
     ) -> SentMessageFuture {
         let data = SingleOptionalDatetimeSignalPayload { value };
-        let topic = format!(
-            "testable/{}/signal/singleOptionalDatetime",
-            self.instance_id
-        );
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalDatetime".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalDatetime",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2023,10 +2568,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<chrono::DateTime<chrono::Utc>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalDatetimeSignalPayload { value };
-        let topic = format!(
-            "testable/{}/signal/singleOptionalDatetime",
-            self.instance_id
-        );
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalDatetime".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalDatetime",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2045,7 +2601,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeDateTimes", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeDateTimes".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeDateTimes",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2066,7 +2633,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeDateTimes", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeDateTimes".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeDateTimes",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2074,7 +2652,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the singleDuration signal with the given arguments.
     pub async fn emit_single_duration(&mut self, value: chrono::Duration) -> SentMessageFuture {
         let data = SingleDurationSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleDuration", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleDuration".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleDuration",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2087,7 +2676,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: chrono::Duration,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleDurationSignalPayload { value };
-        let topic = format!("testable/{}/signal/singleDuration", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleDuration".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleDuration",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2098,10 +2698,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<chrono::Duration>,
     ) -> SentMessageFuture {
         let data = SingleOptionalDurationSignalPayload { value };
-        let topic = format!(
-            "testable/{}/signal/singleOptionalDuration",
-            self.instance_id
-        );
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalDuration".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalDuration",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2114,10 +2725,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<chrono::Duration>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalDurationSignalPayload { value };
-        let topic = format!(
-            "testable/{}/signal/singleOptionalDuration",
-            self.instance_id
-        );
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalDuration".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalDuration",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2136,7 +2758,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeDurations", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeDurations".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeDurations",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2157,7 +2790,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeDurations", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeDurations".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeDurations",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2165,7 +2809,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the singleBinary signal with the given arguments.
     pub async fn emit_single_binary(&mut self, value: Vec<u8>) -> SentMessageFuture {
         let data = SingleBinarySignalPayload { value };
-        let topic = format!("testable/{}/signal/singleBinary", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleBinary".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleBinary",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2178,7 +2833,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Vec<u8>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleBinarySignalPayload { value };
-        let topic = format!("testable/{}/signal/singleBinary", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "singleBinary".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleBinary",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2189,7 +2855,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<Vec<u8>>,
     ) -> SentMessageFuture {
         let data = SingleOptionalBinarySignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalBinary", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalBinary".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalBinary",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2202,7 +2882,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         value: Option<Vec<u8>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalBinarySignalPayload { value };
-        let topic = format!("testable/{}/signal/singleOptionalBinary", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalBinary".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalBinary",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2221,7 +2915,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeBinaries", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeBinaries".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeBinaries",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2242,7 +2947,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             third,
         };
-        let topic = format!("testable/{}/signal/threeBinaries", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "threeBinaries".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/threeBinaries",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2250,7 +2966,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     /// Emits the singleArrayOfIntegers signal with the given arguments.
     pub async fn emit_single_array_of_integers(&mut self, values: Vec<i32>) -> SentMessageFuture {
         let data = SingleArrayOfIntegersSignalPayload { values };
-        let topic = format!("testable/{}/signal/singleArrayOfIntegers", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleArrayOfIntegers".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleArrayOfIntegers",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2263,7 +2993,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         values: Vec<i32>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleArrayOfIntegersSignalPayload { values };
-        let topic = format!("testable/{}/signal/singleArrayOfIntegers", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleArrayOfIntegers".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleArrayOfIntegers",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2274,10 +3018,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         values: Option<Vec<String>>,
     ) -> SentMessageFuture {
         let data = SingleOptionalArrayOfStringsSignalPayload { values };
-        let topic = format!(
-            "testable/{}/signal/singleOptionalArrayOfStrings",
-            self.instance_id
-        );
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalArrayOfStrings".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalArrayOfStrings",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2290,10 +3045,21 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         values: Option<Vec<String>>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = SingleOptionalArrayOfStringsSignalPayload { values };
-        let topic = format!(
-            "testable/{}/signal/singleOptionalArrayOfStrings",
-            self.instance_id
-        );
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            (
+                "signal_name".to_string(),
+                "singleOptionalArrayOfStrings".to_string(),
+            ),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/singleOptionalArrayOfStrings",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -2327,7 +3093,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             eighth_of_binaries,
         };
-        let topic = format!("testable/{}/signal/arrayOfEveryType", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "arrayOfEveryType".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/arrayOfEveryType",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -2363,7 +3140,18 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
             eighth_of_binaries,
         };
-        let topic = format!("testable/{}/signal/arrayOfEveryType", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "arrayOfEveryType".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/testable/{service_id}/signal/arrayOfEveryType",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -7523,6 +8311,13 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
     where
         C: 'static,
     {
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "testable".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
             self.msg_streamer_rx
@@ -7545,9 +8340,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         let props = self.properties.clone();
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_integer_prop = self.instance_id.clone();
             let mut publisher_for_read_write_integer_prop = self.mqtt_client.clone();
             let read_write_integer_prop_version = props.read_write_integer_version.clone();
+            let topic_param_map_for_read_write_integer = topic_param_map.clone();
             if let Some(mut rx_for_read_write_integer_prop) =
                 props.read_write_integer.take_request_receiver()
             {
@@ -7561,10 +8356,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_integer_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteInteger/value",
-                            instance_id_for_read_write_integer_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_integer/value",
+                            &topic_param_map_for_read_write_integer,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -7595,9 +8391,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_only_integer_prop = self.instance_id.clone();
             let mut publisher_for_read_only_integer_prop = self.mqtt_client.clone();
             let read_only_integer_prop_version = props.read_only_integer_version.clone();
+            let topic_param_map_for_read_only_integer = topic_param_map.clone();
             if let Some(mut rx_for_read_only_integer_prop) =
                 props.read_only_integer.take_request_receiver()
             {
@@ -7611,10 +8407,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_only_integer_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readOnlyInteger/value",
-                            instance_id_for_read_only_integer_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_only_integer/value",
+                            &topic_param_map_for_read_only_integer,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -7645,10 +8442,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_optional_integer_prop = self.instance_id.clone();
             let mut publisher_for_read_write_optional_integer_prop = self.mqtt_client.clone();
             let read_write_optional_integer_prop_version =
                 props.read_write_optional_integer_version.clone();
+            let topic_param_map_for_read_write_optional_integer = topic_param_map.clone();
             if let Some(mut rx_for_read_write_optional_integer_prop) =
                 props.read_write_optional_integer.take_request_receiver()
             {
@@ -7662,10 +8459,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_optional_integer_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteOptionalInteger/value",
-                            instance_id_for_read_write_optional_integer_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_optional_integer/value", &topic_param_map_for_read_write_optional_integer).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_optional_integer_prop
@@ -7697,10 +8491,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_two_integers_prop = self.instance_id.clone();
             let mut publisher_for_read_write_two_integers_prop = self.mqtt_client.clone();
             let read_write_two_integers_prop_version =
                 props.read_write_two_integers_version.clone();
+            let topic_param_map_for_read_write_two_integers = topic_param_map.clone();
             if let Some(mut rx_for_read_write_two_integers_prop) =
                 props.read_write_two_integers.take_request_receiver()
             {
@@ -7712,10 +8506,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_two_integers_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteTwoIntegers/value",
-                            instance_id_for_read_write_two_integers_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_two_integers/value",
+                            &topic_param_map_for_read_write_two_integers,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_two_integers_prop
@@ -7747,9 +8542,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_only_string_prop = self.instance_id.clone();
             let mut publisher_for_read_only_string_prop = self.mqtt_client.clone();
             let read_only_string_prop_version = props.read_only_string_version.clone();
+            let topic_param_map_for_read_only_string = topic_param_map.clone();
             if let Some(mut rx_for_read_only_string_prop) =
                 props.read_only_string.take_request_receiver()
             {
@@ -7763,10 +8558,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_only_string_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readOnlyString/value",
-                            instance_id_for_read_only_string_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_only_string/value",
+                            &topic_param_map_for_read_only_string,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -7797,9 +8593,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_string_prop = self.instance_id.clone();
             let mut publisher_for_read_write_string_prop = self.mqtt_client.clone();
             let read_write_string_prop_version = props.read_write_string_version.clone();
+            let topic_param_map_for_read_write_string = topic_param_map.clone();
             if let Some(mut rx_for_read_write_string_prop) =
                 props.read_write_string.take_request_receiver()
             {
@@ -7813,10 +8609,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_string_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteString/value",
-                            instance_id_for_read_write_string_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_string/value",
+                            &topic_param_map_for_read_write_string,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -7847,10 +8644,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_optional_string_prop = self.instance_id.clone();
             let mut publisher_for_read_write_optional_string_prop = self.mqtt_client.clone();
             let read_write_optional_string_prop_version =
                 props.read_write_optional_string_version.clone();
+            let topic_param_map_for_read_write_optional_string = topic_param_map.clone();
             if let Some(mut rx_for_read_write_optional_string_prop) =
                 props.read_write_optional_string.take_request_receiver()
             {
@@ -7864,10 +8661,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_optional_string_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteOptionalString/value",
-                            instance_id_for_read_write_optional_string_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_optional_string/value", &topic_param_map_for_read_write_optional_string).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_optional_string_prop
@@ -7899,9 +8693,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_two_strings_prop = self.instance_id.clone();
             let mut publisher_for_read_write_two_strings_prop = self.mqtt_client.clone();
             let read_write_two_strings_prop_version = props.read_write_two_strings_version.clone();
+            let topic_param_map_for_read_write_two_strings = topic_param_map.clone();
             if let Some(mut rx_for_read_write_two_strings_prop) =
                 props.read_write_two_strings.take_request_receiver()
             {
@@ -7913,10 +8707,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_two_strings_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteTwoStrings/value",
-                            instance_id_for_read_write_two_strings_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_two_strings/value",
+                            &topic_param_map_for_read_write_two_strings,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -7947,9 +8742,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_struct_prop = self.instance_id.clone();
             let mut publisher_for_read_write_struct_prop = self.mqtt_client.clone();
             let read_write_struct_prop_version = props.read_write_struct_version.clone();
+            let topic_param_map_for_read_write_struct = topic_param_map.clone();
             if let Some(mut rx_for_read_write_struct_prop) =
                 props.read_write_struct.take_request_receiver()
             {
@@ -7963,10 +8758,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_struct_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteStruct/value",
-                            instance_id_for_read_write_struct_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_struct/value",
+                            &topic_param_map_for_read_write_struct,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -7997,10 +8793,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_optional_struct_prop = self.instance_id.clone();
             let mut publisher_for_read_write_optional_struct_prop = self.mqtt_client.clone();
             let read_write_optional_struct_prop_version =
                 props.read_write_optional_struct_version.clone();
+            let topic_param_map_for_read_write_optional_struct = topic_param_map.clone();
             if let Some(mut rx_for_read_write_optional_struct_prop) =
                 props.read_write_optional_struct.take_request_receiver()
             {
@@ -8014,10 +8810,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_optional_struct_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteOptionalStruct/value",
-                            instance_id_for_read_write_optional_struct_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_optional_struct/value", &topic_param_map_for_read_write_optional_struct).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_optional_struct_prop
@@ -8049,9 +8842,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_two_structs_prop = self.instance_id.clone();
             let mut publisher_for_read_write_two_structs_prop = self.mqtt_client.clone();
             let read_write_two_structs_prop_version = props.read_write_two_structs_version.clone();
+            let topic_param_map_for_read_write_two_structs = topic_param_map.clone();
             if let Some(mut rx_for_read_write_two_structs_prop) =
                 props.read_write_two_structs.take_request_receiver()
             {
@@ -8063,10 +8856,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_two_structs_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteTwoStructs/value",
-                            instance_id_for_read_write_two_structs_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_two_structs/value",
+                            &topic_param_map_for_read_write_two_structs,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8097,9 +8891,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_only_enum_prop = self.instance_id.clone();
             let mut publisher_for_read_only_enum_prop = self.mqtt_client.clone();
             let read_only_enum_prop_version = props.read_only_enum_version.clone();
+            let topic_param_map_for_read_only_enum = topic_param_map.clone();
             if let Some(mut rx_for_read_only_enum_prop) =
                 props.read_only_enum.take_request_receiver()
             {
@@ -8113,10 +8907,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_only_enum_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readOnlyEnum/value",
-                            instance_id_for_read_only_enum_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_only_enum/value",
+                            &topic_param_map_for_read_only_enum,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8147,9 +8942,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_enum_prop = self.instance_id.clone();
             let mut publisher_for_read_write_enum_prop = self.mqtt_client.clone();
             let read_write_enum_prop_version = props.read_write_enum_version.clone();
+            let topic_param_map_for_read_write_enum = topic_param_map.clone();
             if let Some(mut rx_for_read_write_enum_prop) =
                 props.read_write_enum.take_request_receiver()
             {
@@ -8163,10 +8958,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_enum_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteEnum/value",
-                            instance_id_for_read_write_enum_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_enum/value",
+                            &topic_param_map_for_read_write_enum,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8197,10 +8993,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_optional_enum_prop = self.instance_id.clone();
             let mut publisher_for_read_write_optional_enum_prop = self.mqtt_client.clone();
             let read_write_optional_enum_prop_version =
                 props.read_write_optional_enum_version.clone();
+            let topic_param_map_for_read_write_optional_enum = topic_param_map.clone();
             if let Some(mut rx_for_read_write_optional_enum_prop) =
                 props.read_write_optional_enum.take_request_receiver()
             {
@@ -8214,10 +9010,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_optional_enum_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteOptionalEnum/value",
-                            instance_id_for_read_write_optional_enum_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_optional_enum/value", &topic_param_map_for_read_write_optional_enum).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_optional_enum_prop
@@ -8249,9 +9042,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_two_enums_prop = self.instance_id.clone();
             let mut publisher_for_read_write_two_enums_prop = self.mqtt_client.clone();
             let read_write_two_enums_prop_version = props.read_write_two_enums_version.clone();
+            let topic_param_map_for_read_write_two_enums = topic_param_map.clone();
             if let Some(mut rx_for_read_write_two_enums_prop) =
                 props.read_write_two_enums.take_request_receiver()
             {
@@ -8263,10 +9056,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_two_enums_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteTwoEnums/value",
-                            instance_id_for_read_write_two_enums_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_two_enums/value",
+                            &topic_param_map_for_read_write_two_enums,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8297,9 +9091,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_datetime_prop = self.instance_id.clone();
             let mut publisher_for_read_write_datetime_prop = self.mqtt_client.clone();
             let read_write_datetime_prop_version = props.read_write_datetime_version.clone();
+            let topic_param_map_for_read_write_datetime = topic_param_map.clone();
             if let Some(mut rx_for_read_write_datetime_prop) =
                 props.read_write_datetime.take_request_receiver()
             {
@@ -8313,10 +9107,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_datetime_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteDatetime/value",
-                            instance_id_for_read_write_datetime_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_datetime/value",
+                            &topic_param_map_for_read_write_datetime,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8347,10 +9142,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_optional_datetime_prop = self.instance_id.clone();
             let mut publisher_for_read_write_optional_datetime_prop = self.mqtt_client.clone();
             let read_write_optional_datetime_prop_version =
                 props.read_write_optional_datetime_version.clone();
+            let topic_param_map_for_read_write_optional_datetime = topic_param_map.clone();
             if let Some(mut rx_for_read_write_optional_datetime_prop) =
                 props.read_write_optional_datetime.take_request_receiver()
             {
@@ -8364,10 +9159,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_optional_datetime_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteOptionalDatetime/value",
-                            instance_id_for_read_write_optional_datetime_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_optional_datetime/value", &topic_param_map_for_read_write_optional_datetime).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8400,10 +9192,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_two_datetimes_prop = self.instance_id.clone();
             let mut publisher_for_read_write_two_datetimes_prop = self.mqtt_client.clone();
             let read_write_two_datetimes_prop_version =
                 props.read_write_two_datetimes_version.clone();
+            let topic_param_map_for_read_write_two_datetimes = topic_param_map.clone();
             if let Some(mut rx_for_read_write_two_datetimes_prop) =
                 props.read_write_two_datetimes.take_request_receiver()
             {
@@ -8415,10 +9207,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_two_datetimes_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteTwoDatetimes/value",
-                            instance_id_for_read_write_two_datetimes_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_two_datetimes/value", &topic_param_map_for_read_write_two_datetimes).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_two_datetimes_prop
@@ -8450,9 +9239,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_duration_prop = self.instance_id.clone();
             let mut publisher_for_read_write_duration_prop = self.mqtt_client.clone();
             let read_write_duration_prop_version = props.read_write_duration_version.clone();
+            let topic_param_map_for_read_write_duration = topic_param_map.clone();
             if let Some(mut rx_for_read_write_duration_prop) =
                 props.read_write_duration.take_request_receiver()
             {
@@ -8466,10 +9255,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_duration_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteDuration/value",
-                            instance_id_for_read_write_duration_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_duration/value",
+                            &topic_param_map_for_read_write_duration,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8500,10 +9290,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_optional_duration_prop = self.instance_id.clone();
             let mut publisher_for_read_write_optional_duration_prop = self.mqtt_client.clone();
             let read_write_optional_duration_prop_version =
                 props.read_write_optional_duration_version.clone();
+            let topic_param_map_for_read_write_optional_duration = topic_param_map.clone();
             if let Some(mut rx_for_read_write_optional_duration_prop) =
                 props.read_write_optional_duration.take_request_receiver()
             {
@@ -8517,10 +9307,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_optional_duration_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteOptionalDuration/value",
-                            instance_id_for_read_write_optional_duration_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_optional_duration/value", &topic_param_map_for_read_write_optional_duration).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8553,10 +9340,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_two_durations_prop = self.instance_id.clone();
             let mut publisher_for_read_write_two_durations_prop = self.mqtt_client.clone();
             let read_write_two_durations_prop_version =
                 props.read_write_two_durations_version.clone();
+            let topic_param_map_for_read_write_two_durations = topic_param_map.clone();
             if let Some(mut rx_for_read_write_two_durations_prop) =
                 props.read_write_two_durations.take_request_receiver()
             {
@@ -8568,10 +9355,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_two_durations_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteTwoDurations/value",
-                            instance_id_for_read_write_two_durations_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_two_durations/value", &topic_param_map_for_read_write_two_durations).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_two_durations_prop
@@ -8603,9 +9387,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_binary_prop = self.instance_id.clone();
             let mut publisher_for_read_write_binary_prop = self.mqtt_client.clone();
             let read_write_binary_prop_version = props.read_write_binary_version.clone();
+            let topic_param_map_for_read_write_binary = topic_param_map.clone();
             if let Some(mut rx_for_read_write_binary_prop) =
                 props.read_write_binary.take_request_receiver()
             {
@@ -8619,10 +9403,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_binary_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteBinary/value",
-                            instance_id_for_read_write_binary_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_binary/value",
+                            &topic_param_map_for_read_write_binary,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8653,10 +9438,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_optional_binary_prop = self.instance_id.clone();
             let mut publisher_for_read_write_optional_binary_prop = self.mqtt_client.clone();
             let read_write_optional_binary_prop_version =
                 props.read_write_optional_binary_version.clone();
+            let topic_param_map_for_read_write_optional_binary = topic_param_map.clone();
             if let Some(mut rx_for_read_write_optional_binary_prop) =
                 props.read_write_optional_binary.take_request_receiver()
             {
@@ -8670,10 +9455,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_optional_binary_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteOptionalBinary/value",
-                            instance_id_for_read_write_optional_binary_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_optional_binary/value", &topic_param_map_for_read_write_optional_binary).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_optional_binary_prop
@@ -8705,10 +9487,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_two_binaries_prop = self.instance_id.clone();
             let mut publisher_for_read_write_two_binaries_prop = self.mqtt_client.clone();
             let read_write_two_binaries_prop_version =
                 props.read_write_two_binaries_version.clone();
+            let topic_param_map_for_read_write_two_binaries = topic_param_map.clone();
             if let Some(mut rx_for_read_write_two_binaries_prop) =
                 props.read_write_two_binaries.take_request_receiver()
             {
@@ -8720,10 +9502,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_two_binaries_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteTwoBinaries/value",
-                            instance_id_for_read_write_two_binaries_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_two_binaries/value",
+                            &topic_param_map_for_read_write_two_binaries,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_two_binaries_prop
@@ -8755,10 +9538,10 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_list_of_strings_prop = self.instance_id.clone();
             let mut publisher_for_read_write_list_of_strings_prop = self.mqtt_client.clone();
             let read_write_list_of_strings_prop_version =
                 props.read_write_list_of_strings_version.clone();
+            let topic_param_map_for_read_write_list_of_strings = topic_param_map.clone();
             if let Some(mut rx_for_read_write_list_of_strings_prop) =
                 props.read_write_list_of_strings.take_request_receiver()
             {
@@ -8772,10 +9555,7 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_list_of_strings_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteListOfStrings/value",
-                            instance_id_for_read_write_list_of_strings_prop
-                        );
+                        let topic: String = strfmt("{prefix}/testable/{service_id}/property/read_write_list_of_strings/value", &topic_param_map_for_read_write_list_of_strings).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_read_write_list_of_strings_prop
@@ -8807,9 +9587,9 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_read_write_lists_prop = self.instance_id.clone();
             let mut publisher_for_read_write_lists_prop = self.mqtt_client.clone();
             let read_write_lists_prop_version = props.read_write_lists_version.clone();
+            let topic_param_map_for_read_write_lists = topic_param_map.clone();
             if let Some(mut rx_for_read_write_lists_prop) =
                 props.read_write_lists.take_request_receiver()
             {
@@ -8821,10 +9601,11 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
 
                         let version_value = read_write_lists_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "testable/{}/property/readWriteLists/value",
-                            instance_id_for_read_write_lists_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/testable/{service_id}/property/read_write_lists/value",
+                            &topic_param_map_for_read_write_lists,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -8856,20 +9637,26 @@ impl<C: Mqtt5PubSub + Clone + Send> TestableServer<C> {
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
+        let topic_param_map_for_info = topic_param_map.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(120));
             loop {
                 interval.tick().await;
-                let topic = format!("testable/{}/interface", instance_id);
+                let topic = strfmt(
+                    "{prefix}/testable/{service_id}/interface",
+                    &topic_param_map_for_info,
+                )
+                .unwrap();
                 let info = crate::interface::InterfaceInfoBuilder::default()
                     .interface_name("testable".to_string())
                     .title("Interface for testing".to_string())
                     .version("0.0.1".to_string())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
+                    .prefix(topic_param_map_for_info.get("prefix").unwrap().to_string())
                     .build()
                     .unwrap();
-                let msg = message::interface_online(&topic, &info, 150 /*seconds*/).unwrap();
+                let msg = message::interface_online(&topic, &info, 144 /*seconds*/).unwrap();
                 let _ = interface_publisher.publish(msg).await;
             }
         });

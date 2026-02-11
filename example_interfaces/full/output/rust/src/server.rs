@@ -15,6 +15,8 @@ TODO: Get license text from stinger file
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 use bytes::Bytes;
+use std::collections::HashMap;
+use strfmt::strfmt;
 use tokio::sync::oneshot;
 
 use async_trait::async_trait;
@@ -141,7 +143,7 @@ pub struct FullServer<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
-
+    topic_param_prefix: String,
     #[cfg(feature = "metrics")]
     metrics: Arc<AsyncMutex<FullServerMetrics>>,
 }
@@ -152,6 +154,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         method_handlers: Arc<AsyncMutex<Box<dyn FullMethodHandlers<C>>>>,
         instance_id: String,
         initial_property_values: FullInitialPropertyValues,
+        prefix: String,
     ) -> Self {
         #[cfg(feature = "metrics")]
         let mut metrics = FullServerMetrics::default();
@@ -160,10 +163,24 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Full".to_string()),
+            ("service_id".to_string(), instance_id.to_string()),
+            (
+                "client_id".to_string(),
+                connection.get_client_id().to_string(),
+            ),
+            ("prefix".to_string(), prefix.clone()),
+        ]);
+
         // Create method handler struct
         let subscription_id_add_numbers_method_req = connection
             .subscribe(
-                format!("full/{}/method/addNumbers", instance_id),
+                strfmt(
+                    "{prefix}/Full/{service_id}/method/addNumbers/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -173,7 +190,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         let subscription_id_do_something_method_req = connection
             .subscribe(
-                format!("full/{}/method/doSomething", instance_id),
+                strfmt(
+                    "{prefix}/Full/{service_id}/method/doSomething/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -183,7 +204,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         let subscription_id_what_time_is_it_method_req = connection
             .subscribe(
-                format!("full/{}/method/whatTimeIsIt", instance_id),
+                strfmt(
+                    "{prefix}/Full/{service_id}/method/what_time_is_it/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -193,7 +218,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         let subscription_id_hold_temperature_method_req = connection
             .subscribe(
-                format!("full/{}/method/holdTemperature", instance_id),
+                strfmt(
+                    "{prefix}/Full/{service_id}/method/hold_temperature/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -203,7 +232,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         let subscription_id_favorite_number_property_update = connection
             .subscribe(
-                format!("full/{}/property/favoriteNumber/setValue", instance_id),
+                strfmt(
+                    "{prefix}/Full/{service_id}/property/favorite_number/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -213,7 +246,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         let subscription_id_favorite_foods_property_update = connection
             .subscribe(
-                format!("full/{}/property/favoriteFoods/setValue", instance_id),
+                strfmt(
+                    "{prefix}/Full/{service_id}/property/favorite_foods/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -223,7 +260,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         let subscription_id_family_name_property_update = connection
             .subscribe(
-                format!("full/{}/property/familyName/setValue", instance_id),
+                strfmt(
+                    "{prefix}/Full/{service_id}/property/family_name/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -233,7 +274,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         let subscription_id_last_breakfast_time_property_update = connection
             .subscribe(
-                format!("full/{}/property/lastBreakfastTime/setValue", instance_id),
+                strfmt(
+                    "{prefix}/Full/{service_id}/property/last_breakfast_time/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -243,7 +288,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         let subscription_id_last_birthdays_property_update = connection
             .subscribe(
-                format!("full/{}/property/lastBirthdays/setValue", instance_id),
+                strfmt(
+                    "{prefix}/Full/{service_id}/property/last_birthdays/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -309,7 +358,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         #[cfg(feature = "metrics")]
         let start_prop_publish_time = std::time::Instant::now();
         {
-            let topic = format!("full/{}/property/favoriteNumber/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/Full/{service_id}/property/favorite_number/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = FavoriteNumberProperty {
                 number: initial_property_values.favorite_number,
@@ -325,7 +378,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         }
 
         {
-            let topic = format!("full/{}/property/favoriteFoods/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/Full/{service_id}/property/favorite_foods/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.favorite_foods,
@@ -336,7 +393,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         }
 
         {
-            let topic = format!("full/{}/property/lunchMenu/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/Full/{service_id}/property/lunch_menu/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.lunch_menu,
@@ -347,7 +408,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         }
 
         {
-            let topic = format!("full/{}/property/familyName/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/Full/{service_id}/property/family_name/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = FamilyNameProperty {
                 family_name: initial_property_values.family_name,
@@ -363,7 +428,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         }
 
         {
-            let topic = format!("full/{}/property/lastBreakfastTime/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/Full/{service_id}/property/last_breakfast_time/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = LastBreakfastTimeProperty {
                 timestamp: initial_property_values.last_breakfast_time,
@@ -379,7 +448,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         }
 
         {
-            let topic = format!("full/{}/property/lastBirthdays/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/Full/{service_id}/property/last_birthdays/value",
+                &topic_param_map,
+            )
+            .unwrap();
             let msg = message::property_value(
                 &topic,
                 &initial_property_values.last_birthdays,
@@ -409,6 +482,7 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
             client_id: connection.get_client_id(),
             instance_id,
+            topic_param_prefix: prefix,
             #[cfg(feature = "metrics")]
             metrics: Arc::new(AsyncMutex::new(metrics)),
         }
@@ -478,7 +552,18 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
             day_of_week,
         };
-        let topic = format!("full/{}/signal/todayIs", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Full".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "todayIs".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/Full/{service_id}/signal/todayIs",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -496,7 +581,18 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
             day_of_week,
         };
-        let topic = format!("full/{}/signal/todayIs", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Full".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "todayIs".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/Full/{service_id}/signal/todayIs",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -508,7 +604,18 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         time: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
         let data = RandomWordSignalPayload { word, time };
-        let topic = format!("full/{}/signal/randomWord", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Full".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "randomWord".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/Full/{service_id}/signal/randomWord",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -522,7 +629,18 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         time: chrono::DateTime<chrono::Utc>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = RandomWordSignalPayload { word, time };
-        let topic = format!("full/{}/signal/randomWord", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Full".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "randomWord".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/Full/{service_id}/signal/randomWord",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -1550,6 +1668,13 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
     where
         C: 'static,
     {
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Full".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
             self.msg_streamer_rx
@@ -1572,9 +1697,9 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         let props = self.properties.clone();
         {
             // Set up property change request handling task
-            let instance_id_for_favorite_number_prop = self.instance_id.clone();
             let mut publisher_for_favorite_number_prop = self.mqtt_client.clone();
             let favorite_number_prop_version = props.favorite_number_version.clone();
+            let topic_param_map_for_favorite_number = topic_param_map.clone();
             if let Some(mut rx_for_favorite_number_prop) =
                 props.favorite_number.take_request_receiver()
             {
@@ -1588,10 +1713,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
                         let version_value = favorite_number_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "full/{}/property/favoriteNumber/value",
-                            instance_id_for_favorite_number_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/Full/{service_id}/property/favorite_number/value",
+                            &topic_param_map_for_favorite_number,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1622,9 +1748,9 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_favorite_foods_prop = self.instance_id.clone();
             let mut publisher_for_favorite_foods_prop = self.mqtt_client.clone();
             let favorite_foods_prop_version = props.favorite_foods_version.clone();
+            let topic_param_map_for_favorite_foods = topic_param_map.clone();
             if let Some(mut rx_for_favorite_foods_prop) =
                 props.favorite_foods.take_request_receiver()
             {
@@ -1636,10 +1762,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
                         let version_value = favorite_foods_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "full/{}/property/favoriteFoods/value",
-                            instance_id_for_favorite_foods_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/Full/{service_id}/property/favorite_foods/value",
+                            &topic_param_map_for_favorite_foods,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1670,9 +1797,9 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_lunch_menu_prop = self.instance_id.clone();
             let mut publisher_for_lunch_menu_prop = self.mqtt_client.clone();
             let lunch_menu_prop_version = props.lunch_menu_version.clone();
+            let topic_param_map_for_lunch_menu = topic_param_map.clone();
             if let Some(mut rx_for_lunch_menu_prop) = props.lunch_menu.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_lunch_menu_prop.recv().await {
@@ -1680,10 +1807,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
                         let version_value = lunch_menu_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "full/{}/property/lunchMenu/value",
-                            instance_id_for_lunch_menu_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/Full/{service_id}/property/lunch_menu/value",
+                            &topic_param_map_for_lunch_menu,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1714,9 +1842,9 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_family_name_prop = self.instance_id.clone();
             let mut publisher_for_family_name_prop = self.mqtt_client.clone();
             let family_name_prop_version = props.family_name_version.clone();
+            let topic_param_map_for_family_name = topic_param_map.clone();
             if let Some(mut rx_for_family_name_prop) = props.family_name.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_family_name_prop.recv().await
@@ -1727,10 +1855,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
                         let version_value = family_name_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "full/{}/property/familyName/value",
-                            instance_id_for_family_name_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/Full/{service_id}/property/family_name/value",
+                            &topic_param_map_for_family_name,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1761,9 +1890,9 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_last_breakfast_time_prop = self.instance_id.clone();
             let mut publisher_for_last_breakfast_time_prop = self.mqtt_client.clone();
             let last_breakfast_time_prop_version = props.last_breakfast_time_version.clone();
+            let topic_param_map_for_last_breakfast_time = topic_param_map.clone();
             if let Some(mut rx_for_last_breakfast_time_prop) =
                 props.last_breakfast_time.take_request_receiver()
             {
@@ -1777,10 +1906,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
                         let version_value = last_breakfast_time_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "full/{}/property/lastBreakfastTime/value",
-                            instance_id_for_last_breakfast_time_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/Full/{service_id}/property/last_breakfast_time/value",
+                            &topic_param_map_for_last_breakfast_time,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1811,9 +1941,9 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
         {
             // Set up property change request handling task
-            let instance_id_for_last_birthdays_prop = self.instance_id.clone();
             let mut publisher_for_last_birthdays_prop = self.mqtt_client.clone();
             let last_birthdays_prop_version = props.last_birthdays_version.clone();
+            let topic_param_map_for_last_birthdays = topic_param_map.clone();
             if let Some(mut rx_for_last_birthdays_prop) =
                 props.last_birthdays.take_request_receiver()
             {
@@ -1825,10 +1955,11 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
 
                         let version_value = last_birthdays_prop_version
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "full/{}/property/lastBirthdays/value",
-                            instance_id_for_last_birthdays_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/Full/{service_id}/property/last_birthdays/value",
+                            &topic_param_map_for_last_birthdays,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result =
@@ -1860,20 +1991,26 @@ impl<C: Mqtt5PubSub + Clone + Send> FullServer<C> {
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
+        let topic_param_map_for_info = topic_param_map.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(120));
             loop {
                 interval.tick().await;
-                let topic = format!("full/{}/interface", instance_id);
+                let topic = strfmt(
+                    "{prefix}/Full/{service_id}/interface",
+                    &topic_param_map_for_info,
+                )
+                .unwrap();
                 let info = crate::interface::InterfaceInfoBuilder::default()
                     .interface_name("Full".to_string())
                     .title("Example Interface".to_string())
                     .version("0.0.2".to_string())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
+                    .prefix(topic_param_map_for_info.get("prefix").unwrap().to_string())
                     .build()
                     .unwrap();
-                let msg = message::interface_online(&topic, &info, 150 /*seconds*/).unwrap();
+                let msg = message::interface_online(&topic, &info, 144 /*seconds*/).unwrap();
                 let _ = interface_publisher.publish(msg).await;
             }
         });

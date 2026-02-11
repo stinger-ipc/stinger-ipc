@@ -86,7 +86,7 @@ def initial_property_values():
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -151,7 +151,7 @@ def initial_property_values():
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -178,7 +178,7 @@ def initial_property_values():
             second=Numbers.ONE,
         ),
         read_write_datetime=datetime.now(UTC),
-        read_write_optional_datetime=datetime.now(UTC),
+        read_write_optional_datetime=None,
         read_write_two_datetimes=ReadWriteTwoDatetimesProperty(
             first=datetime.now(UTC),
             second=datetime.now(UTC),
@@ -449,7 +449,7 @@ class TestClientMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -628,7 +628,7 @@ class TestClientMethods:
 
     def test_call_optional_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
-            "input1": None,
+            "input1": datetime.now(UTC),
         }  # type: Dict[str, Any]
         client.call_optional_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_date_time' method call"

@@ -17,6 +17,8 @@ TODO: Get license text from stinger file
 use crate::payloads::{MethodReturnCode, *};
 use bytes::Bytes;
 use tokio::sync::{oneshot};
+use std::collections::HashMap;
+use strfmt::strfmt;
 {%if stinger.methods|length > 0 %}
 use std::any::Any;
 use async_trait::async_trait;
@@ -133,7 +135,9 @@ pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
-
+    {%- for topic_param in config.topics.params %}
+    topic_param_{{topic_param|snake_case}}: String,
+    {%- endfor %}
     #[cfg(feature = "metrics")]
     metrics: Arc<AsyncMutex<{{stinger.name | UpperCamelCase }}ServerMetrics>>,
 }
@@ -144,6 +148,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%if stinger.methods|length > 0%}method_handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<C>>>>, {%endif%}
             instance_id: String, {%if stinger.properties|length > 0 %}
             initial_property_values: {{stinger.name | UpperCamelCase}}InitialPropertyValues,{%endif%}
+            {%- for topic_param in config.topics.params %}
+            {{topic_param|snake_case}}: String,
+            {%- endfor %}
         ) -> Self {
         #[cfg(feature = "metrics")]
         let mut metrics = {{stinger.name | UpperCamelCase }}ServerMetrics::default();
@@ -153,14 +160,23 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), instance_id.to_string()),
+            ("client_id".to_string(), connection.get_client_id().to_string()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), {{topic_param|snake_case}}.clone()),
+            {%-endfor%}
+        ]);
+
         // Create method handler struct
         {%for method_name, method in stinger.methods.items()-%}
-        let subscription_id_{{method_name | snake_case}}_method_req = connection.subscribe(format!("{{method.topic}}", instance_id), QoS::ExactlyOnce, message_received_tx.clone()).await;
+        let subscription_id_{{method_name | snake_case}}_method_req = connection.subscribe(strfmt("{{method.request_topic()}}", &topic_param_map).unwrap(), QoS::ExactlyOnce, message_received_tx.clone()).await;
         let subscription_id_{{method_name | snake_case}}_method_req = subscription_id_{{method_name | snake_case}}_method_req.unwrap_or(u32::MAX);
 
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
-        let subscription_id_{{prop_name | snake_case}}_property_update = connection.subscribe(format!("{{prop.update_topic}}", instance_id), QoS::AtLeastOnce, message_received_tx.clone()).await;
+        let subscription_id_{{prop_name | snake_case}}_property_update = connection.subscribe(strfmt("{{prop.update_topic()}}", &topic_param_map).unwrap(), QoS::AtLeastOnce, message_received_tx.clone()).await;
         let subscription_id_{{prop_name | snake_case}}_property_update = subscription_id_{{prop_name | snake_case}}_property_update.unwrap_or(u32::MAX);
 
         {%else-%}
@@ -194,7 +210,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         let start_prop_publish_time = std::time::Instant::now();
         {%-for prop_name, prop in stinger.properties.items()%}
         {
-            let topic = format!("{{prop.value_topic}}", instance_id);
+            let topic = strfmt("{{prop.value_topic()}}", &topic_param_map).unwrap();
             {%if prop.arg_list | length > 1 -%}
             let msg = message::property_value(&topic, &initial_property_values.{{prop_name | snake_case}}, initial_property_values.{{prop_name | snake_case}}_version).unwrap();
             {%-else%}
@@ -224,6 +240,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%endif%}
             client_id: connection.get_client_id(),
             instance_id,
+            {%- for topic_param in config.topics.params %}
+            topic_param_{{topic_param|snake_case}}: {{topic_param|snake_case}},
+            {%- endfor %}
             #[cfg(feature = "metrics")]
             metrics: Arc::new(AsyncMutex::new(metrics)),
         }
@@ -286,7 +305,16 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {{arg.name|snake_case}},
             {%endfor%}
         };
-        let topic = format!("{{sig.topic}}", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "{{sig_name}}".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
+            {%-endfor%}
+        ]);
+        let topic = strfmt("{{sig.topic()}}", &topic_param_map).unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -300,7 +328,16 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {{arg.name|snake_case}},
             {%endfor%}
         };
-        let topic = format!("{{sig.topic}}", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "{{sig_name}}".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
+            {%-endfor%}
+        ]);
+        let topic = strfmt("{{sig.topic()}}", &topic_param_map).unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -517,6 +554,14 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     where
         C: 'static,
     {
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("client_id".to_string(), self.client_id.clone()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
+            {%-endfor%}
+        ]);
 
         {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -539,9 +584,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         let props = self.properties.clone();
         {%-for prop_name, prop in stinger.properties.items()%}
         { // Set up property change request handling task
-            let instance_id_for_{{prop_name|snake_case}}_prop = self.instance_id.clone();
             let mut publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
             let {{prop_name|snake_case}}_prop_version = props.{{prop_name | snake_case}}_version.clone();
+            let topic_param_map_for_{{prop_name|snake_case}} = topic_param_map.clone();
             if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
@@ -553,7 +598,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                         let payload_obj = request.clone();
                         {%endif%}
                         let version_value = {{prop_name|snake_case}}_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!("{{prop.value_topic}}", instance_id_for_{{prop_name|snake_case}}_prop);
+                        let topic: String = strfmt("{{prop.value_topic()}}", &topic_param_map_for_{{prop_name|snake_case}}).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
@@ -586,19 +631,23 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
+        let topic_param_map_for_info = topic_param_map.clone();
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(std::time::Duration::from_secs(120));
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs({{config.discovery.advert_interval_seconds}}));
             loop {
                 interval.tick().await;
-                let topic = format!("{{stinger.interface_info_topic}}", instance_id);
+                let topic = strfmt("{{stinger.interface_info_topic()}}", &topic_param_map_for_info).unwrap();
                 let info = crate::interface::InterfaceInfoBuilder::default()
                     .interface_name("{{stinger.name}}".to_string())
                     .title("{{stinger.title}}".to_string())
                     .version("{{stinger.version}}".to_string())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
+                    {%-for topic_param in config.topics.params%}
+                    .{{topic_param}}(topic_param_map_for_info.get("{{topic_param}}").unwrap().to_string())
+                    {%-endfor%}
                     .build().unwrap();
-                let msg = message::interface_online(&topic, &info, 150 /*seconds*/).unwrap();
+                let msg = message::interface_online(&topic, &info, {{((config.discovery.advert_interval_seconds|int) * 1.2) |int}} /*seconds*/).unwrap();
                 let _ = interface_publisher.publish(msg).await;
             }
         });

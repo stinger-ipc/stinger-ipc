@@ -158,6 +158,7 @@
     "retval",
     "serde",
     "stingeripc",
+    "strfmt",
     "templator",
     "usize"
   ]

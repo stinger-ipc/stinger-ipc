@@ -15,6 +15,8 @@ TODO: Get license text from stinger file
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 use bytes::Bytes;
+use std::collections::HashMap;
+use strfmt::strfmt;
 use tokio::sync::oneshot;
 
 use async_trait::async_trait;
@@ -108,7 +110,7 @@ pub struct SimpleServer<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
-
+    topic_param_prefix: String,
     #[cfg(feature = "metrics")]
     metrics: Arc<AsyncMutex<SimpleServerMetrics>>,
 }
@@ -119,6 +121,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         method_handlers: Arc<AsyncMutex<Box<dyn SimpleMethodHandlers<C>>>>,
         instance_id: String,
         initial_property_values: SimpleInitialPropertyValues,
+        prefix: String,
     ) -> Self {
         #[cfg(feature = "metrics")]
         let mut metrics = SimpleServerMetrics::default();
@@ -127,10 +130,24 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
 
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Simple".to_string()),
+            ("service_id".to_string(), instance_id.to_string()),
+            (
+                "client_id".to_string(),
+                connection.get_client_id().to_string(),
+            ),
+            ("prefix".to_string(), prefix.clone()),
+        ]);
+
         // Create method handler struct
         let subscription_id_trade_numbers_method_req = connection
             .subscribe(
-                format!("simple/{}/method/tradeNumbers", instance_id),
+                strfmt(
+                    "{prefix}/Simple/{service_id}/method/trade_numbers/request",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::ExactlyOnce,
                 message_received_tx.clone(),
             )
@@ -140,7 +157,11 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
 
         let subscription_id_school_property_update = connection
             .subscribe(
-                format!("simple/{}/property/school/setValue", instance_id),
+                strfmt(
+                    "{prefix}/Simple/{service_id}/property/school/update",
+                    &topic_param_map,
+                )
+                .unwrap(),
                 QoS::AtLeastOnce,
                 message_received_tx.clone(),
             )
@@ -164,7 +185,11 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         #[cfg(feature = "metrics")]
         let start_prop_publish_time = std::time::Instant::now();
         {
-            let topic = format!("simple/{}/property/school/value", instance_id);
+            let topic = strfmt(
+                "{prefix}/Simple/{service_id}/property/school/value",
+                &topic_param_map,
+            )
+            .unwrap();
 
             let payload_obj = SchoolProperty {
                 name: initial_property_values.school,
@@ -199,6 +224,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
 
             client_id: connection.get_client_id(),
             instance_id,
+            topic_param_prefix: prefix,
             #[cfg(feature = "metrics")]
             metrics: Arc::new(AsyncMutex::new(metrics)),
         }
@@ -260,7 +286,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
     /// Emits the person_entered signal with the given arguments.
     pub async fn emit_person_entered(&mut self, person: Person) -> SentMessageFuture {
         let data = PersonEnteredSignalPayload { person };
-        let topic = format!("simple/{}/signal/personEntered", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Simple".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "person_entered".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/Simple/{service_id}/signal/person_entered",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -273,7 +310,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         person: Person,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = PersonEnteredSignalPayload { person };
-        let topic = format!("simple/{}/signal/personEntered", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Simple".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "person_entered".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/Simple/{service_id}/signal/person_entered",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -501,6 +549,13 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
     where
         C: 'static,
     {
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "Simple".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
             self.msg_streamer_rx
@@ -523,9 +578,9 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         let props = self.properties.clone();
         {
             // Set up property change request handling task
-            let instance_id_for_school_prop = self.instance_id.clone();
             let mut publisher_for_school_prop = self.mqtt_client.clone();
             let school_prop_version = props.school_version.clone();
+            let topic_param_map_for_school = topic_param_map.clone();
             if let Some(mut rx_for_school_prop) = props.school.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_school_prop.recv().await {
@@ -535,10 +590,11 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
 
                         let version_value =
                             school_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let topic: String = format!(
-                            "simple/{}/property/school/value",
-                            instance_id_for_school_prop
-                        );
+                        let topic: String = strfmt(
+                            "{prefix}/Simple/{service_id}/property/school/value",
+                            &topic_param_map_for_school,
+                        )
+                        .unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_school_prop.publish(msg).await;
@@ -569,20 +625,26 @@ impl<C: Mqtt5PubSub + Clone + Send> SimpleServer<C> {
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
+        let topic_param_map_for_info = topic_param_map.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(120));
             loop {
                 interval.tick().await;
-                let topic = format!("simple/{}/interface", instance_id);
+                let topic = strfmt(
+                    "{prefix}/Simple/{service_id}/interface",
+                    &topic_param_map_for_info,
+                )
+                .unwrap();
                 let info = crate::interface::InterfaceInfoBuilder::default()
                     .interface_name("Simple".to_string())
                     .title("Simple Example Interface".to_string())
                     .version("0.0.1".to_string())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
+                    .prefix(topic_param_map_for_info.get("prefix").unwrap().to_string())
                     .build()
                     .unwrap();
-                let msg = message::interface_online(&topic, &info, 150 /*seconds*/).unwrap();
+                let msg = message::interface_online(&topic, &info, 144 /*seconds*/).unwrap();
                 let _ = interface_publisher.publish(msg).await;
             }
         });

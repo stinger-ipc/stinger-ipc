@@ -10,7 +10,7 @@ TODO: Get license text from stinger file
 use std::collections::{HashMap};
 use std::fmt;
 use std::sync::{Arc, RwLock};
-
+use strfmt::strfmt;
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use stinger_mqtt_trait::{Mqtt5PubSub, Mqtt5PubSubError};
 use tokio::sync::{broadcast};
@@ -72,9 +72,9 @@ impl Default for ServiceInDiscovery {
 #[derive(Clone, Debug)]
 pub struct DiscoveredService {
     pub interface_info: InterfaceInfo,
-    {% if stinger.properties|length > 0 %}
+    {%- if stinger.properties|length > 0 %}
     pub properties: {{stinger.name | UpperCamelCase}}InitialPropertyValues,
-    {% endif %}
+    {%- endif %}
 }
 
 impl ServiceInDiscovery {
@@ -161,9 +161,20 @@ pub type {{stinger.name|UpperCamelCase}}DiscoveryReceiver = broadcast::Receiver<
 impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCase}}Discovery<C> {
     pub async fn new(connection: &mut C) -> Result<Self, {{stinger.name|UpperCamelCase}}DiscoveryError> {
 
-        let service_name = "{{stinger.name}}".to_string();
-        let discovery_topic = format!("{{stinger.interface_info_topic}}", "+");
+        let discovery_topic_params_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), "+".to_string()),
+            ("client_id".to_string(), "+".to_string()),
+            ("property_name".to_string(), "+".to_string()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), "+".to_string()),
+            {%-endfor%}
+        ]);
 
+        let service_name = "{{stinger.name}}".to_string();
+        let discovery_topic = strfmt("{{stinger.interface_info_topic()}}", &discovery_topic_params_map).unwrap();
+
+        // Subscribe to the interface discovery topic.
         let (info_tx, info_rx) = broadcast::channel::<MqttMessage>(32);
         debug!("Subscribing to discovery topic: {discovery_topic}");
         let _subscription_id = connection
@@ -171,12 +182,16 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
             .await
             .map_err({{stinger.name|UpperCamelCase}}DiscoveryError::from)?;
         {%if stinger.properties|length > 0 %}
+        // Subscribe to all property value topics.
         let (prop_tx, prop_rx) = broadcast::channel::<MqttMessage>(32);
+        let all_property_subscription_topic = strfmt("{{stinger.all_properties_value_topic()}}", &discovery_topic_params_map).unwrap();
         let _property_subscription_id = connection
-            .subscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value".to_string(), QoS::AtLeastOnce, prop_tx.clone())
+            .subscribe(all_property_subscription_topic, QoS::AtLeastOnce, prop_tx.clone())
             .await
             .map_err({{stinger.name|UpperCamelCase}}DiscoveryError::from)?;
         {%endif%}
+
+        // Map holds information about instances in the process of being fully discovered. Keyed by instance_id.
         let instances_in_discovery = Arc::new(RwLock::new(HashMap::new()));
 
         // Clients can get a notification receiver by calling the subscribe() method.
@@ -259,7 +274,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
         self.notification_tx.subscribe()
     }
 
-    fn try_publish_discovered_service(
+    fn try_notify_discovered_service(
             service_in_discovery: &ServiceInDiscovery, 
             notification_tx: &broadcast::Sender<DiscoveredService>,
             #[cfg(feature = "metrics")] metrics: &Arc<Mutex<{{stinger.name|UpperCamelCase}}DiscoveryMetrics>>,
@@ -275,6 +290,12 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
                     metrics_guard.set_time_of_first_discovery();
                 }
             }
+        } else {
+            debug!("Service instance '{}' has {} / {} properties discovered", 
+                service_in_discovery.interface_info.as_ref().map(|i| i.instance.as_str()).unwrap_or("<unknown>"), 
+                service_in_discovery.property_count, 
+                {{stinger.properties | length}}
+            );
         }
         {% else %}
         if let Some(discovered) = service_in_discovery.to_discovered_service() {
@@ -321,11 +342,11 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
                     metrics_guard.increment_received_property_values();
                 }
 
-                // Parse property topic (format: service/{instance_id}/property/{property_name}/value)
+                // Parse property topic (format: {{config.topics.property_values}})
                 let topic_parts: Vec<&str> = message.topic.split('/').collect();
-                if topic_parts.len() == 5 {
-                    let instance_id = topic_parts[1];
-                    let property_name = topic_parts[3];
+                if topic_parts.len() == {{config.topics.property_values.split('/')|length}} {
+                    let instance_id = topic_parts[{{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}}];
+                    let property_name = topic_parts[{{utils.topic_template_placeholder_index(config.topics.property_values, "property_name")}}];
                     
                     let mut instance_map = instances_in_discovery
                         .write()
@@ -363,10 +384,10 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
                         }
                         {%endfor%}
                         _ => {
-                            // Ignore unknown properties
+                            info!("Received value for unknown property '{}' for instance '{}'", property_name, instance_id);
                         }
                     }
-                    Self::try_publish_discovered_service(
+                    Self::try_notify_discovered_service(
                         service_in_discovery, 
                         &notification_tx,
                         #[cfg(feature = "metrics")] &metrics,
@@ -400,6 +421,12 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
             match deserialized {
                 Ok(info) => {
                     info!("Discovered service instance: {:?}", info);
+
+                    // TODO: semantically match the versions.
+                    if info.version != "{{stinger.version}}" {
+                        info!("Service instance '{}' has version '{}' (expected '{{stinger.version}}')", info.instance, info.version);
+                    }
+                    
                     {
                         let mut instance_map = instances_in_discovery
                             .write()
@@ -408,7 +435,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
                             .entry(info.instance.clone())
                             .or_default();
                         service_in_discovery.interface_info = Some(info);
-                        Self::try_publish_discovered_service(
+                        Self::try_notify_discovered_service(
                             service_in_discovery, 
                             notification_tx,
                             #[cfg(feature = "metrics")] &metrics,
@@ -425,8 +452,18 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
 
 impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for {{stinger.name|UpperCamelCase}}Discovery<C> {
     fn drop(&mut self) {
+        let discovery_topic_params_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), "+".to_string()),
+            ("client_id".to_string(), "+".to_string()),
+            ("property_name".to_string(), "+".to_string()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), "+".to_string()),
+            {%-endfor%}
+        ]);
+
         self.info_listener_handle.abort();
-        let _ = self.connection.unsubscribe(format!("{{stinger.interface_info_topic}}", "+"));
+        let _ = self.connection.unsubscribe(strfmt("{{stinger.interface_info_topic()}}", &discovery_topic_params_map).unwrap());
         {% if stinger.properties|length > 0 %}
         self.prop_listener_handle.abort();
         let _ = self.connection.unsubscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value".to_string());

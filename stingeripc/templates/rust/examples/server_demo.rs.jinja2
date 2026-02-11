@@ -122,10 +122,12 @@ async fn main() {
     let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient>>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new())));
 
     // Create the server object.
-    let mut server = {{stinger.rust.server_struct_name}}::new(connection, handlers.clone(), "rust-server-demo:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}).await;
+    let mut server = {{stinger.rust.server_struct_name}}::new(connection, handlers.clone(), "rust-server-demo:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}
+            {%- for topic_param in config.topics.params %} "example".to_string(), {% endfor %}).await;
     {%else%}
     // Create the server object.
-    let mut server = {{stinger.rust.server_struct_name}}::new(connection, "rust-server-demo:1".to_string(){%if stinger.properties|length > 0 %} initial_property_values, {%endif%}).await;
+    let mut server = {{stinger.rust.server_struct_name}}::new(connection, "rust-server-demo:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}
+            {%- for topic_param in config.topics.params %} "example".to_string(), {% endfor %}).await;
     {%endif%}
 
     // Start the server connection loop in a separate task.
