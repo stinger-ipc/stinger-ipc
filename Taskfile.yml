@@ -326,7 +326,7 @@ tasks:
     sources:
       - example_interfaces/{{.IFACE}}/output/protobuf/**
     cmds:
-      - protoc --proto_path=./example_interfaces/{{.IFACE}}/output/protobuf/ --descriptor_set_out=/dev/null ./example_interfaces/{{.IFACE}}/output/protobuf/*.proto
+      - uvx --from=protoc-wrapper@30.2 protoc --proto_path=./example_interfaces/{{.IFACE}}/output/protobuf/ --descriptor_set_out=/dev/null ./example_interfaces/{{.IFACE}}/output/protobuf/*.proto
     vars:
       IFACE: '{{index .MATCH 0}}'
 

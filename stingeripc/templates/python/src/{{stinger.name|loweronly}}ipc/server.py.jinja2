@@ -207,7 +207,7 @@ class {{stinger.python.server_class_name}}:
     {%for prop_name, prop in stinger.properties.items()%}
     {%if not prop.read_only%}
     def _receive_{{prop_name|snake_case}}_update_request_message(self, message: Message):
-        """ When the MQTT client receives a message to the `{{prop.update_topic}}` topic
+        """ When the MQTT client receives a message to the `{{prop.update_topic()}}` topic
         in order to update the `{{prop_name}}` property, this method is called to process that message
         and update the value of the property.
         """

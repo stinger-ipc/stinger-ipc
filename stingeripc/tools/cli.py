@@ -48,11 +48,7 @@ def generate(
         if lang not in ("rust", "python", "markdown", "cpp", "web", "protobuf"):
             raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf")
 
-        if lang in ["markdown", "rust", "html", "protobuf", "python", "web"]:
-            generic_generator.main(input_file, output_dir, lang, template_pkg, template_path, consumer, config)
-        elif lang == "cpp":
-            cpp_generator.main(input_file, output_dir)
-        
+        generic_generator.main(input_file, output_dir, lang, template_pkg, template_path, consumer, config)       
         print(f"Generation for '{lang}' completed.")
     
     # Use generic generator if template-pkg or template-path is provided
