@@ -11,7 +11,7 @@
 #include <ctime>
 #include <syslog.h>
 #include <sstream>
-#include "utils.hpp"
+#include "stinger/utils/uuid.hpp"
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/error/en.h>
@@ -41,7 +41,7 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     {%-for method_name, method in stinger.methods.items() %}
     { // Restrict scope
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << format("{{method.response_topic((method_name|lowerCamelCase), '%1%')}}") % _broker->GetClientId();
+        responseTopicStringStream << format("{{method.response_topic()}}") % _broker->GetClientId();
         _{{method_name | lowerCamelCase}}MethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     {%-endfor%}
@@ -136,7 +136,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(
     {%-endfor%}{# for signals #}
 
     {%-for method_name, method in stinger.methods.items() %}
-    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | lowerCamelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{method.response_topic((method_name|lowerCamelCase), '+')}}") && mqttProps.correlationId))
+    {%if not loop.first%}else {%endif%}if ((subscriptionId == _{{method_name | lowerCamelCase}}MethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, "{{ method.response_topic() }}") && mqttProps.correlationId))
     {
         _broker->Log(LOG_DEBUG, "Matched topic for {{method_name}} response");
         _handle{{method_name|UpperCamelCase}}Response(topic, payload, mqttProps);
@@ -176,12 +176,12 @@ std::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
     std::stringstream responseTopicStringStream;
-    responseTopicStringStream << format("{{method.response_topic((method_name|lowerCamelCase), '%1%')}}") % _broker->GetClientId();
+    responseTopicStringStream << format("{{ method.response_topic() }}") % _broker->GetClientId();
     MqttProperties mqttProps;
     mqttProps.correlationId = correlationId;
     mqttProps.responseTopic = responseTopicStringStream.str();
     mqttProps.returnCode = MethodReturnCode::SUCCESS;
-    _broker->Publish((format("{{method.topic}}") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
+    _broker->Publish((format("{{ method.request_topic() }}") % _instanceId).str(), buf.GetString(), 2, false, mqttProps);
 
     return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationId].get_future();
 }

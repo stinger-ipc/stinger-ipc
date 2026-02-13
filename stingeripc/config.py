@@ -23,6 +23,10 @@ class PythonConfig(BaseModel):
     """Python-specific configuration options."""
     python37: bool = Field(default=False, description="Generate Python 3.7 compatible code")
 
+class CppConfig(BaseModel):
+    """C++-specific configuration options."""
+    namespace: List[str] = Field(default_factory=lambda: ["stinger", "gen"], description="List of nested namespaces for generated C++ code.  The interface name is appended to this as the innermost namespace.")
+
 class TopicConfig(BaseModel):
     """ Configuration for which topic schemas to use """
     params: List[str] = Field(default_factory=list, description="List of parameters to include in topic templates")
