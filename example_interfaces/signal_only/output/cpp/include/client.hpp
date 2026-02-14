@@ -18,14 +18,20 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include "utils.hpp"
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/error/return_codes.hpp>
 #include "enums.hpp"
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
+#include "discovery.hpp"
 
-class SignalOnlyClient
-{
+namespace stinger {
+
+namespace gen {
+namespace signal_only {
+
+class SignalOnlyClient {
 public:
     // This is the name of the API.
     static constexpr const char NAME[] = "SignalOnly";
@@ -33,7 +39,7 @@ public:
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
     // Constructor taking a connection object.
-    SignalOnlyClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    SignalOnlyClient(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo);
 
     virtual ~SignalOnlyClient();
     // ------------------ SIGNALS --------------------
@@ -60,18 +66,19 @@ public:
 
 private:
     // Pointer to the broker connection.
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
 
     // Service Instance ID that this client is connected to.
     std::string _instanceId;
+    InstanceInfo _instanceInfo;
 
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
     void _receiveMessage(
             const std::string& topic,
             const std::string& payload,
-            const MqttProperties& mqttProps
+            const stinger::utils::MqttProperties& mqttProps
     );
 
     // ------------------ SIGNALS --------------------
@@ -111,3 +118,9 @@ private:
     // MQTT Subscription ID for `now` signal receptions.
     int _nowSignalSubscriptionId = -1;
 };
+
+} // namespace signal_only
+
+} // namespace gen
+
+} // namespace stinger

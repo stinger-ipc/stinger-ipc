@@ -19,7 +19,7 @@ UTC = timezone.utc
 {%endif%}
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
-from pyqttier.interface import IBrokerConnection
+from pyqttier.interface import stinger::utils::IConnection
 from pyqttier.message import Message
 import concurrent.futures as futures
 import asyncio
@@ -56,7 +56,7 @@ class DiscoveredInstance(BaseModel):
 
 class {{stinger.python.client_class_name}}:
 
-    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
+    def __init__(self, connection: stinger::utils::IConnection, instance_info: DiscoveredInstance):
         """ Constructor for a `{{stinger.python.client_class_name}}` object.
         """
         self._logger = logging.getLogger('{{stinger.python.client_class_name}}')
@@ -321,7 +321,7 @@ class {{stinger.python.client_class_name}}Builder:
         return wrapper
     {%endfor%}
 
-    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any]=None) -> {{stinger.python.client_class_name}}:
+    def build(self, broker: stinger::utils::IConnection, instance_info: DiscoveredInstance, binding: Optional[Any]=None) -> {{stinger.python.client_class_name}}:
         """ Builds a new {{stinger.python.client_class_name}}.
         """
         self._logger.debug("Building {{stinger.python.client_class_name}} for service instance %s", instance_info.instance_id)
@@ -344,7 +344,7 @@ class {{stinger.python.client_class_name}}Builder:
 
 class {{stinger.python.client_class_name}}Discoverer:
     
-    def __init__(self, connection: IBrokerConnection, builder: Optional[{{stinger.python.client_class_name}}Builder]=None, build_binding: Optional[Any]=None):
+    def __init__(self, connection: stinger::utils::IConnection, builder: Optional[{{stinger.python.client_class_name}}Builder]=None, build_binding: Optional[Any]=None):
         """ Creates a new {{stinger.python.client_class_name}}Discoverer.
         """
         self._conn = connection

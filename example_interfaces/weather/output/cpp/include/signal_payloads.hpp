@@ -12,14 +12,23 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
-struct CurrentTimePayload
-{
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
+struct CurrentTimePayload {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static CurrentTimePayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::string currentTime;
 };
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

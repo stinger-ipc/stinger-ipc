@@ -70,33 +70,26 @@ int main(int argc, char** argv)
     std::thread periodicEmitter([server, &keepRunning]()
                                 {
                                     int loopCount = 0;
-                                    while (keepRunning)
-                                    {
+                                    while (keepRunning) {
                                         loopCount++;
                                         // Call emitTodayIsSignal; do not block forever waiting for publish
-                                        try
-                                        {
+                                        try {
                                             auto todayIsFuture = server->emitTodayIsSignal(42, DayOfTheWeek::SATURDAY);
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             auto randomWordFuture = server->emitRandomWordSignal("apples", std::chrono::system_clock::now());
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             todayIsFuture.wait();
                                             randomWordFuture.wait();
-                                        }
-                                        catch (...)
-                                        {
-                                        }
+                                        } catch (...) { }
 
                                         std::cout << "Periodic update iteration " << loopCount << " complete. Sleeping for 58 ...\n";
 
                                         // Sleep in 1-second increments so we can stop quickly
-                                        for (int i = 0; i < 58 && keepRunning; ++i)
-                                        {
+                                        for (int i = 0; i < 58 && keepRunning; ++i) {
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                         }
 
-                                        if (loopCount % 3 == 0)
-                                        {
+                                        if (loopCount % 3 == 0) {
                                             std::cout << "Updating value for property 'favorite_number'.\n";
                                             server->updateFavoriteNumberProperty(42);
 
@@ -123,8 +116,7 @@ int main(int argc, char** argv)
 
     // Signal the emitter thread to stop and join it
     keepRunning = false;
-    if (periodicEmitter.joinable())
-    {
+    if (periodicEmitter.joinable()) {
         periodicEmitter.join();
     }
 

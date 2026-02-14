@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsimple-server.a "CMakeFiles/simple-server.dir/src/client.cpp.o" "CMakeFiles/simple-server.dir/src/conversions.cpp.o" "CMakeFiles/simple-server.dir/src/discovery.cpp.o" "CMakeFiles/simple-server.dir/src/method_payloads.cpp.o" "CMakeFiles/simple-server.dir/src/property_structs.cpp.o" "CMakeFiles/simple-server.dir/src/signal_payloads.cpp.o" "CMakeFiles/simple-server.dir/src/structs.cpp.o"
+/usr/bin/ranlib libsimple-server.a

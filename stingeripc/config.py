@@ -59,6 +59,7 @@ class DiscoveryConfig(BaseModel):
 class StingerConfig(BaseModel):
     """Root configuration model for Stinger IPC code generation."""
     python: PythonConfig = Field(default_factory=PythonConfig, description="Python generation options")
+    cpp: CppConfig = Field(default_factory=CppConfig, description="C++ generation options")
     properties: PropertyConfig = Field(default_factory=PropertyConfig, description="Property generation options")
     server: ServerConfig = Field(default_factory=ServerConfig, description="Server code generation options")
     client: ClientConfig = Field(default_factory=ClientConfig, description="Client code generation options")

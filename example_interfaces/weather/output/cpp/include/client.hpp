@@ -18,16 +18,22 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include "utils.hpp"
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/error/return_codes.hpp>
 #include "enums.hpp"
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
+#include "discovery.hpp"
 
 #include "property_structs.hpp"
 
-class WeatherClient
-{
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
+class WeatherClient {
 public:
     // This is the name of the API.
     static constexpr const char NAME[] = "weather";
@@ -35,7 +41,7 @@ public:
     static constexpr const char INTERFACE_VERSION[] = "0.1.2";
 
     // Constructor taking a connection object.
-    WeatherClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    WeatherClient(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo);
 
     virtual ~WeatherClient();
     // ------------------ SIGNALS --------------------
@@ -158,18 +164,19 @@ public:
 
 private:
     // Pointer to the broker connection.
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
 
     // Service Instance ID that this client is connected to.
     std::string _instanceId;
+    InstanceInfo _instanceInfo;
 
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
     void _receiveMessage(
             const std::string& topic,
             const std::string& payload,
-            const MqttProperties& mqttProps
+            const stinger::utils::MqttProperties& mqttProps
     );
 
     // ------------------ SIGNALS --------------------
@@ -183,22 +190,22 @@ private:
 
     // ------------------- METHODS --------------------
     // Holds promises for pending `refresh_daily_forecast` method calls.
-    std::map<std::string, std::promise<void>> _pendingRefreshDailyForecastMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<void>> _pendingRefreshDailyForecastMethodCalls;
     int _refreshDailyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_daily_forecast` method calls.
-    void _handleRefreshDailyForecastResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleRefreshDailyForecastResponse(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps);
 
     // Holds promises for pending `refresh_hourly_forecast` method calls.
-    std::map<std::string, std::promise<void>> _pendingRefreshHourlyForecastMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<void>> _pendingRefreshHourlyForecastMethodCalls;
     int _refreshHourlyForecastMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_hourly_forecast` method calls.
-    void _handleRefreshHourlyForecastResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleRefreshHourlyForecastResponse(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps);
 
     // Holds promises for pending `refresh_current_conditions` method calls.
-    std::map<std::string, std::promise<void>> _pendingRefreshCurrentConditionsMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<void>> _pendingRefreshCurrentConditionsMethodCalls;
     int _refreshCurrentConditionsMethodSubscriptionId = -1;
     // This is called internally to process responses to `refresh_current_conditions` method calls.
-    void _handleRefreshCurrentConditionsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleRefreshCurrentConditionsResponse(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps);
 
     // ---------------- PROPERTIES ------------------
 
@@ -370,3 +377,9 @@ private:
     std::vector<std::function<void(int)>> _dailyForecastRefreshIntervalPropertyCallbacks;
     std::mutex _dailyForecastRefreshIntervalPropertyCallbacksMutex;
 };
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

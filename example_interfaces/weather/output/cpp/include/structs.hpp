@@ -13,13 +13,16 @@ TODO: Get license text from stinger file
 #include <cstddef>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 #include "enums.hpp"
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
 
-struct ForecastForHour
-{
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
+struct ForecastForHour {
     static ForecastForHour FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     double temperature;
@@ -27,8 +30,7 @@ struct ForecastForHour
     WeatherCondition condition;
 };
 
-struct ForecastForDay
-{
+struct ForecastForDay {
     static ForecastForDay FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     double highTemperature;
@@ -37,3 +39,9 @@ struct ForecastForDay
     std::string startTime;
     std::string endTime;
 };
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

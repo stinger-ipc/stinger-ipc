@@ -12,12 +12,15 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
-struct AnotherSignalPayload
-{
+namespace stinger {
+
+namespace gen {
+namespace signal_only {
+
+struct AnotherSignalPayload {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static AnotherSignalPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
@@ -26,34 +29,36 @@ struct AnotherSignalPayload
     std::string three;
 };
 
-struct BarkPayload
-{
+struct BarkPayload {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static BarkPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::string word;
 };
 
-struct MaybeNumberPayload
-{
+struct MaybeNumberPayload {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static MaybeNumberPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::optional<int> number;
 };
 
-struct MaybeNamePayload
-{
+struct MaybeNamePayload {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static MaybeNamePayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::optional<std::string> name;
 };
 
-struct NowPayload
-{
+struct NowPayload {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static NowPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::chrono::time_point<std::chrono::system_clock> timestamp;
 };
+
+} // namespace signal_only
+
+} // namespace gen
+
+} // namespace stinger

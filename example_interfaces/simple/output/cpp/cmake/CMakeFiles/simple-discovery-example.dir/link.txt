@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/simple-discovery-example.dir/link.d "CMakeFiles/simple-discovery-example.dir/examples/discovery_example.cpp.o" -o simple-discovery-example  libsimple-client.a _deps/stinger-cpp-utils-build/libstinger_utils.a -lmosquitto

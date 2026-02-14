@@ -12,75 +12,88 @@
 #include "server.hpp"
 #include "method_payloads.hpp"
 #include "enums.hpp"
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/utils/format.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace testable {
 
 constexpr const char TestableServer::NAME[];
 constexpr const char TestableServer::INTERFACE_VERSION[];
 
-TestableServer::TestableServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
-    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
+TestableServer::TestableServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix):
+    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false), _prefixTopicParam(prefix),
+
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,
                                                                        const std::string& payload,
-                                                                       const MqttProperties& mqttProps
+                                                                       const stinger::utils::MqttProperties& mqttProps
                                                                )
                                                                {
                                                                    _receiveMessage(topic, payload, mqttProps);
                                                                });
 
-    _callWithNothingMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callWithNothing") % _instanceId).str(), 2);
-    _callOneIntegerMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOneInteger") % _instanceId).str(), 2);
-    _callOptionalIntegerMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOptionalInteger") % _instanceId).str(), 2);
-    _callThreeIntegersMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callThreeIntegers") % _instanceId).str(), 2);
-    _callOneStringMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOneString") % _instanceId).str(), 2);
-    _callOptionalStringMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOptionalString") % _instanceId).str(), 2);
-    _callThreeStringsMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callThreeStrings") % _instanceId).str(), 2);
-    _callOneEnumMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOneEnum") % _instanceId).str(), 2);
-    _callOptionalEnumMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOptionalEnum") % _instanceId).str(), 2);
-    _callThreeEnumsMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callThreeEnums") % _instanceId).str(), 2);
-    _callOneStructMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOneStruct") % _instanceId).str(), 2);
-    _callOptionalStructMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOptionalStruct") % _instanceId).str(), 2);
-    _callThreeStructsMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callThreeStructs") % _instanceId).str(), 2);
-    _callOneDateTimeMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOneDateTime") % _instanceId).str(), 2);
-    _callOptionalDateTimeMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOptionalDateTime") % _instanceId).str(), 2);
-    _callThreeDateTimesMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callThreeDateTimes") % _instanceId).str(), 2);
-    _callOneDurationMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOneDuration") % _instanceId).str(), 2);
-    _callOptionalDurationMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOptionalDuration") % _instanceId).str(), 2);
-    _callThreeDurationsMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callThreeDurations") % _instanceId).str(), 2);
-    _callOneBinaryMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOneBinary") % _instanceId).str(), 2);
-    _callOptionalBinaryMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOptionalBinary") % _instanceId).str(), 2);
-    _callThreeBinariesMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callThreeBinaries") % _instanceId).str(), 2);
-    _callOneListOfIntegersMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOneListOfIntegers") % _instanceId).str(), 2);
-    _callOptionalListOfFloatsMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callOptionalListOfFloats") % _instanceId).str(), 2);
-    _callTwoListsMethodSubscriptionId = _broker->Subscribe((format("testable/%1%/method/callTwoLists") % _instanceId).str(), 2);
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["prefix"] = _prefixTopicParam;
 
-    _readWriteIntegerPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteInteger/setValue") % _instanceId).str(), 1);
-    _readOnlyIntegerPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readOnlyInteger/setValue") % _instanceId).str(), 1);
-    _readWriteOptionalIntegerPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalInteger/setValue") % _instanceId).str(), 1);
-    _readWriteTwoIntegersPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoIntegers/setValue") % _instanceId).str(), 1);
-    _readOnlyStringPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readOnlyString/setValue") % _instanceId).str(), 1);
-    _readWriteStringPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteString/setValue") % _instanceId).str(), 1);
-    _readWriteOptionalStringPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalString/setValue") % _instanceId).str(), 1);
-    _readWriteTwoStringsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoStrings/setValue") % _instanceId).str(), 1);
-    _readWriteStructPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteStruct/setValue") % _instanceId).str(), 1);
-    _readWriteOptionalStructPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalStruct/setValue") % _instanceId).str(), 1);
-    _readWriteTwoStructsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoStructs/setValue") % _instanceId).str(), 1);
-    _readOnlyEnumPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readOnlyEnum/setValue") % _instanceId).str(), 1);
-    _readWriteEnumPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteEnum/setValue") % _instanceId).str(), 1);
-    _readWriteOptionalEnumPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalEnum/setValue") % _instanceId).str(), 1);
-    _readWriteTwoEnumsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoEnums/setValue") % _instanceId).str(), 1);
-    _readWriteDatetimePropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteDatetime/setValue") % _instanceId).str(), 1);
-    _readWriteOptionalDatetimePropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalDatetime/setValue") % _instanceId).str(), 1);
-    _readWriteTwoDatetimesPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoDatetimes/setValue") % _instanceId).str(), 1);
-    _readWriteDurationPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteDuration/setValue") % _instanceId).str(), 1);
-    _readWriteOptionalDurationPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalDuration/setValue") % _instanceId).str(), 1);
-    _readWriteTwoDurationsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoDurations/setValue") % _instanceId).str(), 1);
-    _readWriteBinaryPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteBinary/setValue") % _instanceId).str(), 1);
-    _readWriteOptionalBinaryPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteOptionalBinary/setValue") % _instanceId).str(), 1);
-    _readWriteTwoBinariesPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteTwoBinaries/setValue") % _instanceId).str(), 1);
-    _readWriteListOfStringsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteListOfStrings/setValue") % _instanceId).str(), 1);
-    _readWriteListsPropertySubscriptionId = _broker->Subscribe((format("testable/%1%/property/readWriteLists/setValue") % _instanceId).str(), 1);
+    _callWithNothingMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callWithNothing/request") % _instanceId).str(), 2);
+    _callOneIntegerMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOneInteger/request") % _instanceId).str(), 2);
+    _callOptionalIntegerMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOptionalInteger/request") % _instanceId).str(), 2);
+    _callThreeIntegersMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callThreeIntegers/request") % _instanceId).str(), 2);
+    _callOneStringMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOneString/request") % _instanceId).str(), 2);
+    _callOptionalStringMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOptionalString/request") % _instanceId).str(), 2);
+    _callThreeStringsMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callThreeStrings/request") % _instanceId).str(), 2);
+    _callOneEnumMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOneEnum/request") % _instanceId).str(), 2);
+    _callOptionalEnumMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOptionalEnum/request") % _instanceId).str(), 2);
+    _callThreeEnumsMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callThreeEnums/request") % _instanceId).str(), 2);
+    _callOneStructMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOneStruct/request") % _instanceId).str(), 2);
+    _callOptionalStructMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOptionalStruct/request") % _instanceId).str(), 2);
+    _callThreeStructsMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callThreeStructs/request") % _instanceId).str(), 2);
+    _callOneDateTimeMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOneDateTime/request") % _instanceId).str(), 2);
+    _callOptionalDateTimeMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOptionalDateTime/request") % _instanceId).str(), 2);
+    _callThreeDateTimesMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callThreeDateTimes/request") % _instanceId).str(), 2);
+    _callOneDurationMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOneDuration/request") % _instanceId).str(), 2);
+    _callOptionalDurationMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOptionalDuration/request") % _instanceId).str(), 2);
+    _callThreeDurationsMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callThreeDurations/request") % _instanceId).str(), 2);
+    _callOneBinaryMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOneBinary/request") % _instanceId).str(), 2);
+    _callOptionalBinaryMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOptionalBinary/request") % _instanceId).str(), 2);
+    _callThreeBinariesMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callThreeBinaries/request") % _instanceId).str(), 2);
+    _callOneListOfIntegersMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOneListOfIntegers/request") % _instanceId).str(), 2);
+    _callOptionalListOfFloatsMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callOptionalListOfFloats/request") % _instanceId).str(), 2);
+    _callTwoListsMethodSubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/method/callTwoLists/request") % _instanceId).str(), 2);
+
+    _readWriteIntegerPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_integer/update") % _instanceId).str(), 1);
+    _readOnlyIntegerPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_only_integer/update") % _instanceId).str(), 1);
+    _readWriteOptionalIntegerPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_optional_integer/update") % _instanceId).str(), 1);
+    _readWriteTwoIntegersPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_two_integers/update") % _instanceId).str(), 1);
+    _readOnlyStringPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_only_string/update") % _instanceId).str(), 1);
+    _readWriteStringPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_string/update") % _instanceId).str(), 1);
+    _readWriteOptionalStringPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_optional_string/update") % _instanceId).str(), 1);
+    _readWriteTwoStringsPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_two_strings/update") % _instanceId).str(), 1);
+    _readWriteStructPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_struct/update") % _instanceId).str(), 1);
+    _readWriteOptionalStructPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_optional_struct/update") % _instanceId).str(), 1);
+    _readWriteTwoStructsPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_two_structs/update") % _instanceId).str(), 1);
+    _readOnlyEnumPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_only_enum/update") % _instanceId).str(), 1);
+    _readWriteEnumPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_enum/update") % _instanceId).str(), 1);
+    _readWriteOptionalEnumPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_optional_enum/update") % _instanceId).str(), 1);
+    _readWriteTwoEnumsPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_two_enums/update") % _instanceId).str(), 1);
+    _readWriteDatetimePropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_datetime/update") % _instanceId).str(), 1);
+    _readWriteOptionalDatetimePropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_optional_datetime/update") % _instanceId).str(), 1);
+    _readWriteTwoDatetimesPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_two_datetimes/update") % _instanceId).str(), 1);
+    _readWriteDurationPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_duration/update") % _instanceId).str(), 1);
+    _readWriteOptionalDurationPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_optional_duration/update") % _instanceId).str(), 1);
+    _readWriteTwoDurationsPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_two_durations/update") % _instanceId).str(), 1);
+    _readWriteBinaryPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_binary/update") % _instanceId).str(), 1);
+    _readWriteOptionalBinaryPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_optional_binary/update") % _instanceId).str(), 1);
+    _readWriteTwoBinariesPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_two_binaries/update") % _instanceId).str(), 1);
+    _readWriteListOfStringsPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_list_of_strings/update") % _instanceId).str(), 1);
+    _readWriteListsPropertySubscriptionId = _broker->Subscribe((format("{prefix}/testable/{service_id}/property/read_write_lists/update") % _instanceId).str(), 1);
 
     // Start the service advertisement thread
     _advertisementThreadRunning = true;
@@ -90,1012 +103,809 @@ TestableServer::TestableServer(std::shared_ptr<IBrokerConnection> broker, const 
 TestableServer::~TestableServer()
 {
     // Unregister the message callback from the broker.
-    if (_broker && _brokerMessageCallbackHandle != 0)
-    {
+    if (_broker && _brokerMessageCallbackHandle != 0) {
         _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
         _brokerMessageCallbackHandle = 0;
     }
 
     // Stop the advertisement thread
     _advertisementThreadRunning = false;
-    if (_advertisementThread.joinable())
-    {
+    if (_advertisementThread.joinable()) {
         _advertisementThread.join();
     }
 
-    std::string topic = (format("testable/%1%/interface") % _instanceId).str();
-    _broker->Publish(topic, "", 1, true, MqttProperties());
+    std::string topic = (format("<bound method StingerSpec.interface_info_topic of <stingeripc.components.StingerSpec object at 0x73e4f43e5160>>") % _instanceId).str();
+    _broker->Publish(topic, "", 1, true, stinger::utils::MqttProperties());
 
-    _broker->Unsubscribe((format("testable/%1%/method/callWithNothing") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOneInteger") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOptionalInteger") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callThreeIntegers") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOneString") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOptionalString") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callThreeStrings") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOneEnum") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOptionalEnum") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callThreeEnums") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOneStruct") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOptionalStruct") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callThreeStructs") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOneDateTime") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOptionalDateTime") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callThreeDateTimes") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOneDuration") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOptionalDuration") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callThreeDurations") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOneBinary") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOptionalBinary") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callThreeBinaries") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOneListOfIntegers") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callOptionalListOfFloats") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/method/callTwoLists") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
 
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteInteger/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readOnlyInteger/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteOptionalInteger/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteTwoIntegers/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readOnlyString/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteString/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteOptionalString/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteTwoStrings/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteStruct/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteOptionalStruct/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteTwoStructs/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readOnlyEnum/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteEnum/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteOptionalEnum/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteTwoEnums/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteDatetime/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteOptionalDatetime/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteTwoDatetimes/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteDuration/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteOptionalDuration/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteTwoDurations/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteBinary/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteOptionalBinary/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteTwoBinaries/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteListOfStrings/setValue") % _instanceId).str());
-    _broker->Unsubscribe((format("testable/%1%/property/readWriteLists/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f39db2f0>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766ed0>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766e10>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767ec0>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767140>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766960>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767530>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37675f0>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766870>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767920>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767b60>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3765fd0>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766d50>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767f50>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767fb0>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767b90>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767f20>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766120>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767980>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4080>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4410>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4620>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4710>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4b60>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4800>>") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a47a0>>") % _instanceId).str());
 }
 
 void TestableServer::_receiveMessage(
         const std::string& topic,
         const std::string& payload,
-        const MqttProperties& mqttProps
+        const stinger::utils::MqttProperties& mqttProps
 )
 {
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
 
-    if ((subscriptionId == _callWithNothingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callWithNothing") % _instanceId).str())))
-    {
+    if ((subscriptionId == _callWithNothingMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callWithNothing method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callWithNothingHandler)
-            {
+        try {
+            if (_callWithNothingHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallWithNothingHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOneIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOneInteger") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOneIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOneInteger method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOneIntegerHandler)
-            {
+        try {
+            if (_callOneIntegerHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOneIntegerHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOptionalIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOptionalInteger") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOptionalIntegerMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOptionalInteger method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOptionalIntegerHandler)
-            {
+        try {
+            if (_callOptionalIntegerHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOptionalIntegerHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callThreeIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callThreeIntegers") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callThreeIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callThreeIntegers method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callThreeIntegersHandler)
-            {
+        try {
+            if (_callThreeIntegersHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallThreeIntegersHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOneStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOneString") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOneStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOneString method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOneStringHandler)
-            {
+        try {
+            if (_callOneStringHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOneStringHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOptionalStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOptionalString") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOptionalStringMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOptionalString method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOptionalStringHandler)
-            {
+        try {
+            if (_callOptionalStringHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOptionalStringHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callThreeStringsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callThreeStrings") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callThreeStringsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callThreeStrings method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callThreeStringsHandler)
-            {
+        try {
+            if (_callThreeStringsHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallThreeStringsHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOneEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOneEnum") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOneEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOneEnum method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOneEnumHandler)
-            {
+        try {
+            if (_callOneEnumHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOneEnumHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOptionalEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOptionalEnum") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOptionalEnumMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOptionalEnum method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOptionalEnumHandler)
-            {
+        try {
+            if (_callOptionalEnumHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOptionalEnumHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callThreeEnumsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callThreeEnums") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callThreeEnumsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callThreeEnums method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callThreeEnumsHandler)
-            {
+        try {
+            if (_callThreeEnumsHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallThreeEnumsHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOneStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOneStruct") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOneStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOneStruct method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOneStructHandler)
-            {
+        try {
+            if (_callOneStructHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOneStructHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOptionalStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOptionalStruct") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOptionalStructMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOptionalStruct method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOptionalStructHandler)
-            {
+        try {
+            if (_callOptionalStructHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOptionalStructHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callThreeStructsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callThreeStructs") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callThreeStructsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callThreeStructs method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callThreeStructsHandler)
-            {
+        try {
+            if (_callThreeStructsHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallThreeStructsHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOneDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOneDateTime") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOneDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOneDateTime method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOneDateTimeHandler)
-            {
+        try {
+            if (_callOneDateTimeHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOneDateTimeHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOptionalDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOptionalDateTime") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOptionalDateTimeMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOptionalDateTime method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOptionalDateTimeHandler)
-            {
+        try {
+            if (_callOptionalDateTimeHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOptionalDateTimeHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callThreeDateTimesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callThreeDateTimes") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callThreeDateTimesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callThreeDateTimes method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callThreeDateTimesHandler)
-            {
+        try {
+            if (_callThreeDateTimesHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallThreeDateTimesHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOneDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOneDuration") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOneDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOneDuration method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOneDurationHandler)
-            {
+        try {
+            if (_callOneDurationHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOneDurationHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOptionalDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOptionalDuration") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOptionalDurationMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOptionalDuration method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOptionalDurationHandler)
-            {
+        try {
+            if (_callOptionalDurationHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOptionalDurationHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callThreeDurationsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callThreeDurations") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callThreeDurationsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callThreeDurations method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callThreeDurationsHandler)
-            {
+        try {
+            if (_callThreeDurationsHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallThreeDurationsHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOneBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOneBinary") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOneBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOneBinary method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOneBinaryHandler)
-            {
+        try {
+            if (_callOneBinaryHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOneBinaryHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOptionalBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOptionalBinary") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOptionalBinaryMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOptionalBinary method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOptionalBinaryHandler)
-            {
+        try {
+            if (_callOptionalBinaryHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOptionalBinaryHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callThreeBinariesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callThreeBinaries") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callThreeBinariesMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callThreeBinaries method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callThreeBinariesHandler)
-            {
+        try {
+            if (_callThreeBinariesHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallThreeBinariesHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOneListOfIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOneListOfIntegers") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOneListOfIntegersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOneListOfIntegers method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOneListOfIntegersHandler)
-            {
+        try {
+            if (_callOneListOfIntegersHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOneListOfIntegersHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callOptionalListOfFloatsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callOptionalListOfFloats") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callOptionalListOfFloatsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callOptionalListOfFloats method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callOptionalListOfFloatsHandler)
-            {
+        try {
+            if (_callOptionalListOfFloatsHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallOptionalListOfFloatsHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    else if ((subscriptionId == _callTwoListsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/method/callTwoLists") % _instanceId).str())))
-    {
+    else if ((subscriptionId == _callTwoListsMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as callTwoLists method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_callTwoListsHandler)
-            {
+        try {
+            if (_callTwoListsHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callCallTwoListsHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    if (subscriptionId == _readWriteIntegerPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteInteger/setValue") % _instanceId).str())))
-    {
+    if (subscriptionId == _readWriteIntegerPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f39db2f0>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_integer property update.", topic.c_str());
         _receiveReadWriteIntegerPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readOnlyIntegerPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readOnlyInteger/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readOnlyIntegerPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766ed0>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_only_integer property update.", topic.c_str());
         _receiveReadOnlyIntegerPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteOptionalIntegerPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteOptionalInteger/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteOptionalIntegerPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766e10>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_optional_integer property update.", topic.c_str());
         _receiveReadWriteOptionalIntegerPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteTwoIntegersPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteTwoIntegers/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteTwoIntegersPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767ec0>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_two_integers property update.", topic.c_str());
         _receiveReadWriteTwoIntegersPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readOnlyStringPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readOnlyString/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readOnlyStringPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767140>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_only_string property update.", topic.c_str());
         _receiveReadOnlyStringPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteStringPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteString/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteStringPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766960>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_string property update.", topic.c_str());
         _receiveReadWriteStringPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteOptionalStringPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteOptionalString/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteOptionalStringPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767530>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_optional_string property update.", topic.c_str());
         _receiveReadWriteOptionalStringPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteTwoStringsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteTwoStrings/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteTwoStringsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37675f0>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_two_strings property update.", topic.c_str());
         _receiveReadWriteTwoStringsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteStructPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteStruct/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteStructPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766870>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_struct property update.", topic.c_str());
         _receiveReadWriteStructPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteOptionalStructPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteOptionalStruct/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteOptionalStructPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767920>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_optional_struct property update.", topic.c_str());
         _receiveReadWriteOptionalStructPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteTwoStructsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteTwoStructs/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteTwoStructsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767b60>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_two_structs property update.", topic.c_str());
         _receiveReadWriteTwoStructsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readOnlyEnumPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readOnlyEnum/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readOnlyEnumPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3765fd0>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_only_enum property update.", topic.c_str());
         _receiveReadOnlyEnumPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteEnumPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteEnum/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteEnumPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766d50>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_enum property update.", topic.c_str());
         _receiveReadWriteEnumPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteOptionalEnumPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteOptionalEnum/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteOptionalEnumPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767f50>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_optional_enum property update.", topic.c_str());
         _receiveReadWriteOptionalEnumPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteTwoEnumsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteTwoEnums/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteTwoEnumsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767fb0>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_two_enums property update.", topic.c_str());
         _receiveReadWriteTwoEnumsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteDatetimePropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteDatetime/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteDatetimePropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767b90>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_datetime property update.", topic.c_str());
         _receiveReadWriteDatetimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteOptionalDatetimePropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteOptionalDatetime/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteOptionalDatetimePropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767f20>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_optional_datetime property update.", topic.c_str());
         _receiveReadWriteOptionalDatetimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteTwoDatetimesPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteTwoDatetimes/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteTwoDatetimesPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3766120>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_two_datetimes property update.", topic.c_str());
         _receiveReadWriteTwoDatetimesPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteDurationPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteDuration/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteDurationPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f3767980>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_duration property update.", topic.c_str());
         _receiveReadWriteDurationPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteOptionalDurationPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteOptionalDuration/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteOptionalDurationPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4080>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_optional_duration property update.", topic.c_str());
         _receiveReadWriteOptionalDurationPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteTwoDurationsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteTwoDurations/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteTwoDurationsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4410>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_two_durations property update.", topic.c_str());
         _receiveReadWriteTwoDurationsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteBinaryPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteBinary/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteBinaryPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4620>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_binary property update.", topic.c_str());
         _receiveReadWriteBinaryPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteOptionalBinaryPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteOptionalBinary/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteOptionalBinaryPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4710>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_optional_binary property update.", topic.c_str());
         _receiveReadWriteOptionalBinaryPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteTwoBinariesPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteTwoBinaries/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteTwoBinariesPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4b60>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_two_binaries property update.", topic.c_str());
         _receiveReadWriteTwoBinariesPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteListOfStringsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteListOfStrings/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteListOfStringsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a4800>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_list_of_strings property update.", topic.c_str());
         _receiveReadWriteListOfStringsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
 
-    else if (subscriptionId == _readWriteListsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("testable/%1%/property/readWriteLists/setValue") % _instanceId).str())))
-    {
+    else if (subscriptionId == _readWriteListsPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x73e4f37a47a0>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as read_write_lists property update.", topic.c_str());
         _receiveReadWriteListsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
@@ -1108,8 +918,8 @@ std::future<bool> TestableServer::emitEmptySignal()
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/empty") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b0dd0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleIntSignal(int value)
@@ -1122,8 +932,8 @@ std::future<bool> TestableServer::emitSingleIntSignal(int value)
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleInt") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f4255f40>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleOptionalIntSignal(std::optional<int> value)
@@ -1136,8 +946,8 @@ std::future<bool> TestableServer::emitSingleOptionalIntSignal(std::optional<int>
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleOptionalInt") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b1d60>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitThreeIntegersSignal(int first, int second, std::optional<int> third)
@@ -1155,8 +965,8 @@ std::future<bool> TestableServer::emitThreeIntegersSignal(int first, int second,
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/threeIntegers") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b2cc0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleStringSignal(std::string value)
@@ -1173,16 +983,15 @@ std::future<bool> TestableServer::emitSingleStringSignal(std::string value)
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleString") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b2e40>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleOptionalStringSignal(std::optional<std::string> value)
 {
     rapidjson::Document doc;
     doc.SetObject();
-    if (value)
-    {
+    if (value) {
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(value->c_str(), value->size(), doc.GetAllocator());
         doc.AddMember("value", tempStringValue, doc.GetAllocator());
@@ -1191,8 +1000,8 @@ std::future<bool> TestableServer::emitSingleOptionalStringSignal(std::optional<s
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleOptionalString") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b32c0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitThreeStringsSignal(std::string first, std::string second, std::optional<std::string> third)
@@ -1212,8 +1021,7 @@ std::future<bool> TestableServer::emitThreeStringsSignal(std::string first, std:
         doc.AddMember("second", tempStringValue, doc.GetAllocator());
     }
 
-    if (third)
-    {
+    if (third) {
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(third->c_str(), third->size(), doc.GetAllocator());
         doc.AddMember("third", tempStringValue, doc.GetAllocator());
@@ -1222,8 +1030,8 @@ std::future<bool> TestableServer::emitThreeStringsSignal(std::string first, std:
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/threeStrings") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b34d0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleEnumSignal(Numbers value)
@@ -1236,8 +1044,8 @@ std::future<bool> TestableServer::emitSingleEnumSignal(Numbers value)
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleEnum") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b35c0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleOptionalEnumSignal(std::optional<Numbers> value)
@@ -1250,8 +1058,8 @@ std::future<bool> TestableServer::emitSingleOptionalEnumSignal(std::optional<Num
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleOptionalEnum") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3050>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitThreeEnumsSignal(Numbers first, Numbers second, std::optional<Numbers> third)
@@ -1268,8 +1076,8 @@ std::future<bool> TestableServer::emitThreeEnumsSignal(Numbers first, Numbers se
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/threeEnums") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b38f0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleStructSignal(AllTypes value)
@@ -1289,8 +1097,8 @@ std::future<bool> TestableServer::emitSingleStructSignal(AllTypes value)
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleStruct") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3830>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleOptionalStructSignal(std::optional<AllTypes> value)
@@ -1300,13 +1108,10 @@ std::future<bool> TestableServer::emitSingleOptionalStructSignal(std::optional<A
 
     { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
-        if (value)
-        {
+        if (value) {
             tempStructValue.SetObject();
             value->AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
-        }
-        else
-        {
+        } else {
             tempStructValue.SetNull();
         }
         doc.AddMember("value", tempStructValue, doc.GetAllocator());
@@ -1315,8 +1120,8 @@ std::future<bool> TestableServer::emitSingleOptionalStructSignal(std::optional<A
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleOptionalStruct") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3b00>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitThreeStructsSignal(AllTypes first, AllTypes second, std::optional<AllTypes> third)
@@ -1344,13 +1149,10 @@ std::future<bool> TestableServer::emitThreeStructsSignal(AllTypes first, AllType
 
     { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
-        if (third)
-        {
+        if (third) {
             tempStructValue.SetObject();
             third->AddToRapidJsonObject(tempStructValue, doc.GetAllocator());
-        }
-        else
-        {
+        } else {
             tempStructValue.SetNull();
         }
         doc.AddMember("third", tempStructValue, doc.GetAllocator());
@@ -1359,8 +1161,8 @@ std::future<bool> TestableServer::emitThreeStructsSignal(AllTypes first, AllType
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/threeStructs") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3b30>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleDateTimeSignal(std::chrono::time_point<std::chrono::system_clock> value)
@@ -1370,7 +1172,7 @@ std::future<bool> TestableServer::emitSingleDateTimeSignal(std::chrono::time_poi
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
-        std::string valueIsoString = timePointToIsoString(value);
+        std::string valueIsoString = stinger::utils::timePointToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), doc.GetAllocator());
         doc.AddMember("value", tempValueStringValue, doc.GetAllocator());
     }
@@ -1378,8 +1180,8 @@ std::future<bool> TestableServer::emitSingleDateTimeSignal(std::chrono::time_poi
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleDateTime") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3e30>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleOptionalDatetimeSignal(std::optional<std::chrono::time_point<std::chrono::system_clock>> value)
@@ -1389,7 +1191,7 @@ std::future<bool> TestableServer::emitSingleOptionalDatetimeSignal(std::optional
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
-        std::string valueIsoString = timePointToIsoString(*value);
+        std::string valueIsoString = stinger::utils::timePointToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), doc.GetAllocator());
         doc.AddMember("value", tempValueStringValue, doc.GetAllocator());
     }
@@ -1397,8 +1199,8 @@ std::future<bool> TestableServer::emitSingleOptionalDatetimeSignal(std::optional
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleOptionalDatetime") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3c20>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitThreeDateTimesSignal(std::chrono::time_point<std::chrono::system_clock> first, std::chrono::time_point<std::chrono::system_clock> second, std::optional<std::chrono::time_point<std::chrono::system_clock>> third)
@@ -1408,21 +1210,21 @@ std::future<bool> TestableServer::emitThreeDateTimesSignal(std::chrono::time_poi
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempFirstStringValue;
-        std::string firstIsoString = timePointToIsoString(first);
+        std::string firstIsoString = stinger::utils::timePointToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), doc.GetAllocator());
         doc.AddMember("first", tempFirstStringValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempSecondStringValue;
-        std::string secondIsoString = timePointToIsoString(second);
+        std::string secondIsoString = stinger::utils::timePointToIsoString(second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), doc.GetAllocator());
         doc.AddMember("second", tempSecondStringValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempThirdStringValue;
-        std::string thirdIsoString = timePointToIsoString(*third);
+        std::string thirdIsoString = stinger::utils::timePointToIsoString(*third);
         tempThirdStringValue.SetString(thirdIsoString.c_str(), thirdIsoString.size(), doc.GetAllocator());
         doc.AddMember("third", tempThirdStringValue, doc.GetAllocator());
     }
@@ -1430,8 +1232,8 @@ std::future<bool> TestableServer::emitThreeDateTimesSignal(std::chrono::time_poi
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/threeDateTimes") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3d10>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleDurationSignal(std::chrono::duration<double> value)
@@ -1441,7 +1243,7 @@ std::future<bool> TestableServer::emitSingleDurationSignal(std::chrono::duration
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
-        std::string valueIsoString = durationToIsoString(value);
+        std::string valueIsoString = stinger::utils::durationToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), doc.GetAllocator());
         doc.AddMember("value", tempValueStringValue, doc.GetAllocator());
     }
@@ -1449,8 +1251,8 @@ std::future<bool> TestableServer::emitSingleDurationSignal(std::chrono::duration
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleDuration") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3680>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleOptionalDurationSignal(std::optional<std::chrono::duration<double>> value)
@@ -1460,7 +1262,7 @@ std::future<bool> TestableServer::emitSingleOptionalDurationSignal(std::optional
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
-        std::string valueIsoString = durationToIsoString(*value);
+        std::string valueIsoString = stinger::utils::durationToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), doc.GetAllocator());
         doc.AddMember("value", tempValueStringValue, doc.GetAllocator());
     }
@@ -1468,8 +1270,8 @@ std::future<bool> TestableServer::emitSingleOptionalDurationSignal(std::optional
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleOptionalDuration") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f39a50d0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitThreeDurationsSignal(std::chrono::duration<double> first, std::chrono::duration<double> second, std::optional<std::chrono::duration<double>> third)
@@ -1479,21 +1281,21 @@ std::future<bool> TestableServer::emitThreeDurationsSignal(std::chrono::duration
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempFirstStringValue;
-        std::string firstIsoString = durationToIsoString(first);
+        std::string firstIsoString = stinger::utils::durationToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), doc.GetAllocator());
         doc.AddMember("first", tempFirstStringValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempSecondStringValue;
-        std::string secondIsoString = durationToIsoString(second);
+        std::string secondIsoString = stinger::utils::durationToIsoString(second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), doc.GetAllocator());
         doc.AddMember("second", tempSecondStringValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempThirdStringValue;
-        std::string thirdIsoString = durationToIsoString(*third);
+        std::string thirdIsoString = stinger::utils::durationToIsoString(*third);
         tempThirdStringValue.SetString(thirdIsoString.c_str(), thirdIsoString.size(), doc.GetAllocator());
         doc.AddMember("third", tempThirdStringValue, doc.GetAllocator());
     }
@@ -1501,8 +1303,8 @@ std::future<bool> TestableServer::emitThreeDurationsSignal(std::chrono::duration
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/threeDurations") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3e60>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleBinarySignal(std::vector<uint8_t> value)
@@ -1512,7 +1314,7 @@ std::future<bool> TestableServer::emitSingleBinarySignal(std::vector<uint8_t> va
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
-        std::string valueB64String = base64Encode(value);
+        std::string valueB64String = stinger::utils::base64Encode(value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), doc.GetAllocator());
         doc.AddMember("value", tempValueStringValue, doc.GetAllocator());
     }
@@ -1520,8 +1322,8 @@ std::future<bool> TestableServer::emitSingleBinarySignal(std::vector<uint8_t> va
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleBinary") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37b3ec0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleOptionalBinarySignal(std::optional<std::vector<uint8_t>> value)
@@ -1531,7 +1333,7 @@ std::future<bool> TestableServer::emitSingleOptionalBinarySignal(std::optional<s
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
-        std::string valueB64String = base64Encode(*value);
+        std::string valueB64String = stinger::utils::base64Encode(*value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), doc.GetAllocator());
         doc.AddMember("value", tempValueStringValue, doc.GetAllocator());
     }
@@ -1539,8 +1341,8 @@ std::future<bool> TestableServer::emitSingleOptionalBinarySignal(std::optional<s
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleOptionalBinary") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37bc470>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitThreeBinariesSignal(std::vector<uint8_t> first, std::vector<uint8_t> second, std::optional<std::vector<uint8_t>> third)
@@ -1550,21 +1352,21 @@ std::future<bool> TestableServer::emitThreeBinariesSignal(std::vector<uint8_t> f
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempFirstStringValue;
-        std::string firstB64String = base64Encode(first);
+        std::string firstB64String = stinger::utils::base64Encode(first);
         tempFirstStringValue.SetString(firstB64String.c_str(), firstB64String.size(), doc.GetAllocator());
         doc.AddMember("first", tempFirstStringValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempSecondStringValue;
-        std::string secondB64String = base64Encode(second);
+        std::string secondB64String = stinger::utils::base64Encode(second);
         tempSecondStringValue.SetString(secondB64String.c_str(), secondB64String.size(), doc.GetAllocator());
         doc.AddMember("second", tempSecondStringValue, doc.GetAllocator());
     }
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempThirdStringValue;
-        std::string thirdB64String = base64Encode(*third);
+        std::string thirdB64String = stinger::utils::base64Encode(*third);
         tempThirdStringValue.SetString(thirdB64String.c_str(), thirdB64String.size(), doc.GetAllocator());
         doc.AddMember("third", tempThirdStringValue, doc.GetAllocator());
     }
@@ -1572,8 +1374,8 @@ std::future<bool> TestableServer::emitThreeBinariesSignal(std::vector<uint8_t> f
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/threeBinaries") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37bc5c0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleArrayOfIntegersSignal(std::vector<int> values)
@@ -1584,8 +1386,7 @@ std::future<bool> TestableServer::emitSingleArrayOfIntegersSignal(std::vector<in
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: values)
-        {
+        for (const auto& item: values) {
             tempArrayValue.PushBack(item, doc.GetAllocator());
         }
         doc.AddMember("values", tempArrayValue, doc.GetAllocator());
@@ -1593,8 +1394,8 @@ std::future<bool> TestableServer::emitSingleArrayOfIntegersSignal(std::vector<in
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleArrayOfIntegers") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37bc590>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitSingleOptionalArrayOfStringsSignal(std::optional<std::vector<std::string>> values)
@@ -1605,8 +1406,7 @@ std::future<bool> TestableServer::emitSingleOptionalArrayOfStringsSignal(std::op
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: *values)
-        {
+        for (const auto& item: *values) {
             rapidjson::Value tempValuesStringValue;
             tempValuesStringValue.SetString(item.c_str(), item.size(), doc.GetAllocator());
             tempArrayValue.PushBack(tempValuesStringValue, doc.GetAllocator());
@@ -1616,8 +1416,8 @@ std::future<bool> TestableServer::emitSingleOptionalArrayOfStringsSignal(std::op
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/singleOptionalArrayOfStrings") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37bc050>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> firstOfIntegers, std::vector<double> secondOfFloats, std::vector<std::string> thirdOfStrings, std::vector<Numbers> fourthOfEnums, std::vector<Entry> fifthOfStructs, std::vector<std::chrono::time_point<std::chrono::system_clock>> sixthOfDatetimes, std::vector<std::chrono::duration<double>> seventhOfDurations, std::vector<std::vector<uint8_t>> eighthOfBinaries)
@@ -1628,8 +1428,7 @@ std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> fi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: firstOfIntegers)
-        {
+        for (const auto& item: firstOfIntegers) {
             tempArrayValue.PushBack(item, doc.GetAllocator());
         }
         doc.AddMember("first_of_integers", tempArrayValue, doc.GetAllocator());
@@ -1638,8 +1437,7 @@ std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> fi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: secondOfFloats)
-        {
+        for (const auto& item: secondOfFloats) {
             tempArrayValue.PushBack(item, doc.GetAllocator());
         }
         doc.AddMember("second_of_floats", tempArrayValue, doc.GetAllocator());
@@ -1648,8 +1446,7 @@ std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> fi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: thirdOfStrings)
-        {
+        for (const auto& item: thirdOfStrings) {
             rapidjson::Value tempThirdOfStringsStringValue;
             tempThirdOfStringsStringValue.SetString(item.c_str(), item.size(), doc.GetAllocator());
             tempArrayValue.PushBack(tempThirdOfStringsStringValue, doc.GetAllocator());
@@ -1660,8 +1457,7 @@ std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> fi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: fourthOfEnums)
-        {
+        for (const auto& item: fourthOfEnums) {
             tempArrayValue.PushBack(static_cast<int>(item), doc.GetAllocator());
         }
         doc.AddMember("fourth_of_enums", tempArrayValue, doc.GetAllocator());
@@ -1670,8 +1466,7 @@ std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> fi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: fifthOfStructs)
-        {
+        for (const auto& item: fifthOfStructs) {
             rapidjson::Value tempFifthOfStructsObjectValue;
             tempFifthOfStructsObjectValue.SetObject();
             item.AddToRapidJsonObject(tempFifthOfStructsObjectValue, doc.GetAllocator());
@@ -1683,10 +1478,9 @@ std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> fi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: sixthOfDatetimes)
-        {
+        for (const auto& item: sixthOfDatetimes) {
             rapidjson::Value tempSixthOfDatetimesStringValue;
-            std::string itemIsoString = timePointToIsoString(item);
+            std::string itemIsoString = stinger::utils::timePointToIsoString(item);
             tempSixthOfDatetimesStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), doc.GetAllocator());
             tempArrayValue.PushBack(tempSixthOfDatetimesStringValue, doc.GetAllocator());
         }
@@ -1696,10 +1490,9 @@ std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> fi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: seventhOfDurations)
-        {
+        for (const auto& item: seventhOfDurations) {
             rapidjson::Value tempSeventhOfDurationsStringValue;
-            std::string itemIsoString = durationToIsoString(item);
+            std::string itemIsoString = stinger::utils::durationToIsoString(item);
             tempSeventhOfDurationsStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), doc.GetAllocator());
             tempArrayValue.PushBack(tempSeventhOfDurationsStringValue, doc.GetAllocator());
         }
@@ -1709,10 +1502,9 @@ std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> fi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: eighthOfBinaries)
-        {
+        for (const auto& item: eighthOfBinaries) {
             rapidjson::Value tempEighthOfBinariesStringValue;
-            std::string itemB64String = base64Encode(item);
+            std::string itemB64String = stinger::utils::base64Encode(item);
             tempEighthOfBinariesStringValue.SetString(itemB64String.c_str(), itemB64String.size(), doc.GetAllocator());
             tempArrayValue.PushBack(tempEighthOfBinariesStringValue, doc.GetAllocator());
         }
@@ -1721,157 +1513,157 @@ std::future<bool> TestableServer::emitArrayOfEveryTypeSignal(std::vector<int> fi
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("testable/%1%/signal/arrayOfEveryType") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x73e4f37bca10>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::registerCallWithNothingHandler(std::function<void()> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callWithNothing method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callWithNothingHandler = func;
 }
 
 void TestableServer::registerCallOneIntegerHandler(std::function<int(int)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOneInteger method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOneIntegerHandler = func;
 }
 
 void TestableServer::registerCallOptionalIntegerHandler(std::function<std::optional<int>(std::optional<int>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOptionalInteger method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOptionalIntegerHandler = func;
 }
 
 void TestableServer::registerCallThreeIntegersHandler(std::function<CallThreeIntegersReturnValues(int, int, std::optional<int>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callThreeIntegers method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callThreeIntegersHandler = func;
 }
 
 void TestableServer::registerCallOneStringHandler(std::function<std::string(std::string)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOneString method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOneStringHandler = func;
 }
 
 void TestableServer::registerCallOptionalStringHandler(std::function<std::optional<std::string>(std::optional<std::string>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOptionalString method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOptionalStringHandler = func;
 }
 
 void TestableServer::registerCallThreeStringsHandler(std::function<CallThreeStringsReturnValues(std::string, std::optional<std::string>, std::string)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callThreeStrings method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callThreeStringsHandler = func;
 }
 
 void TestableServer::registerCallOneEnumHandler(std::function<Numbers(Numbers)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOneEnum method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOneEnumHandler = func;
 }
 
 void TestableServer::registerCallOptionalEnumHandler(std::function<std::optional<Numbers>(std::optional<Numbers>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOptionalEnum method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOptionalEnumHandler = func;
 }
 
 void TestableServer::registerCallThreeEnumsHandler(std::function<CallThreeEnumsReturnValues(Numbers, Numbers, std::optional<Numbers>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callThreeEnums method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callThreeEnumsHandler = func;
 }
 
 void TestableServer::registerCallOneStructHandler(std::function<AllTypes(AllTypes)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOneStruct method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOneStructHandler = func;
 }
 
 void TestableServer::registerCallOptionalStructHandler(std::function<std::optional<AllTypes>(std::optional<AllTypes>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOptionalStruct method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOptionalStructHandler = func;
 }
 
 void TestableServer::registerCallThreeStructsHandler(std::function<CallThreeStructsReturnValues(std::optional<AllTypes>, AllTypes, AllTypes)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callThreeStructs method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callThreeStructsHandler = func;
 }
 
 void TestableServer::registerCallOneDateTimeHandler(std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOneDateTime method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOneDateTimeHandler = func;
 }
 
 void TestableServer::registerCallOptionalDateTimeHandler(std::function<std::optional<std::chrono::time_point<std::chrono::system_clock>>(std::optional<std::chrono::time_point<std::chrono::system_clock>>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOptionalDateTime method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOptionalDateTimeHandler = func;
 }
 
 void TestableServer::registerCallThreeDateTimesHandler(std::function<CallThreeDateTimesReturnValues(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callThreeDateTimes method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callThreeDateTimesHandler = func;
 }
 
 void TestableServer::registerCallOneDurationHandler(std::function<std::chrono::duration<double>(std::chrono::duration<double>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOneDuration method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOneDurationHandler = func;
 }
 
 void TestableServer::registerCallOptionalDurationHandler(std::function<std::optional<std::chrono::duration<double>>(std::optional<std::chrono::duration<double>>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOptionalDuration method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOptionalDurationHandler = func;
 }
 
 void TestableServer::registerCallThreeDurationsHandler(std::function<CallThreeDurationsReturnValues(std::chrono::duration<double>, std::chrono::duration<double>, std::optional<std::chrono::duration<double>>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callThreeDurations method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callThreeDurationsHandler = func;
 }
 
 void TestableServer::registerCallOneBinaryHandler(std::function<std::vector<uint8_t>(std::vector<uint8_t>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOneBinary method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOneBinaryHandler = func;
 }
 
 void TestableServer::registerCallOptionalBinaryHandler(std::function<std::optional<std::vector<uint8_t>>(std::optional<std::vector<uint8_t>>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOptionalBinary method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOptionalBinaryHandler = func;
 }
 
 void TestableServer::registerCallThreeBinariesHandler(std::function<CallThreeBinariesReturnValues(std::vector<uint8_t>, std::vector<uint8_t>, std::optional<std::vector<uint8_t>>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callThreeBinaries method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callThreeBinariesHandler = func;
 }
 
 void TestableServer::registerCallOneListOfIntegersHandler(std::function<std::vector<int>(std::vector<int>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOneListOfIntegers method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOneListOfIntegersHandler = func;
 }
 
 void TestableServer::registerCallOptionalListOfFloatsHandler(std::function<std::optional<std::vector<double>>(std::optional<std::vector<double>>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callOptionalListOfFloats method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callOptionalListOfFloatsHandler = func;
 }
 
 void TestableServer::registerCallTwoListsHandler(std::function<CallTwoListsReturnValues(std::vector<Numbers>, std::optional<std::vector<std::string>>)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle testable/+/method/callTwoLists method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _callTwoListsHandler = func;
 }
 
@@ -1883,8 +1675,7 @@ void TestableServer::_callCallWithNothingHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callWithNothing");
-    if (!_callWithNothingHandler)
-    {
+    if (!_callWithNothingHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -1893,8 +1684,7 @@ void TestableServer::_callCallWithNothingHandler(
     _callWithNothingHandler();
     auto returnValues = CallWithNothingReturnValues();
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -1903,7 +1693,7 @@ void TestableServer::_callCallWithNothingHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -1918,8 +1708,7 @@ void TestableServer::_callCallOneIntegerHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneInteger");
-    if (!_callOneIntegerHandler)
-    {
+    if (!_callOneIntegerHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -1930,8 +1719,7 @@ void TestableServer::_callCallOneIntegerHandler(
     auto returnValue = _callOneIntegerHandler(requestArgs.input1);
     CallOneIntegerReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -1940,7 +1728,7 @@ void TestableServer::_callCallOneIntegerHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -1955,8 +1743,7 @@ void TestableServer::_callCallOptionalIntegerHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalInteger");
-    if (!_callOptionalIntegerHandler)
-    {
+    if (!_callOptionalIntegerHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -1967,8 +1754,7 @@ void TestableServer::_callCallOptionalIntegerHandler(
     auto returnValue = _callOptionalIntegerHandler(requestArgs.input1);
     CallOptionalIntegerReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -1977,7 +1763,7 @@ void TestableServer::_callCallOptionalIntegerHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -1992,8 +1778,7 @@ void TestableServer::_callCallThreeIntegersHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeIntegers");
-    if (!_callThreeIntegersHandler)
-    {
+    if (!_callThreeIntegersHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2003,8 +1788,7 @@ void TestableServer::_callCallThreeIntegersHandler(
     // Method has multiple return values.
     auto returnValues = _callThreeIntegersHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2013,7 +1797,7 @@ void TestableServer::_callCallThreeIntegersHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2028,8 +1812,7 @@ void TestableServer::_callCallOneStringHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneString");
-    if (!_callOneStringHandler)
-    {
+    if (!_callOneStringHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2040,8 +1823,7 @@ void TestableServer::_callCallOneStringHandler(
     auto returnValue = _callOneStringHandler(requestArgs.input1);
     CallOneStringReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2050,7 +1832,7 @@ void TestableServer::_callCallOneStringHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2065,8 +1847,7 @@ void TestableServer::_callCallOptionalStringHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalString");
-    if (!_callOptionalStringHandler)
-    {
+    if (!_callOptionalStringHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2077,8 +1858,7 @@ void TestableServer::_callCallOptionalStringHandler(
     auto returnValue = _callOptionalStringHandler(requestArgs.input1);
     CallOptionalStringReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2087,7 +1867,7 @@ void TestableServer::_callCallOptionalStringHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2102,8 +1882,7 @@ void TestableServer::_callCallThreeStringsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeStrings");
-    if (!_callThreeStringsHandler)
-    {
+    if (!_callThreeStringsHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2113,8 +1892,7 @@ void TestableServer::_callCallThreeStringsHandler(
     // Method has multiple return values.
     auto returnValues = _callThreeStringsHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2123,7 +1901,7 @@ void TestableServer::_callCallThreeStringsHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2138,8 +1916,7 @@ void TestableServer::_callCallOneEnumHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneEnum");
-    if (!_callOneEnumHandler)
-    {
+    if (!_callOneEnumHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2150,8 +1927,7 @@ void TestableServer::_callCallOneEnumHandler(
     auto returnValue = _callOneEnumHandler(requestArgs.input1);
     CallOneEnumReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2160,7 +1936,7 @@ void TestableServer::_callCallOneEnumHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2175,8 +1951,7 @@ void TestableServer::_callCallOptionalEnumHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalEnum");
-    if (!_callOptionalEnumHandler)
-    {
+    if (!_callOptionalEnumHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2187,8 +1962,7 @@ void TestableServer::_callCallOptionalEnumHandler(
     auto returnValue = _callOptionalEnumHandler(requestArgs.input1);
     CallOptionalEnumReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2197,7 +1971,7 @@ void TestableServer::_callCallOptionalEnumHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2212,8 +1986,7 @@ void TestableServer::_callCallThreeEnumsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeEnums");
-    if (!_callThreeEnumsHandler)
-    {
+    if (!_callThreeEnumsHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2223,8 +1996,7 @@ void TestableServer::_callCallThreeEnumsHandler(
     // Method has multiple return values.
     auto returnValues = _callThreeEnumsHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2233,7 +2005,7 @@ void TestableServer::_callCallThreeEnumsHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2248,8 +2020,7 @@ void TestableServer::_callCallOneStructHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneStruct");
-    if (!_callOneStructHandler)
-    {
+    if (!_callOneStructHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2260,8 +2031,7 @@ void TestableServer::_callCallOneStructHandler(
     auto returnValue = _callOneStructHandler(requestArgs.input1);
     CallOneStructReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2270,7 +2040,7 @@ void TestableServer::_callCallOneStructHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2285,8 +2055,7 @@ void TestableServer::_callCallOptionalStructHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalStruct");
-    if (!_callOptionalStructHandler)
-    {
+    if (!_callOptionalStructHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2297,8 +2066,7 @@ void TestableServer::_callCallOptionalStructHandler(
     auto returnValue = _callOptionalStructHandler(requestArgs.input1);
     CallOptionalStructReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2307,7 +2075,7 @@ void TestableServer::_callCallOptionalStructHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2322,8 +2090,7 @@ void TestableServer::_callCallThreeStructsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeStructs");
-    if (!_callThreeStructsHandler)
-    {
+    if (!_callThreeStructsHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2333,8 +2100,7 @@ void TestableServer::_callCallThreeStructsHandler(
     // Method has multiple return values.
     auto returnValues = _callThreeStructsHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2343,7 +2109,7 @@ void TestableServer::_callCallThreeStructsHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2358,8 +2124,7 @@ void TestableServer::_callCallOneDateTimeHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneDateTime");
-    if (!_callOneDateTimeHandler)
-    {
+    if (!_callOneDateTimeHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2370,8 +2135,7 @@ void TestableServer::_callCallOneDateTimeHandler(
     auto returnValue = _callOneDateTimeHandler(requestArgs.input1);
     CallOneDateTimeReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2380,7 +2144,7 @@ void TestableServer::_callCallOneDateTimeHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2395,8 +2159,7 @@ void TestableServer::_callCallOptionalDateTimeHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalDateTime");
-    if (!_callOptionalDateTimeHandler)
-    {
+    if (!_callOptionalDateTimeHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2407,8 +2170,7 @@ void TestableServer::_callCallOptionalDateTimeHandler(
     auto returnValue = _callOptionalDateTimeHandler(requestArgs.input1);
     CallOptionalDateTimeReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2417,7 +2179,7 @@ void TestableServer::_callCallOptionalDateTimeHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2432,8 +2194,7 @@ void TestableServer::_callCallThreeDateTimesHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeDateTimes");
-    if (!_callThreeDateTimesHandler)
-    {
+    if (!_callThreeDateTimesHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2443,8 +2204,7 @@ void TestableServer::_callCallThreeDateTimesHandler(
     // Method has multiple return values.
     auto returnValues = _callThreeDateTimesHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2453,7 +2213,7 @@ void TestableServer::_callCallThreeDateTimesHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2468,8 +2228,7 @@ void TestableServer::_callCallOneDurationHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneDuration");
-    if (!_callOneDurationHandler)
-    {
+    if (!_callOneDurationHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2480,8 +2239,7 @@ void TestableServer::_callCallOneDurationHandler(
     auto returnValue = _callOneDurationHandler(requestArgs.input1);
     CallOneDurationReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2490,7 +2248,7 @@ void TestableServer::_callCallOneDurationHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2505,8 +2263,7 @@ void TestableServer::_callCallOptionalDurationHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalDuration");
-    if (!_callOptionalDurationHandler)
-    {
+    if (!_callOptionalDurationHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2517,8 +2274,7 @@ void TestableServer::_callCallOptionalDurationHandler(
     auto returnValue = _callOptionalDurationHandler(requestArgs.input1);
     CallOptionalDurationReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2527,7 +2283,7 @@ void TestableServer::_callCallOptionalDurationHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2542,8 +2298,7 @@ void TestableServer::_callCallThreeDurationsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeDurations");
-    if (!_callThreeDurationsHandler)
-    {
+    if (!_callThreeDurationsHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2553,8 +2308,7 @@ void TestableServer::_callCallThreeDurationsHandler(
     // Method has multiple return values.
     auto returnValues = _callThreeDurationsHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2563,7 +2317,7 @@ void TestableServer::_callCallThreeDurationsHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2578,8 +2332,7 @@ void TestableServer::_callCallOneBinaryHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneBinary");
-    if (!_callOneBinaryHandler)
-    {
+    if (!_callOneBinaryHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2590,8 +2343,7 @@ void TestableServer::_callCallOneBinaryHandler(
     auto returnValue = _callOneBinaryHandler(requestArgs.input1);
     CallOneBinaryReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2600,7 +2352,7 @@ void TestableServer::_callCallOneBinaryHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2615,8 +2367,7 @@ void TestableServer::_callCallOptionalBinaryHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalBinary");
-    if (!_callOptionalBinaryHandler)
-    {
+    if (!_callOptionalBinaryHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2627,8 +2378,7 @@ void TestableServer::_callCallOptionalBinaryHandler(
     auto returnValue = _callOptionalBinaryHandler(requestArgs.input1);
     CallOptionalBinaryReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2637,7 +2387,7 @@ void TestableServer::_callCallOptionalBinaryHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2652,8 +2402,7 @@ void TestableServer::_callCallThreeBinariesHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callThreeBinaries");
-    if (!_callThreeBinariesHandler)
-    {
+    if (!_callThreeBinariesHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2663,8 +2412,7 @@ void TestableServer::_callCallThreeBinariesHandler(
     // Method has multiple return values.
     auto returnValues = _callThreeBinariesHandler(requestArgs.input1, requestArgs.input2, requestArgs.input3);
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2673,7 +2421,7 @@ void TestableServer::_callCallThreeBinariesHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2688,8 +2436,7 @@ void TestableServer::_callCallOneListOfIntegersHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOneListOfIntegers");
-    if (!_callOneListOfIntegersHandler)
-    {
+    if (!_callOneListOfIntegersHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2700,8 +2447,7 @@ void TestableServer::_callCallOneListOfIntegersHandler(
     auto returnValue = _callOneListOfIntegersHandler(requestArgs.input1);
     CallOneListOfIntegersReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2710,7 +2456,7 @@ void TestableServer::_callCallOneListOfIntegersHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2725,8 +2471,7 @@ void TestableServer::_callCallOptionalListOfFloatsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callOptionalListOfFloats");
-    if (!_callOptionalListOfFloatsHandler)
-    {
+    if (!_callOptionalListOfFloatsHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2737,8 +2482,7 @@ void TestableServer::_callCallOptionalListOfFloatsHandler(
     auto returnValue = _callOptionalListOfFloatsHandler(requestArgs.input1);
     CallOptionalListOfFloatsReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2747,7 +2491,7 @@ void TestableServer::_callCallOptionalListOfFloatsHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2762,8 +2506,7 @@ void TestableServer::_callCallTwoListsHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to callTwoLists");
-    if (!_callTwoListsHandler)
-    {
+    if (!_callTwoListsHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -2773,8 +2516,7 @@ void TestableServer::_callCallTwoListsHandler(
     // Method has multiple return values.
     auto returnValues = _callTwoListsHandler(requestArgs.input1, requestArgs.input2);
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -2783,7 +2525,7 @@ void TestableServer::_callCallTwoListsHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -2793,8 +2535,7 @@ void TestableServer::_callCallTwoListsHandler(
 std::optional<int> TestableServer::getReadWriteIntegerProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteIntegerPropertyMutex);
-    if (_readWriteIntegerProperty)
-    {
+    if (_readWriteIntegerProperty) {
         return _readWriteIntegerProperty->value;
     }
     return std::nullopt;
@@ -2815,8 +2556,7 @@ void TestableServer::updateReadWriteIntegerProperty(int value)
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteIntegerPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteIntegerPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteIntegerPropertyCallbacks) {
             cb(value);
         }
     }
@@ -2827,36 +2567,31 @@ void TestableServer::republishReadWriteIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteIntegerPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteIntegerProperty)
-    {
+    if (_readWriteIntegerProperty) {
         doc.SetObject();
         _readWriteIntegerProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteIntegerPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteInteger/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f39db2f0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_integer property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_integer payload is not an object or null");
     }
 
@@ -2877,8 +2612,7 @@ void TestableServer::_receiveReadWriteIntegerPropertyUpdate(const std::string& t
 std::optional<int> TestableServer::getReadOnlyIntegerProperty()
 {
     std::lock_guard<std::mutex> lock(_readOnlyIntegerPropertyMutex);
-    if (_readOnlyIntegerProperty)
-    {
+    if (_readOnlyIntegerProperty) {
         return _readOnlyIntegerProperty->value;
     }
     return std::nullopt;
@@ -2899,8 +2633,7 @@ void TestableServer::updateReadOnlyIntegerProperty(int value)
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readOnlyIntegerPropertyCallbacksMutex);
-        for (const auto& cb: _readOnlyIntegerPropertyCallbacks)
-        {
+        for (const auto& cb: _readOnlyIntegerPropertyCallbacks) {
             cb(value);
         }
     }
@@ -2911,36 +2644,31 @@ void TestableServer::republishReadOnlyIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readOnlyIntegerPropertyMutex);
     rapidjson::Document doc;
-    if (_readOnlyIntegerProperty)
-    {
+    if (_readOnlyIntegerProperty) {
         doc.SetObject();
         _readOnlyIntegerProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadOnlyIntegerPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readOnlyInteger/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3766ed0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadOnlyIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_only_integer property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_only_integer payload is not an object or null");
     }
 
@@ -2961,8 +2689,7 @@ void TestableServer::_receiveReadOnlyIntegerPropertyUpdate(const std::string& to
 std::optional<int> TestableServer::getReadWriteOptionalIntegerProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyMutex);
-    if (_readWriteOptionalIntegerProperty)
-    {
+    if (_readWriteOptionalIntegerProperty) {
         return _readWriteOptionalIntegerProperty->value;
     }
     return std::nullopt;
@@ -2983,8 +2710,7 @@ void TestableServer::updateReadWriteOptionalIntegerProperty(std::optional<int> v
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteOptionalIntegerPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteOptionalIntegerPropertyCallbacks) {
             cb(value);
         }
     }
@@ -2995,36 +2721,31 @@ void TestableServer::republishReadWriteOptionalIntegerProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalIntegerPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteOptionalIntegerProperty)
-    {
+    if (_readWriteOptionalIntegerProperty) {
         doc.SetObject();
         _readWriteOptionalIntegerProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteOptionalIntegerPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteOptionalInteger/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3766e10>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_optional_integer property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_optional_integer payload is not an object or null");
     }
 
@@ -3045,8 +2766,7 @@ void TestableServer::_receiveReadWriteOptionalIntegerPropertyUpdate(const std::s
 std::optional<ReadWriteTwoIntegersProperty> TestableServer::getReadWriteTwoIntegersProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoIntegersPropertyMutex);
-    if (_readWriteTwoIntegersProperty)
-    {
+    if (_readWriteTwoIntegersProperty) {
         return *_readWriteTwoIntegersProperty;
     }
     return std::nullopt;
@@ -3067,8 +2787,7 @@ void TestableServer::updateReadWriteTwoIntegersProperty(int first, std::optional
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteTwoIntegersPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteTwoIntegersPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteTwoIntegersPropertyCallbacks) {
             cb(first, second);
         }
     }
@@ -3079,36 +2798,31 @@ void TestableServer::republishReadWriteTwoIntegersProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoIntegersPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteTwoIntegersProperty)
-    {
+    if (_readWriteTwoIntegersProperty) {
         doc.SetObject();
         _readWriteTwoIntegersProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteTwoIntegersPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteTwoIntegers/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767ec0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteTwoIntegersPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_two_integers property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_two_integers payload is not an object or null");
     }
 
@@ -3129,8 +2843,7 @@ void TestableServer::_receiveReadWriteTwoIntegersPropertyUpdate(const std::strin
 std::optional<std::string> TestableServer::getReadOnlyStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readOnlyStringPropertyMutex);
-    if (_readOnlyStringProperty)
-    {
+    if (_readOnlyStringProperty) {
         return _readOnlyStringProperty->value;
     }
     return std::nullopt;
@@ -3151,8 +2864,7 @@ void TestableServer::updateReadOnlyStringProperty(std::string value)
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readOnlyStringPropertyCallbacksMutex);
-        for (const auto& cb: _readOnlyStringPropertyCallbacks)
-        {
+        for (const auto& cb: _readOnlyStringPropertyCallbacks) {
             cb(value);
         }
     }
@@ -3163,36 +2875,31 @@ void TestableServer::republishReadOnlyStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readOnlyStringPropertyMutex);
     rapidjson::Document doc;
-    if (_readOnlyStringProperty)
-    {
+    if (_readOnlyStringProperty) {
         doc.SetObject();
         _readOnlyStringProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadOnlyStringPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readOnlyString/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767140>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadOnlyStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_only_string property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_only_string payload is not an object or null");
     }
 
@@ -3213,8 +2920,7 @@ void TestableServer::_receiveReadOnlyStringPropertyUpdate(const std::string& top
 std::optional<std::string> TestableServer::getReadWriteStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteStringPropertyMutex);
-    if (_readWriteStringProperty)
-    {
+    if (_readWriteStringProperty) {
         return _readWriteStringProperty->value;
     }
     return std::nullopt;
@@ -3235,8 +2941,7 @@ void TestableServer::updateReadWriteStringProperty(std::string value)
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteStringPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteStringPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteStringPropertyCallbacks) {
             cb(value);
         }
     }
@@ -3247,36 +2952,31 @@ void TestableServer::republishReadWriteStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteStringPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteStringProperty)
-    {
+    if (_readWriteStringProperty) {
         doc.SetObject();
         _readWriteStringProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteStringPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteString/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3766960>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_string property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_string payload is not an object or null");
     }
 
@@ -3297,8 +2997,7 @@ void TestableServer::_receiveReadWriteStringPropertyUpdate(const std::string& to
 std::optional<std::string> TestableServer::getReadWriteOptionalStringProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyMutex);
-    if (_readWriteOptionalStringProperty)
-    {
+    if (_readWriteOptionalStringProperty) {
         return _readWriteOptionalStringProperty->value;
     }
     return std::nullopt;
@@ -3319,8 +3018,7 @@ void TestableServer::updateReadWriteOptionalStringProperty(std::optional<std::st
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteOptionalStringPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteOptionalStringPropertyCallbacks) {
             cb(value);
         }
     }
@@ -3331,36 +3029,31 @@ void TestableServer::republishReadWriteOptionalStringProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStringPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteOptionalStringProperty)
-    {
+    if (_readWriteOptionalStringProperty) {
         doc.SetObject();
         _readWriteOptionalStringProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteOptionalStringPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteOptionalString/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767530>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteOptionalStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_optional_string property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_optional_string payload is not an object or null");
     }
 
@@ -3381,8 +3074,7 @@ void TestableServer::_receiveReadWriteOptionalStringPropertyUpdate(const std::st
 std::optional<ReadWriteTwoStringsProperty> TestableServer::getReadWriteTwoStringsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyMutex);
-    if (_readWriteTwoStringsProperty)
-    {
+    if (_readWriteTwoStringsProperty) {
         return *_readWriteTwoStringsProperty;
     }
     return std::nullopt;
@@ -3403,8 +3095,7 @@ void TestableServer::updateReadWriteTwoStringsProperty(std::string first, std::o
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteTwoStringsPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteTwoStringsPropertyCallbacks) {
             cb(first, second);
         }
     }
@@ -3415,36 +3106,31 @@ void TestableServer::republishReadWriteTwoStringsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStringsPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteTwoStringsProperty)
-    {
+    if (_readWriteTwoStringsProperty) {
         doc.SetObject();
         _readWriteTwoStringsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteTwoStringsPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteTwoStrings/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f37675f0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteTwoStringsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_two_strings property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_two_strings payload is not an object or null");
     }
 
@@ -3465,8 +3151,7 @@ void TestableServer::_receiveReadWriteTwoStringsPropertyUpdate(const std::string
 std::optional<AllTypes> TestableServer::getReadWriteStructProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteStructPropertyMutex);
-    if (_readWriteStructProperty)
-    {
+    if (_readWriteStructProperty) {
         return _readWriteStructProperty->value;
     }
     return std::nullopt;
@@ -3487,8 +3172,7 @@ void TestableServer::updateReadWriteStructProperty(AllTypes value)
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteStructPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteStructPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteStructPropertyCallbacks) {
             cb(value);
         }
     }
@@ -3499,36 +3183,31 @@ void TestableServer::republishReadWriteStructProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteStructPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteStructProperty)
-    {
+    if (_readWriteStructProperty) {
         doc.SetObject();
         _readWriteStructProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteStructPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteStruct/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3766870>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteStructPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_struct property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_struct payload is not an object or null");
     }
 
@@ -3549,8 +3228,7 @@ void TestableServer::_receiveReadWriteStructPropertyUpdate(const std::string& to
 std::optional<AllTypes> TestableServer::getReadWriteOptionalStructProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyMutex);
-    if (_readWriteOptionalStructProperty)
-    {
+    if (_readWriteOptionalStructProperty) {
         return _readWriteOptionalStructProperty->value;
     }
     return std::nullopt;
@@ -3571,8 +3249,7 @@ void TestableServer::updateReadWriteOptionalStructProperty(std::optional<AllType
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteOptionalStructPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteOptionalStructPropertyCallbacks) {
             cb(value);
         }
     }
@@ -3583,36 +3260,31 @@ void TestableServer::republishReadWriteOptionalStructProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalStructPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteOptionalStructProperty)
-    {
+    if (_readWriteOptionalStructProperty) {
         doc.SetObject();
         _readWriteOptionalStructProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteOptionalStructPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteOptionalStruct/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767920>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteOptionalStructPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_optional_struct property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_optional_struct payload is not an object or null");
     }
 
@@ -3633,8 +3305,7 @@ void TestableServer::_receiveReadWriteOptionalStructPropertyUpdate(const std::st
 std::optional<ReadWriteTwoStructsProperty> TestableServer::getReadWriteTwoStructsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyMutex);
-    if (_readWriteTwoStructsProperty)
-    {
+    if (_readWriteTwoStructsProperty) {
         return *_readWriteTwoStructsProperty;
     }
     return std::nullopt;
@@ -3655,8 +3326,7 @@ void TestableServer::updateReadWriteTwoStructsProperty(AllTypes first, std::opti
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteTwoStructsPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteTwoStructsPropertyCallbacks) {
             cb(first, second);
         }
     }
@@ -3667,36 +3337,31 @@ void TestableServer::republishReadWriteTwoStructsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoStructsPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteTwoStructsProperty)
-    {
+    if (_readWriteTwoStructsProperty) {
         doc.SetObject();
         _readWriteTwoStructsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteTwoStructsPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteTwoStructs/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767b60>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteTwoStructsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_two_structs property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_two_structs payload is not an object or null");
     }
 
@@ -3717,8 +3382,7 @@ void TestableServer::_receiveReadWriteTwoStructsPropertyUpdate(const std::string
 std::optional<Numbers> TestableServer::getReadOnlyEnumProperty()
 {
     std::lock_guard<std::mutex> lock(_readOnlyEnumPropertyMutex);
-    if (_readOnlyEnumProperty)
-    {
+    if (_readOnlyEnumProperty) {
         return _readOnlyEnumProperty->value;
     }
     return std::nullopt;
@@ -3739,8 +3403,7 @@ void TestableServer::updateReadOnlyEnumProperty(Numbers value)
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readOnlyEnumPropertyCallbacksMutex);
-        for (const auto& cb: _readOnlyEnumPropertyCallbacks)
-        {
+        for (const auto& cb: _readOnlyEnumPropertyCallbacks) {
             cb(value);
         }
     }
@@ -3751,36 +3414,31 @@ void TestableServer::republishReadOnlyEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readOnlyEnumPropertyMutex);
     rapidjson::Document doc;
-    if (_readOnlyEnumProperty)
-    {
+    if (_readOnlyEnumProperty) {
         doc.SetObject();
         _readOnlyEnumProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadOnlyEnumPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readOnlyEnum/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3765fd0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_only_enum property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_only_enum payload is not an object or null");
     }
 
@@ -3801,8 +3459,7 @@ void TestableServer::_receiveReadOnlyEnumPropertyUpdate(const std::string& topic
 std::optional<Numbers> TestableServer::getReadWriteEnumProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteEnumPropertyMutex);
-    if (_readWriteEnumProperty)
-    {
+    if (_readWriteEnumProperty) {
         return _readWriteEnumProperty->value;
     }
     return std::nullopt;
@@ -3823,8 +3480,7 @@ void TestableServer::updateReadWriteEnumProperty(Numbers value)
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteEnumPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteEnumPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteEnumPropertyCallbacks) {
             cb(value);
         }
     }
@@ -3835,36 +3491,31 @@ void TestableServer::republishReadWriteEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteEnumPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteEnumProperty)
-    {
+    if (_readWriteEnumProperty) {
         doc.SetObject();
         _readWriteEnumProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteEnumPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteEnum/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3766d50>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_enum property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_enum payload is not an object or null");
     }
 
@@ -3885,8 +3536,7 @@ void TestableServer::_receiveReadWriteEnumPropertyUpdate(const std::string& topi
 std::optional<Numbers> TestableServer::getReadWriteOptionalEnumProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyMutex);
-    if (_readWriteOptionalEnumProperty)
-    {
+    if (_readWriteOptionalEnumProperty) {
         return _readWriteOptionalEnumProperty->value;
     }
     return std::nullopt;
@@ -3907,8 +3557,7 @@ void TestableServer::updateReadWriteOptionalEnumProperty(std::optional<Numbers> 
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteOptionalEnumPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteOptionalEnumPropertyCallbacks) {
             cb(value);
         }
     }
@@ -3919,36 +3568,31 @@ void TestableServer::republishReadWriteOptionalEnumProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalEnumPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteOptionalEnumProperty)
-    {
+    if (_readWriteOptionalEnumProperty) {
         doc.SetObject();
         _readWriteOptionalEnumProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteOptionalEnumPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteOptionalEnum/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767f50>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteOptionalEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_optional_enum property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_optional_enum payload is not an object or null");
     }
 
@@ -3969,8 +3613,7 @@ void TestableServer::_receiveReadWriteOptionalEnumPropertyUpdate(const std::stri
 std::optional<ReadWriteTwoEnumsProperty> TestableServer::getReadWriteTwoEnumsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoEnumsPropertyMutex);
-    if (_readWriteTwoEnumsProperty)
-    {
+    if (_readWriteTwoEnumsProperty) {
         return *_readWriteTwoEnumsProperty;
     }
     return std::nullopt;
@@ -3991,8 +3634,7 @@ void TestableServer::updateReadWriteTwoEnumsProperty(Numbers first, std::optiona
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteTwoEnumsPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteTwoEnumsPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteTwoEnumsPropertyCallbacks) {
             cb(first, second);
         }
     }
@@ -4003,36 +3645,31 @@ void TestableServer::republishReadWriteTwoEnumsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoEnumsPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteTwoEnumsProperty)
-    {
+    if (_readWriteTwoEnumsProperty) {
         doc.SetObject();
         _readWriteTwoEnumsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteTwoEnumsPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteTwoEnums/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767fb0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_two_enums property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_two_enums payload is not an object or null");
     }
 
@@ -4053,8 +3690,7 @@ void TestableServer::_receiveReadWriteTwoEnumsPropertyUpdate(const std::string& 
 std::optional<std::chrono::time_point<std::chrono::system_clock>> TestableServer::getReadWriteDatetimeProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteDatetimePropertyMutex);
-    if (_readWriteDatetimeProperty)
-    {
+    if (_readWriteDatetimeProperty) {
         return _readWriteDatetimeProperty->value;
     }
     return std::nullopt;
@@ -4075,8 +3711,7 @@ void TestableServer::updateReadWriteDatetimeProperty(std::chrono::time_point<std
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteDatetimePropertyCallbacksMutex);
-        for (const auto& cb: _readWriteDatetimePropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteDatetimePropertyCallbacks) {
             cb(value);
         }
     }
@@ -4087,36 +3722,31 @@ void TestableServer::republishReadWriteDatetimeProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteDatetimePropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteDatetimeProperty)
-    {
+    if (_readWriteDatetimeProperty) {
         doc.SetObject();
         _readWriteDatetimeProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteDatetimePropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteDatetime/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767b90>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteDatetimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_datetime property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_datetime payload is not an object or null");
     }
 
@@ -4137,8 +3767,7 @@ void TestableServer::_receiveReadWriteDatetimePropertyUpdate(const std::string& 
 std::optional<std::chrono::time_point<std::chrono::system_clock>> TestableServer::getReadWriteOptionalDatetimeProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyMutex);
-    if (_readWriteOptionalDatetimeProperty)
-    {
+    if (_readWriteOptionalDatetimeProperty) {
         return _readWriteOptionalDatetimeProperty->value;
     }
     return std::nullopt;
@@ -4159,8 +3788,7 @@ void TestableServer::updateReadWriteOptionalDatetimeProperty(std::optional<std::
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyCallbacksMutex);
-        for (const auto& cb: _readWriteOptionalDatetimePropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteOptionalDatetimePropertyCallbacks) {
             cb(value);
         }
     }
@@ -4171,36 +3799,31 @@ void TestableServer::republishReadWriteOptionalDatetimeProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDatetimePropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteOptionalDatetimeProperty)
-    {
+    if (_readWriteOptionalDatetimeProperty) {
         doc.SetObject();
         _readWriteOptionalDatetimeProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteOptionalDatetimePropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteOptionalDatetime/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767f20>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_optional_datetime property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_optional_datetime payload is not an object or null");
     }
 
@@ -4221,8 +3844,7 @@ void TestableServer::_receiveReadWriteOptionalDatetimePropertyUpdate(const std::
 std::optional<ReadWriteTwoDatetimesProperty> TestableServer::getReadWriteTwoDatetimesProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDatetimesPropertyMutex);
-    if (_readWriteTwoDatetimesProperty)
-    {
+    if (_readWriteTwoDatetimesProperty) {
         return *_readWriteTwoDatetimesProperty;
     }
     return std::nullopt;
@@ -4243,8 +3865,7 @@ void TestableServer::updateReadWriteTwoDatetimesProperty(std::chrono::time_point
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteTwoDatetimesPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteTwoDatetimesPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteTwoDatetimesPropertyCallbacks) {
             cb(first, second);
         }
     }
@@ -4255,36 +3876,31 @@ void TestableServer::republishReadWriteTwoDatetimesProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDatetimesPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteTwoDatetimesProperty)
-    {
+    if (_readWriteTwoDatetimesProperty) {
         doc.SetObject();
         _readWriteTwoDatetimesProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteTwoDatetimesPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteTwoDatetimes/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3766120>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_two_datetimes property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_two_datetimes payload is not an object or null");
     }
 
@@ -4305,8 +3921,7 @@ void TestableServer::_receiveReadWriteTwoDatetimesPropertyUpdate(const std::stri
 std::optional<std::chrono::duration<double>> TestableServer::getReadWriteDurationProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteDurationPropertyMutex);
-    if (_readWriteDurationProperty)
-    {
+    if (_readWriteDurationProperty) {
         return _readWriteDurationProperty->value;
     }
     return std::nullopt;
@@ -4327,8 +3942,7 @@ void TestableServer::updateReadWriteDurationProperty(std::chrono::duration<doubl
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteDurationPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteDurationPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteDurationPropertyCallbacks) {
             cb(value);
         }
     }
@@ -4339,36 +3953,31 @@ void TestableServer::republishReadWriteDurationProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteDurationPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteDurationProperty)
-    {
+    if (_readWriteDurationProperty) {
         doc.SetObject();
         _readWriteDurationProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteDurationPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteDuration/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f3767980>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteDurationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_duration property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_duration payload is not an object or null");
     }
 
@@ -4389,8 +3998,7 @@ void TestableServer::_receiveReadWriteDurationPropertyUpdate(const std::string& 
 std::optional<std::chrono::duration<double>> TestableServer::getReadWriteOptionalDurationProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyMutex);
-    if (_readWriteOptionalDurationProperty)
-    {
+    if (_readWriteOptionalDurationProperty) {
         return _readWriteOptionalDurationProperty->value;
     }
     return std::nullopt;
@@ -4411,8 +4019,7 @@ void TestableServer::updateReadWriteOptionalDurationProperty(std::optional<std::
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteOptionalDurationPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteOptionalDurationPropertyCallbacks) {
             cb(value);
         }
     }
@@ -4423,36 +4030,31 @@ void TestableServer::republishReadWriteOptionalDurationProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalDurationPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteOptionalDurationProperty)
-    {
+    if (_readWriteOptionalDurationProperty) {
         doc.SetObject();
         _readWriteOptionalDurationProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteOptionalDurationPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteOptionalDuration/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f37a4080>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteOptionalDurationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_optional_duration property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_optional_duration payload is not an object or null");
     }
 
@@ -4473,8 +4075,7 @@ void TestableServer::_receiveReadWriteOptionalDurationPropertyUpdate(const std::
 std::optional<ReadWriteTwoDurationsProperty> TestableServer::getReadWriteTwoDurationsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDurationsPropertyMutex);
-    if (_readWriteTwoDurationsProperty)
-    {
+    if (_readWriteTwoDurationsProperty) {
         return *_readWriteTwoDurationsProperty;
     }
     return std::nullopt;
@@ -4495,8 +4096,7 @@ void TestableServer::updateReadWriteTwoDurationsProperty(std::chrono::duration<d
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteTwoDurationsPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteTwoDurationsPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteTwoDurationsPropertyCallbacks) {
             cb(first, second);
         }
     }
@@ -4507,36 +4107,31 @@ void TestableServer::republishReadWriteTwoDurationsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoDurationsPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteTwoDurationsProperty)
-    {
+    if (_readWriteTwoDurationsProperty) {
         doc.SetObject();
         _readWriteTwoDurationsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteTwoDurationsPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteTwoDurations/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f37a4410>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteTwoDurationsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_two_durations property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_two_durations payload is not an object or null");
     }
 
@@ -4557,8 +4152,7 @@ void TestableServer::_receiveReadWriteTwoDurationsPropertyUpdate(const std::stri
 std::optional<std::vector<uint8_t>> TestableServer::getReadWriteBinaryProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteBinaryPropertyMutex);
-    if (_readWriteBinaryProperty)
-    {
+    if (_readWriteBinaryProperty) {
         return _readWriteBinaryProperty->value;
     }
     return std::nullopt;
@@ -4579,8 +4173,7 @@ void TestableServer::updateReadWriteBinaryProperty(std::vector<uint8_t> value)
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteBinaryPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteBinaryPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteBinaryPropertyCallbacks) {
             cb(value);
         }
     }
@@ -4591,36 +4184,31 @@ void TestableServer::republishReadWriteBinaryProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteBinaryPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteBinaryProperty)
-    {
+    if (_readWriteBinaryProperty) {
         doc.SetObject();
         _readWriteBinaryProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteBinaryPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteBinary/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f37a4620>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteBinaryPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_binary property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_binary payload is not an object or null");
     }
 
@@ -4641,8 +4229,7 @@ void TestableServer::_receiveReadWriteBinaryPropertyUpdate(const std::string& to
 std::optional<std::vector<uint8_t>> TestableServer::getReadWriteOptionalBinaryProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyMutex);
-    if (_readWriteOptionalBinaryProperty)
-    {
+    if (_readWriteOptionalBinaryProperty) {
         return _readWriteOptionalBinaryProperty->value;
     }
     return std::nullopt;
@@ -4663,8 +4250,7 @@ void TestableServer::updateReadWriteOptionalBinaryProperty(std::optional<std::ve
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteOptionalBinaryPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteOptionalBinaryPropertyCallbacks) {
             cb(value);
         }
     }
@@ -4675,36 +4261,31 @@ void TestableServer::republishReadWriteOptionalBinaryProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteOptionalBinaryPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteOptionalBinaryProperty)
-    {
+    if (_readWriteOptionalBinaryProperty) {
         doc.SetObject();
         _readWriteOptionalBinaryProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteOptionalBinaryPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteOptionalBinary/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f37a4710>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_optional_binary property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_optional_binary payload is not an object or null");
     }
 
@@ -4725,8 +4306,7 @@ void TestableServer::_receiveReadWriteOptionalBinaryPropertyUpdate(const std::st
 std::optional<ReadWriteTwoBinariesProperty> TestableServer::getReadWriteTwoBinariesProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoBinariesPropertyMutex);
-    if (_readWriteTwoBinariesProperty)
-    {
+    if (_readWriteTwoBinariesProperty) {
         return *_readWriteTwoBinariesProperty;
     }
     return std::nullopt;
@@ -4747,8 +4327,7 @@ void TestableServer::updateReadWriteTwoBinariesProperty(std::vector<uint8_t> fir
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteTwoBinariesPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteTwoBinariesPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteTwoBinariesPropertyCallbacks) {
             cb(first, second);
         }
     }
@@ -4759,36 +4338,31 @@ void TestableServer::republishReadWriteTwoBinariesProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteTwoBinariesPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteTwoBinariesProperty)
-    {
+    if (_readWriteTwoBinariesProperty) {
         doc.SetObject();
         _readWriteTwoBinariesProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteTwoBinariesPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteTwoBinaries/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f37a4b60>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteTwoBinariesPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_two_binaries property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_two_binaries payload is not an object or null");
     }
 
@@ -4809,8 +4383,7 @@ void TestableServer::_receiveReadWriteTwoBinariesPropertyUpdate(const std::strin
 std::optional<std::vector<std::string>> TestableServer::getReadWriteListOfStringsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyMutex);
-    if (_readWriteListOfStringsProperty)
-    {
+    if (_readWriteListOfStringsProperty) {
         return _readWriteListOfStringsProperty->value;
     }
     return std::nullopt;
@@ -4831,8 +4404,7 @@ void TestableServer::updateReadWriteListOfStringsProperty(std::vector<std::strin
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteListOfStringsPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteListOfStringsPropertyCallbacks) {
             cb(value);
         }
     }
@@ -4843,36 +4415,31 @@ void TestableServer::republishReadWriteListOfStringsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteListOfStringsPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteListOfStringsProperty)
-    {
+    if (_readWriteListOfStringsProperty) {
         doc.SetObject();
         _readWriteListOfStringsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteListOfStringsPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteListOfStrings/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f37a4800>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteListOfStringsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_list_of_strings property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_list_of_strings payload is not an object or null");
     }
 
@@ -4893,8 +4460,7 @@ void TestableServer::_receiveReadWriteListOfStringsPropertyUpdate(const std::str
 std::optional<ReadWriteListsProperty> TestableServer::getReadWriteListsProperty()
 {
     std::lock_guard<std::mutex> lock(_readWriteListsPropertyMutex);
-    if (_readWriteListsProperty)
-    {
+    if (_readWriteListsProperty) {
         return *_readWriteListsProperty;
     }
     return std::nullopt;
@@ -4915,8 +4481,7 @@ void TestableServer::updateReadWriteListsProperty(std::vector<Numbers> theList, 
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_readWriteListsPropertyCallbacksMutex);
-        for (const auto& cb: _readWriteListsPropertyCallbacks)
-        {
+        for (const auto& cb: _readWriteListsPropertyCallbacks) {
             cb(theList, optionalList);
         }
     }
@@ -4927,36 +4492,31 @@ void TestableServer::republishReadWriteListsProperty() const
 {
     std::lock_guard<std::mutex> lock(_readWriteListsPropertyMutex);
     rapidjson::Document doc;
-    if (_readWriteListsProperty)
-    {
+    if (_readWriteListsProperty) {
         doc.SetObject();
         _readWriteListsProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastReadWriteListsPropertyVersion;
-    _broker->Publish((format("testable/%1%/property/readWriteLists/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x73e4f37a47a0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void TestableServer::_receiveReadWriteListsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse read_write_lists property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received read_write_lists payload is not an object or null");
     }
 
@@ -4976,11 +4536,10 @@ void TestableServer::_receiveReadWriteListsPropertyUpdate(const std::string& top
 
 void TestableServer::_advertisementThreadLoop()
 {
-    while (_advertisementThreadRunning)
-    {
+    while (_advertisementThreadRunning) {
         // Get current timestamp
         auto now = std::chrono::system_clock::now();
-        std::string timestamp = timePointToIsoString(now);
+        std::string timestamp = stinger::utils::timePointToIsoString(now);
 
         // Build JSON message
         rapidjson::Document doc;
@@ -5000,20 +4559,25 @@ void TestableServer::_advertisementThreadLoop()
         doc.Accept(writer);
 
         // Create MQTT properties with message expiry interval of 150 seconds
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.messageExpiryInterval = 150;
 
-        // Publish to testable/<instance_id>/interface
-        std::string topic = (format("testable/%1%/interface") % _instanceId).str();
+        // Publish to <bound method StingerSpec.interface_info_topic of <stingeripc.components.StingerSpec object at 0x73e4f43e5160>>
+        std::string topic = (format("<bound method StingerSpec.interface_info_topic of <stingeripc.components.StingerSpec object at 0x73e4f43e5160>>") % _instanceId).str();
         _broker->Publish(topic, buf.GetString(), 1, true, mqttProps);
 
         _broker->Log(LOG_INFO, "Published service advertisement to %s", topic.c_str());
 
         // Wait for 120 seconds or until thread should stop
         // Use smaller sleep intervals to allow quick shutdown
-        for (int i = 0; i < 120 && _advertisementThreadRunning; ++i)
-        {
+        for (int i = 0; i < 120 && _advertisementThreadRunning; ++i) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
 }
+
+} // namespace testable
+
+} // namespace gen
+
+} // namespace stinger

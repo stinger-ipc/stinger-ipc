@@ -19,11 +19,10 @@ from datetime import datetime, timedelta, UTC
 import isodate
 import functools
 from concurrent.futures import Future
-
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from pyqttier.interface import IBrokerConnection
+from pyqttier.interface import stinger::utils::IConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import (
@@ -37,17 +36,18 @@ from stinger_python_utils.return_codes import (
 from .interface_types import *
 
 
+
 from .property import FullPropertyAccess
 
-T = TypeVar("T")
 
+
+T = TypeVar('T')
 
 @dataclass
 class PropertyControls(Generic[T]):
     """
     Controls for a server property.  Generic[T] must be a single value or a pydantic BaseModel for multi-argument properties.
     """
-
     mutex = threading.RLock()
     getter: Callable[[], T]
     setter: Optional[Callable[[T], None]] = None
@@ -60,12 +60,13 @@ class PropertyControls(Generic[T]):
         if self.setter is None:
             raise Exception("Property is read-only")
         self.setter(new_value)
-
+    
+ 
 
 class FullServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str, property_access: FullPropertyAccess, prefix: str):
-        self._logger = logging.getLogger(f"FullServer:{instance_id}")
+    def __init__(self, connection: stinger::utils::IConnection, instance_id: str, property_access: FullPropertyAccess, prefix: str):
+        self._logger = logging.getLogger(f'FullServer:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing FullServer instance %s", instance_id)
         self._conn = connection
@@ -75,36 +76,34 @@ class FullServer:
             "service_id": instance_id,
             "prefix": prefix,
         }
-        self._service_advert_topic = "{prefix}/Full/{service_id}/interface".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._service_advert_topic = "{prefix}/Full/{service_id}/interface".format(**self._topic_template_kwargs) # type: ignore[str-format]
         self._re_advertise_server_interval_seconds = 120
         self._running = True
         self._conn.add_message_callback(self._receive_message)
         self._property_favorite_number: PropertyControls[int] = PropertyControls(getter=property_access.favorite_number_getter, setter=property_access.favorite_number_setter, version=1)
-        self._conn.subscribe("{prefix}/Full/{service_id}/property/favorite_number/update".format(**self._topic_template_kwargs), self._receive_favorite_number_update_request_message)  # type: ignore[str-format]
+        self._conn.subscribe("{prefix}/Full/{service_id}/property/favorite_number/update".format(**self._topic_template_kwargs), self._receive_favorite_number_update_request_message) # type: ignore[str-format]
         self._property_favorite_foods: PropertyControls[FavoriteFoodsProperty] = PropertyControls(getter=property_access.favorite_foods_getter, setter=property_access.favorite_foods_setter, version=1)
-        self._conn.subscribe("{prefix}/Full/{service_id}/property/favorite_foods/update".format(**self._topic_template_kwargs), self._receive_favorite_foods_update_request_message)  # type: ignore[str-format]
+        self._conn.subscribe("{prefix}/Full/{service_id}/property/favorite_foods/update".format(**self._topic_template_kwargs), self._receive_favorite_foods_update_request_message) # type: ignore[str-format]
         self._property_lunch_menu: PropertyControls[LunchMenuProperty] = PropertyControls(getter=property_access.lunch_menu_getter, version=1)
         self._property_family_name: PropertyControls[str] = PropertyControls(getter=property_access.family_name_getter, setter=property_access.family_name_setter, version=1)
-        self._conn.subscribe("{prefix}/Full/{service_id}/property/family_name/update".format(**self._topic_template_kwargs), self._receive_family_name_update_request_message)  # type: ignore[str-format]
-        self._property_last_breakfast_time: PropertyControls[datetime] = PropertyControls(
-            getter=property_access.last_breakfast_time_getter, setter=property_access.last_breakfast_time_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/Full/{service_id}/property/last_breakfast_time/update".format(**self._topic_template_kwargs), self._receive_last_breakfast_time_update_request_message)  # type: ignore[str-format]
+        self._conn.subscribe("{prefix}/Full/{service_id}/property/family_name/update".format(**self._topic_template_kwargs), self._receive_family_name_update_request_message) # type: ignore[str-format]
+        self._property_last_breakfast_time: PropertyControls[datetime] = PropertyControls(getter=property_access.last_breakfast_time_getter, setter=property_access.last_breakfast_time_setter, version=1)
+        self._conn.subscribe("{prefix}/Full/{service_id}/property/last_breakfast_time/update".format(**self._topic_template_kwargs), self._receive_last_breakfast_time_update_request_message) # type: ignore[str-format]
         self._property_last_birthdays: PropertyControls[LastBirthdaysProperty] = PropertyControls(getter=property_access.last_birthdays_getter, setter=property_access.last_birthdays_setter, version=1)
-        self._conn.subscribe("{prefix}/Full/{service_id}/property/last_birthdays/update".format(**self._topic_template_kwargs), self._receive_last_birthdays_update_request_message)  # type: ignore[str-format]
-
-        self._conn.subscribe("{prefix}/Full/{service_id}/method/addNumbers/request".format(**self._topic_template_kwargs), self._process_add_numbers_call)  # type: ignore[str-format]
-        self._method_add_numbers_handler = None  # type: Optional[Callable[[int, int, Optional[int]], int]]
-
-        self._conn.subscribe("{prefix}/Full/{service_id}/method/doSomething/request".format(**self._topic_template_kwargs), self._process_do_something_call)  # type: ignore[str-format]
-        self._method_do_something_handler = None  # type: Optional[Callable[[str], DoSomethingMethodResponse]]
-
-        self._conn.subscribe("{prefix}/Full/{service_id}/method/what_time_is_it/request".format(**self._topic_template_kwargs), self._process_what_time_is_it_call)  # type: ignore[str-format]
-        self._method_what_time_is_it_handler = None  # type: Optional[Callable[[], datetime]]
-
-        self._conn.subscribe("{prefix}/Full/{service_id}/method/hold_temperature/request".format(**self._topic_template_kwargs), self._process_hold_temperature_call)  # type: ignore[str-format]
-        self._method_hold_temperature_handler = None  # type: Optional[Callable[[float], bool]]
-
+        self._conn.subscribe("{prefix}/Full/{service_id}/property/last_birthdays/update".format(**self._topic_template_kwargs), self._receive_last_birthdays_update_request_message) # type: ignore[str-format]
+        
+        self._conn.subscribe("{prefix}/Full/{service_id}/method/addNumbers/request".format(**self._topic_template_kwargs), self._process_add_numbers_call) # type: ignore[str-format]
+        self._method_add_numbers_handler = None # type: Optional[Callable[[int, int, Optional[int]], int]]
+        
+        self._conn.subscribe("{prefix}/Full/{service_id}/method/doSomething/request".format(**self._topic_template_kwargs), self._process_do_something_call) # type: ignore[str-format]
+        self._method_do_something_handler = None # type: Optional[Callable[[str], DoSomethingMethodResponse]]
+        
+        self._conn.subscribe("{prefix}/Full/{service_id}/method/what_time_is_it/request".format(**self._topic_template_kwargs), self._process_what_time_is_it_call) # type: ignore[str-format]
+        self._method_what_time_is_it_handler = None # type: Optional[Callable[[], datetime]]
+        
+        self._conn.subscribe("{prefix}/Full/{service_id}/method/hold_temperature/request".format(**self._topic_template_kwargs), self._process_hold_temperature_call) # type: ignore[str-format]
+        self._method_hold_temperature_handler = None # type: Optional[Callable[[float], bool]]
+        
         self._publish_all_properties()
         signal.signal(signal.SIGTERM, self._signal_handler)
 
@@ -118,22 +117,22 @@ class FullServer:
     def _signal_handler(self, signum, frame):
         self.shutdown()
 
-    def shutdown(self, timeout: float = 5.0):
+    def shutdown(self, timeout: float=5.0):
         """Gracefully shutdown the server and stop the advertisement thread."""
         if not self._running:
             return
         self._running = False
         self._conn.unpublish_retained(self._service_advert_topic)
-        if hasattr(self, "_advertise_thread") and self._advertise_thread.is_alive():
+        if hasattr(self, '_advertise_thread') and self._advertise_thread.is_alive():
             self._advertise_thread.join(timeout=timeout)
 
     @property
     def instance_id(self) -> str:
-        """The instance ID of this server instance."""
+        """ The instance ID of this server instance. """
         return self._instance_id
 
     def _loop_publishing_interface_info(self):
-        """We have a discovery topic separate from the MQTT client discovery topic.
+        """ We have a discovery topic separate from the MQTT client discovery topic.
         We publish it periodically, but with a Message Expiry interval."""
         while self._running:
             if self._conn.is_connected():
@@ -144,107 +143,92 @@ class FullServer:
                     time_left -= 4
             else:
                 sleep(2)
-
+            
     def publish_interface_info(self):
-        """Publishes the interface info message to the interface info topic with an expiry interval."""
+        """ Publishes the interface info message to the interface info topic with an expiry interval. """
         data = FullInterfaceInfo(
             instance=self._instance_id,
             connection_topic=(self._conn.online_topic or ""),
             timestamp=datetime.now(UTC).isoformat(),
             prefix=self._topic_template_kwargs["prefix"],
         )
-        expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
+        expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         msg = MessageCreator.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
+    
     def publish_favorite_number_value(self, *_, **__):
-        """Publishes the current value of the 'favorite_number' property.
+        """ Publishes the current value of the 'favorite_number' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_favorite_number.mutex:
             self._property_favorite_number.version += 1
             favorite_number_prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/Full/{service_id}/property/favorite_number/value".format(**self._topic_template_kwargs), favorite_number_prop_obj, self._property_favorite_number.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/Full/{service_id}/property/favorite_number/value".format(**self._topic_template_kwargs), favorite_number_prop_obj, self._property_favorite_number.version)
             self._conn.publish(state_msg)
-
     def publish_favorite_foods_value(self, *_, **__):
-        """Publishes the current value of the 'favorite_foods' property.
+        """ Publishes the current value of the 'favorite_foods' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_favorite_foods.mutex:
             self._property_favorite_foods.version += 1
             favorite_foods_prop_obj = self._property_favorite_foods.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/Full/{service_id}/property/favorite_foods/value".format(**self._topic_template_kwargs), favorite_foods_prop_obj, self._property_favorite_foods.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/Full/{service_id}/property/favorite_foods/value".format(**self._topic_template_kwargs), favorite_foods_prop_obj, self._property_favorite_foods.version)
             self._conn.publish(state_msg)
-
     def publish_lunch_menu_value(self, *_, **__):
-        """Publishes the current value of the 'lunch_menu' property.
+        """ Publishes the current value of the 'lunch_menu' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_lunch_menu.mutex:
             self._property_lunch_menu.version += 1
             lunch_menu_prop_obj = self._property_lunch_menu.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/Full/{service_id}/property/lunch_menu/value".format(**self._topic_template_kwargs), lunch_menu_prop_obj, self._property_lunch_menu.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/Full/{service_id}/property/lunch_menu/value".format(**self._topic_template_kwargs), lunch_menu_prop_obj, self._property_lunch_menu.version)
             self._conn.publish(state_msg)
-
     def publish_family_name_value(self, *_, **__):
-        """Publishes the current value of the 'family_name' property.
+        """ Publishes the current value of the 'family_name' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_family_name.mutex:
             self._property_family_name.version += 1
             family_name_prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/Full/{service_id}/property/family_name/value".format(**self._topic_template_kwargs), family_name_prop_obj, self._property_family_name.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/Full/{service_id}/property/family_name/value".format(**self._topic_template_kwargs), family_name_prop_obj, self._property_family_name.version)
             self._conn.publish(state_msg)
-
     def publish_last_breakfast_time_value(self, *_, **__):
-        """Publishes the current value of the 'last_breakfast_time' property.
+        """ Publishes the current value of the 'last_breakfast_time' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_last_breakfast_time.mutex:
             self._property_last_breakfast_time.version += 1
             last_breakfast_time_prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/Full/{service_id}/property/last_breakfast_time/value".format(**self._topic_template_kwargs), last_breakfast_time_prop_obj, self._property_last_breakfast_time.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/Full/{service_id}/property/last_breakfast_time/value".format(**self._topic_template_kwargs), last_breakfast_time_prop_obj, self._property_last_breakfast_time.version)
             self._conn.publish(state_msg)
-
     def publish_last_birthdays_value(self, *_, **__):
-        """Publishes the current value of the 'last_birthdays' property.
+        """ Publishes the current value of the 'last_birthdays' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_last_birthdays.mutex:
             self._property_last_birthdays.version += 1
             last_birthdays_prop_obj = self._property_last_birthdays.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/Full/{service_id}/property/last_birthdays/value".format(**self._topic_template_kwargs), last_birthdays_prop_obj, self._property_last_birthdays.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/Full/{service_id}/property/last_birthdays/value".format(**self._topic_template_kwargs), last_birthdays_prop_obj, self._property_last_birthdays.version)
             self._conn.publish(state_msg)
 
     def _publish_all_properties(self):
-        """Publishes the current value of all properties."""
+        """ Publishes the current value of all properties.
+        """
         self.publish_favorite_number_value()
         self.publish_favorite_foods_value()
         self.publish_lunch_menu_value()
@@ -252,17 +236,19 @@ class FullServer:
         self.publish_last_breakfast_time_value()
         self.publish_last_birthdays_value()
 
+    
+    
     def _receive_favorite_number_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x74b6a19868a0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/Full/{service_id}/property/favorite_number/update` topic
         in order to update the `favorite_number` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_favorite_number.version):
@@ -281,22 +267,21 @@ class FullServer:
             with self._property_favorite_number.mutex:
                 self._property_favorite_number.version += 1
                 self._property_favorite_number.set_value(prop_value)
-
+                
                 current_prop_obj = FavoriteNumberProperty(number=self._property_favorite_number.get_value())
-
+                
                 prop_value_topic = "{prefix}/Full/{service_id}/property/favorite_number/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_favorite_number.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_favorite_number.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -309,18 +294,20 @@ class FullServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_favorite_number.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_favorite_foods_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x74b6a175fa70>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/Full/{service_id}/property/favorite_foods/update` topic
         in order to update the `favorite_foods` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_favorite_foods.version):
@@ -335,26 +322,25 @@ class FullServer:
 
             recv_prop_obj = FavoriteFoodsProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: FavoriteFoodsProperty
+            prop_value = recv_prop_obj # type: FavoriteFoodsProperty
             with self._property_favorite_foods.mutex:
                 self._property_favorite_foods.version += 1
                 self._property_favorite_foods.set_value(prop_value)
-
-                current_prop_obj = self._property_favorite_foods.get_value()  # type: FavoriteFoodsProperty
-
+                
+                current_prop_obj = self._property_favorite_foods.get_value() # type: FavoriteFoodsProperty
+                
                 prop_value_topic = "{prefix}/Full/{service_id}/property/favorite_foods/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_favorite_foods.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_favorite_foods.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -367,18 +353,22 @@ class FullServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_favorite_foods.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
+    
+    
     def _receive_family_name_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x74b6a175ef30>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/Full/{service_id}/property/family_name/update` topic
         in order to update the `family_name` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_family_name.version):
@@ -397,13 +387,13 @@ class FullServer:
             with self._property_family_name.mutex:
                 self._property_family_name.version += 1
                 self._property_family_name.set_value(prop_value)
-
+                
                 current_prop_obj = FamilyNameProperty(family_name=self._property_family_name.get_value())
-
+                
                 prop_value_topic = "{prefix}/Full/{service_id}/property/family_name/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_family_name.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_family_name.version), MethodReturnCode.SUCCESS.value, correlation_id)
@@ -411,6 +401,7 @@ class FullServer:
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -423,24 +414,24 @@ class FullServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_family_name.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_last_breakfast_time_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x74b6a17a41d0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/Full/{service_id}/property/last_breakfast_time/update` topic
         in order to update the `last_breakfast_time` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_last_breakfast_time.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_last_breakfast_time.version}' of the 'last_breakfast_time' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_last_breakfast_time.version}' of the 'last_breakfast_time' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -455,22 +446,21 @@ class FullServer:
             with self._property_last_breakfast_time.mutex:
                 self._property_last_breakfast_time.version += 1
                 self._property_last_breakfast_time.set_value(prop_value)
-
+                
                 current_prop_obj = LastBreakfastTimeProperty(timestamp=self._property_last_breakfast_time.get_value())
-
+                
                 prop_value_topic = "{prefix}/Full/{service_id}/property/last_breakfast_time/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_last_breakfast_time.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_last_breakfast_time.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -483,18 +473,20 @@ class FullServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_last_breakfast_time.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_last_birthdays_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x74b6a17a4800>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/Full/{service_id}/property/last_birthdays/update` topic
         in order to update the `last_birthdays` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_last_birthdays.version):
@@ -509,26 +501,25 @@ class FullServer:
 
             recv_prop_obj = LastBirthdaysProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: LastBirthdaysProperty
+            prop_value = recv_prop_obj # type: LastBirthdaysProperty
             with self._property_last_birthdays.mutex:
                 self._property_last_birthdays.version += 1
                 self._property_last_birthdays.set_value(prop_value)
-
-                current_prop_obj = self._property_last_birthdays.get_value()  # type: LastBirthdaysProperty
-
+                
+                current_prop_obj = self._property_last_birthdays.get_value() # type: LastBirthdaysProperty
+                
                 prop_value_topic = "{prefix}/Full/{service_id}/property/last_birthdays/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_last_birthdays.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_last_birthdays.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -541,23 +532,28 @@ class FullServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_last_birthdays.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
+    
+    
 
     def _receive_message(self, message: Message):
-        """This is the callback that is called whenever any message is received on a subscribed topic."""
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
         self._logger.warning("Received unexpected message: %s", message)
 
     def emit_today_is(self, day_of_month: int, day_of_week: DayOfTheWeek):
-        """Server application code should call this method to emit the 'todayIs' signal.
+        """ Server application code should call this method to emit the 'todayIs' signal.
 
         TodayIsSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(day_of_month, int), f"The 'dayOfMonth' argument must be of type int, but was {type(day_of_month)}"
-
+        
         assert isinstance(day_of_week, DayOfTheWeek), f"The 'dayOfWeek' argument must be of type DayOfTheWeek, but was {type(day_of_week)}"
+        
 
         payload = TodayIsSignalPayload(
             day_of_month=day_of_month,
+        
             day_of_week=day_of_week,
         )
         signal_topic = "{prefix}/Full/{service_id}/signal/todayIs".format(**self._topic_template_kwargs)
@@ -565,32 +561,38 @@ class FullServer:
         self._conn.publish(sig_msg)
 
     def emit_random_word(self, word: str, time: datetime):
-        """Server application code should call this method to emit the 'randomWord' signal.
+        """ Server application code should call this method to emit the 'randomWord' signal.
 
         RandomWordSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(word, str), f"The 'word' argument must be of type str, but was {type(word)}"
-
+        
         assert isinstance(time, datetime), f"The 'time' argument must be of type datetime, but was {type(time)}"
+        
 
         payload = RandomWordSignalPayload(
             word=word,
+        
             time=time,
         )
         signal_topic = "{prefix}/Full/{service_id}/signal/randomWord".format(**self._topic_template_kwargs)
         sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
+    
+
+    
     def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
-        """This is a decorator to decorate a method that will handle the 'addNumbers' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'addNumbers' method calls.
+        """
         if self._method_add_numbers_handler is None and handler is not None:
             self._method_add_numbers_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_add_numbers_call(self, message: Message):
-        """This processes a call to the 'addNumbers' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'addNumbers' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -608,22 +610,19 @@ class FullServer:
         response_topic = message.response_topic
 
         if self._method_add_numbers_handler is not None:
-            method_args = [
-                payload.first,
-                payload.second,
-                payload.third,
-            ]  # type: List[Any]
-
+            method_args = [payload.first, payload.second, payload.third, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_add_numbers_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, int):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
                 ret_obj = AddNumbersMethodResponse(sum=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling addNumbers: %s", e)
                 if response_topic is not None:
@@ -653,15 +652,17 @@ class FullServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'addNumbers' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_do_something(self, handler: Callable[[str], DoSomethingMethodResponse]):
-        """This is a decorator to decorate a method that will handle the 'doSomething' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'doSomething' method calls.
+        """
         if self._method_do_something_handler is None and handler is not None:
             self._method_do_something_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_do_something_call(self, message: Message):
-        """This processes a call to the 'doSomething' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'doSomething' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -679,19 +680,18 @@ class FullServer:
         response_topic = message.response_topic
 
         if self._method_do_something_handler is not None:
-            method_args = [
-                payload.task_to_do,
-            ]  # type: List[Any]
-
+            method_args = [payload.task_to_do, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_do_something_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, DoSomethingMethodResponse):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type DoSomethingMethodResponse, but was {type(return_values)}")
                 return_data = return_values
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling doSomething: %s", e)
                 if response_topic is not None:
@@ -721,15 +721,17 @@ class FullServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'doSomething' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_what_time_is_it(self, handler: Callable[[], datetime]):
-        """This is a decorator to decorate a method that will handle the 'what_time_is_it' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'what_time_is_it' method calls.
+        """
         if self._method_what_time_is_it_handler is None and handler is not None:
             self._method_what_time_is_it_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_what_time_is_it_call(self, message: Message):
-        """This processes a call to the 'what_time_is_it' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'what_time_is_it' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -747,18 +749,19 @@ class FullServer:
         response_topic = message.response_topic
 
         if self._method_what_time_is_it_handler is not None:
-            method_args = []  # type: List[Any]
-
+            method_args = [] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_what_time_is_it_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, datetime):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime, but was {type(return_values)}")
                 ret_obj = WhatTimeIsItMethodResponse(timestamp=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling what_time_is_it: %s", e)
                 if response_topic is not None:
@@ -788,15 +791,17 @@ class FullServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'what_time_is_it' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_hold_temperature(self, handler: Callable[[float], bool]):
-        """This is a decorator to decorate a method that will handle the 'hold_temperature' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'hold_temperature' method calls.
+        """
         if self._method_hold_temperature_handler is None and handler is not None:
             self._method_hold_temperature_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_hold_temperature_call(self, message: Message):
-        """This processes a call to the 'hold_temperature' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'hold_temperature' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -814,20 +819,19 @@ class FullServer:
         response_topic = message.response_topic
 
         if self._method_hold_temperature_handler is not None:
-            method_args = [
-                payload.temperature_celsius,
-            ]  # type: List[Any]
-
+            method_args = [payload.temperature_celsius, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_hold_temperature_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, bool):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type bool, but was {type(return_values)}")
                 ret_obj = HoldTemperatureMethodResponse(success=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling hold_temperature: %s", e)
                 if response_topic is not None:
@@ -857,21 +861,24 @@ class FullServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'hold_temperature' method")
                 self._conn.publish(err_msg)
 
+    
+    
+    
     @property
     def favorite_number(self) -> Optional[int]:
-        """This property returns the last received (int) value for the 'favorite_number' property.
-
+        """ This property returns the last received (int) value for the 'favorite_number' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_favorite_number.get_value()
 
     @favorite_number.setter
     def favorite_number(self, number: int):
-        """This property sets (publishes) a new int value for the 'favorite_number' property.
-
+        """ This property sets (publishes) a new int value for the 'favorite_number' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(number, int):
+        if (not isinstance(number, int)):
             raise ValueError(f"The value must be int .")
 
         value_updated = False
@@ -884,32 +891,39 @@ class FullServer:
                 prop_value_topic = "{prefix}/Full/{service_id}/property/favorite_number/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_favorite_number.version)
                 self._conn.publish(state_msg)
+        
 
     def set_favorite_number(self, number: int):
-        """This method sets (publishes) a new value for the 'favorite_number' property."""
+        """ This method sets (publishes) a new value for the 'favorite_number' property.
+        """
         if not isinstance(number, int):
             raise ValueError(f"The 'number' value must be int.")
 
+        
         obj = number
+        
 
         # Use the property.setter to do that actual work.
         self.favorite_number = obj
 
+    
+    
+     
     @property
     def favorite_foods(self) -> FavoriteFoodsProperty:
-        """This property returns the last received value for the 'favorite_foods' property.
-        The 'favorite_foods' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'favorite_foods' property.
+        The 'favorite_foods' property contains multiple values, so we operate on the full 
         `FavoriteFoodsProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_favorite_foods.get_value()
 
     @favorite_foods.setter
     def favorite_foods(self, value: FavoriteFoodsProperty):
-        """This property sets (publishes) a new value structure for the 'favorite_foods' property.
-
+        """ This property sets (publishes) a new value structure for the 'favorite_foods' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, FavoriteFoodsProperty):
@@ -924,9 +938,12 @@ class FullServer:
                     prop_value_topic = "{prefix}/Full/{service_id}/property/favorite_foods/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_favorite_foods.get_value(), self._property_favorite_foods.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_favorite_foods(self, drink: str, slices_of_pizza: int, breakfast: Optional[str]):
-        """This method sets (publishes) a new value for the 'favorite_foods' property."""
+        """ This method sets (publishes) a new value for the 'favorite_foods' property.
+        """
         if not isinstance(drink, str):
             raise ValueError(f"The 'drink' value must be str.")
         if not isinstance(slices_of_pizza, int):
@@ -934,30 +951,38 @@ class FullServer:
         if not isinstance(breakfast, str) and breakfast is not None:
             raise ValueError(f"The 'breakfast' value must be Optional[str].")
 
+        
         obj = FavoriteFoodsProperty(
             drink=drink,
+            
             slices_of_pizza=slices_of_pizza,
+            
             breakfast=breakfast,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.favorite_foods = obj
 
+    
+    
+     
     @property
     def lunch_menu(self) -> LunchMenuProperty:
-        """This property returns the last received value for the 'lunch_menu' property.
-        The 'lunch_menu' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'lunch_menu' property.
+        The 'lunch_menu' property contains multiple values, so we operate on the full 
         `LunchMenuProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_lunch_menu.get_value()
 
     @lunch_menu.setter
     def lunch_menu(self, value: LunchMenuProperty):
-        """This property sets (publishes) a new value structure for the 'lunch_menu' property.
-
+        """ This property sets (publishes) a new value structure for the 'lunch_menu' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, LunchMenuProperty):
@@ -972,37 +997,47 @@ class FullServer:
                     prop_value_topic = "{prefix}/Full/{service_id}/property/lunch_menu/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_lunch_menu.get_value(), self._property_lunch_menu.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_lunch_menu(self, monday: Lunch, tuesday: Lunch):
-        """This method sets (publishes) a new value for the 'lunch_menu' property."""
+        """ This method sets (publishes) a new value for the 'lunch_menu' property.
+        """
         if not isinstance(monday, Lunch):
             raise ValueError(f"The 'monday' value must be Lunch.")
         if not isinstance(tuesday, Lunch):
             raise ValueError(f"The 'tuesday' value must be Lunch.")
 
+        
         obj = LunchMenuProperty(
             monday=monday,
+            
             tuesday=tuesday,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.lunch_menu = obj
 
+    
+    
+    
     @property
     def family_name(self) -> Optional[str]:
-        """This property returns the last received (str) value for the 'family_name' property.
-
+        """ This property returns the last received (str) value for the 'family_name' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_family_name.get_value()
 
     @family_name.setter
     def family_name(self, family_name: str):
-        """This property sets (publishes) a new str value for the 'family_name' property.
-
+        """ This property sets (publishes) a new str value for the 'family_name' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(family_name, str):
+        if (not isinstance(family_name, str)):
             raise ValueError(f"The value must be str .")
 
         value_updated = False
@@ -1015,32 +1050,39 @@ class FullServer:
                 prop_value_topic = "{prefix}/Full/{service_id}/property/family_name/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_family_name.version)
                 self._conn.publish(state_msg)
+        
 
     def set_family_name(self, family_name: str):
-        """This method sets (publishes) a new value for the 'family_name' property."""
+        """ This method sets (publishes) a new value for the 'family_name' property.
+        """
         if not isinstance(family_name, str):
             raise ValueError(f"The 'family_name' value must be str.")
 
+        
         obj = family_name
+        
 
         # Use the property.setter to do that actual work.
         self.family_name = obj
 
+    
+    
+    
     @property
     def last_breakfast_time(self) -> Optional[datetime]:
-        """This property returns the last received (datetime) value for the 'last_breakfast_time' property.
-
+        """ This property returns the last received (datetime) value for the 'last_breakfast_time' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_last_breakfast_time.get_value()
 
     @last_breakfast_time.setter
     def last_breakfast_time(self, timestamp: datetime):
-        """This property sets (publishes) a new datetime value for the 'last_breakfast_time' property.
-
+        """ This property sets (publishes) a new datetime value for the 'last_breakfast_time' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(timestamp, datetime):
+        if (not isinstance(timestamp, datetime)):
             raise ValueError(f"The value must be datetime .")
 
         value_updated = False
@@ -1053,32 +1095,39 @@ class FullServer:
                 prop_value_topic = "{prefix}/Full/{service_id}/property/last_breakfast_time/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_last_breakfast_time.version)
                 self._conn.publish(state_msg)
+        
 
     def set_last_breakfast_time(self, timestamp: datetime):
-        """This method sets (publishes) a new value for the 'last_breakfast_time' property."""
+        """ This method sets (publishes) a new value for the 'last_breakfast_time' property.
+        """
         if not isinstance(timestamp, datetime):
             raise ValueError(f"The 'timestamp' value must be datetime.")
 
+        
         obj = timestamp
+        
 
         # Use the property.setter to do that actual work.
         self.last_breakfast_time = obj
 
+    
+    
+     
     @property
     def last_birthdays(self) -> LastBirthdaysProperty:
-        """This property returns the last received value for the 'last_birthdays' property.
-        The 'last_birthdays' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'last_birthdays' property.
+        The 'last_birthdays' property contains multiple values, so we operate on the full 
         `LastBirthdaysProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_last_birthdays.get_value()
 
     @last_birthdays.setter
     def last_birthdays(self, value: LastBirthdaysProperty):
-        """This property sets (publishes) a new value structure for the 'last_birthdays' property.
-
+        """ This property sets (publishes) a new value structure for the 'last_birthdays' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, LastBirthdaysProperty):
@@ -1093,9 +1142,12 @@ class FullServer:
                     prop_value_topic = "{prefix}/Full/{service_id}/property/last_birthdays/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_last_birthdays.get_value(), self._property_last_birthdays.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_last_birthdays(self, mom: datetime, dad: datetime, sister: Optional[datetime], brothers_age: Optional[int]):
-        """This method sets (publishes) a new value for the 'last_birthdays' property."""
+        """ This method sets (publishes) a new value for the 'last_birthdays' property.
+        """
         if not isinstance(mom, datetime):
             raise ValueError(f"The 'mom' value must be datetime.")
         if not isinstance(dad, datetime):
@@ -1105,16 +1157,24 @@ class FullServer:
         if not isinstance(brothers_age, int) and brothers_age is not None:
             raise ValueError(f"The 'brothers_age' value must be Optional[int].")
 
+        
         obj = LastBirthdaysProperty(
             mom=mom,
+            
             dad=dad,
+            
             sister=sister,
+            
             brothers_age=brothers_age,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.last_birthdays = obj
 
+    
+    
 
 class FullServerBuilder:
     """
@@ -1122,64 +1182,58 @@ class FullServerBuilder:
     """
 
     def __init__(self):
-
+        
+        
         self._add_numbers_method_handler: Optional[Callable[[int, int, Optional[int]], int]] = None
         self._do_something_method_handler: Optional[Callable[[str], DoSomethingMethodResponse]] = None
         self._what_time_is_it_method_handler: Optional[Callable[[], datetime]] = None
         self._hold_temperature_method_handler: Optional[Callable[[float], bool]] = None
-
+        
+    
     def handle_add_numbers(self, handler: Callable[[int, int, Optional[int]], int]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._add_numbers_method_handler is None and handler is not None:
             self._add_numbers_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_do_something(self, handler: Callable[[str], DoSomethingMethodResponse]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._do_something_method_handler is None and handler is not None:
             self._do_something_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_what_time_is_it(self, handler: Callable[[], datetime]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._what_time_is_it_method_handler is None and handler is not None:
             self._what_time_is_it_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_hold_temperature(self, handler: Callable[[float], bool]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._hold_temperature_method_handler is None and handler is not None:
             self._hold_temperature_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
-    def build(self, connection: IBrokerConnection, instance_id: str, property_access: FullPropertyAccess, prefix: str, binding: Optional[Any] = None) -> FullServer:
-        new_server = FullServer(
-            connection,
-            instance_id,
-            property_access,
-            prefix,
-        )
-
+    
+    
+    def build(self, connection: stinger::utils::IConnection, instance_id: str, property_access: FullPropertyAccess, prefix: str, binding: Optional[Any]=None) -> FullServer:
+        new_server = FullServer(connection, instance_id, property_access, prefix, )
+        
         if self._add_numbers_method_handler is not None:
             if binding:
                 new_server.handle_add_numbers(self._add_numbers_method_handler.__get__(binding, binding.__class__))
@@ -1200,5 +1254,5 @@ class FullServerBuilder:
                 new_server.handle_hold_temperature(self._hold_temperature_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_hold_temperature(self._hold_temperature_method_handler)
-
+        
         return new_server

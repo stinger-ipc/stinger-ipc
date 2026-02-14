@@ -20,23 +20,27 @@ TODO: Get license text from stinger file
 #include <chrono>
 #include <thread>
 #include <atomic>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 
 #include "property_structs.hpp"
 
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/utils/mqttproperties.hpp>
 #include "enums.hpp"
 
 #include "method_payloads.hpp"
 
-class SimpleServer
-{
+namespace stinger {
+
+namespace gen {
+namespace simple {
+
+class SimpleServer {
 public:
     static constexpr const char NAME[] = "Simple";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
-    SimpleServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    SimpleServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId);
 
     virtual ~SimpleServer();
 
@@ -60,13 +64,16 @@ public:
     void republishSchoolProperty() const;
 
 private:
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
     std::string _instanceId;
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
+
+    std::string _prefixTopicParam;
+
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(
             const std::string& topic,
             const std::string& payload,
-            const MqttProperties& mqttProps
+            const stinger::utils::MqttProperties& mqttProps
     );
 
     void _callTradeNumbersHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
@@ -107,3 +114,9 @@ private:
     // Method that runs in the advertisement thread
     void _advertisementThreadLoop();
 };
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

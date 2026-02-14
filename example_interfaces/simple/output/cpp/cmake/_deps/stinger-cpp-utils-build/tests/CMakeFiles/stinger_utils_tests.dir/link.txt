@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/stinger_utils_tests.dir/link.d CMakeFiles/stinger_utils_tests.dir/test_mqttmessage.cpp.o -o stinger_utils_tests  ../libstinger_utils.a ../../../lib/libgtest_main.a -lmosquitto ../../../lib/libgtest.a

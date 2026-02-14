@@ -12,26 +12,39 @@
 #include "server.hpp"
 #include "method_payloads.hpp"
 #include "enums.hpp"
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/utils/format.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace simple {
 
 constexpr const char SimpleServer::NAME[];
 constexpr const char SimpleServer::INTERFACE_VERSION[];
 
-SimpleServer::SimpleServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId):
-    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
+SimpleServer::SimpleServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix):
+    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false), _prefixTopicParam(prefix),
+
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                                                        const std::string& topic,
                                                                        const std::string& payload,
-                                                                       const MqttProperties& mqttProps
+                                                                       const stinger::utils::MqttProperties& mqttProps
                                                                )
                                                                {
                                                                    _receiveMessage(topic, payload, mqttProps);
                                                                });
 
-    _tradeNumbersMethodSubscriptionId = _broker->Subscribe((format("simple/%1%/method/tradeNumbers") % _instanceId).str(), 2);
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["prefix"] = _prefixTopicParam;
 
-    _schoolPropertySubscriptionId = _broker->Subscribe((format("simple/%1%/property/school/setValue") % _instanceId).str(), 1);
+    _tradeNumbersMethodSubscriptionId = _broker->Subscribe((format("{prefix}/Simple/{service_id}/method/trade_numbers/request") % _instanceId).str(), 2);
+
+    _schoolPropertySubscriptionId = _broker->Subscribe((format("{prefix}/Simple/{service_id}/property/school/update") % _instanceId).str(), 1);
 
     // Start the service advertisement thread
     _advertisementThreadRunning = true;
@@ -41,69 +54,59 @@ SimpleServer::SimpleServer(std::shared_ptr<IBrokerConnection> broker, const std:
 SimpleServer::~SimpleServer()
 {
     // Unregister the message callback from the broker.
-    if (_broker && _brokerMessageCallbackHandle != 0)
-    {
+    if (_broker && _brokerMessageCallbackHandle != 0) {
         _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
         _brokerMessageCallbackHandle = 0;
     }
 
     // Stop the advertisement thread
     _advertisementThreadRunning = false;
-    if (_advertisementThread.joinable())
-    {
+    if (_advertisementThread.joinable()) {
         _advertisementThread.join();
     }
 
-    std::string topic = (format("simple/%1%/interface") % _instanceId).str();
-    _broker->Publish(topic, "", 1, true, MqttProperties());
+    std::string topic = (format("<bound method StingerSpec.interface_info_topic of <stingeripc.components.StingerSpec object at 0x724b366c24e0>>") % _instanceId).str();
+    _broker->Publish(topic, "", 1, true, stinger::utils::MqttProperties());
 
-    _broker->Unsubscribe((format("simple/%1%/method/tradeNumbers") % _instanceId).str());
+    _broker->Unsubscribe((format("") % _instanceId).str());
 
-    _broker->Unsubscribe((format("simple/%1%/property/school/setValue") % _instanceId).str());
+    _broker->Unsubscribe((format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x724b366dcec0>>") % _instanceId).str());
 }
 
 void SimpleServer::_receiveMessage(
         const std::string& topic,
         const std::string& payload,
-        const MqttProperties& mqttProps
+        const stinger::utils::MqttProperties& mqttProps
 )
 {
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
 
-    if ((subscriptionId == _tradeNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("simple/%1%/method/tradeNumbers") % _instanceId).str())))
-    {
+    if ((subscriptionId == _tradeNumbersMethodSubscriptionId) || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as trade_numbers method request.", topic.c_str());
         rapidjson::Document doc;
-        try
-        {
-            if (_tradeNumbersHandler)
-            {
+        try {
+            if (_tradeNumbersHandler) {
                 rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-                if (!ok)
-                {
+                if (!ok) {
                     //Log("Could not JSON parse  signal payload.");
                     throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
                 }
 
-                if (!doc.IsObject())
-                {
+                if (!doc.IsObject()) {
                     throw std::runtime_error("Received payload is not an object");
                 }
 
                 _callTradeNumbersHandler(topic, doc, mqttProps.correlationId, mqttProps.responseTopic);
             }
-        }
-        catch (const std::exception&)
-        {
+        } catch (const std::exception&) {
             // We couldn't find an integer out of the string in the topic name,
             // so we are dropping the message completely.
             // TODO: Log this failure
         }
     }
 
-    if (subscriptionId == _schoolPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("simple/%1%/property/school/setValue") % _instanceId).str())))
-    {
+    if (subscriptionId == _schoolPropertySubscriptionId || (subscriptionId == noSubId && _broker->TopicMatchesSubscription(topic, (format("<bound method Property.update_topic of <stingeripc.components.Property object at 0x724b366dcec0>>") % _instanceId).str()))) {
         _broker->Log(LOG_INFO, "Message to `%s` matched as school property update.", topic.c_str());
         _receiveSchoolPropertyUpdate(topic, payload, mqttProps.propertyVersion);
     }
@@ -126,13 +129,13 @@ std::future<bool> SimpleServer::emitPersonEnteredSignal(Person person)
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
-    return _broker->Publish((format("simple/%1%/signal/personEntered") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    stinger::utils::MqttProperties mqttProps;
+    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x724b35c46e10>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void SimpleServer::registerTradeNumbersHandler(std::function<int(int)> func)
 {
-    _broker->Log(LOG_DEBUG, "Application registered a function to handle simple/+/method/tradeNumbers method requests.");
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
     _tradeNumbersHandler = func;
 }
 
@@ -144,8 +147,7 @@ void SimpleServer::_callTradeNumbersHandler(
 ) const
 {
     _broker->Log(LOG_INFO, "Handling call to trade_numbers");
-    if (!_tradeNumbersHandler)
-    {
+    if (!_tradeNumbersHandler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
@@ -156,8 +158,7 @@ void SimpleServer::_callTradeNumbersHandler(
     auto returnValue = _tradeNumbersHandler(requestArgs.yourNumber);
     TradeNumbersReturnValues returnValues = { returnValue };
 
-    if (optResponseTopic)
-    {
+    if (optResponseTopic) {
         rapidjson::Document responseJson;
         responseJson.SetObject();
 
@@ -166,7 +167,7 @@ void SimpleServer::_callTradeNumbersHandler(
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -176,8 +177,7 @@ void SimpleServer::_callTradeNumbersHandler(
 std::optional<std::string> SimpleServer::getSchoolProperty()
 {
     std::lock_guard<std::mutex> lock(_schoolPropertyMutex);
-    if (_schoolProperty)
-    {
+    if (_schoolProperty) {
         return _schoolProperty->name;
     }
     return std::nullopt;
@@ -198,8 +198,7 @@ void SimpleServer::updateSchoolProperty(std::string name)
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_schoolPropertyCallbacksMutex);
-        for (const auto& cb: _schoolPropertyCallbacks)
-        {
+        for (const auto& cb: _schoolPropertyCallbacks) {
             cb(name);
         }
     }
@@ -210,36 +209,31 @@ void SimpleServer::republishSchoolProperty() const
 {
     std::lock_guard<std::mutex> lock(_schoolPropertyMutex);
     rapidjson::Document doc;
-    if (_schoolProperty)
-    {
+    if (_schoolProperty) {
         doc.SetObject();
         _schoolProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
-    }
-    else
-    {
+    } else {
         doc.SetNull();
     }
 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _lastSchoolPropertyVersion;
-    _broker->Publish((format("simple/%1%/property/school/value") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+    _broker->Publish((format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x724b366dcec0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 
 void SimpleServer::_receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(payload.c_str());
-    if (!ok)
-    {
+    if (!ok) {
         //Log("Could not JSON parse school property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
     }
 
-    if (!doc.IsObject() && !doc.IsNull())
-    {
+    if (!doc.IsObject() && !doc.IsNull()) {
         throw std::runtime_error("Received school payload is not an object or null");
     }
 
@@ -259,11 +253,10 @@ void SimpleServer::_receiveSchoolPropertyUpdate(const std::string& topic, const 
 
 void SimpleServer::_advertisementThreadLoop()
 {
-    while (_advertisementThreadRunning)
-    {
+    while (_advertisementThreadRunning) {
         // Get current timestamp
         auto now = std::chrono::system_clock::now();
-        std::string timestamp = timePointToIsoString(now);
+        std::string timestamp = stinger::utils::timePointToIsoString(now);
 
         // Build JSON message
         rapidjson::Document doc;
@@ -283,20 +276,25 @@ void SimpleServer::_advertisementThreadLoop()
         doc.Accept(writer);
 
         // Create MQTT properties with message expiry interval of 150 seconds
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.messageExpiryInterval = 150;
 
-        // Publish to simple/<instance_id>/interface
-        std::string topic = (format("simple/%1%/interface") % _instanceId).str();
+        // Publish to <bound method StingerSpec.interface_info_topic of <stingeripc.components.StingerSpec object at 0x724b366c24e0>>
+        std::string topic = (format("<bound method StingerSpec.interface_info_topic of <stingeripc.components.StingerSpec object at 0x724b366c24e0>>") % _instanceId).str();
         _broker->Publish(topic, buf.GetString(), 1, true, mqttProps);
 
         _broker->Log(LOG_INFO, "Published service advertisement to %s", topic.c_str());
 
         // Wait for 120 seconds or until thread should stop
         // Use smaller sleep intervals to allow quick shutdown
-        for (int i = 0; i < 120 && _advertisementThreadRunning; ++i)
-        {
+        for (int i = 0; i < 120 && _advertisementThreadRunning; ++i) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
 }
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

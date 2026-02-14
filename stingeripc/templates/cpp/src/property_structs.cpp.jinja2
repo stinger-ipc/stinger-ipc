@@ -3,6 +3,11 @@
 #include "property_structs.hpp"
 #include <rapidjson/document.h>
 
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
+
 {%for prop_name, prop in stinger.properties.items()%}
 {{prop.name | UpperCamelCase}}Property {{prop.name | UpperCamelCase}}Property::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
@@ -19,3 +24,8 @@ void {{prop.name | UpperCamelCase}}Property::AddToRapidJsonObject(rapidjson::Val
     {%- endfor %}
 }
 {% endfor %}
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

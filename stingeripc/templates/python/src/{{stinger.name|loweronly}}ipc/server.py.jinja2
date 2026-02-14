@@ -24,7 +24,7 @@ from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from pyqttier.interface import IBrokerConnection
+from pyqttier.interface import stinger::utils::IConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import (
@@ -84,7 +84,7 @@ class PropertyControls(Generic[T]):
 
 class {{stinger.python.server_class_name}}:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, {%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}{%endif%}{%for topic_param in config.topics.params %}, {{topic_param|snake_case}}: str{% endfor %}):
+    def __init__(self, connection: stinger::utils::IConnection, instance_id: str{%if stinger.properties | length > 0 %}, {%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}{%endif%}{%for topic_param in config.topics.params %}, {{topic_param|snake_case}}: str{% endfor %}):
         self._logger = logging.getLogger(f'{{stinger.python.server_class_name}}:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
@@ -531,7 +531,7 @@ class {{stinger.python.server_class_name}}Builder:
         return wrapper
     {%endfor%}
     {%endif%}{# only when stinger owned values #}
-    def build(self, connection: IBrokerConnection, instance_id: str, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues, {%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{%endif%}{%for topic_param in config.topics.params %}{{topic_param|snake_case}}: str, {% endfor %}binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
+    def build(self, connection: stinger::utils::IConnection, instance_id: str, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues, {%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{%endif%}{%for topic_param in config.topics.params %}{{topic_param|snake_case}}: str, {% endfor %}binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
         new_server = {{stinger.python.server_class_name}}(connection, instance_id, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values{%else%}property_access{%endif%},{%endif%} {%for topic_param in config.topics.params %}{{topic_param|snake_case}}, {% endfor %})
         {%for method_name, method in stinger.methods.items()%}
         if self._{{method_name|snake_case}}_method_handler is not None:

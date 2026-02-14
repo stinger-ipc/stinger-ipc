@@ -5,7 +5,6 @@
 #include <syslog.h>
 #include <chrono>
 #include <thread>
-#include "utils.hpp"
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
@@ -47,10 +46,10 @@ int main(int argc, char** argv)
         {%if arg.optional%}
         std::string {{arg.name|lowerCamelCase}}Str = "None";
         if ({{arg.name|lowerCamelCase}}) {
-            std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString(*{{arg.name|lowerCamelCase}});
+            std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::timePointToIsoString(*{{arg.name|lowerCamelCase}});
         }
         {%else-%}
-        std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString({{arg.name|lowerCamelCase}});
+        std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::timePointToIsoString({{arg.name|lowerCamelCase}});
         {%endif%}{# end optional datetime -#}
         {%elif arg.arg_type.name.lower() == 'binary'%}
         std::string {{arg.name|lowerCamelCase}}Str = "[Binary Data]";
@@ -58,10 +57,10 @@ int main(int argc, char** argv)
         {%if arg.optional%}
         std::string {{arg.name|lowerCamelCase}}Str = "None";
         if ({{arg.name|lowerCamelCase}}) {
-            std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString(*{{arg.name|lowerCamelCase}});
+            std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::durationToIsoString(*{{arg.name|lowerCamelCase}});
         }
         {%else-%}
-        std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString({{arg.name|lowerCamelCase}});
+        std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::durationToIsoString({{arg.name|lowerCamelCase}});
         {%-endif%}{# end optional duration #}
         {%-endif%}{# end datetime/binary/duration #}
         {%-endfor%}{# end loop through arg list#}
@@ -90,19 +89,19 @@ int main(int argc, char** argv)
         {%if arg.optional%}
         std::string {{arg.name|lowerCamelCase}}Str = "None";
         if ({{arg.name|lowerCamelCase}}) {
-            std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString(*{{arg.name|lowerCamelCase}});
+            std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::timePointToIsoString(*{{arg.name|lowerCamelCase}});
         }
         {%else%} {# not optional #}
-        std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString({{arg.name|lowerCamelCase}});
+        std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::timePointToIsoString({{arg.name|lowerCamelCase}});
         {%endif%} {# optionality #}
         {%elif arg.arg_type.name.lower() == 'duration'%}
         {%if arg.optional%}
         std::string {{arg.name|lowerCamelCase}}Str = "None";
         if ({{arg.name|lowerCamelCase}}) {
-            std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString(*{{arg.name|lowerCamelCase}});
+            std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::durationToIsoString(*{{arg.name|lowerCamelCase}});
         }
         {%else%}
-        std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString({{arg.name|lowerCamelCase}});
+        std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::durationToIsoString({{arg.name|lowerCamelCase}});
         {%endif%}
         {%endif%}{%endfor-%}
         std::cout << "Received update for {{prop_name}} property: " << {# #}
@@ -166,9 +165,9 @@ int main(int argc, char** argv)
                 {
                     std::cout {%-endif-%}<<
                     {%-if arg.arg_type.name.lower() == "datetime"%}
-                    timePointToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
+                    stinger::utils::timePointToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
                     {%-elif arg.arg_type.name.lower() == "duration"%}
-                    durationToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
+                    stinger::utils::durationToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
                     {%-elif arg.arg_type.name.lower() == "enum"%}
                     {{arg.enum.name | camelCase }}Strings.at(static_cast<int>({%if arg.optional%}*{%endif%}{{var_name}}))
                     {%-elif arg.arg_type.name.lower() == "struct"%}

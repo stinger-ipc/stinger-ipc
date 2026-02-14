@@ -13,10 +13,14 @@ TODO: Get license text from stinger file
 #include <cstddef>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 #include "{{stinger.cpp.enum_header_file}}"
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
+
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
 
 {%for istruct_name, istruct in stinger.structs.items() %}
 struct {{istruct_name | UpperCamelCase }} {
@@ -27,3 +31,9 @@ struct {{istruct_name | UpperCamelCase }} {
     {%-endfor%}
 };
 {%endfor%}
+
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

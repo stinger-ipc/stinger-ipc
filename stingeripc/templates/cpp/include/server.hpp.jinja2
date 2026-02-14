@@ -21,16 +21,21 @@ TODO: Get license text from stinger file
 #include <chrono>
 #include <thread>
 #include <atomic>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 {%if stinger.properties | length > 0 %}
 #include "property_structs.hpp"
 {%endif%}
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/utils/mqttproperties.hpp>
 #include "{{stinger.cpp.enum_header_file}}"
 {%if stinger.methods | length > 0%}
 #include "method_payloads.hpp"
 {%endif%}
+
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
 
 class {{stinger.cpp.server_class_name}} {
 
@@ -38,7 +43,7 @@ public:
     static constexpr const char NAME[] = "{{stinger.name}}";
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
-    {{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    {{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId);
 
     virtual ~{{stinger.cpp.server_class_name}}();
 
@@ -55,13 +60,16 @@ public:
     void republish{{prop_name | UpperCamelCase}}Property() const;
     {%endfor%}
 private: 
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
     std::string _instanceId;
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
+    {%for topic_param in config.topics.params %}
+    std::string _{{topic_param | lowerCamelCase}}TopicParam;
+    {%endfor%}
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(
             const std::string& topic, 
             const std::string& payload, 
-            const MqttProperties& mqttProps
+            const stinger::utils::MqttProperties& mqttProps
     );
 
     {%for method_name, method in stinger.methods.items()%}
@@ -88,3 +96,8 @@ private:
     // Method that runs in the advertisement thread
     void _advertisementThreadLoop();
 };
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

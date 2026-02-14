@@ -30,21 +30,21 @@
 {%elif arg.arg_type.name.lower() == 'datetime'%}
 { // Restrict Scope for datetime ISO string conversion
     rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
-    std::string {{arg.name|lowerCamelCase}}IsoString = timePointToIsoString({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}});
+    std::string {{arg.name|lowerCamelCase}}IsoString = stinger::utils::timePointToIsoString({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}});
     temp{{arg.name|UpperCamelCase}}StringValue.SetString({{arg.name|lowerCamelCase}}IsoString.c_str(), {{arg.name|lowerCamelCase}}IsoString.size(), {{allocator}});
     {{value}}.AddMember("{{arg.name}}", temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
 }
 {%elif arg.arg_type.name.lower() == 'duration'%}
 { // Restrict Scope for duration ISO string conversion
     rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
-    std::string {{arg.name|lowerCamelCase}}IsoString = durationToIsoString({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}});
+    std::string {{arg.name|lowerCamelCase}}IsoString = stinger::utils::durationToIsoString({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}});
     temp{{arg.name|UpperCamelCase}}StringValue.SetString({{arg.name|lowerCamelCase}}IsoString.c_str(), {{arg.name|lowerCamelCase}}IsoString.size(), {{allocator}});
     {{value}}.AddMember("{{arg.name}}", temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
 }
 {%elif arg.arg_type.name.lower() == 'binary'%}
 { // Restrict Scope for binary base64 encoding
     rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
-    std::string {{arg.name|lowerCamelCase}}B64String = base64Encode({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}});
+    std::string {{arg.name|lowerCamelCase}}B64String = stinger::utils::base64Encode({%if arg.optional %}*{%endif-%}{{arg.name|lowerCamelCase}});
     temp{{arg.name|UpperCamelCase}}StringValue.SetString({{arg.name|lowerCamelCase}}B64String.c_str(), {{arg.name|lowerCamelCase}}B64String.size(), {{allocator}});
     {{value}}.AddMember("{{arg.name}}", temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
 }
@@ -70,17 +70,17 @@
         tempArrayValue.PushBack(static_cast<int>(item), {{allocator}});
         {%elif arg.element.arg_type.name.lower() == 'datetime'%}
         rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
-        std::string itemIsoString = timePointToIsoString(item);
+        std::string itemIsoString = stinger::utils::timePointToIsoString(item);
         temp{{arg.name|UpperCamelCase}}StringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), {{allocator}});
         tempArrayValue.PushBack(temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
         {%elif arg.element.arg_type.name.lower() == 'duration'%}
         rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
-        std::string itemIsoString = durationToIsoString(item);
+        std::string itemIsoString = stinger::utils::durationToIsoString(item);
         temp{{arg.name|UpperCamelCase}}StringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), {{allocator}});
         tempArrayValue.PushBack(temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
         {%elif arg.element.arg_type.name.lower() == 'binary'%}
         rapidjson::Value temp{{arg.name|UpperCamelCase}}StringValue;
-        std::string itemB64String = base64Encode(item);
+        std::string itemB64String = stinger::utils::base64Encode(item);
         temp{{arg.name|UpperCamelCase}}StringValue.SetString(itemB64String.c_str(), itemB64String.size(), {{allocator}});
         tempArrayValue.PushBack(temp{{arg.name|UpperCamelCase}}StringValue, {{allocator}});
         {% else %}

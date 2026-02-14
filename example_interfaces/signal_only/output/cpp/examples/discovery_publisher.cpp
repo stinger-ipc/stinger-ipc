@@ -6,8 +6,7 @@
 
 int main(int argc, char** argv)
 {
-    if (argc < 2)
-    {
+    if (argc < 2) {
         std::cout << "Usage: " << argv[0] << " <instance_id>" << std::endl;
         return 1;
     }
@@ -28,7 +27,7 @@ int main(int argc, char** argv)
     std::cout << "Topic: myservice/myapp/interface" << std::endl;
     std::cout << "Payload: " << json.str() << std::endl;
 
-    MqttProperties props;
+    stinger::utils::MqttProperties props;
     conn->Publish("myservice/myapp/interface", json.str(), 0, false, props);
 
     // Wait a moment for the message to be sent

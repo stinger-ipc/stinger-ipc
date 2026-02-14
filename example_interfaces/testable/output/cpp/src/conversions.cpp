@@ -10,13 +10,17 @@
 #include <cstdint>
 #include <cstring>
 #include <sstream>
-#include "utils.hpp"
 #include <algorithm>
 #include <iterator>
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace testable {
 
 // Utility function to convert ISO timestamp string to time_point
-std::chrono::time_point<std::chrono::system_clock> parseIsoTimestamp(const std::string& isoTimestamp)
+std::chrono::time_point<std::chrono::system_clock> stinger::utils::parseIsoTimestamp(const std::string& isoTimestamp)
 {
     std::tm tm = {};
     std::istringstream ss(isoTimestamp);
@@ -24,8 +28,7 @@ std::chrono::time_point<std::chrono::system_clock> parseIsoTimestamp(const std::
     // Parse ISO 8601 format (e.g., "2023-12-01T15:30:45Z" or "2023-12-01T15:30:45.123Z")
     ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
 
-    if (ss.fail())
-    {
+    if (ss.fail()) {
         throw std::runtime_error("Failed to parse ISO timestamp: " + isoTimestamp);
     }
 
@@ -35,7 +38,7 @@ std::chrono::time_point<std::chrono::system_clock> parseIsoTimestamp(const std::
 }
 
 // Utility function to convert time_point to ISO timestamp string
-std::string timePointToIsoString(const std::chrono::time_point<std::chrono::system_clock>& timePoint)
+std::string stinger::utils::timePointToIsoString(const std::chrono::time_point<std::chrono::system_clock>& timePoint)
 {
     std::time_t time = std::chrono::system_clock::to_time_t(timePoint);
     std::tm* tm = std::gmtime(&time);
@@ -45,7 +48,7 @@ std::string timePointToIsoString(const std::chrono::time_point<std::chrono::syst
     return ss.str();
 }
 
-std::string durationToIsoString(const std::chrono::duration<double>& duration)
+std::string stinger::utils::durationToIsoString(const std::chrono::duration<double>& duration)
 {
     using namespace std::chrono;
     auto secs = duration_cast<seconds>(duration);
@@ -54,29 +57,24 @@ std::string durationToIsoString(const std::chrono::duration<double>& duration)
     std::ostringstream ss;
     ss << "PT";
     ss << secs.count();
-    if (millis.count() > 0)
-    {
+    if (millis.count() > 0) {
         ss << "." << std::setw(3) << std::setfill('0') << millis.count();
     }
     ss << "S";
     return ss.str();
 }
 
-std::chrono::duration<double> parseIsoDuration(const std::string& isoDuration)
+std::chrono::duration<double> stinger::utils::parseIsoDuration(const std::string& isoDuration)
 {
     // Only supports simple "PTnS" or "PTn.mS" (seconds, optional milliseconds)
-    if (isoDuration.size() < 3 || isoDuration.substr(0, 2) != "PT" || isoDuration.back() != 'S')
-    {
+    if (isoDuration.size() < 3 || isoDuration.substr(0, 2) != "PT" || isoDuration.back() != 'S') {
         throw std::runtime_error("Unsupported ISO 8601 duration format: " + isoDuration);
     }
     std::string numberPart = isoDuration.substr(2, isoDuration.size() - 3); // between PT and S
     double seconds = 0.0;
-    try
-    {
+    try {
         seconds = std::stod(numberPart);
-    }
-    catch (const std::exception&)
-    {
+    } catch (const std::exception&) {
         throw std::runtime_error("Failed to parse ISO 8601 duration: " + isoDuration);
     }
     return std::chrono::duration<double>(seconds);
@@ -90,7 +88,7 @@ static inline bool is_base64(unsigned char c)
     return (std::isalnum(c) || (c == '+') || (c == '/'));
 }
 
-std::string base64Encode(const std::vector<unsigned char>& bytes_to_encode)
+std::string stinger::utils::base64Encode(const std::vector<unsigned char>& bytes_to_encode)
 {
     std::string ret;
     int i = 0;
@@ -100,11 +98,9 @@ std::string base64Encode(const std::vector<unsigned char>& bytes_to_encode)
     size_t in_len = bytes_to_encode.size();
     size_t pos = 0;
 
-    while (in_len--)
-    {
+    while (in_len--) {
         char_array_3[i++] = bytes_to_encode[pos++];
-        if (i == 3)
-        {
+        if (i == 3) {
             char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
             char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
             char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
@@ -116,8 +112,7 @@ std::string base64Encode(const std::vector<unsigned char>& bytes_to_encode)
         }
     }
 
-    if (i)
-    {
+    if (i) {
         for (int j = i; j < 3; j++)
             char_array_3[j] = '\0';
 
@@ -136,7 +131,7 @@ std::string base64Encode(const std::vector<unsigned char>& bytes_to_encode)
     return ret;
 }
 
-std::vector<unsigned char> base64Decode(const std::string& encoded_string)
+std::vector<unsigned char> stinger::utils::base64Decode(const std::string& encoded_string)
 {
     int in_len = encoded_string.size();
     int i = 0;
@@ -144,12 +139,10 @@ std::vector<unsigned char> base64Decode(const std::string& encoded_string)
     unsigned char char_array_4[4], char_array_3[3];
     std::vector<unsigned char> ret;
 
-    while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
-    {
+    while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
         char_array_4[i++] = encoded_string[in_];
         in_++;
-        if (i == 4)
-        {
+        if (i == 4) {
             for (i = 0; i < 4; i++)
                 char_array_4[i] = b64_chars.find(char_array_4[i]);
 
@@ -163,8 +156,7 @@ std::vector<unsigned char> base64Decode(const std::string& encoded_string)
         }
     }
 
-    if (i)
-    {
+    if (i) {
         for (int j = i; j < 4; j++)
             char_array_4[j] = 0;
 
@@ -181,3 +173,9 @@ std::vector<unsigned char> base64Decode(const std::string& encoded_string)
 
     return ret;
 }
+
+} // namespace testable
+
+} // namespace gen
+
+} // namespace stinger

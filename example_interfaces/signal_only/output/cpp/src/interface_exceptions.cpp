@@ -2,8 +2,7 @@
 
 std::exception_ptr createStingerException(MethodReturnCode code, const std::string& message)
 {
-    switch (code)
-    {
+    switch (code) {
         case MethodReturnCode::SUCCESS:
             return std::make_exception_ptr(SuccessException(message));
             break;

@@ -13,15 +13,24 @@ TODO: Get license text from stinger file
 #include <cstddef>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 #include "enums.hpp"
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
 
-struct Person
-{
+namespace stinger {
+
+namespace gen {
+namespace simple {
+
+struct Person {
     static Person FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::string name;
     Gender gender;
 };
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

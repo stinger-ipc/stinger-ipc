@@ -5,7 +5,6 @@
 #include <syslog.h>
 #include <chrono>
 #include <thread>
-#include "utils.hpp"
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
@@ -29,8 +28,7 @@ int main(int argc, char** argv)
         WeatherDiscovery discovery(conn);
         auto serviceIdFut = discovery.GetSingleton();
         auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
-        if (serviceIdFutStatus == std::future_status::timeout)
-        {
+        if (serviceIdFutStatus == std::future_status::timeout) {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
         }
@@ -103,12 +101,9 @@ int main(int argc, char** argv)
         std::cout << "CALLING REFRESH_DAILY_FORECAST" << std::endl;
         auto refreshDailyForecastResultFuture = client.refreshDailyForecast();
         auto refreshDailyForecastStatus = refreshDailyForecastResultFuture.wait_for(std::chrono::seconds(5));
-        if (refreshDailyForecastStatus == std::future_status::timeout)
-        {
+        if (refreshDailyForecastStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for REFRESH_DAILY_FORECAST response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::cout << "REFRESH_DAILY_FORECAST Completed.  It has not return values." << std::endl;
         }
     }
@@ -118,12 +113,9 @@ int main(int argc, char** argv)
         std::cout << "CALLING REFRESH_HOURLY_FORECAST" << std::endl;
         auto refreshHourlyForecastResultFuture = client.refreshHourlyForecast();
         auto refreshHourlyForecastStatus = refreshHourlyForecastResultFuture.wait_for(std::chrono::seconds(5));
-        if (refreshHourlyForecastStatus == std::future_status::timeout)
-        {
+        if (refreshHourlyForecastStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for REFRESH_HOURLY_FORECAST response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::cout << "REFRESH_HOURLY_FORECAST Completed.  It has not return values." << std::endl;
         }
     }
@@ -133,20 +125,16 @@ int main(int argc, char** argv)
         std::cout << "CALLING REFRESH_CURRENT_CONDITIONS" << std::endl;
         auto refreshCurrentConditionsResultFuture = client.refreshCurrentConditions();
         auto refreshCurrentConditionsStatus = refreshCurrentConditionsResultFuture.wait_for(std::chrono::seconds(5));
-        if (refreshCurrentConditionsStatus == std::future_status::timeout)
-        {
+        if (refreshCurrentConditionsStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for REFRESH_CURRENT_CONDITIONS response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::cout << "REFRESH_CURRENT_CONDITIONS Completed.  It has not return values." << std::endl;
         }
     }
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;
 
-    while (true)
-    {
+    while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 

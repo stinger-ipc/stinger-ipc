@@ -13,13 +13,16 @@ TODO: Get license text from stinger file
 #include <cstddef>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 #include "enums.hpp"
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
 
-struct Lunch
-{
+namespace stinger {
+
+namespace gen {
+namespace full {
+
+struct Lunch {
     static Lunch FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     bool drink;
@@ -30,3 +33,9 @@ struct Lunch
     std::chrono::time_point<std::chrono::system_clock> timeOfLunch;
     std::chrono::duration<double> durationOfLunch;
 };
+
+} // namespace full
+
+} // namespace gen
+
+} // namespace stinger

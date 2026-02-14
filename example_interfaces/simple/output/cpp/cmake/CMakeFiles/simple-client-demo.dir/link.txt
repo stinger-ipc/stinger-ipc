@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/simple-client-demo.dir/link.d "CMakeFiles/simple-client-demo.dir/examples/client_main.cpp.o" -o simple-client-demo  libsimple-client.a _deps/stinger-cpp-utils-build/libstinger_utils.a -lmosquitto

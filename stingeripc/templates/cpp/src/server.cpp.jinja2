@@ -14,27 +14,42 @@
 #include "server.hpp"
 #include "method_payloads.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/utils/format.hpp>
 
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
 
 constexpr const char {{stinger.cpp.server_class_name}}::NAME[];
 constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
 
-{{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId)
-        : _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false)
+{{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId{%for topic_param in config.topics.params %}, const std::string& {{topic_param|lowerCamelCase}}{%endfor%})
+        : _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false), {%-for topic_param in config.topics.params %} _{{topic_param | lowerCamelCase}}TopicParam( {{topic_param|lowerCamelCase}} ), {%endfor%}
+        
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
             const std::string& topic, 
             const std::string& payload, 
-            const MqttProperties& mqttProps)
+            const stinger::utils::MqttProperties& mqttProps)
     {
         _receiveMessage(topic, payload, mqttProps);
     });
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    {%-for topic_param in config.topics.params %}
+    topicArgs["{{topic_param}}"] = _{{topic_param|lowerCamelCase}}TopicParam;
+    {%-endfor%}
+
     {%for method in stinger.methods.values()%}
-    _{{method.name | camelCase}}MethodSubscriptionId = _broker->Subscribe((format("{{method.topic}}") % _instanceId).str(), 2);
+    _{{method.name | camelCase}}MethodSubscriptionId = _broker->Subscribe((format("{{method.request_topic()}}") % _instanceId).str(), 2);
     {%-endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
-    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe((format("{{prop.update_topic}}") % _instanceId).str(), 1);
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe((format("{{prop.update_topic()}}") % _instanceId).str(), 1);
     {%-endfor%}
 
     // Start the service advertisement thread
@@ -59,7 +74,7 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
     }
 
     std::string topic = (format("{{stinger.interface_info_topic}}") % _instanceId).str();
-    _broker->Publish(topic, "", 1, true, MqttProperties());
+    _broker->Publish(topic, "", 1, true, stinger::utils::MqttProperties());
 
     {%for method in stinger.methods.values()%}
     _broker->Unsubscribe((format("{{method.topic}}") % _instanceId).str());
@@ -72,7 +87,7 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
 void {{stinger.cpp.server_class_name}}::_receiveMessage(
         const std::string& topic, 
         const std::string& payload, 
-        const MqttProperties& mqttProps)
+        const stinger::utils::MqttProperties& mqttProps)
 {
     const int noSubId = -1;
     int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
@@ -127,7 +142,7 @@ std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamel
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     return _broker->Publish((format("{{sig.topic}}") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
 {%endfor%}
@@ -178,7 +193,7 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         responseJson.Accept(writer);
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.correlationId = optCorrelationId;
         mqttProps.returnCode = MethodReturnCode::SUCCESS;
         _broker->Publish(*optResponseTopic, buf.GetString(), 2, false, mqttProps);
@@ -225,7 +240,7 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    MqttProperties mqttProps;
+    stinger::utils::MqttProperties mqttProps;
     mqttProps.propertyVersion = _last{{prop_name | UpperCamelCase}}PropertyVersion;
     _broker->Publish((format("{{prop.value_topic}}") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
 }
@@ -265,7 +280,7 @@ void {{stinger.cpp.server_class_name}}::_advertisementThreadLoop()
     {
         // Get current timestamp
         auto now = std::chrono::system_clock::now();
-        std::string timestamp = timePointToIsoString(now);
+        std::string timestamp = stinger::utils::timePointToIsoString(now);
 
         // Build JSON message
         rapidjson::Document doc;
@@ -285,7 +300,7 @@ void {{stinger.cpp.server_class_name}}::_advertisementThreadLoop()
         doc.Accept(writer);
 
         // Create MQTT properties with message expiry interval of 150 seconds
-        MqttProperties mqttProps;
+        stinger::utils::MqttProperties mqttProps;
         mqttProps.messageExpiryInterval = 150;
 
         // Publish to {{stinger.interface_info_topic | replace('%1%', '<instance_id>') }}
@@ -303,3 +318,7 @@ void {{stinger.cpp.server_class_name}}::_advertisementThreadLoop()
     }
 }
 
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

@@ -12,22 +12,30 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
-struct TradeNumbersRequestArguments
-{
+namespace stinger {
+
+namespace gen {
+namespace simple {
+
+struct TradeNumbersRequestArguments {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static TradeNumbersRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     int yourNumber;
 };
 
-struct TradeNumbersReturnValues
-{
+struct TradeNumbersReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static TradeNumbersReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     int myNumber;
 };
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

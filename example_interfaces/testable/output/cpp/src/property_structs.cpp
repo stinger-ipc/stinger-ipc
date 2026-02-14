@@ -3,18 +3,21 @@
 #include "property_structs.hpp"
 #include <rapidjson/document.h>
 
+namespace stinger {
+
+namespace gen {
+namespace testable {
+
 ReadWriteIntegerProperty ReadWriteIntegerProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     ReadWriteIntegerProperty readWriteInteger;
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readWriteInteger.value = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -33,12 +36,10 @@ ReadOnlyIntegerProperty ReadOnlyIntegerProperty::FromRapidJsonObject(const rapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readOnlyInteger.value = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -57,12 +58,10 @@ ReadWriteOptionalIntegerProperty ReadWriteOptionalIntegerProperty::FromRapidJson
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readWriteOptionalInteger.value = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             readWriteOptionalInteger.value = std::nullopt;
         }
     }
@@ -82,23 +81,19 @@ ReadWriteTwoIntegersProperty ReadWriteTwoIntegersProperty::FromRapidJsonObject(c
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readWriteTwoIntegers.first = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readWriteTwoIntegers.second = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             readWriteTwoIntegers.second = std::nullopt;
         }
     }
@@ -120,12 +115,10 @@ ReadOnlyStringProperty ReadOnlyStringProperty::FromRapidJsonObject(const rapidjs
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             readOnlyString.value = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -148,12 +141,10 @@ ReadWriteStringProperty ReadWriteStringProperty::FromRapidJsonObject(const rapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             readWriteString.value = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -176,12 +167,10 @@ ReadWriteOptionalStringProperty ReadWriteOptionalStringProperty::FromRapidJsonOb
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             readWriteOptionalString.value = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             readWriteOptionalString.value = std::nullopt;
         }
     }
@@ -191,8 +180,7 @@ ReadWriteOptionalStringProperty ReadWriteOptionalStringProperty::FromRapidJsonOb
 
 void ReadWriteOptionalStringProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    if (value)
-    {
+    if (value) {
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(value->c_str(), value->size(), allocator);
         parent.AddMember("value", tempStringValue, allocator);
@@ -205,23 +193,19 @@ ReadWriteTwoStringsProperty ReadWriteTwoStringsProperty::FromRapidJsonObject(con
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             readWriteTwoStrings.first = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             readWriteTwoStrings.second = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             readWriteTwoStrings.second = std::nullopt;
         }
     }
@@ -237,8 +221,7 @@ void ReadWriteTwoStringsProperty::AddToRapidJsonObject(rapidjson::Value& parent,
         parent.AddMember("first", tempStringValue, allocator);
     }
 
-    if (second)
-    {
+    if (second) {
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(second->c_str(), second->size(), allocator);
         parent.AddMember("second", tempStringValue, allocator);
@@ -251,12 +234,10 @@ ReadWriteStructProperty ReadWriteStructProperty::FromRapidJsonObject(const rapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             readWriteStruct.value = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -282,12 +263,10 @@ ReadWriteOptionalStructProperty ReadWriteOptionalStructProperty::FromRapidJsonOb
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             readWriteOptionalStruct.value = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             readWriteOptionalStruct.value = std::nullopt;
         }
     }
@@ -299,13 +278,10 @@ void ReadWriteOptionalStructProperty::AddToRapidJsonObject(rapidjson::Value& par
 {
     { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
-        if (value)
-        {
+        if (value) {
             tempStructValue.SetObject();
             value->AddToRapidJsonObject(tempStructValue, allocator);
-        }
-        else
-        {
+        } else {
             tempStructValue.SetNull();
         }
         parent.AddMember("value", tempStructValue, allocator);
@@ -318,23 +294,19 @@ ReadWriteTwoStructsProperty ReadWriteTwoStructsProperty::FromRapidJsonObject(con
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             readWriteTwoStructs.first = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             readWriteTwoStructs.second = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             readWriteTwoStructs.second = std::nullopt;
         }
     }
@@ -355,13 +327,10 @@ void ReadWriteTwoStructsProperty::AddToRapidJsonObject(rapidjson::Value& parent,
 
     { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
-        if (second)
-        {
+        if (second) {
             tempStructValue.SetObject();
             second->AddToRapidJsonObject(tempStructValue, allocator);
-        }
-        else
-        {
+        } else {
             tempStructValue.SetNull();
         }
         parent.AddMember("second", tempStructValue, allocator);
@@ -374,12 +343,10 @@ ReadOnlyEnumProperty ReadOnlyEnumProperty::FromRapidJsonObject(const rapidjson::
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readOnlyEnum.value = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -398,12 +365,10 @@ ReadWriteEnumProperty ReadWriteEnumProperty::FromRapidJsonObject(const rapidjson
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readWriteEnum.value = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -422,12 +387,10 @@ ReadWriteOptionalEnumProperty ReadWriteOptionalEnumProperty::FromRapidJsonObject
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readWriteOptionalEnum.value = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             readWriteOptionalEnum.value = std::nullopt;
         }
     }
@@ -446,23 +409,19 @@ ReadWriteTwoEnumsProperty ReadWriteTwoEnumsProperty::FromRapidJsonObject(const r
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readWriteTwoEnums.first = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             readWriteTwoEnums.second = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             readWriteTwoEnums.second = std::nullopt;
         }
     }
@@ -483,13 +442,11 @@ ReadWriteDatetimeProperty ReadWriteDatetimeProperty::FromRapidJsonObject(const r
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempValueIsoString = itr->value.GetString();
-            readWriteDatetime.value = parseIsoTimestamp(tempValueIsoString);
-        }
-        else
-        {
+            readWriteDatetime.value = stinger::utils::parseIsoTimestamp(tempValueIsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -501,7 +458,7 @@ void ReadWriteDatetimeProperty::AddToRapidJsonObject(rapidjson::Value& parent, r
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
-        std::string valueIsoString = timePointToIsoString(value);
+        std::string valueIsoString = stinger::utils::timePointToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
         parent.AddMember("value", tempValueStringValue, allocator);
     }
@@ -513,13 +470,11 @@ ReadWriteOptionalDatetimeProperty ReadWriteOptionalDatetimeProperty::FromRapidJs
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempValueIsoString = itr->value.GetString();
-            readWriteOptionalDatetime.value = parseIsoTimestamp(tempValueIsoString);
-        }
-        else
-        {
+            readWriteOptionalDatetime.value = stinger::utils::parseIsoTimestamp(tempValueIsoString);
+
+        } else {
             readWriteOptionalDatetime.value = std::nullopt;
         }
     }
@@ -531,7 +486,7 @@ void ReadWriteOptionalDatetimeProperty::AddToRapidJsonObject(rapidjson::Value& p
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempValueStringValue;
-        std::string valueIsoString = timePointToIsoString(*value);
+        std::string valueIsoString = stinger::utils::timePointToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
         parent.AddMember("value", tempValueStringValue, allocator);
     }
@@ -543,25 +498,21 @@ ReadWriteTwoDatetimesProperty ReadWriteTwoDatetimesProperty::FromRapidJsonObject
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempFirstIsoString = itr->value.GetString();
-            readWriteTwoDatetimes.first = parseIsoTimestamp(tempFirstIsoString);
-        }
-        else
-        {
+            readWriteTwoDatetimes.first = stinger::utils::parseIsoTimestamp(tempFirstIsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempSecondIsoString = itr->value.GetString();
-            readWriteTwoDatetimes.second = parseIsoTimestamp(tempSecondIsoString);
-        }
-        else
-        {
+            readWriteTwoDatetimes.second = stinger::utils::parseIsoTimestamp(tempSecondIsoString);
+
+        } else {
             readWriteTwoDatetimes.second = std::nullopt;
         }
     }
@@ -573,14 +524,14 @@ void ReadWriteTwoDatetimesProperty::AddToRapidJsonObject(rapidjson::Value& paren
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempFirstStringValue;
-        std::string firstIsoString = timePointToIsoString(first);
+        std::string firstIsoString = stinger::utils::timePointToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), allocator);
         parent.AddMember("first", tempFirstStringValue, allocator);
     }
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempSecondStringValue;
-        std::string secondIsoString = timePointToIsoString(*second);
+        std::string secondIsoString = stinger::utils::timePointToIsoString(*second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), allocator);
         parent.AddMember("second", tempSecondStringValue, allocator);
     }
@@ -592,13 +543,11 @@ ReadWriteDurationProperty ReadWriteDurationProperty::FromRapidJsonObject(const r
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempValueIsoString = itr->value.GetString();
-            readWriteDuration.value = parseIsoDuration(tempValueIsoString);
-        }
-        else
-        {
+            readWriteDuration.value = stinger::utils::parseIsoDuration(tempValueIsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -610,7 +559,7 @@ void ReadWriteDurationProperty::AddToRapidJsonObject(rapidjson::Value& parent, r
 {
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
-        std::string valueIsoString = durationToIsoString(value);
+        std::string valueIsoString = stinger::utils::durationToIsoString(value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
         parent.AddMember("value", tempValueStringValue, allocator);
     }
@@ -622,13 +571,11 @@ ReadWriteOptionalDurationProperty ReadWriteOptionalDurationProperty::FromRapidJs
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempValueIsoString = itr->value.GetString();
-            readWriteOptionalDuration.value = parseIsoDuration(tempValueIsoString);
-        }
-        else
-        {
+            readWriteOptionalDuration.value = stinger::utils::parseIsoDuration(tempValueIsoString);
+
+        } else {
             readWriteOptionalDuration.value = std::nullopt;
         }
     }
@@ -640,7 +587,7 @@ void ReadWriteOptionalDurationProperty::AddToRapidJsonObject(rapidjson::Value& p
 {
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempValueStringValue;
-        std::string valueIsoString = durationToIsoString(*value);
+        std::string valueIsoString = stinger::utils::durationToIsoString(*value);
         tempValueStringValue.SetString(valueIsoString.c_str(), valueIsoString.size(), allocator);
         parent.AddMember("value", tempValueStringValue, allocator);
     }
@@ -652,25 +599,21 @@ ReadWriteTwoDurationsProperty ReadWriteTwoDurationsProperty::FromRapidJsonObject
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempFirstIsoString = itr->value.GetString();
-            readWriteTwoDurations.first = parseIsoDuration(tempFirstIsoString);
-        }
-        else
-        {
+            readWriteTwoDurations.first = stinger::utils::parseIsoDuration(tempFirstIsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempSecondIsoString = itr->value.GetString();
-            readWriteTwoDurations.second = parseIsoDuration(tempSecondIsoString);
-        }
-        else
-        {
+            readWriteTwoDurations.second = stinger::utils::parseIsoDuration(tempSecondIsoString);
+
+        } else {
             readWriteTwoDurations.second = std::nullopt;
         }
     }
@@ -682,14 +625,14 @@ void ReadWriteTwoDurationsProperty::AddToRapidJsonObject(rapidjson::Value& paren
 {
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempFirstStringValue;
-        std::string firstIsoString = durationToIsoString(first);
+        std::string firstIsoString = stinger::utils::durationToIsoString(first);
         tempFirstStringValue.SetString(firstIsoString.c_str(), firstIsoString.size(), allocator);
         parent.AddMember("first", tempFirstStringValue, allocator);
     }
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempSecondStringValue;
-        std::string secondIsoString = durationToIsoString(*second);
+        std::string secondIsoString = stinger::utils::durationToIsoString(*second);
         tempSecondStringValue.SetString(secondIsoString.c_str(), secondIsoString.size(), allocator);
         parent.AddMember("second", tempSecondStringValue, allocator);
     }
@@ -701,13 +644,11 @@ ReadWriteBinaryProperty ReadWriteBinaryProperty::FromRapidJsonObject(const rapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempValueB64String = itr->value.GetString();
-            readWriteBinary.value = base64Decode(tempValueB64String);
-        }
-        else
-        {
+            readWriteBinary.value = stinger::utils::base64Decode(tempValueB64String);
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -719,7 +660,7 @@ void ReadWriteBinaryProperty::AddToRapidJsonObject(rapidjson::Value& parent, rap
 {
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
-        std::string valueB64String = base64Encode(value);
+        std::string valueB64String = stinger::utils::base64Encode(value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), allocator);
         parent.AddMember("value", tempValueStringValue, allocator);
     }
@@ -731,13 +672,11 @@ ReadWriteOptionalBinaryProperty ReadWriteOptionalBinaryProperty::FromRapidJsonOb
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempValueB64String = itr->value.GetString();
-            readWriteOptionalBinary.value = base64Decode(tempValueB64String);
-        }
-        else
-        {
+            readWriteOptionalBinary.value = stinger::utils::base64Decode(tempValueB64String);
+
+        } else {
             readWriteOptionalBinary.value = std::nullopt;
         }
     }
@@ -749,7 +688,7 @@ void ReadWriteOptionalBinaryProperty::AddToRapidJsonObject(rapidjson::Value& par
 {
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempValueStringValue;
-        std::string valueB64String = base64Encode(*value);
+        std::string valueB64String = stinger::utils::base64Encode(*value);
         tempValueStringValue.SetString(valueB64String.c_str(), valueB64String.size(), allocator);
         parent.AddMember("value", tempValueStringValue, allocator);
     }
@@ -761,25 +700,21 @@ ReadWriteTwoBinariesProperty ReadWriteTwoBinariesProperty::FromRapidJsonObject(c
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempFirstB64String = itr->value.GetString();
-            readWriteTwoBinaries.first = base64Decode(tempFirstB64String);
-        }
-        else
-        {
+            readWriteTwoBinaries.first = stinger::utils::base64Decode(tempFirstB64String);
+
+        } else {
             throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempSecondB64String = itr->value.GetString();
-            readWriteTwoBinaries.second = base64Decode(tempSecondB64String);
-        }
-        else
-        {
+            readWriteTwoBinaries.second = stinger::utils::base64Decode(tempSecondB64String);
+
+        } else {
             readWriteTwoBinaries.second = std::nullopt;
         }
     }
@@ -791,14 +726,14 @@ void ReadWriteTwoBinariesProperty::AddToRapidJsonObject(rapidjson::Value& parent
 {
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempFirstStringValue;
-        std::string firstB64String = base64Encode(first);
+        std::string firstB64String = stinger::utils::base64Encode(first);
         tempFirstStringValue.SetString(firstB64String.c_str(), firstB64String.size(), allocator);
         parent.AddMember("first", tempFirstStringValue, allocator);
     }
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempSecondStringValue;
-        std::string secondB64String = base64Encode(*second);
+        std::string secondB64String = stinger::utils::base64Encode(*second);
         tempSecondStringValue.SetString(secondB64String.c_str(), secondB64String.size(), allocator);
         parent.AddMember("second", tempSecondStringValue, allocator);
     }
@@ -810,22 +745,18 @@ ReadWriteListOfStringsProperty ReadWriteListOfStringsProperty::FromRapidJsonObje
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("value");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<std::string> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsString())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsString()) {
                         tempArray.push_back(item.GetString());
                     }
                 }
                 readWriteListOfStrings.value = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'value' argument doesn't have required value/type");
         }
     }
@@ -838,8 +769,7 @@ void ReadWriteListOfStringsProperty::AddToRapidJsonObject(rapidjson::Value& pare
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: value)
-        {
+        for (const auto& item: value) {
             rapidjson::Value tempValueStringValue;
             tempValueStringValue.SetString(item.c_str(), item.size(), allocator);
             tempArrayValue.PushBack(tempValueStringValue, allocator);
@@ -854,46 +784,38 @@ ReadWriteListsProperty ReadWriteListsProperty::FromRapidJsonObject(const rapidjs
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("the_list");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<Numbers> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsInt())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsInt()) {
                         tempArray.push_back(static_cast<Numbers>(item.GetInt()));
                     }
                 }
                 readWriteLists.theList = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'the_list' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("optionalList");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<std::chrono::time_point<std::chrono::system_clock>> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsString())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsString()) {
                         {
                             std::string tempIsoString = item.GetString();
-                            tempArray.push_back(parseIsoTimestamp(tempIsoString));
+                            tempArray.push_back(stinger::utils::parseIsoTimestamp(tempIsoString));
                         }
                     }
                 }
                 readWriteLists.optionalList = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             readWriteLists.optionalList = std::nullopt;
         }
     }
@@ -906,8 +828,7 @@ void ReadWriteListsProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: theList)
-        {
+        for (const auto& item: theList) {
             tempArrayValue.PushBack(static_cast<int>(item), allocator);
         }
         parent.AddMember("the_list", tempArrayValue, allocator);
@@ -916,13 +837,18 @@ void ReadWriteListsProperty::AddToRapidJsonObject(rapidjson::Value& parent, rapi
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: *optionalList)
-        {
+        for (const auto& item: *optionalList) {
             rapidjson::Value tempOptionalListStringValue;
-            std::string itemIsoString = timePointToIsoString(item);
+            std::string itemIsoString = stinger::utils::timePointToIsoString(item);
             tempOptionalListStringValue.SetString(itemIsoString.c_str(), itemIsoString.size(), allocator);
             tempArrayValue.PushBack(tempOptionalListStringValue, allocator);
         }
         parent.AddMember("optionalList", tempArrayValue, allocator);
     }
 }
+
+} // namespace testable
+
+} // namespace gen
+
+} // namespace stinger

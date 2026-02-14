@@ -19,11 +19,10 @@ from datetime import datetime, timedelta, UTC
 import isodate
 import functools
 from concurrent.futures import Future
-
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from pyqttier.interface import IBrokerConnection
+from pyqttier.interface import stinger::utils::IConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import (
@@ -37,17 +36,18 @@ from stinger_python_utils.return_codes import (
 from .interface_types import *
 
 
+
 from .property import SimpleInitialPropertyValues
 
-T = TypeVar("T")
 
+
+T = TypeVar('T')
 
 @dataclass
 class PropertyControls(Generic[T]):
     """
     Controls for a server property.  Generic[T] must be a single value or a pydantic BaseModel for multi-argument properties.
     """
-
     value: T
     mutex = threading.RLock()
     version: int = -1
@@ -61,12 +61,13 @@ class PropertyControls(Generic[T]):
         with self.mutex:
             self.value = new_value
             return self.value
-
+    
+ 
 
 class SimpleServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, prefix: str):
-        self._logger = logging.getLogger(f"SimpleServer:{instance_id}")
+    def __init__(self, connection: stinger::utils::IConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, prefix: str):
+        self._logger = logging.getLogger(f'SimpleServer:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SimpleServer instance %s", instance_id)
         self._conn = connection
@@ -76,17 +77,17 @@ class SimpleServer:
             "service_id": instance_id,
             "prefix": prefix,
         }
-        self._service_advert_topic = "{prefix}/Simple/{service_id}/interface".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._service_advert_topic = "{prefix}/Simple/{service_id}/interface".format(**self._topic_template_kwargs) # type: ignore[str-format]
         self._re_advertise_server_interval_seconds = 120
         self._running = True
         self._conn.add_message_callback(self._receive_message)
-
+        
         self._property_school: PropertyControls[str] = PropertyControls(value=initial_property_values.school, version=initial_property_values.school_version)
-        self._conn.subscribe("{prefix}/Simple/{service_id}/property/school/update".format(**self._topic_template_kwargs), self._receive_school_update_request_message)  # type: ignore[str-format]
-
-        self._conn.subscribe("{prefix}/Simple/{service_id}/method/trade_numbers/request".format(**self._topic_template_kwargs), self._process_trade_numbers_call)  # type: ignore[str-format]
-        self._method_trade_numbers_handler = None  # type: Optional[Callable[[int], int]]
-
+        self._conn.subscribe("{prefix}/Simple/{service_id}/property/school/update".format(**self._topic_template_kwargs), self._receive_school_update_request_message) # type: ignore[str-format]
+        
+        self._conn.subscribe("{prefix}/Simple/{service_id}/method/trade_numbers/request".format(**self._topic_template_kwargs), self._process_trade_numbers_call) # type: ignore[str-format]
+        self._method_trade_numbers_handler = None # type: Optional[Callable[[int], int]]
+        
         self._publish_all_properties()
         signal.signal(signal.SIGTERM, self._signal_handler)
 
@@ -100,22 +101,22 @@ class SimpleServer:
     def _signal_handler(self, signum, frame):
         self.shutdown()
 
-    def shutdown(self, timeout: float = 5.0):
+    def shutdown(self, timeout: float=5.0):
         """Gracefully shutdown the server and stop the advertisement thread."""
         if not self._running:
             return
         self._running = False
         self._conn.unpublish_retained(self._service_advert_topic)
-        if hasattr(self, "_advertise_thread") and self._advertise_thread.is_alive():
+        if hasattr(self, '_advertise_thread') and self._advertise_thread.is_alive():
             self._advertise_thread.join(timeout=timeout)
 
     @property
     def instance_id(self) -> str:
-        """The instance ID of this server instance."""
+        """ The instance ID of this server instance. """
         return self._instance_id
 
     def _loop_publishing_interface_info(self):
-        """We have a discovery topic separate from the MQTT client discovery topic.
+        """ We have a discovery topic separate from the MQTT client discovery topic.
         We publish it periodically, but with a Message Expiry interval."""
         while self._running:
             if self._conn.is_connected():
@@ -126,54 +127,56 @@ class SimpleServer:
                     time_left -= 4
             else:
                 sleep(2)
-
+            
     def publish_interface_info(self):
-        """Publishes the interface info message to the interface info topic with an expiry interval."""
+        """ Publishes the interface info message to the interface info topic with an expiry interval. """
         data = SimpleInterfaceInfo(
             instance=self._instance_id,
             connection_topic=(self._conn.online_topic or ""),
             timestamp=datetime.now(UTC).isoformat(),
             prefix=self._topic_template_kwargs["prefix"],
         )
-        expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
+        expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         msg = MessageCreator.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
+    
     def publish_school_value(self, *_, **__):
-        """Publishes the current value of the 'school' property.
+        """ Publishes the current value of the 'school' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         Since we won't automatically publish a property value unless it changes, this method is
         useful for unit tests where we want to force re-publishing the property value to check the
         published value in the unit test.
-
+        
         """
         with self._property_school.mutex:
             self._property_school.version += 1
             school_prop_obj = SchoolProperty(name=self._property_school.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/Simple/{service_id}/property/school/value".format(**self._topic_template_kwargs), school_prop_obj, self._property_school.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/Simple/{service_id}/property/school/value".format(**self._topic_template_kwargs), school_prop_obj, self._property_school.version)
             self._conn.publish(state_msg)
 
     def _publish_all_properties(self):
-        """Publishes the current value of all properties."""
+        """ Publishes the current value of all properties.
+        """
         self.publish_school_value()
 
+    
+    
     def _receive_school_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x726a2a15e720>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/Simple/{service_id}/property/school/update` topic
         in order to update the `school` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_school.version):
@@ -192,13 +195,13 @@ class SimpleServer:
             with self._property_school.mutex:
                 self._property_school.version += 1
                 self._property_school.set_value(prop_value)
-
+                
                 current_prop_obj = SchoolProperty(name=self._property_school.get_value())
-
+                
                 prop_value_topic = "{prefix}/Simple/{service_id}/property/school/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_school.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
                     prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_school.version), MethodReturnCode.SUCCESS.value, correlation_id)
@@ -206,10 +209,12 @@ class SimpleServer:
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
             for school_callback in self._property_school.callbacks:
-
+                
                 school_callback(current_prop_obj.name)
-
+                
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -222,18 +227,22 @@ class SimpleServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_school.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
+    
+    
 
     def _receive_message(self, message: Message):
-        """This is the callback that is called whenever any message is received on a subscribed topic."""
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
         self._logger.warning("Received unexpected message: %s", message)
 
     def emit_person_entered(self, person: Person):
-        """Server application code should call this method to emit the 'person_entered' signal.
+        """ Server application code should call this method to emit the 'person_entered' signal.
 
         PersonEnteredSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(person, Person), f"The 'person' argument must be of type Person, but was {type(person)}"
+        
 
         payload = PersonEnteredSignalPayload(
             person=person,
@@ -242,15 +251,19 @@ class SimpleServer:
         sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
+    
+
+    
     def handle_trade_numbers(self, handler: Callable[[int], int]):
-        """This is a decorator to decorate a method that will handle the 'trade_numbers' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'trade_numbers' method calls.
+        """
         if self._method_trade_numbers_handler is None and handler is not None:
             self._method_trade_numbers_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_trade_numbers_call(self, message: Message):
-        """This processes a call to the 'trade_numbers' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'trade_numbers' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -268,20 +281,19 @@ class SimpleServer:
         response_topic = message.response_topic
 
         if self._method_trade_numbers_handler is not None:
-            method_args = [
-                payload.your_number,
-            ]  # type: List[Any]
-
+            method_args = [payload.your_number, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_trade_numbers_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, int):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
                 ret_obj = TradeNumbersMethodResponse(my_number=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling trade_numbers: %s", e)
                 if response_topic is not None:
@@ -311,15 +323,22 @@ class SimpleServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'trade_numbers' method")
                 self._conn.publish(err_msg)
 
+    
+    
+    
     @property
     def school(self) -> Optional[str]:
-        """This property returns the last received (str) value for the 'school' property."""
+        """ This property returns the last received (str) value for the 'school' property.
+        
+        """
         return self._property_school.get_value()
 
     @school.setter
     def school(self, name: str):
-        """This property sets (publishes) a new str value for the 'school' property."""
-        if not isinstance(name, str):
+        """ This property sets (publishes) a new str value for the 'school' property.
+        
+        """
+        if (not isinstance(name, str)):
             raise ValueError(f"The value must be str .")
 
         value_updated = False
@@ -332,25 +351,32 @@ class SimpleServer:
                 prop_value_topic = "{prefix}/Simple/{service_id}/property/school/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_school.version)
                 self._conn.publish(state_msg)
-
+        
         if value_updated:
             for school_callback in self._property_school.callbacks:
                 school_callback(prop_obj.name)
+        
 
     def set_school(self, name: str):
-        """This method sets (publishes) a new value for the 'school' property."""
+        """ This method sets (publishes) a new value for the 'school' property.
+        """
         if not isinstance(name, str):
             raise ValueError(f"The 'name' value must be str.")
 
+        
         obj = name
+        
 
         # Use the property.setter to do that actual work.
         self.school = obj
 
+    
     def on_school_updated(self, handler: Callable[[str], None]):
-        """This method registers a callback to be called whenever a new 'school' property update is received."""
+        """ This method registers a callback to be called whenever a new 'school' property update is received.
+        """
         self._property_school.callbacks.append(handler)
-
+    
+    
 
 class SimpleServerBuilder:
     """
@@ -358,50 +384,51 @@ class SimpleServerBuilder:
     """
 
     def __init__(self):
-
+        
+        
         self._trade_numbers_method_handler: Optional[Callable[[int], int]] = None
-
+        
+        
         self._school_property_callbacks: List[Callable[[str], None]] = []
-
+        
+    
     def handle_trade_numbers(self, handler: Callable[[int], int]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._trade_numbers_method_handler is None and handler is not None:
             self._trade_numbers_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
+    
+    
     def on_school_updated(self, handler: Callable[[str], None]):
-        """This method registers a callback to be called whenever a new 'school' property update is received."""
-
+        """ This method registers a callback to be called whenever a new 'school' property update is received.
+        """
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         self._school_property_callbacks.append(wrapper)
         return wrapper
-
-    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, prefix: str, binding: Optional[Any] = None) -> SimpleServer:
-        new_server = SimpleServer(
-            connection,
-            instance_id,
-            initial_property_values,
-            prefix,
-        )
-
+    
+    
+    def build(self, connection: stinger::utils::IConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, prefix: str, binding: Optional[Any]=None) -> SimpleServer:
+        new_server = SimpleServer(connection, instance_id, initial_property_values, prefix, )
+        
         if self._trade_numbers_method_handler is not None:
             if binding:
                 new_server.handle_trade_numbers(self._trade_numbers_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_trade_numbers(self._trade_numbers_method_handler)
-
+        
+        
         for school_callback in self._school_property_callbacks:
             if binding:
                 new_server.on_school_updated(school_callback.__get__(binding, binding.__class__))
             else:
                 new_server.on_school_updated(school_callback)
-
+        
+        
         return new_server

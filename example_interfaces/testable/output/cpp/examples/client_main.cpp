@@ -5,7 +5,6 @@
 #include <syslog.h>
 #include <chrono>
 #include <thread>
-#include "utils.hpp"
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
@@ -29,8 +28,7 @@ int main(int argc, char** argv)
         TestableDiscovery discovery(conn);
         auto serviceIdFut = discovery.GetSingleton();
         auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
-        if (serviceIdFutStatus == std::future_status::timeout)
-        {
+        if (serviceIdFutStatus == std::future_status::timeout) {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
         }
@@ -126,7 +124,7 @@ int main(int argc, char** argv)
 
     client.registerSingleDateTimeCallback([](std::chrono::time_point<std::chrono::system_clock> value)
                                           {
-                                              std::string valueStr = timePointToIsoString(value);
+                                              std::string valueStr = stinger::utils::timePointToIsoString(value);
 
                                               std::cout << "Received SINGLE_DATE_TIME signal: "
                                                         << "value=" << valueStr << std::endl;
@@ -135,9 +133,8 @@ int main(int argc, char** argv)
     client.registerSingleOptionalDatetimeCallback([](std::optional<std::chrono::time_point<std::chrono::system_clock>> value)
                                                   {
                                                       std::string valueStr = "None";
-                                                      if (value)
-                                                      {
-                                                          std::string valueStr = timePointToIsoString(*value);
+                                                      if (value) {
+                                                          std::string valueStr = stinger::utils::timePointToIsoString(*value);
                                                       }
 
                                                       std::cout << "Received SINGLE_OPTIONAL_DATETIME signal: "
@@ -146,14 +143,13 @@ int main(int argc, char** argv)
 
     client.registerThreeDateTimesCallback([](std::chrono::time_point<std::chrono::system_clock> first, std::chrono::time_point<std::chrono::system_clock> second, std::optional<std::chrono::time_point<std::chrono::system_clock>> third)
                                           {
-                                              std::string firstStr = timePointToIsoString(first);
+                                              std::string firstStr = stinger::utils::timePointToIsoString(first);
 
-                                              std::string secondStr = timePointToIsoString(second);
+                                              std::string secondStr = stinger::utils::timePointToIsoString(second);
 
                                               std::string thirdStr = "None";
-                                              if (third)
-                                              {
-                                                  std::string thirdStr = timePointToIsoString(*third);
+                                              if (third) {
+                                                  std::string thirdStr = stinger::utils::timePointToIsoString(*third);
                                               }
 
                                               std::cout << "Received THREE_DATE_TIMES signal: "
@@ -162,7 +158,7 @@ int main(int argc, char** argv)
 
     client.registerSingleDurationCallback([](std::chrono::duration<double> value)
                                           {
-                                              std::string valueStr = durationToIsoString(value);
+                                              std::string valueStr = stinger::utils::durationToIsoString(value);
 
                                               std::cout << "Received SINGLE_DURATION signal: "
                                                         << "value=" << valueStr << std::endl;
@@ -171,9 +167,8 @@ int main(int argc, char** argv)
     client.registerSingleOptionalDurationCallback([](std::optional<std::chrono::duration<double>> value)
                                                   {
                                                       std::string valueStr = "None";
-                                                      if (value)
-                                                      {
-                                                          std::string valueStr = durationToIsoString(*value);
+                                                      if (value) {
+                                                          std::string valueStr = stinger::utils::durationToIsoString(*value);
                                                       }
 
                                                       std::cout << "Received SINGLE_OPTIONAL_DURATION signal: "
@@ -182,13 +177,12 @@ int main(int argc, char** argv)
 
     client.registerThreeDurationsCallback([](std::chrono::duration<double> first, std::chrono::duration<double> second, std::optional<std::chrono::duration<double>> third)
                                           {
-                                              std::string firstStr = durationToIsoString(first);
-                                              std::string secondStr = durationToIsoString(second);
+                                              std::string firstStr = stinger::utils::durationToIsoString(first);
+                                              std::string secondStr = stinger::utils::durationToIsoString(second);
 
                                               std::string thirdStr = "None";
-                                              if (third)
-                                              {
-                                                  std::string thirdStr = durationToIsoString(*third);
+                                              if (third) {
+                                                  std::string thirdStr = stinger::utils::durationToIsoString(*third);
                                               }
 
                                               std::cout << "Received THREE_DURATIONS signal: "
@@ -324,7 +318,7 @@ int main(int argc, char** argv)
 
     client.registerReadWriteDatetimePropertyCallback([](std::chrono::time_point<std::chrono::system_clock> value)
                                                      {
-                                                         std::string valueStr = timePointToIsoString(value);
+                                                         std::string valueStr = stinger::utils::timePointToIsoString(value);
 
                                                          std::cout << "Received update for read_write_datetime property: " << "value=" << valueStr
                                                                    << std::endl;
@@ -333,9 +327,8 @@ int main(int argc, char** argv)
     client.registerReadWriteOptionalDatetimePropertyCallback([](std::optional<std::chrono::time_point<std::chrono::system_clock>> value)
                                                              {
                                                                  std::string valueStr = "None";
-                                                                 if (value)
-                                                                 {
-                                                                     std::string valueStr = timePointToIsoString(*value);
+                                                                 if (value) {
+                                                                     std::string valueStr = stinger::utils::timePointToIsoString(*value);
                                                                  }
 
                                                                  std::cout << "Received update for read_write_optional_datetime property: " << "value=" << "None" << std::endl;
@@ -343,12 +336,11 @@ int main(int argc, char** argv)
 
     client.registerReadWriteTwoDatetimesPropertyCallback([](std::chrono::time_point<std::chrono::system_clock> first, std::optional<std::chrono::time_point<std::chrono::system_clock>> second)
                                                          {
-                                                             std::string firstStr = timePointToIsoString(first);
+                                                             std::string firstStr = stinger::utils::timePointToIsoString(first);
 
                                                              std::string secondStr = "None";
-                                                             if (second)
-                                                             {
-                                                                 std::string secondStr = timePointToIsoString(*second);
+                                                             if (second) {
+                                                                 std::string secondStr = stinger::utils::timePointToIsoString(*second);
                                                              }
 
                                                              std::cout << "Received update for read_write_two_datetimes property: " << "first=" << firstStr
@@ -357,7 +349,7 @@ int main(int argc, char** argv)
 
     client.registerReadWriteDurationPropertyCallback([](std::chrono::duration<double> value)
                                                      {
-                                                         std::string valueStr = durationToIsoString(value);
+                                                         std::string valueStr = stinger::utils::durationToIsoString(value);
 
                                                          std::cout << "Received update for read_write_duration property: " << "value=" << valueStr
                                                                    << std::endl;
@@ -366,9 +358,8 @@ int main(int argc, char** argv)
     client.registerReadWriteOptionalDurationPropertyCallback([](std::optional<std::chrono::duration<double>> value)
                                                              {
                                                                  std::string valueStr = "None";
-                                                                 if (value)
-                                                                 {
-                                                                     std::string valueStr = durationToIsoString(*value);
+                                                                 if (value) {
+                                                                     std::string valueStr = stinger::utils::durationToIsoString(*value);
                                                                  }
 
                                                                  std::cout << "Received update for read_write_optional_duration property: " << "value=" << "None" << std::endl;
@@ -376,12 +367,11 @@ int main(int argc, char** argv)
 
     client.registerReadWriteTwoDurationsPropertyCallback([](std::chrono::duration<double> first, std::optional<std::chrono::duration<double>> second)
                                                          {
-                                                             std::string firstStr = durationToIsoString(first);
+                                                             std::string firstStr = stinger::utils::durationToIsoString(first);
 
                                                              std::string secondStr = "None";
-                                                             if (second)
-                                                             {
-                                                                 std::string secondStr = durationToIsoString(*second);
+                                                             if (second) {
+                                                                 std::string secondStr = stinger::utils::durationToIsoString(*second);
                                                              }
 
                                                              std::cout << "Received update for read_write_two_durations property: " << "first=" << firstStr
@@ -422,12 +412,9 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_WITH_NOTHING" << std::endl;
         auto callWithNothingResultFuture = client.callWithNothing();
         auto callWithNothingStatus = callWithNothingResultFuture.wait_for(std::chrono::seconds(5));
-        if (callWithNothingStatus == std::future_status::timeout)
-        {
+        if (callWithNothingStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_WITH_NOTHING response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::cout << "CALL_WITH_NOTHING Completed.  It has not return values." << std::endl;
         }
     }
@@ -437,25 +424,18 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_ONE_INTEGER" << std::endl;
         auto callOneIntegerResultFuture = client.callOneInteger(42);
         auto callOneIntegerStatus = callOneIntegerResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOneIntegerStatus == std::future_status::timeout)
-        {
+        if (callOneIntegerStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_INTEGER response." << std::endl;
-        }
-        else
-        {
+        } else {
             int returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOneIntegerResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_ONE_INTEGER Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_ONE_INTEGER Response: "
                           << " output1=" << returnValue << std::endl;
             }
@@ -467,33 +447,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_OPTIONAL_INTEGER" << std::endl;
         auto callOptionalIntegerResultFuture = client.callOptionalInteger(42);
         auto callOptionalIntegerStatus = callOptionalIntegerResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOptionalIntegerStatus == std::future_status::timeout)
-        {
+        if (callOptionalIntegerStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_INTEGER response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::optional<int> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOptionalIntegerResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_INTEGER Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_OPTIONAL_INTEGER Response: "
                           << " output1=";
-                if (returnValue)
-                {
+                if (returnValue) {
                     std::cout << *returnValue;
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -507,33 +477,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_THREE_INTEGERS" << std::endl;
         auto callThreeIntegersResultFuture = client.callThreeIntegers(42, 42, 42);
         auto callThreeIntegersStatus = callThreeIntegersResultFuture.wait_for(std::chrono::seconds(5));
-        if (callThreeIntegersStatus == std::future_status::timeout)
-        {
+        if (callThreeIntegersStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_INTEGERS response." << std::endl;
-        }
-        else
-        {
+        } else {
             CallThreeIntegersReturnValues returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callThreeIntegersResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_THREE_INTEGERS Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_THREE_INTEGERS Response: "
                           << " output1=" << returnValue.output1 << " output2=" << returnValue.output2 << " output3=";
-                if (returnValue.output3)
-                {
+                if (returnValue.output3) {
                     std::cout << *returnValue.output3;
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -547,25 +507,18 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_ONE_STRING" << std::endl;
         auto callOneStringResultFuture = client.callOneString("apples");
         auto callOneStringStatus = callOneStringResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOneStringStatus == std::future_status::timeout)
-        {
+        if (callOneStringStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_STRING response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::string returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOneStringResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_ONE_STRING Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_ONE_STRING Response: "
                           << " output1=" << returnValue << std::endl;
             }
@@ -577,33 +530,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_OPTIONAL_STRING" << std::endl;
         auto callOptionalStringResultFuture = client.callOptionalString(std::make_optional(std::string("apples")));
         auto callOptionalStringStatus = callOptionalStringResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOptionalStringStatus == std::future_status::timeout)
-        {
+        if (callOptionalStringStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_STRING response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::optional<std::string> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOptionalStringResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_STRING Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_OPTIONAL_STRING Response: "
                           << " output1=";
-                if (returnValue)
-                {
+                if (returnValue) {
                     std::cout << *returnValue;
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -617,33 +560,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_THREE_STRINGS" << std::endl;
         auto callThreeStringsResultFuture = client.callThreeStrings("apples", std::make_optional(std::string("apples")), "apples");
         auto callThreeStringsStatus = callThreeStringsResultFuture.wait_for(std::chrono::seconds(5));
-        if (callThreeStringsStatus == std::future_status::timeout)
-        {
+        if (callThreeStringsStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_STRINGS response." << std::endl;
-        }
-        else
-        {
+        } else {
             CallThreeStringsReturnValues returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callThreeStringsResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_THREE_STRINGS Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_THREE_STRINGS Response: "
                           << " output1=" << returnValue.output1 << " output2=";
-                if (returnValue.output2)
-                {
+                if (returnValue.output2) {
                     std::cout << *returnValue.output2;
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -657,25 +590,18 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_ONE_ENUM" << std::endl;
         auto callOneEnumResultFuture = client.callOneEnum(Numbers::ONE);
         auto callOneEnumStatus = callOneEnumResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOneEnumStatus == std::future_status::timeout)
-        {
+        if (callOneEnumStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_ENUM response." << std::endl;
-        }
-        else
-        {
+        } else {
             Numbers returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOneEnumResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_ONE_ENUM Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_ONE_ENUM Response: "
                           << " output1=" << numbersStrings.at(static_cast<int>(returnValue)) << std::endl;
             }
@@ -687,33 +613,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_OPTIONAL_ENUM" << std::endl;
         auto callOptionalEnumResultFuture = client.callOptionalEnum(Numbers::ONE);
         auto callOptionalEnumStatus = callOptionalEnumResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOptionalEnumStatus == std::future_status::timeout)
-        {
+        if (callOptionalEnumStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_ENUM response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::optional<Numbers> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOptionalEnumResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_ENUM Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_OPTIONAL_ENUM Response: "
                           << " output1=";
-                if (returnValue)
-                {
+                if (returnValue) {
                     std::cout << numbersStrings.at(static_cast<int>(*returnValue));
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -727,33 +643,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_THREE_ENUMS" << std::endl;
         auto callThreeEnumsResultFuture = client.callThreeEnums(Numbers::ONE, Numbers::ONE, Numbers::ONE);
         auto callThreeEnumsStatus = callThreeEnumsResultFuture.wait_for(std::chrono::seconds(5));
-        if (callThreeEnumsStatus == std::future_status::timeout)
-        {
+        if (callThreeEnumsStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_ENUMS response." << std::endl;
-        }
-        else
-        {
+        } else {
             CallThreeEnumsReturnValues returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callThreeEnumsResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_THREE_ENUMS Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_THREE_ENUMS Response: "
                           << " output1=" << numbersStrings.at(static_cast<int>(returnValue.output1)) << " output2=" << numbersStrings.at(static_cast<int>(returnValue.output2)) << " output3=";
-                if (returnValue.output3)
-                {
+                if (returnValue.output3) {
                     std::cout << numbersStrings.at(static_cast<int>(*returnValue.output3));
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -768,25 +674,18 @@ int main(int argc, char** argv)
         AllTypes input1Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, std::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022, 2022 }, std::vector<int>{ 42, 2022, 2022 }, std::vector<std::string>{ "apples", "foo", "foo" }, std::vector<std::string>{ "apples", "foo", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975), std::chrono::duration<double>(967) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975), std::chrono::duration<double>(967) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" }, Entry{ 2022, "foo" } } };
         auto callOneStructResultFuture = client.callOneStruct(input1Arg);
         auto callOneStructStatus = callOneStructResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOneStructStatus == std::future_status::timeout)
-        {
+        if (callOneStructStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_STRUCT response." << std::endl;
-        }
-        else
-        {
+        } else {
             AllTypes returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOneStructResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_ONE_STRUCT Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_ONE_STRUCT Response: "
                           << " output1=" << "[AllTypes object]" << std::endl;
             }
@@ -799,33 +698,23 @@ int main(int argc, char** argv)
         AllTypes input1Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, std::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022, 2022 }, std::vector<int>{ 42, 2022, 2022 }, std::vector<std::string>{ "apples", "foo", "foo" }, std::vector<std::string>{ "apples", "foo", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975), std::chrono::duration<double>(967) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975), std::chrono::duration<double>(967) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" }, Entry{ 2022, "foo" } } };
         auto callOptionalStructResultFuture = client.callOptionalStruct(input1Arg);
         auto callOptionalStructStatus = callOptionalStructResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOptionalStructStatus == std::future_status::timeout)
-        {
+        if (callOptionalStructStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_STRUCT response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::optional<AllTypes> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOptionalStructResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_STRUCT Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_OPTIONAL_STRUCT Response: "
                           << " output1=";
-                if (returnValue)
-                {
+                if (returnValue) {
                     std::cout << "[AllTypes object]";
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -844,33 +733,23 @@ int main(int argc, char** argv)
         AllTypes input3Arg = AllTypes{ true, 42, 3.14, "apples", Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, 42, std::make_optional(std::string("apples")), Numbers::ONE, Entry{ 42, "apples" }, std::chrono::system_clock::now(), std::chrono::duration<double>(3536), std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<int>{ 42, 2022, 2022 }, std::vector<int>{ 42, 2022, 2022 }, std::vector<std::string>{ "apples", "foo", "foo" }, std::vector<std::string>{ "apples", "foo", "foo" }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE, Numbers::ONE }, std::vector<Numbers>{ Numbers::ONE, Numbers::ONE, Numbers::ONE }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::time_point<std::chrono::system_clock>>{ std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now() }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975), std::chrono::duration<double>(967) }, std::vector<std::chrono::duration<double>>{ std::chrono::duration<double>(3536), std::chrono::duration<double>(975), std::chrono::duration<double>(967) }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<std::vector<uint8_t>>{ std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" }, Entry{ 2022, "foo" } }, std::vector<Entry>{ Entry{ 42, "apples" }, Entry{ 2022, "foo" }, Entry{ 2022, "foo" } } };
         auto callThreeStructsResultFuture = client.callThreeStructs(input1Arg, input2Arg, input3Arg);
         auto callThreeStructsStatus = callThreeStructsResultFuture.wait_for(std::chrono::seconds(5));
-        if (callThreeStructsStatus == std::future_status::timeout)
-        {
+        if (callThreeStructsStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_STRUCTS response." << std::endl;
-        }
-        else
-        {
+        } else {
             CallThreeStructsReturnValues returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callThreeStructsResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_THREE_STRUCTS Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_THREE_STRUCTS Response: "
                           << " output1=";
-                if (returnValue.output1)
-                {
+                if (returnValue.output1) {
                     std::cout << "[AllTypes object]";
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -884,27 +763,20 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_ONE_DATE_TIME" << std::endl;
         auto callOneDateTimeResultFuture = client.callOneDateTime(std::chrono::system_clock::now());
         auto callOneDateTimeStatus = callOneDateTimeResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOneDateTimeStatus == std::future_status::timeout)
-        {
+        if (callOneDateTimeStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_DATE_TIME response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::chrono::time_point<std::chrono::system_clock> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOneDateTimeResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_ONE_DATE_TIME Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_ONE_DATE_TIME Response: "
-                          << " output1=" << timePointToIsoString(returnValue) << std::endl;
+                          << " output1=" << stinger::utils::timePointToIsoString(returnValue) << std::endl;
             }
         }
     }
@@ -914,33 +786,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_OPTIONAL_DATE_TIME" << std::endl;
         auto callOptionalDateTimeResultFuture = client.callOptionalDateTime(std::chrono::system_clock::now());
         auto callOptionalDateTimeStatus = callOptionalDateTimeResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOptionalDateTimeStatus == std::future_status::timeout)
-        {
+        if (callOptionalDateTimeStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_DATE_TIME response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::optional<std::chrono::time_point<std::chrono::system_clock>> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOptionalDateTimeResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_DATE_TIME Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_OPTIONAL_DATE_TIME Response: "
                           << " output1=";
-                if (returnValue)
-                {
-                    std::cout << timePointToIsoString(*returnValue);
-                }
-                else
-                {
+                if (returnValue) {
+                    std::cout << stinger::utils::timePointToIsoString(*returnValue);
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -954,33 +816,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_THREE_DATE_TIMES" << std::endl;
         auto callThreeDateTimesResultFuture = client.callThreeDateTimes(std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::chrono::system_clock::now());
         auto callThreeDateTimesStatus = callThreeDateTimesResultFuture.wait_for(std::chrono::seconds(5));
-        if (callThreeDateTimesStatus == std::future_status::timeout)
-        {
+        if (callThreeDateTimesStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_DATE_TIMES response." << std::endl;
-        }
-        else
-        {
+        } else {
             CallThreeDateTimesReturnValues returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callThreeDateTimesResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_THREE_DATE_TIMES Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_THREE_DATE_TIMES Response: "
-                          << " output1=" << timePointToIsoString(returnValue.output1) << " output2=" << timePointToIsoString(returnValue.output2) << " output3=";
-                if (returnValue.output3)
-                {
-                    std::cout << timePointToIsoString(*returnValue.output3);
-                }
-                else
-                {
+                          << " output1=" << stinger::utils::timePointToIsoString(returnValue.output1) << " output2=" << stinger::utils::timePointToIsoString(returnValue.output2) << " output3=";
+                if (returnValue.output3) {
+                    std::cout << stinger::utils::timePointToIsoString(*returnValue.output3);
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -994,27 +846,20 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_ONE_DURATION" << std::endl;
         auto callOneDurationResultFuture = client.callOneDuration(std::chrono::duration<double>(3536));
         auto callOneDurationStatus = callOneDurationResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOneDurationStatus == std::future_status::timeout)
-        {
+        if (callOneDurationStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_DURATION response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::chrono::duration<double> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOneDurationResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_ONE_DURATION Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_ONE_DURATION Response: "
-                          << " output1=" << durationToIsoString(returnValue) << std::endl;
+                          << " output1=" << stinger::utils::durationToIsoString(returnValue) << std::endl;
             }
         }
     }
@@ -1024,33 +869,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_OPTIONAL_DURATION" << std::endl;
         auto callOptionalDurationResultFuture = client.callOptionalDuration(std::chrono::duration<double>(3536));
         auto callOptionalDurationStatus = callOptionalDurationResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOptionalDurationStatus == std::future_status::timeout)
-        {
+        if (callOptionalDurationStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_DURATION response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::optional<std::chrono::duration<double>> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOptionalDurationResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_DURATION Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_OPTIONAL_DURATION Response: "
                           << " output1=";
-                if (returnValue)
-                {
-                    std::cout << durationToIsoString(*returnValue);
-                }
-                else
-                {
+                if (returnValue) {
+                    std::cout << stinger::utils::durationToIsoString(*returnValue);
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -1064,33 +899,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_THREE_DURATIONS" << std::endl;
         auto callThreeDurationsResultFuture = client.callThreeDurations(std::chrono::duration<double>(3536), std::chrono::duration<double>(3536), std::chrono::duration<double>(3536));
         auto callThreeDurationsStatus = callThreeDurationsResultFuture.wait_for(std::chrono::seconds(5));
-        if (callThreeDurationsStatus == std::future_status::timeout)
-        {
+        if (callThreeDurationsStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_DURATIONS response." << std::endl;
-        }
-        else
-        {
+        } else {
             CallThreeDurationsReturnValues returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callThreeDurationsResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_THREE_DURATIONS Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_THREE_DURATIONS Response: "
-                          << " output1=" << durationToIsoString(returnValue.output1) << " output2=" << durationToIsoString(returnValue.output2) << " output3=";
-                if (returnValue.output3)
-                {
-                    std::cout << durationToIsoString(*returnValue.output3);
-                }
-                else
-                {
+                          << " output1=" << stinger::utils::durationToIsoString(returnValue.output1) << " output2=" << stinger::utils::durationToIsoString(returnValue.output2) << " output3=";
+                if (returnValue.output3) {
+                    std::cout << stinger::utils::durationToIsoString(*returnValue.output3);
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -1104,25 +929,18 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_ONE_BINARY" << std::endl;
         auto callOneBinaryResultFuture = client.callOneBinary(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
         auto callOneBinaryStatus = callOneBinaryResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOneBinaryStatus == std::future_status::timeout)
-        {
+        if (callOneBinaryStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_BINARY response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::vector<uint8_t> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOneBinaryResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_ONE_BINARY Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_ONE_BINARY Response: "
                           << " output1=" << "[BINARY DATA]"
                           << std::endl;
@@ -1135,33 +953,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_OPTIONAL_BINARY" << std::endl;
         auto callOptionalBinaryResultFuture = client.callOptionalBinary(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
         auto callOptionalBinaryStatus = callOptionalBinaryResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOptionalBinaryStatus == std::future_status::timeout)
-        {
+        if (callOptionalBinaryStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_BINARY response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::optional<std::vector<uint8_t>> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOptionalBinaryResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_BINARY Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_OPTIONAL_BINARY Response: "
                           << " output1=";
-                if (returnValue)
-                {
+                if (returnValue) {
                     std::cout << "[BINARY DATA]";
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -1175,35 +983,25 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_THREE_BINARIES" << std::endl;
         auto callThreeBinariesResultFuture = client.callThreeBinaries(std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 }, std::vector<uint8_t>{ 101, 120, 97, 109, 112, 108, 101 });
         auto callThreeBinariesStatus = callThreeBinariesResultFuture.wait_for(std::chrono::seconds(5));
-        if (callThreeBinariesStatus == std::future_status::timeout)
-        {
+        if (callThreeBinariesStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_THREE_BINARIES response." << std::endl;
-        }
-        else
-        {
+        } else {
             CallThreeBinariesReturnValues returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callThreeBinariesResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_THREE_BINARIES Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_THREE_BINARIES Response: "
                           << " output1=" << "[BINARY DATA]"
                           << " output2=" << "[BINARY DATA]"
                           << " output3=";
-                if (returnValue.output3)
-                {
+                if (returnValue.output3) {
                     std::cout << "[BINARY DATA]";
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -1217,25 +1015,18 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_ONE_LIST_OF_INTEGERS" << std::endl;
         auto callOneListOfIntegersResultFuture = client.callOneListOfIntegers(std::vector<int>{ 42, 2022, 2022 });
         auto callOneListOfIntegersStatus = callOneListOfIntegersResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOneListOfIntegersStatus == std::future_status::timeout)
-        {
+        if (callOneListOfIntegersStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_ONE_LIST_OF_INTEGERS response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::vector<int> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOneListOfIntegersResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_ONE_LIST_OF_INTEGERS Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_ONE_LIST_OF_INTEGERS Response: "
                           << " output1=" << "[Array of " << returnValue.size() << "PRIMITIVE values]" << std::endl;
             }
@@ -1247,33 +1038,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_OPTIONAL_LIST_OF_FLOATS" << std::endl;
         auto callOptionalListOfFloatsResultFuture = client.callOptionalListOfFloats(std::vector<double>{ 3.14, 1.0, 1.0 });
         auto callOptionalListOfFloatsStatus = callOptionalListOfFloatsResultFuture.wait_for(std::chrono::seconds(5));
-        if (callOptionalListOfFloatsStatus == std::future_status::timeout)
-        {
+        if (callOptionalListOfFloatsStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_OPTIONAL_LIST_OF_FLOATS response." << std::endl;
-        }
-        else
-        {
+        } else {
             std::optional<std::vector<double>> returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callOptionalListOfFloatsResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_LIST_OF_FLOATS Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_OPTIONAL_LIST_OF_FLOATS Response: "
                           << " output1=";
-                if (returnValue)
-                {
+                if (returnValue) {
                     std::cout << (returnValue ? "[Array of PRIMITIVE values]" : "None");
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -1287,33 +1068,23 @@ int main(int argc, char** argv)
         std::cout << "CALLING CALL_TWO_LISTS" << std::endl;
         auto callTwoListsResultFuture = client.callTwoLists(std::vector<Numbers>{ Numbers::ONE, Numbers::ONE, Numbers::ONE }, std::vector<std::string>{ "apples", "foo", "foo" });
         auto callTwoListsStatus = callTwoListsResultFuture.wait_for(std::chrono::seconds(5));
-        if (callTwoListsStatus == std::future_status::timeout)
-        {
+        if (callTwoListsStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for CALL_TWO_LISTS response." << std::endl;
-        }
-        else
-        {
+        } else {
             CallTwoListsReturnValues returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = callTwoListsResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "CALL_TWO_LISTS Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "CALL_TWO_LISTS Response: "
                           << " output1=" << "[Array of " << returnValue.output1.size() << "ENUM values]" << " output2=";
-                if (returnValue.output2)
-                {
+                if (returnValue.output2) {
                     std::cout << (returnValue.output2 ? "[Array of PRIMITIVE values]" : "None");
-                }
-                else
-                {
+                } else {
                     std::cout << "None";
                 }
                 std::cout
@@ -1324,8 +1095,7 @@ int main(int argc, char** argv)
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;
 
-    while (true)
-    {
+    while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 

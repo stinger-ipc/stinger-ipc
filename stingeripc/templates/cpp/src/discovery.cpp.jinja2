@@ -1,23 +1,78 @@
 #include "discovery.hpp"
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
+#include <stinger/util/format.hpp>
+#include <stinger/util/hash.hpp
 #include <iostream>
 #include <algorithm>
 #include <sstream>
 
-{{stinger.name|UpperCamelCase}}Discovery::{{stinger.name|UpperCamelCase}}Discovery(std::shared_ptr<IBrokerConnection> broker)
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
+
+bool InitialPropertyValues::isComplete() const
+{
+    {%-for prop_name, prop in stinger.properties.items() %}
+    if (!{{prop_name | lowerCamelCase}}.has_value())
+    {
+        return false;
+    }
+    {%-endfor%}
+    return true;
+}
+
+void InstanceInfo::UpdateFromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    if (jsonObj.HasMember("service_id") && jsonObj["service_id"].IsString())
+    {
+        serviceId = jsonObj["service_id"].GetString();
+    }
+    {%-for topic_param in config.topics.params %}
+    if (jsonObj.HasMember("{{topic_param}}") && jsonObj["{{topic_param}}"].IsString())
+    {
+        {{topic_param|lowerCamelCase}} = jsonObj["{{topic_param}}"].GetString();
+    }
+    {%-endfor%}
+};
+
+void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    parent.AddMember("interface_name", rapidjson::Value("{{stinger.name}}", allocator), allocator);
+    parent.AddMember("interface_version", rapidjson::Value("{{stinger.version}}", allocator), allocator);
+    if (serviceId.has_value())
+    {
+        parent.AddMember("service_id", rapidjson::Value(serviceId.value().c_str(), allocator), allocator);
+    }
+    {%-for topic_param in config.topics.params %}
+    if ({{topic_param|lowerCamelCase}}.has_value())
+    {
+        parent.AddMember("{{topic_param}}", rapidjson::Value({{topic_param|lowerCamelCase}}.value().c_str(), allocator), allocator);
+    }
+    {%-endfor%}
+}
+
+{{stinger.name|UpperCamelCase}}Discovery::{{stinger.name|UpperCamelCase}}Discovery(std::shared_ptr<stinger::utils::IConnection> broker)
     : _broker(broker)
 {
     // Subscribe to the discovery topic
-    std::stringstream topicStream;
-    topicStream << format("{{stinger.interface_info_topic}}") % "+";
-    _broker->Subscribe(topicStream.str(), 2);
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = "+";
+    topicArgs["interface_name"] = "{{stinger.name}}";
+    topicArgs["client_id"] = "+";
+    {%-for topic_param in config.topics.params %}
+    topicArgs["{{topic_param}}"] = "+";
+    {%-endfor%}
+
+    _discoverySubscriptionId = _broker->Subscribe(stinger::utils::format("{{stinger.interface_info_topic()}}", topicArgs), 1);
+    _allPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{{stinger.all_properties_value_topic()}}", topicArgs), 1);
 
     // Register message callback
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
                                         const std::string& topic,
                                         const std::string& payload,
-                                        const MqttProperties& mqttProps
+                                        const stinger::utils::MqttProperties& mqttProps
                                 )
                                 { _onMessage(topic, payload, mqttProps); });
 }
@@ -31,7 +86,7 @@
     }
 }
 
-void {{stinger.name|UpperCamelCase}}Discovery::SetDiscoveryCallback(const std::function<void(const std::string&)>& cb)
+void {{stinger.name|UpperCamelCase}}Discovery::SetDiscoveryCallback(const std::function<void(const InstanceInfo&)>& cb)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     _discovery_callback = cb;
@@ -54,20 +109,23 @@ std::future<std::string> {{stinger.name|UpperCamelCase}}Discovery::GetSingleton(
     return _pending_promises.back().get_future();
 }
 
-std::vector<std::string> {{stinger.name|UpperCamelCase}}Discovery::GetInstanceIds() const
+std::vector<InstanceInfo> {{stinger.name|UpperCamelCase}}Discovery::GetInstances() const
 {
     std::lock_guard<std::mutex> lock(_mutex);
-    return _instance_ids;
+    std::vector<InstanceInfo> instances;
+    for (const auto& [key, info] : _discoveredInstances)
+    {
+        instances.push_back(info);
+    }
+    return instances;
 }
 
-void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps)
+void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps)
 {
-    // Check if this message is for our discovery topic
-    std::stringstream topicPattern;
-    topicPattern << format("{{stinger.interface_info_topic}}") % "+";
-    
-    if (!_broker->TopicMatchesSubscription(topic, topicPattern.str()))
+    // Check content type
+    if (!mqttProps.contentType.has_value() || mqttProps.contentType.value() != "application/json")
     {
+        std::cerr << "Invalid content type in Discovery message. Expected 'application/json'" << std::endl;
         return;
     }
 
@@ -83,44 +141,131 @@ void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const std::string& top
         return;
     }
 
-    // Extract the "instance" property
-    if (!document.IsObject() || !document.HasMember("instance"))
+    InstanceInfo *infoPtr = nullptr;
+
+    if (mqttProps.subscriptionId == _discoverySubscriptionId)
     {
-        std::cerr << "Discovery message missing 'instance' property" << std::endl;
-        return;
+        std::vector<std::string> hashableIdentifiers;
+        const uint8_t instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.interface_discovery, "service_id")}};
+        {%-for topic_param in config.topics.params %}
+        const uint8_t {{topic_param}}_expected_index = {{utils.topic_template_placeholder_index(config.topics.interface_discovery, topic_param)}};
+        {%endfor%}
+
+        // Split topic by '/' into vector of strings
+        std::vector<std::string> topicParts;
+        std::stringstream ss(topic);
+        std::string part;
+        uint8_t index = 0;
+        while (std::getline(ss, part, '/'))
+        {
+            topicParts.push_back(part);
+            if ((index == instance_id_expected_index){%-for topic_param in config.topics.params %} || (index == {{topic_param}}_expected_index){%endfor%})
+            {
+                hashableIdentifiers.push_back(part);
+            }
+            index++;
+        }
+        
+        uint64_t instanceHash = stinger::utils::hashStrings(hashableIdentifiers);
+
+        if (_discoveredInstances.find(instanceHash) == _discoveredInstances.end())
+        {
+            // Create a new InstanceInfo
+            InstanceInfo info;
+            info.UpdateFromRapidJsonObject(document);
+            _discoveredInstances[instanceHash] = info;
+            infoPtr = &_discoveredInstances[instanceHash];
+        }
+        else
+        {
+            // Update existing InstanceInfo with any new information from the payload
+            _discoveredInstances[instanceHash].UpdateFromRapidJsonObject(document);
+            infoPtr = &_discoveredInstances[instanceHash];
+        }
+    }{%if stinger.properties|length > 0%}
+    else if (mqttProps.subscriptionId == _allPropertySubscriptionId)
+    {
+        // Parse out identifying information from the topic to find the corresponding InstanceInfo
+        std::vector<std::string> hashableIdentifiers;
+        std::string propertyName;
+        uint32_t propertyVersion = 0;
+        if (mqttProps.hasUserProperty("PropertyVersion"))
+        {
+            propertyVersion = mqttProps.userProperty("PropertyVersion");
+        }
+        const uint8_t instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}};
+        {%-for topic_param in config.topics.params %}
+        const uint8_t {{topic_param}}_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, topic_param)}};
+        {%endfor%}
+        const uint8_t property_name_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "property_name")}};
+
+        // Split topic by '/' into vector of strings
+        std::vector<std::string> topicParts;
+        std::stringstream ss(topic);
+        std::string part;
+        uint8_t index = 0;
+        while (std::getline(ss, part, '/'))
+        {
+            topicParts.push_back(part);
+            if ((index == instance_id_expected_index){%-for topic_param in config.topics.params %} || (index == {{topic_param}}_expected_index){%endfor%})
+            {
+                hashableIdentifiers.push_back(part);
+            }
+            else if (index == property_name_expected_index)
+            {
+                propertyName = part;
+            }
+            index++;
+        }
+        
+        uint64_t instanceHash = stinger::utils::hashStrings(hashableIdentifiers);
+        
+        auto it = _discoveredInstances.find(instanceHash);
+        if (it == _discoveredInstances.end())
+        {
+            InstanceInfo info;
+            _discoveredInstances[instanceHash] = info;
+            infoPtr = &_discoveredInstances[instanceHash];
+        }
+        else
+        {
+            infoPtr = &it->second;
+        }
+
+        if (infoPtr)
+        {
+            {%for prop_name, prop in stinger.properties.items()%}
+            {%if not loop.first%}else {%endif%}if (propertyName == "{{prop_name}}")
+            {
+                auto propertyObj = {{prop.cpp.property_struct_name}}::FromRapidJsonObject(document);
+                infoPtr->initial_property_values.{{prop_name | lowerCamelCase}} = propertyObj;
+                infoPtr->initial_property_values.{{prop_name | lowerCamelCase}}Version = propertyVersion;
+            }
+            {%endfor%}
+
     }
+    {%endif%}{# has any properties #}
 
-    const auto& instanceValue = document["instance"];
-    if (!instanceValue.IsString())
+    if (infoPtr && infoPtr->isComplete())
     {
-        std::cerr << "Discovery 'instance' property is not a string" << std::endl;
-        return;
-    }
+        std::lock_guard<std::mutex> lock(_mutex);
 
-    std::string instance_id = instanceValue.GetString();
+        // Fulfill any pending promises
+        for (auto& promise : _pending_promises)
+        {
+            promise.set_value(*infoPtr);
+        }
+        _pending_promises.clear();
 
-    std::lock_guard<std::mutex> lock(_mutex);
-
-    // Check if this instance is already known
-    auto it = std::find(_instance_ids.begin(), _instance_ids.end(), instance_id);
-    if (it != _instance_ids.end())
-    {
-        return; // Already known
-    }
-
-    // Add the new instance
-    _instance_ids.push_back(instance_id);
-
-    // Fulfill any pending promises
-    for (auto& promise : _pending_promises)
-    {
-        promise.set_value(instance_id);
-    }
-    _pending_promises.clear();
-
-    // Call the discovery callback if set
-    if (_discovery_callback)
-    {
-        _discovery_callback(instance_id);
+        // Call the discovery callback if set
+        if (_discovery_callback)
+        {
+            _discovery_callback(instance_id);
+        }
     }
 }
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

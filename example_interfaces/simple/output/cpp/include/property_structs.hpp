@@ -14,9 +14,19 @@ TODO: Get license text from stinger file
 #include "enums.hpp"
 #include "structs.hpp"
 
-struct SchoolProperty
-{
+namespace stinger {
+
+namespace gen {
+namespace simple {
+
+struct SchoolProperty {
     static SchoolProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::string name; ///< The name of the school where the person studies.
 };
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

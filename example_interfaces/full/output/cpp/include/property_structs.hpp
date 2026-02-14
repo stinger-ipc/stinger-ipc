@@ -14,19 +14,22 @@ TODO: Get license text from stinger file
 #include "enums.hpp"
 #include "structs.hpp"
 
+namespace stinger {
+
+namespace gen {
+namespace full {
+
 /**
  * My favorite number
  * 
  */
-struct FavoriteNumberProperty
-{
+struct FavoriteNumberProperty {
     static FavoriteNumberProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     int number;
 };
 
-struct FavoriteFoodsProperty
-{
+struct FavoriteFoodsProperty {
     static FavoriteFoodsProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::string drink;
@@ -34,8 +37,7 @@ struct FavoriteFoodsProperty
     std::optional<std::string> breakfast;
 };
 
-struct LunchMenuProperty
-{
+struct LunchMenuProperty {
     static LunchMenuProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     Lunch monday;
@@ -45,8 +47,7 @@ struct LunchMenuProperty
 /**
  * This is to test a property with a single string value.
  */
-struct FamilyNameProperty
-{
+struct FamilyNameProperty {
     static FamilyNameProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::string familyName;
@@ -55,8 +56,7 @@ struct FamilyNameProperty
 /**
  * This is to test a property with a single datetime value.
  */
-struct LastBreakfastTimeProperty
-{
+struct LastBreakfastTimeProperty {
     static LastBreakfastTimeProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::chrono::time_point<std::chrono::system_clock> timestamp;
@@ -65,8 +65,7 @@ struct LastBreakfastTimeProperty
 /**
  * This is to test a property with multiple datetime values.
  */
-struct LastBirthdaysProperty
-{
+struct LastBirthdaysProperty {
     static LastBirthdaysProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     std::chrono::time_point<std::chrono::system_clock> mom;
@@ -74,3 +73,9 @@ struct LastBirthdaysProperty
     std::optional<std::chrono::time_point<std::chrono::system_clock>> sister;
     std::optional<int> brothersAge; ///< The age of my brothers in years.
 };
+
+} // namespace full
+
+} // namespace gen
+
+} // namespace stinger

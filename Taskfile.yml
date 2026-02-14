@@ -184,6 +184,7 @@ tasks:
       - stingeripc/tests/*
       - stingeripc/templates/cpp/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
+      - clang-format-config.yaml
     generates:
       - example_interfaces/{{.IFACE}}/output/cpp/**
     cmds:

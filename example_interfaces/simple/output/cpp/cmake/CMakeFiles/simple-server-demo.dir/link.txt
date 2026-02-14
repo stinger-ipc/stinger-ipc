@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/simple-server-demo.dir/link.d "CMakeFiles/simple-server-demo.dir/examples/server_main.cpp.o" -o simple-server-demo  libsimple-server.a _deps/stinger-cpp-utils-build/libstinger_utils.a -lmosquitto

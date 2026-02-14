@@ -5,7 +5,6 @@
 #include <syslog.h>
 #include <chrono>
 #include <thread>
-#include "utils.hpp"
 #include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
@@ -29,8 +28,7 @@ int main(int argc, char** argv)
         SimpleDiscovery discovery(conn);
         auto serviceIdFut = discovery.GetSingleton();
         auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
-        if (serviceIdFutStatus == std::future_status::timeout)
-        {
+        if (serviceIdFutStatus == std::future_status::timeout) {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
         }
@@ -61,25 +59,18 @@ int main(int argc, char** argv)
         std::cout << "CALLING TRADE_NUMBERS" << std::endl;
         auto tradeNumbersResultFuture = client.tradeNumbers(42);
         auto tradeNumbersStatus = tradeNumbersResultFuture.wait_for(std::chrono::seconds(5));
-        if (tradeNumbersStatus == std::future_status::timeout)
-        {
+        if (tradeNumbersStatus == std::future_status::timeout) {
             std::cout << "TIMEOUT after 5 seconds waiting for TRADE_NUMBERS response." << std::endl;
-        }
-        else
-        {
+        } else {
             int returnValue;
             bool success = false;
-            try
-            {
+            try {
                 returnValue = tradeNumbersResultFuture.get();
                 success = true;
-            }
-            catch (const StingerMethodException& ex)
-            {
+            } catch (const StingerMethodException& ex) {
                 std::cout << "TRADE_NUMBERS Exception: " << ex.what() << std::endl;
             }
-            if (success)
-            {
+            if (success) {
                 std::cout << "TRADE_NUMBERS Response: "
                           << " my_number=" << returnValue << std::endl;
             }
@@ -88,8 +79,7 @@ int main(int argc, char** argv)
 
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;
 
-    while (true)
-    {
+    while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 

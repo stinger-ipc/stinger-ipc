@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, UTC
 
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
-from pyqttier.interface import IBrokerConnection
+from pyqttier.interface import stinger::utils::IConnection
 from pyqttier.message import Message
 import concurrent.futures as futures
 import asyncio
@@ -41,17 +41,19 @@ MaybeNameSignalCallbackType = Union[Callable[[Optional[str]], None], Callable[[A
 NowSignalCallbackType = Union[Callable[[datetime], None], Callable[[Any, datetime], None]]
 
 
+
 class DiscoveredInstance(BaseModel):
     instance_id: str
-
+    
     info: SignalOnlyInterfaceInfo
 
 
 class SignalOnlyClient:
 
-    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
-        """Constructor for a `SignalOnlyClient` object."""
-        self._logger = logging.getLogger("SignalOnlyClient")
+    def __init__(self, connection: stinger::utils::IConnection, instance_info: DiscoveredInstance):
+        """ Constructor for a `SignalOnlyClient` object.
+        """
+        self._logger = logging.getLogger('SignalOnlyClient')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SignalOnlyClient with %s", instance_info)
         self._conn = connection
@@ -67,20 +69,27 @@ class SignalOnlyClient:
         self._signal_recv_callbacks_for_maybe_number: List[MaybeNumberSignalCallbackType] = []
         self._signal_recv_callbacks_for_maybe_name: List[MaybeNameSignalCallbackType] = []
         self._signal_recv_callbacks_for_now: List[NowSignalCallbackType] = []
+        
+        
 
     @property
     def service_id(self) -> str:
-        """The service ID of the connected service instance."""
+        """ The service ID of the connected service instance.
+        """
         return self._service_id
 
+    
+
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
-        """Call each callback in the callback dictionary with the provided args."""
+        """ Call each callback in the callback dictionary with the provided args.
+        """
         for cb in callbacks:
             cb(**kwargs)
 
     @staticmethod
     def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
-        """Given a dictionary, reduce the dictionary so that it only has keys in the allowed list."""
+        """ Given a dictionary, reduce the dictionary so that it only has keys in the allowed list.
+        """
         filtered_args = {}
         for k, v in args.items():
             if k in allowed_args:
@@ -88,7 +97,7 @@ class SignalOnlyClient:
         return filtered_args
 
     def _receive_another_signal_signal_message(self, message: Message):
-        if message.content_type is None or message.content_type != "application/json":
+        if message.content_type is None or message.content_type != 'application/json':
             self._logger.warning("Received 'anotherSignal' signal with non-JSON content type")
             return
 
@@ -96,9 +105,8 @@ class SignalOnlyClient:
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_another_signal, **kwargs)
-
     def _receive_bark_signal_message(self, message: Message):
-        if message.content_type is None or message.content_type != "application/json":
+        if message.content_type is None or message.content_type != 'application/json':
             self._logger.warning("Received 'bark' signal with non-JSON content type")
             return
 
@@ -106,9 +114,8 @@ class SignalOnlyClient:
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_bark, **kwargs)
-
     def _receive_maybe_number_signal_message(self, message: Message):
-        if message.content_type is None or message.content_type != "application/json":
+        if message.content_type is None or message.content_type != 'application/json':
             self._logger.warning("Received 'maybe_number' signal with non-JSON content type")
             return
 
@@ -116,9 +123,8 @@ class SignalOnlyClient:
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_number, **kwargs)
-
     def _receive_maybe_name_signal_message(self, message: Message):
-        if message.content_type is None or message.content_type != "application/json":
+        if message.content_type is None or message.content_type != 'application/json':
             self._logger.warning("Received 'maybe_name' signal with non-JSON content type")
             return
 
@@ -126,9 +132,8 @@ class SignalOnlyClient:
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_maybe_name, **kwargs)
-
     def _receive_now_signal_message(self, message: Message):
-        if message.content_type is None or message.content_type != "application/json":
+        if message.content_type is None or message.content_type != 'application/json':
             self._logger.warning("Received 'now' signal with non-JSON content type")
             return
 
@@ -136,6 +141,7 @@ class SignalOnlyClient:
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_now, **kwargs)
+    
 
     def _receive_any_property_response_message(self, message: Message):
         user_properties = message.user_properties or {}
@@ -145,204 +151,213 @@ class SignalOnlyClient:
             self._logger.warning("Received error return value %s from property update: %s", return_code, debug_info)
 
     def _receive_message(self, message: Message):
-        """New MQTT messages are passed to this method, which, based on the topic,
+        """ New MQTT messages are passed to this method, which, based on the topic,
         calls the appropriate handler method for the message.
         """
         self._logger.warning("Receiving message %s, but without a handler", message)
 
+    
     def receive_another_signal(self, handler: AnotherSignalSignalCallbackType):
-        """Used as a decorator for methods which handle particular signals."""
+        """ Used as a decorator for methods which handle particular signals.
+        """
         self._signal_recv_callbacks_for_another_signal.append(handler)
         if len(self._signal_recv_callbacks_for_another_signal) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/anotherSignal".format(**self._topic_template_kwargs), self._receive_another_signal_signal_message)  # type: ignore[str-format]
+            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/anotherSignal".format(**self._topic_template_kwargs), self._receive_another_signal_signal_message) # type: ignore[str-format]
         return handler
-
+    
     def receive_bark(self, handler: BarkSignalCallbackType):
-        """Used as a decorator for methods which handle particular signals."""
+        """ Used as a decorator for methods which handle particular signals.
+        """
         self._signal_recv_callbacks_for_bark.append(handler)
         if len(self._signal_recv_callbacks_for_bark) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/bark".format(**self._topic_template_kwargs), self._receive_bark_signal_message)  # type: ignore[str-format]
+            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/bark".format(**self._topic_template_kwargs), self._receive_bark_signal_message) # type: ignore[str-format]
         return handler
-
+    
     def receive_maybe_number(self, handler: MaybeNumberSignalCallbackType):
-        """Used as a decorator for methods which handle particular signals."""
+        """ Used as a decorator for methods which handle particular signals.
+        """
         self._signal_recv_callbacks_for_maybe_number.append(handler)
         if len(self._signal_recv_callbacks_for_maybe_number) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/maybe_number".format(**self._topic_template_kwargs), self._receive_maybe_number_signal_message)  # type: ignore[str-format]
+            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/maybe_number".format(**self._topic_template_kwargs), self._receive_maybe_number_signal_message) # type: ignore[str-format]
         return handler
-
+    
     def receive_maybe_name(self, handler: MaybeNameSignalCallbackType):
-        """Used as a decorator for methods which handle particular signals."""
+        """ Used as a decorator for methods which handle particular signals.
+        """
         self._signal_recv_callbacks_for_maybe_name.append(handler)
         if len(self._signal_recv_callbacks_for_maybe_name) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/maybe_name".format(**self._topic_template_kwargs), self._receive_maybe_name_signal_message)  # type: ignore[str-format]
+            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/maybe_name".format(**self._topic_template_kwargs), self._receive_maybe_name_signal_message) # type: ignore[str-format]
         return handler
-
+    
     def receive_now(self, handler: NowSignalCallbackType):
-        """Used as a decorator for methods which handle particular signals."""
+        """ Used as a decorator for methods which handle particular signals.
+        """
         self._signal_recv_callbacks_for_now.append(handler)
         if len(self._signal_recv_callbacks_for_now) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/now".format(**self._topic_template_kwargs), self._receive_now_signal_message)  # type: ignore[str-format]
+            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/now".format(**self._topic_template_kwargs), self._receive_now_signal_message) # type: ignore[str-format]
         return handler
+    
 
+    
 
 class SignalOnlyClientBuilder:
-    """Using decorators from SignalOnlyClient doesn't work if you are trying to create multiple instances of SignalOnlyClient.
+    """ Using decorators from SignalOnlyClient doesn't work if you are trying to create multiple instances of SignalOnlyClient.
     Instead, use this builder to create a registry of callbacks, and then build clients using the registry.
 
     When ready to create a SignalOnlyClient instance, call the `build(broker, service_instance_id)` method.
     """
 
     def __init__(self):
-        """Creates a new SignalOnlyClientBuilder."""
-        self._logger = logging.getLogger("SignalOnlyClientBuilder")
-        self._signal_recv_callbacks_for_another_signal = []  # type: List[AnotherSignalSignalCallbackType]
-        self._signal_recv_callbacks_for_bark = []  # type: List[BarkSignalCallbackType]
-        self._signal_recv_callbacks_for_maybe_number = []  # type: List[MaybeNumberSignalCallbackType]
-        self._signal_recv_callbacks_for_maybe_name = []  # type: List[MaybeNameSignalCallbackType]
-        self._signal_recv_callbacks_for_now = []  # type: List[NowSignalCallbackType]
-
+        """ Creates a new SignalOnlyClientBuilder.
+        """
+        self._logger = logging.getLogger('SignalOnlyClientBuilder')
+        self._signal_recv_callbacks_for_another_signal = [] # type: List[AnotherSignalSignalCallbackType]
+        self._signal_recv_callbacks_for_bark = [] # type: List[BarkSignalCallbackType]
+        self._signal_recv_callbacks_for_maybe_number = [] # type: List[MaybeNumberSignalCallbackType]
+        self._signal_recv_callbacks_for_maybe_name = [] # type: List[MaybeNameSignalCallbackType]
+        self._signal_recv_callbacks_for_now = [] # type: List[NowSignalCallbackType]
+        
     def receive_another_signal(self, handler):
-        """Used as a decorator for methods which handle particular signals."""
-
+        """ Used as a decorator for methods which handle particular signals.
+        """
         @wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         self._signal_recv_callbacks_for_another_signal.append(wrapper)
         return wrapper
-
+    
     def receive_bark(self, handler):
-        """Used as a decorator for methods which handle particular signals."""
-
+        """ Used as a decorator for methods which handle particular signals.
+        """
         @wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         self._signal_recv_callbacks_for_bark.append(wrapper)
         return wrapper
-
+    
     def receive_maybe_number(self, handler):
-        """Used as a decorator for methods which handle particular signals."""
-
+        """ Used as a decorator for methods which handle particular signals.
+        """
         @wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         self._signal_recv_callbacks_for_maybe_number.append(wrapper)
         return wrapper
-
+    
     def receive_maybe_name(self, handler):
-        """Used as a decorator for methods which handle particular signals."""
-
+        """ Used as a decorator for methods which handle particular signals.
+        """
         @wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         self._signal_recv_callbacks_for_maybe_name.append(wrapper)
         return wrapper
-
+    
     def receive_now(self, handler):
-        """Used as a decorator for methods which handle particular signals."""
-
+        """ Used as a decorator for methods which handle particular signals.
+        """
         @wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         self._signal_recv_callbacks_for_now.append(wrapper)
         return wrapper
+    
 
-    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> SignalOnlyClient:
-        """Builds a new SignalOnlyClient."""
+    
+
+    def build(self, broker: stinger::utils::IConnection, instance_info: DiscoveredInstance, binding: Optional[Any]=None) -> SignalOnlyClient:
+        """ Builds a new SignalOnlyClient.
+        """
         self._logger.debug("Building SignalOnlyClient for service instance %s", instance_info.instance_id)
         client = SignalOnlyClient(broker, instance_info)
-
+        
         for another_signal_cb in self._signal_recv_callbacks_for_another_signal:
             if binding:
                 client.receive_another_signal(another_signal_cb.__get__(binding, binding.__class__))
             else:
                 client.receive_another_signal(another_signal_cb)
-
+        
         for bark_cb in self._signal_recv_callbacks_for_bark:
             if binding:
                 client.receive_bark(bark_cb.__get__(binding, binding.__class__))
             else:
                 client.receive_bark(bark_cb)
-
+        
         for maybe_number_cb in self._signal_recv_callbacks_for_maybe_number:
             if binding:
                 client.receive_maybe_number(maybe_number_cb.__get__(binding, binding.__class__))
             else:
                 client.receive_maybe_number(maybe_number_cb)
-
+        
         for maybe_name_cb in self._signal_recv_callbacks_for_maybe_name:
             if binding:
                 client.receive_maybe_name(maybe_name_cb.__get__(binding, binding.__class__))
             else:
                 client.receive_maybe_name(maybe_name_cb)
-
+        
         for now_cb in self._signal_recv_callbacks_for_now:
             if binding:
                 client.receive_now(now_cb.__get__(binding, binding.__class__))
             else:
                 client.receive_now(now_cb)
-
+        
+        
         return client
 
-
 class SignalOnlyClientDiscoverer:
-
-    def __init__(self, connection: IBrokerConnection, builder: Optional[SignalOnlyClientBuilder] = None, build_binding: Optional[Any] = None):
-        """Creates a new SignalOnlyClientDiscoverer."""
+    
+    def __init__(self, connection: stinger::utils::IConnection, builder: Optional[SignalOnlyClientBuilder]=None, build_binding: Optional[Any]=None):
+        """ Creates a new SignalOnlyClientDiscoverer.
+        """
         self._conn = connection
         self._builder = builder
         self._build_binding = build_binding
-        self._logger = logging.getLogger("SignalOnlyClientDiscoverer")
+        self._logger = logging.getLogger('SignalOnlyClientDiscoverer')
         self._logger.setLevel(logging.DEBUG)
-        service_discovery_topic = "{prefix}/SignalOnly/{service_id}/interface".format(
-            client_id="+",
-            service_id="+",
-            prefix="+",
-        )  # type: ignore[str-format]
+        service_discovery_topic = "{prefix}/SignalOnly/{service_id}/interface".format(client_id='+', service_id='+', prefix='+', ) # type: ignore[str-format]
         self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
         self._mutex = threading.Lock()
-        self._pending_futures: List[futures.Future] = []
+        self._pending_futures : List[futures.Future] = []
         self._removed_service_callbacks: List[Callable[[str], None]] = []
-
+        
         # For partially discovered services
-        self._discovered_interface_infos = dict()  # type: Dict[str, SignalOnlyInterfaceInfo]
+        self._discovered_interface_infos = dict() # type: Dict[str, SignalOnlyInterfaceInfo]
 
         # For fully discovered services
         self._discovered_services: Dict[str, DiscoveredInstance] = {}
         self._discovered_service_callbacks: List[Callable[[DiscoveredInstance], None]] = []
 
     def add_discovered_service_callback(self, callback: Callable[[DiscoveredInstance], None]):
-        """Adds a callback to be called when a new service is discovered."""
+        """ Adds a callback to be called when a new service is discovered.
+        """
         with self._mutex:
             for instance in self._discovered_services.values():
                 callback(instance)
             self._discovered_service_callbacks.append(callback)
 
     def add_removed_service_callback(self, callback: Callable[[str], None]):
-        """Adds a callback to be called when a service is removed."""
+        """ Adds a callback to be called when a service is removed.
+        """
         with self._mutex:
             self._removed_service_callbacks.append(callback)
 
     def get_service_instance_ids(self) -> List[str]:
-        """Returns a list of currently discovered service instance IDs."""
+        """ Returns a list of currently discovered service instance IDs.
+        """
         with self._mutex:
             return list(self._discovered_services.keys())
 
     def get_discovery_info(self, instance_id: str) -> Optional[DiscoveredInstance]:
-        """Returns the DiscoveredInstance for a discovered service instance ID, or None if not found."""
+        """ Returns the DiscoveredInstance for a discovered service instance ID, or None if not found.
+        """
         with self._mutex:
             return self._discovered_services.get(instance_id, None)
 
     def get_singleton_client(self) -> futures.Future[SignalOnlyClient]:
-        """Returns a SignalOnlyClient for the single discovered service.
+        """ Returns a SignalOnlyClient for the single discovered service.
         Raises an exception if there is not exactly one discovered service.
         """
-        fut = futures.Future()  # type: futures.Future[SignalOnlyClient]
+        fut = futures.Future() # type: futures.Future[SignalOnlyClient]
         with self._mutex:
             if len(self._discovered_services) > 0:
                 instance_info = next(iter(self._discovered_services.values()))
@@ -356,12 +371,14 @@ class SignalOnlyClientDiscoverer:
         return fut
 
     def _check_for_fully_discovered(self, instance_id: str):
-        """Checks if interface info has been discovered for the given instance ID."""
+        """ Checks if interface info has been discovered for the given instance ID.
+        """
         with self._mutex:
-            if instance_id in self._discovered_interface_infos:
+            if (instance_id in self._discovered_interface_infos):
 
                 entry = DiscoveredInstance(
                     instance_id=instance_id,
+                    
                     info=self._discovered_interface_infos[instance_id],
                 )
                 is_new_entry = not instance_id in self._discovered_services
@@ -383,7 +400,8 @@ class SignalOnlyClientDiscoverer:
                     self._logger.debug("Updated info for service: %s", instance_id)
 
     def _process_service_discovery_message(self, message: Message):
-        """Processes a service discovery message."""
+        """ Processes a service discovery message.
+        """
         self._logger.debug("Processing service discovery message on topic %s", message.topic)
         if len(message.payload) > 0:
             try:
@@ -405,8 +423,8 @@ class SignalOnlyClientDiscoverer:
                 self._logger.warning("Failed to process service discovery message: %s", e)
             self._check_for_fully_discovered(service_info.instance)
 
-        else:  # Empty payload means the service is going away
-            instance_id = message.topic.split("/")[-2]
+        else: # Empty payload means the service is going away
+            instance_id = message.topic.split('/')[-2]
             with self._mutex:
                 if instance_id in self._discovered_services:
                     self._logger.info("Service %s is going away", instance_id)
@@ -416,3 +434,4 @@ class SignalOnlyClientDiscoverer:
                         del self._discovered_interface_infos[instance_id]
                     for cb in self._removed_service_callbacks:
                         cb(instance_id)
+    

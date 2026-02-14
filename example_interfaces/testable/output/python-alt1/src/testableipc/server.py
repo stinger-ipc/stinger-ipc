@@ -19,11 +19,10 @@ from datetime import datetime, timedelta, UTC
 import isodate
 import functools
 from concurrent.futures import Future
-
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from pyqttier.interface import IBrokerConnection
+from pyqttier.interface import stinger::utils::IConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import (
@@ -37,17 +36,18 @@ from stinger_python_utils.return_codes import (
 from .interface_types import *
 
 
+
 from .property import TestablePropertyAccess
 
-T = TypeVar("T")
 
+
+T = TypeVar('T')
 
 @dataclass
 class PropertyControls(Generic[T]):
     """
     Controls for a server property.  Generic[T] must be a single value or a pydantic BaseModel for multi-argument properties.
     """
-
     mutex = threading.RLock()
     getter: Callable[[], T]
     setter: Optional[Callable[[T], None]] = None
@@ -60,12 +60,13 @@ class PropertyControls(Generic[T]):
         if self.setter is None:
             raise Exception("Property is read-only")
         self.setter(new_value)
-
+    
+ 
 
 class TestableServer:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str, property_access: TestablePropertyAccess, prefix: str):
-        self._logger = logging.getLogger(f"TestableServer:{instance_id}")
+    def __init__(self, connection: stinger::utils::IConnection, instance_id: str, property_access: TestablePropertyAccess, prefix: str):
+        self._logger = logging.getLogger(f'TestableServer:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing TestableServer instance %s", instance_id)
         self._conn = connection
@@ -75,171 +76,135 @@ class TestableServer:
             "service_id": instance_id,
             "prefix": prefix,
         }
-        self._service_advert_topic = "{prefix}/testable/{service_id}/interface".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._service_advert_topic = "{prefix}/testable/{service_id}/interface".format(**self._topic_template_kwargs) # type: ignore[str-format]
         self._re_advertise_server_interval_seconds = 120
         self._running = True
         self._conn.add_message_callback(self._receive_message)
         self._property_read_write_integer: PropertyControls[int] = PropertyControls(getter=property_access.read_write_integer_getter, setter=property_access.read_write_integer_setter, version=1)
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_integer/update".format(**self._topic_template_kwargs), self._receive_read_write_integer_update_request_message)  # type: ignore[str-format]
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_integer/update".format(**self._topic_template_kwargs), self._receive_read_write_integer_update_request_message) # type: ignore[str-format]
         self._property_read_only_integer: PropertyControls[int] = PropertyControls(getter=property_access.read_only_integer_getter, version=1)
-        self._property_read_write_optional_integer: PropertyControls[Optional[int]] = PropertyControls(
-            getter=property_access.read_write_optional_integer_getter, setter=property_access.read_write_optional_integer_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_integer/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_integer_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_two_integers: PropertyControls[ReadWriteTwoIntegersProperty] = PropertyControls(
-            getter=property_access.read_write_two_integers_getter, setter=property_access.read_write_two_integers_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_integers/update".format(**self._topic_template_kwargs), self._receive_read_write_two_integers_update_request_message)  # type: ignore[str-format]
+        self._property_read_write_optional_integer: PropertyControls[Optional[int]] = PropertyControls(getter=property_access.read_write_optional_integer_getter, setter=property_access.read_write_optional_integer_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_integer/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_integer_update_request_message) # type: ignore[str-format]
+        self._property_read_write_two_integers: PropertyControls[ReadWriteTwoIntegersProperty] = PropertyControls(getter=property_access.read_write_two_integers_getter, setter=property_access.read_write_two_integers_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_integers/update".format(**self._topic_template_kwargs), self._receive_read_write_two_integers_update_request_message) # type: ignore[str-format]
         self._property_read_only_string: PropertyControls[str] = PropertyControls(getter=property_access.read_only_string_getter, version=1)
         self._property_read_write_string: PropertyControls[str] = PropertyControls(getter=property_access.read_write_string_getter, setter=property_access.read_write_string_setter, version=1)
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_string/update".format(**self._topic_template_kwargs), self._receive_read_write_string_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_optional_string: PropertyControls[Optional[str]] = PropertyControls(
-            getter=property_access.read_write_optional_string_getter, setter=property_access.read_write_optional_string_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_string/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_string_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_two_strings: PropertyControls[ReadWriteTwoStringsProperty] = PropertyControls(
-            getter=property_access.read_write_two_strings_getter, setter=property_access.read_write_two_strings_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_strings/update".format(**self._topic_template_kwargs), self._receive_read_write_two_strings_update_request_message)  # type: ignore[str-format]
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_string/update".format(**self._topic_template_kwargs), self._receive_read_write_string_update_request_message) # type: ignore[str-format]
+        self._property_read_write_optional_string: PropertyControls[Optional[str]] = PropertyControls(getter=property_access.read_write_optional_string_getter, setter=property_access.read_write_optional_string_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_string/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_string_update_request_message) # type: ignore[str-format]
+        self._property_read_write_two_strings: PropertyControls[ReadWriteTwoStringsProperty] = PropertyControls(getter=property_access.read_write_two_strings_getter, setter=property_access.read_write_two_strings_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_strings/update".format(**self._topic_template_kwargs), self._receive_read_write_two_strings_update_request_message) # type: ignore[str-format]
         self._property_read_write_struct: PropertyControls[AllTypes] = PropertyControls(getter=property_access.read_write_struct_getter, setter=property_access.read_write_struct_setter, version=1)
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_struct/update".format(**self._topic_template_kwargs), self._receive_read_write_struct_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_optional_struct: PropertyControls[Optional[AllTypes]] = PropertyControls(
-            getter=property_access.read_write_optional_struct_getter, setter=property_access.read_write_optional_struct_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_struct/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_struct_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_two_structs: PropertyControls[ReadWriteTwoStructsProperty] = PropertyControls(
-            getter=property_access.read_write_two_structs_getter, setter=property_access.read_write_two_structs_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_structs/update".format(**self._topic_template_kwargs), self._receive_read_write_two_structs_update_request_message)  # type: ignore[str-format]
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_struct/update".format(**self._topic_template_kwargs), self._receive_read_write_struct_update_request_message) # type: ignore[str-format]
+        self._property_read_write_optional_struct: PropertyControls[Optional[AllTypes]] = PropertyControls(getter=property_access.read_write_optional_struct_getter, setter=property_access.read_write_optional_struct_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_struct/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_struct_update_request_message) # type: ignore[str-format]
+        self._property_read_write_two_structs: PropertyControls[ReadWriteTwoStructsProperty] = PropertyControls(getter=property_access.read_write_two_structs_getter, setter=property_access.read_write_two_structs_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_structs/update".format(**self._topic_template_kwargs), self._receive_read_write_two_structs_update_request_message) # type: ignore[str-format]
         self._property_read_only_enum: PropertyControls[Numbers] = PropertyControls(getter=property_access.read_only_enum_getter, version=1)
         self._property_read_write_enum: PropertyControls[Numbers] = PropertyControls(getter=property_access.read_write_enum_getter, setter=property_access.read_write_enum_setter, version=1)
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_enum/update".format(**self._topic_template_kwargs), self._receive_read_write_enum_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_optional_enum: PropertyControls[Optional[Numbers]] = PropertyControls(
-            getter=property_access.read_write_optional_enum_getter, setter=property_access.read_write_optional_enum_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_enum/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_enum_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_two_enums: PropertyControls[ReadWriteTwoEnumsProperty] = PropertyControls(
-            getter=property_access.read_write_two_enums_getter, setter=property_access.read_write_two_enums_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_enums/update".format(**self._topic_template_kwargs), self._receive_read_write_two_enums_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_datetime: PropertyControls[datetime] = PropertyControls(
-            getter=property_access.read_write_datetime_getter, setter=property_access.read_write_datetime_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_datetime/update".format(**self._topic_template_kwargs), self._receive_read_write_datetime_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_optional_datetime: PropertyControls[Optional[datetime]] = PropertyControls(
-            getter=property_access.read_write_optional_datetime_getter, setter=property_access.read_write_optional_datetime_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_datetime/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_datetime_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_two_datetimes: PropertyControls[ReadWriteTwoDatetimesProperty] = PropertyControls(
-            getter=property_access.read_write_two_datetimes_getter, setter=property_access.read_write_two_datetimes_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_datetimes/update".format(**self._topic_template_kwargs), self._receive_read_write_two_datetimes_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_duration: PropertyControls[timedelta] = PropertyControls(
-            getter=property_access.read_write_duration_getter, setter=property_access.read_write_duration_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_duration/update".format(**self._topic_template_kwargs), self._receive_read_write_duration_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_optional_duration: PropertyControls[Optional[timedelta]] = PropertyControls(
-            getter=property_access.read_write_optional_duration_getter, setter=property_access.read_write_optional_duration_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_duration/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_duration_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_two_durations: PropertyControls[ReadWriteTwoDurationsProperty] = PropertyControls(
-            getter=property_access.read_write_two_durations_getter, setter=property_access.read_write_two_durations_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_durations/update".format(**self._topic_template_kwargs), self._receive_read_write_two_durations_update_request_message)  # type: ignore[str-format]
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_enum/update".format(**self._topic_template_kwargs), self._receive_read_write_enum_update_request_message) # type: ignore[str-format]
+        self._property_read_write_optional_enum: PropertyControls[Optional[Numbers]] = PropertyControls(getter=property_access.read_write_optional_enum_getter, setter=property_access.read_write_optional_enum_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_enum/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_enum_update_request_message) # type: ignore[str-format]
+        self._property_read_write_two_enums: PropertyControls[ReadWriteTwoEnumsProperty] = PropertyControls(getter=property_access.read_write_two_enums_getter, setter=property_access.read_write_two_enums_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_enums/update".format(**self._topic_template_kwargs), self._receive_read_write_two_enums_update_request_message) # type: ignore[str-format]
+        self._property_read_write_datetime: PropertyControls[datetime] = PropertyControls(getter=property_access.read_write_datetime_getter, setter=property_access.read_write_datetime_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_datetime/update".format(**self._topic_template_kwargs), self._receive_read_write_datetime_update_request_message) # type: ignore[str-format]
+        self._property_read_write_optional_datetime: PropertyControls[Optional[datetime]] = PropertyControls(getter=property_access.read_write_optional_datetime_getter, setter=property_access.read_write_optional_datetime_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_datetime/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_datetime_update_request_message) # type: ignore[str-format]
+        self._property_read_write_two_datetimes: PropertyControls[ReadWriteTwoDatetimesProperty] = PropertyControls(getter=property_access.read_write_two_datetimes_getter, setter=property_access.read_write_two_datetimes_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_datetimes/update".format(**self._topic_template_kwargs), self._receive_read_write_two_datetimes_update_request_message) # type: ignore[str-format]
+        self._property_read_write_duration: PropertyControls[timedelta] = PropertyControls(getter=property_access.read_write_duration_getter, setter=property_access.read_write_duration_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_duration/update".format(**self._topic_template_kwargs), self._receive_read_write_duration_update_request_message) # type: ignore[str-format]
+        self._property_read_write_optional_duration: PropertyControls[Optional[timedelta]] = PropertyControls(getter=property_access.read_write_optional_duration_getter, setter=property_access.read_write_optional_duration_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_duration/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_duration_update_request_message) # type: ignore[str-format]
+        self._property_read_write_two_durations: PropertyControls[ReadWriteTwoDurationsProperty] = PropertyControls(getter=property_access.read_write_two_durations_getter, setter=property_access.read_write_two_durations_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_durations/update".format(**self._topic_template_kwargs), self._receive_read_write_two_durations_update_request_message) # type: ignore[str-format]
         self._property_read_write_binary: PropertyControls[bytes] = PropertyControls(getter=property_access.read_write_binary_getter, setter=property_access.read_write_binary_setter, version=1)
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_binary/update".format(**self._topic_template_kwargs), self._receive_read_write_binary_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_optional_binary: PropertyControls[Optional[bytes]] = PropertyControls(
-            getter=property_access.read_write_optional_binary_getter, setter=property_access.read_write_optional_binary_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_binary/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_binary_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_two_binaries: PropertyControls[ReadWriteTwoBinariesProperty] = PropertyControls(
-            getter=property_access.read_write_two_binaries_getter, setter=property_access.read_write_two_binaries_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_binaries/update".format(**self._topic_template_kwargs), self._receive_read_write_two_binaries_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_list_of_strings: PropertyControls[List[str]] = PropertyControls(
-            getter=property_access.read_write_list_of_strings_getter, setter=property_access.read_write_list_of_strings_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_list_of_strings/update".format(**self._topic_template_kwargs), self._receive_read_write_list_of_strings_update_request_message)  # type: ignore[str-format]
-        self._property_read_write_lists: PropertyControls[ReadWriteListsProperty] = PropertyControls(
-            getter=property_access.read_write_lists_getter, setter=property_access.read_write_lists_setter, version=1
-        )
-        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_lists/update".format(**self._topic_template_kwargs), self._receive_read_write_lists_update_request_message)  # type: ignore[str-format]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callWithNothing/request".format(**self._topic_template_kwargs), self._process_call_with_nothing_call)  # type: ignore[str-format]
-        self._method_call_with_nothing_handler = None  # type: Optional[Callable[[], None]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneInteger/request".format(**self._topic_template_kwargs), self._process_call_one_integer_call)  # type: ignore[str-format]
-        self._method_call_one_integer_handler = None  # type: Optional[Callable[[int], int]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalInteger/request".format(**self._topic_template_kwargs), self._process_call_optional_integer_call)  # type: ignore[str-format]
-        self._method_call_optional_integer_handler = None  # type: Optional[Callable[[Optional[int]], Optional[int]]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeIntegers/request".format(**self._topic_template_kwargs), self._process_call_three_integers_call)  # type: ignore[str-format]
-        self._method_call_three_integers_handler = None  # type: Optional[Callable[[int, int, Optional[int]], CallThreeIntegersMethodResponse]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneString/request".format(**self._topic_template_kwargs), self._process_call_one_string_call)  # type: ignore[str-format]
-        self._method_call_one_string_handler = None  # type: Optional[Callable[[str], str]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalString/request".format(**self._topic_template_kwargs), self._process_call_optional_string_call)  # type: ignore[str-format]
-        self._method_call_optional_string_handler = None  # type: Optional[Callable[[Optional[str]], Optional[str]]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeStrings/request".format(**self._topic_template_kwargs), self._process_call_three_strings_call)  # type: ignore[str-format]
-        self._method_call_three_strings_handler = None  # type: Optional[Callable[[str, Optional[str], str], CallThreeStringsMethodResponse]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneEnum/request".format(**self._topic_template_kwargs), self._process_call_one_enum_call)  # type: ignore[str-format]
-        self._method_call_one_enum_handler = None  # type: Optional[Callable[[Numbers], Numbers]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalEnum/request".format(**self._topic_template_kwargs), self._process_call_optional_enum_call)  # type: ignore[str-format]
-        self._method_call_optional_enum_handler = None  # type: Optional[Callable[[Optional[Numbers]], Optional[Numbers]]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeEnums/request".format(**self._topic_template_kwargs), self._process_call_three_enums_call)  # type: ignore[str-format]
-        self._method_call_three_enums_handler = None  # type: Optional[Callable[[Numbers, Numbers, Optional[Numbers]], CallThreeEnumsMethodResponse]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneStruct/request".format(**self._topic_template_kwargs), self._process_call_one_struct_call)  # type: ignore[str-format]
-        self._method_call_one_struct_handler = None  # type: Optional[Callable[[AllTypes], AllTypes]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalStruct/request".format(**self._topic_template_kwargs), self._process_call_optional_struct_call)  # type: ignore[str-format]
-        self._method_call_optional_struct_handler = None  # type: Optional[Callable[[Optional[AllTypes]], Optional[AllTypes]]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeStructs/request".format(**self._topic_template_kwargs), self._process_call_three_structs_call)  # type: ignore[str-format]
-        self._method_call_three_structs_handler = None  # type: Optional[Callable[[Optional[AllTypes], AllTypes, AllTypes], CallThreeStructsMethodResponse]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneDateTime/request".format(**self._topic_template_kwargs), self._process_call_one_date_time_call)  # type: ignore[str-format]
-        self._method_call_one_date_time_handler = None  # type: Optional[Callable[[datetime], datetime]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalDateTime/request".format(**self._topic_template_kwargs), self._process_call_optional_date_time_call)  # type: ignore[str-format]
-        self._method_call_optional_date_time_handler = None  # type: Optional[Callable[[Optional[datetime]], Optional[datetime]]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeDateTimes/request".format(**self._topic_template_kwargs), self._process_call_three_date_times_call)  # type: ignore[str-format]
-        self._method_call_three_date_times_handler = None  # type: Optional[Callable[[datetime, datetime, Optional[datetime]], CallThreeDateTimesMethodResponse]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneDuration/request".format(**self._topic_template_kwargs), self._process_call_one_duration_call)  # type: ignore[str-format]
-        self._method_call_one_duration_handler = None  # type: Optional[Callable[[timedelta], timedelta]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalDuration/request".format(**self._topic_template_kwargs), self._process_call_optional_duration_call)  # type: ignore[str-format]
-        self._method_call_optional_duration_handler = None  # type: Optional[Callable[[Optional[timedelta]], Optional[timedelta]]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeDurations/request".format(**self._topic_template_kwargs), self._process_call_three_durations_call)  # type: ignore[str-format]
-        self._method_call_three_durations_handler = None  # type: Optional[Callable[[timedelta, timedelta, Optional[timedelta]], CallThreeDurationsMethodResponse]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneBinary/request".format(**self._topic_template_kwargs), self._process_call_one_binary_call)  # type: ignore[str-format]
-        self._method_call_one_binary_handler = None  # type: Optional[Callable[[bytes], bytes]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalBinary/request".format(**self._topic_template_kwargs), self._process_call_optional_binary_call)  # type: ignore[str-format]
-        self._method_call_optional_binary_handler = None  # type: Optional[Callable[[Optional[bytes]], Optional[bytes]]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeBinaries/request".format(**self._topic_template_kwargs), self._process_call_three_binaries_call)  # type: ignore[str-format]
-        self._method_call_three_binaries_handler = None  # type: Optional[Callable[[bytes, bytes, Optional[bytes]], CallThreeBinariesMethodResponse]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneListOfIntegers/request".format(**self._topic_template_kwargs), self._process_call_one_list_of_integers_call)  # type: ignore[str-format]
-        self._method_call_one_list_of_integers_handler = None  # type: Optional[Callable[[List[int]], List[int]]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalListOfFloats/request".format(**self._topic_template_kwargs), self._process_call_optional_list_of_floats_call)  # type: ignore[str-format]
-        self._method_call_optional_list_of_floats_handler = None  # type: Optional[Callable[[Optional[List[float]]], Optional[List[float]]]]
-
-        self._conn.subscribe("{prefix}/testable/{service_id}/method/callTwoLists/request".format(**self._topic_template_kwargs), self._process_call_two_lists_call)  # type: ignore[str-format]
-        self._method_call_two_lists_handler = None  # type: Optional[Callable[[List[Numbers], Optional[List[str]]], CallTwoListsMethodResponse]]
-
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_binary/update".format(**self._topic_template_kwargs), self._receive_read_write_binary_update_request_message) # type: ignore[str-format]
+        self._property_read_write_optional_binary: PropertyControls[Optional[bytes]] = PropertyControls(getter=property_access.read_write_optional_binary_getter, setter=property_access.read_write_optional_binary_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_optional_binary/update".format(**self._topic_template_kwargs), self._receive_read_write_optional_binary_update_request_message) # type: ignore[str-format]
+        self._property_read_write_two_binaries: PropertyControls[ReadWriteTwoBinariesProperty] = PropertyControls(getter=property_access.read_write_two_binaries_getter, setter=property_access.read_write_two_binaries_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_two_binaries/update".format(**self._topic_template_kwargs), self._receive_read_write_two_binaries_update_request_message) # type: ignore[str-format]
+        self._property_read_write_list_of_strings: PropertyControls[List[str]] = PropertyControls(getter=property_access.read_write_list_of_strings_getter, setter=property_access.read_write_list_of_strings_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_list_of_strings/update".format(**self._topic_template_kwargs), self._receive_read_write_list_of_strings_update_request_message) # type: ignore[str-format]
+        self._property_read_write_lists: PropertyControls[ReadWriteListsProperty] = PropertyControls(getter=property_access.read_write_lists_getter, setter=property_access.read_write_lists_setter, version=1)
+        self._conn.subscribe("{prefix}/testable/{service_id}/property/read_write_lists/update".format(**self._topic_template_kwargs), self._receive_read_write_lists_update_request_message) # type: ignore[str-format]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callWithNothing/request".format(**self._topic_template_kwargs), self._process_call_with_nothing_call) # type: ignore[str-format]
+        self._method_call_with_nothing_handler = None # type: Optional[Callable[[], None]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneInteger/request".format(**self._topic_template_kwargs), self._process_call_one_integer_call) # type: ignore[str-format]
+        self._method_call_one_integer_handler = None # type: Optional[Callable[[int], int]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalInteger/request".format(**self._topic_template_kwargs), self._process_call_optional_integer_call) # type: ignore[str-format]
+        self._method_call_optional_integer_handler = None # type: Optional[Callable[[Optional[int]], Optional[int]]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeIntegers/request".format(**self._topic_template_kwargs), self._process_call_three_integers_call) # type: ignore[str-format]
+        self._method_call_three_integers_handler = None # type: Optional[Callable[[int, int, Optional[int]], CallThreeIntegersMethodResponse]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneString/request".format(**self._topic_template_kwargs), self._process_call_one_string_call) # type: ignore[str-format]
+        self._method_call_one_string_handler = None # type: Optional[Callable[[str], str]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalString/request".format(**self._topic_template_kwargs), self._process_call_optional_string_call) # type: ignore[str-format]
+        self._method_call_optional_string_handler = None # type: Optional[Callable[[Optional[str]], Optional[str]]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeStrings/request".format(**self._topic_template_kwargs), self._process_call_three_strings_call) # type: ignore[str-format]
+        self._method_call_three_strings_handler = None # type: Optional[Callable[[str, Optional[str], str], CallThreeStringsMethodResponse]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneEnum/request".format(**self._topic_template_kwargs), self._process_call_one_enum_call) # type: ignore[str-format]
+        self._method_call_one_enum_handler = None # type: Optional[Callable[[Numbers], Numbers]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalEnum/request".format(**self._topic_template_kwargs), self._process_call_optional_enum_call) # type: ignore[str-format]
+        self._method_call_optional_enum_handler = None # type: Optional[Callable[[Optional[Numbers]], Optional[Numbers]]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeEnums/request".format(**self._topic_template_kwargs), self._process_call_three_enums_call) # type: ignore[str-format]
+        self._method_call_three_enums_handler = None # type: Optional[Callable[[Numbers, Numbers, Optional[Numbers]], CallThreeEnumsMethodResponse]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneStruct/request".format(**self._topic_template_kwargs), self._process_call_one_struct_call) # type: ignore[str-format]
+        self._method_call_one_struct_handler = None # type: Optional[Callable[[AllTypes], AllTypes]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalStruct/request".format(**self._topic_template_kwargs), self._process_call_optional_struct_call) # type: ignore[str-format]
+        self._method_call_optional_struct_handler = None # type: Optional[Callable[[Optional[AllTypes]], Optional[AllTypes]]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeStructs/request".format(**self._topic_template_kwargs), self._process_call_three_structs_call) # type: ignore[str-format]
+        self._method_call_three_structs_handler = None # type: Optional[Callable[[Optional[AllTypes], AllTypes, AllTypes], CallThreeStructsMethodResponse]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneDateTime/request".format(**self._topic_template_kwargs), self._process_call_one_date_time_call) # type: ignore[str-format]
+        self._method_call_one_date_time_handler = None # type: Optional[Callable[[datetime], datetime]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalDateTime/request".format(**self._topic_template_kwargs), self._process_call_optional_date_time_call) # type: ignore[str-format]
+        self._method_call_optional_date_time_handler = None # type: Optional[Callable[[Optional[datetime]], Optional[datetime]]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeDateTimes/request".format(**self._topic_template_kwargs), self._process_call_three_date_times_call) # type: ignore[str-format]
+        self._method_call_three_date_times_handler = None # type: Optional[Callable[[datetime, datetime, Optional[datetime]], CallThreeDateTimesMethodResponse]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneDuration/request".format(**self._topic_template_kwargs), self._process_call_one_duration_call) # type: ignore[str-format]
+        self._method_call_one_duration_handler = None # type: Optional[Callable[[timedelta], timedelta]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalDuration/request".format(**self._topic_template_kwargs), self._process_call_optional_duration_call) # type: ignore[str-format]
+        self._method_call_optional_duration_handler = None # type: Optional[Callable[[Optional[timedelta]], Optional[timedelta]]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeDurations/request".format(**self._topic_template_kwargs), self._process_call_three_durations_call) # type: ignore[str-format]
+        self._method_call_three_durations_handler = None # type: Optional[Callable[[timedelta, timedelta, Optional[timedelta]], CallThreeDurationsMethodResponse]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneBinary/request".format(**self._topic_template_kwargs), self._process_call_one_binary_call) # type: ignore[str-format]
+        self._method_call_one_binary_handler = None # type: Optional[Callable[[bytes], bytes]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalBinary/request".format(**self._topic_template_kwargs), self._process_call_optional_binary_call) # type: ignore[str-format]
+        self._method_call_optional_binary_handler = None # type: Optional[Callable[[Optional[bytes]], Optional[bytes]]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callThreeBinaries/request".format(**self._topic_template_kwargs), self._process_call_three_binaries_call) # type: ignore[str-format]
+        self._method_call_three_binaries_handler = None # type: Optional[Callable[[bytes, bytes, Optional[bytes]], CallThreeBinariesMethodResponse]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOneListOfIntegers/request".format(**self._topic_template_kwargs), self._process_call_one_list_of_integers_call) # type: ignore[str-format]
+        self._method_call_one_list_of_integers_handler = None # type: Optional[Callable[[List[int]], List[int]]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callOptionalListOfFloats/request".format(**self._topic_template_kwargs), self._process_call_optional_list_of_floats_call) # type: ignore[str-format]
+        self._method_call_optional_list_of_floats_handler = None # type: Optional[Callable[[Optional[List[float]]], Optional[List[float]]]]
+        
+        self._conn.subscribe("{prefix}/testable/{service_id}/method/callTwoLists/request".format(**self._topic_template_kwargs), self._process_call_two_lists_call) # type: ignore[str-format]
+        self._method_call_two_lists_handler = None # type: Optional[Callable[[List[Numbers], Optional[List[str]]], CallTwoListsMethodResponse]]
+        
         self._publish_all_properties()
         signal.signal(signal.SIGTERM, self._signal_handler)
 
@@ -253,22 +218,22 @@ class TestableServer:
     def _signal_handler(self, signum, frame):
         self.shutdown()
 
-    def shutdown(self, timeout: float = 5.0):
+    def shutdown(self, timeout: float=5.0):
         """Gracefully shutdown the server and stop the advertisement thread."""
         if not self._running:
             return
         self._running = False
         self._conn.unpublish_retained(self._service_advert_topic)
-        if hasattr(self, "_advertise_thread") and self._advertise_thread.is_alive():
+        if hasattr(self, '_advertise_thread') and self._advertise_thread.is_alive():
             self._advertise_thread.join(timeout=timeout)
 
     @property
     def instance_id(self) -> str:
-        """The instance ID of this server instance."""
+        """ The instance ID of this server instance. """
         return self._instance_id
 
     def _loop_publishing_interface_info(self):
-        """We have a discovery topic separate from the MQTT client discovery topic.
+        """ We have a discovery topic separate from the MQTT client discovery topic.
         We publish it periodically, but with a Message Expiry interval."""
         while self._running:
             if self._conn.is_connected():
@@ -279,415 +244,312 @@ class TestableServer:
                     time_left -= 4
             else:
                 sleep(2)
-
+            
     def publish_interface_info(self):
-        """Publishes the interface info message to the interface info topic with an expiry interval."""
+        """ Publishes the interface info message to the interface info topic with an expiry interval. """
         data = TestableInterfaceInfo(
             instance=self._instance_id,
             connection_topic=(self._conn.online_topic or ""),
             timestamp=datetime.now(UTC).isoformat(),
             prefix=self._topic_template_kwargs["prefix"],
         )
-        expiry = int(self._re_advertise_server_interval_seconds * 1.2)  # slightly longer than the re-advertise interval
+        expiry = int(self._re_advertise_server_interval_seconds * 1.2) # slightly longer than the re-advertise interval
         topic = self._service_advert_topic
         self._logger.debug("Publishing interface info to %s: %s", topic, data.model_dump_json(by_alias=True))
         msg = MessageCreator.status_message(topic, data, expiry)
         self._conn.publish(msg)
 
+    
     def publish_read_write_integer_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_integer' property.
+        """ Publishes the current value of the 'read_write_integer' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_integer.mutex:
             self._property_read_write_integer.version += 1
             read_write_integer_prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_integer/value".format(**self._topic_template_kwargs), read_write_integer_prop_obj, self._property_read_write_integer.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_integer/value".format(**self._topic_template_kwargs), read_write_integer_prop_obj, self._property_read_write_integer.version)
             self._conn.publish(state_msg)
-
     def publish_read_only_integer_value(self, *_, **__):
-        """Publishes the current value of the 'read_only_integer' property.
+        """ Publishes the current value of the 'read_only_integer' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_only_integer.mutex:
             self._property_read_only_integer.version += 1
             read_only_integer_prop_obj = ReadOnlyIntegerProperty(value=self._property_read_only_integer.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_only_integer/value".format(**self._topic_template_kwargs), read_only_integer_prop_obj, self._property_read_only_integer.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_only_integer/value".format(**self._topic_template_kwargs), read_only_integer_prop_obj, self._property_read_only_integer.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_optional_integer_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_optional_integer' property.
+        """ Publishes the current value of the 'read_write_optional_integer' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_optional_integer.mutex:
             self._property_read_write_optional_integer.version += 1
             read_write_optional_integer_prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_optional_integer/value".format(**self._topic_template_kwargs),
-                read_write_optional_integer_prop_obj,
-                self._property_read_write_optional_integer.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_optional_integer/value".format(**self._topic_template_kwargs), read_write_optional_integer_prop_obj, self._property_read_write_optional_integer.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_two_integers_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_two_integers' property.
+        """ Publishes the current value of the 'read_write_two_integers' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_two_integers.mutex:
             self._property_read_write_two_integers.version += 1
             read_write_two_integers_prop_obj = self._property_read_write_two_integers.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_two_integers/value".format(**self._topic_template_kwargs),
-                read_write_two_integers_prop_obj,
-                self._property_read_write_two_integers.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_two_integers/value".format(**self._topic_template_kwargs), read_write_two_integers_prop_obj, self._property_read_write_two_integers.version)
             self._conn.publish(state_msg)
-
     def publish_read_only_string_value(self, *_, **__):
-        """Publishes the current value of the 'read_only_string' property.
+        """ Publishes the current value of the 'read_only_string' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_only_string.mutex:
             self._property_read_only_string.version += 1
             read_only_string_prop_obj = ReadOnlyStringProperty(value=self._property_read_only_string.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_only_string/value".format(**self._topic_template_kwargs), read_only_string_prop_obj, self._property_read_only_string.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_only_string/value".format(**self._topic_template_kwargs), read_only_string_prop_obj, self._property_read_only_string.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_string_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_string' property.
+        """ Publishes the current value of the 'read_write_string' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_string.mutex:
             self._property_read_write_string.version += 1
             read_write_string_prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_string/value".format(**self._topic_template_kwargs), read_write_string_prop_obj, self._property_read_write_string.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_string/value".format(**self._topic_template_kwargs), read_write_string_prop_obj, self._property_read_write_string.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_optional_string_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_optional_string' property.
+        """ Publishes the current value of the 'read_write_optional_string' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_optional_string.mutex:
             self._property_read_write_optional_string.version += 1
             read_write_optional_string_prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_optional_string/value".format(**self._topic_template_kwargs),
-                read_write_optional_string_prop_obj,
-                self._property_read_write_optional_string.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_optional_string/value".format(**self._topic_template_kwargs), read_write_optional_string_prop_obj, self._property_read_write_optional_string.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_two_strings_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_two_strings' property.
+        """ Publishes the current value of the 'read_write_two_strings' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_two_strings.mutex:
             self._property_read_write_two_strings.version += 1
             read_write_two_strings_prop_obj = self._property_read_write_two_strings.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_two_strings/value".format(**self._topic_template_kwargs),
-                read_write_two_strings_prop_obj,
-                self._property_read_write_two_strings.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_two_strings/value".format(**self._topic_template_kwargs), read_write_two_strings_prop_obj, self._property_read_write_two_strings.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_struct_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_struct' property.
+        """ Publishes the current value of the 'read_write_struct' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_struct.mutex:
             self._property_read_write_struct.version += 1
             read_write_struct_prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_struct/value".format(**self._topic_template_kwargs), read_write_struct_prop_obj, self._property_read_write_struct.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_struct/value".format(**self._topic_template_kwargs), read_write_struct_prop_obj, self._property_read_write_struct.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_optional_struct_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_optional_struct' property.
+        """ Publishes the current value of the 'read_write_optional_struct' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_optional_struct.mutex:
             self._property_read_write_optional_struct.version += 1
             read_write_optional_struct_prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_optional_struct/value".format(**self._topic_template_kwargs),
-                read_write_optional_struct_prop_obj,
-                self._property_read_write_optional_struct.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_optional_struct/value".format(**self._topic_template_kwargs), read_write_optional_struct_prop_obj, self._property_read_write_optional_struct.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_two_structs_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_two_structs' property.
+        """ Publishes the current value of the 'read_write_two_structs' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_two_structs.mutex:
             self._property_read_write_two_structs.version += 1
             read_write_two_structs_prop_obj = self._property_read_write_two_structs.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_two_structs/value".format(**self._topic_template_kwargs),
-                read_write_two_structs_prop_obj,
-                self._property_read_write_two_structs.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_two_structs/value".format(**self._topic_template_kwargs), read_write_two_structs_prop_obj, self._property_read_write_two_structs.version)
             self._conn.publish(state_msg)
-
     def publish_read_only_enum_value(self, *_, **__):
-        """Publishes the current value of the 'read_only_enum' property.
+        """ Publishes the current value of the 'read_only_enum' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_only_enum.mutex:
             self._property_read_only_enum.version += 1
             read_only_enum_prop_obj = ReadOnlyEnumProperty(value=self._property_read_only_enum.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_only_enum/value".format(**self._topic_template_kwargs), read_only_enum_prop_obj, self._property_read_only_enum.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_only_enum/value".format(**self._topic_template_kwargs), read_only_enum_prop_obj, self._property_read_only_enum.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_enum_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_enum' property.
+        """ Publishes the current value of the 'read_write_enum' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_enum.mutex:
             self._property_read_write_enum.version += 1
             read_write_enum_prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_enum/value".format(**self._topic_template_kwargs), read_write_enum_prop_obj, self._property_read_write_enum.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_enum/value".format(**self._topic_template_kwargs), read_write_enum_prop_obj, self._property_read_write_enum.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_optional_enum_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_optional_enum' property.
+        """ Publishes the current value of the 'read_write_optional_enum' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_optional_enum.mutex:
             self._property_read_write_optional_enum.version += 1
             read_write_optional_enum_prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_optional_enum/value".format(**self._topic_template_kwargs),
-                read_write_optional_enum_prop_obj,
-                self._property_read_write_optional_enum.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_optional_enum/value".format(**self._topic_template_kwargs), read_write_optional_enum_prop_obj, self._property_read_write_optional_enum.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_two_enums_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_two_enums' property.
+        """ Publishes the current value of the 'read_write_two_enums' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_two_enums.mutex:
             self._property_read_write_two_enums.version += 1
             read_write_two_enums_prop_obj = self._property_read_write_two_enums.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_two_enums/value".format(**self._topic_template_kwargs), read_write_two_enums_prop_obj, self._property_read_write_two_enums.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_two_enums/value".format(**self._topic_template_kwargs), read_write_two_enums_prop_obj, self._property_read_write_two_enums.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_datetime_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_datetime' property.
+        """ Publishes the current value of the 'read_write_datetime' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_datetime.mutex:
             self._property_read_write_datetime.version += 1
             read_write_datetime_prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_datetime/value".format(**self._topic_template_kwargs), read_write_datetime_prop_obj, self._property_read_write_datetime.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_datetime/value".format(**self._topic_template_kwargs), read_write_datetime_prop_obj, self._property_read_write_datetime.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_optional_datetime_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_optional_datetime' property.
+        """ Publishes the current value of the 'read_write_optional_datetime' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_optional_datetime.mutex:
             self._property_read_write_optional_datetime.version += 1
             read_write_optional_datetime_prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_optional_datetime/value".format(**self._topic_template_kwargs),
-                read_write_optional_datetime_prop_obj,
-                self._property_read_write_optional_datetime.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_optional_datetime/value".format(**self._topic_template_kwargs), read_write_optional_datetime_prop_obj, self._property_read_write_optional_datetime.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_two_datetimes_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_two_datetimes' property.
+        """ Publishes the current value of the 'read_write_two_datetimes' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_two_datetimes.mutex:
             self._property_read_write_two_datetimes.version += 1
             read_write_two_datetimes_prop_obj = self._property_read_write_two_datetimes.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_two_datetimes/value".format(**self._topic_template_kwargs),
-                read_write_two_datetimes_prop_obj,
-                self._property_read_write_two_datetimes.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_two_datetimes/value".format(**self._topic_template_kwargs), read_write_two_datetimes_prop_obj, self._property_read_write_two_datetimes.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_duration_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_duration' property.
+        """ Publishes the current value of the 'read_write_duration' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_duration.mutex:
             self._property_read_write_duration.version += 1
             read_write_duration_prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_duration/value".format(**self._topic_template_kwargs), read_write_duration_prop_obj, self._property_read_write_duration.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_duration/value".format(**self._topic_template_kwargs), read_write_duration_prop_obj, self._property_read_write_duration.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_optional_duration_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_optional_duration' property.
+        """ Publishes the current value of the 'read_write_optional_duration' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_optional_duration.mutex:
             self._property_read_write_optional_duration.version += 1
             read_write_optional_duration_prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_optional_duration/value".format(**self._topic_template_kwargs),
-                read_write_optional_duration_prop_obj,
-                self._property_read_write_optional_duration.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_optional_duration/value".format(**self._topic_template_kwargs), read_write_optional_duration_prop_obj, self._property_read_write_optional_duration.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_two_durations_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_two_durations' property.
+        """ Publishes the current value of the 'read_write_two_durations' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_two_durations.mutex:
             self._property_read_write_two_durations.version += 1
             read_write_two_durations_prop_obj = self._property_read_write_two_durations.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_two_durations/value".format(**self._topic_template_kwargs),
-                read_write_two_durations_prop_obj,
-                self._property_read_write_two_durations.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_two_durations/value".format(**self._topic_template_kwargs), read_write_two_durations_prop_obj, self._property_read_write_two_durations.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_binary_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_binary' property.
+        """ Publishes the current value of the 'read_write_binary' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_binary.mutex:
             self._property_read_write_binary.version += 1
             read_write_binary_prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_binary/value".format(**self._topic_template_kwargs), read_write_binary_prop_obj, self._property_read_write_binary.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_binary/value".format(**self._topic_template_kwargs), read_write_binary_prop_obj, self._property_read_write_binary.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_optional_binary_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_optional_binary' property.
+        """ Publishes the current value of the 'read_write_optional_binary' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_optional_binary.mutex:
             self._property_read_write_optional_binary.version += 1
             read_write_optional_binary_prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_optional_binary/value".format(**self._topic_template_kwargs),
-                read_write_optional_binary_prop_obj,
-                self._property_read_write_optional_binary.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_optional_binary/value".format(**self._topic_template_kwargs), read_write_optional_binary_prop_obj, self._property_read_write_optional_binary.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_two_binaries_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_two_binaries' property.
+        """ Publishes the current value of the 'read_write_two_binaries' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_two_binaries.mutex:
             self._property_read_write_two_binaries.version += 1
             read_write_two_binaries_prop_obj = self._property_read_write_two_binaries.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_two_binaries/value".format(**self._topic_template_kwargs),
-                read_write_two_binaries_prop_obj,
-                self._property_read_write_two_binaries.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_two_binaries/value".format(**self._topic_template_kwargs), read_write_two_binaries_prop_obj, self._property_read_write_two_binaries.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_list_of_strings_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_list_of_strings' property.
+        """ Publishes the current value of the 'read_write_list_of_strings' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_list_of_strings.mutex:
             self._property_read_write_list_of_strings.version += 1
             read_write_list_of_strings_prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.get_value())
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_list_of_strings/value".format(**self._topic_template_kwargs),
-                read_write_list_of_strings_prop_obj,
-                self._property_read_write_list_of_strings.version,
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_list_of_strings/value".format(**self._topic_template_kwargs), read_write_list_of_strings_prop_obj, self._property_read_write_list_of_strings.version)
             self._conn.publish(state_msg)
-
     def publish_read_write_lists_value(self, *_, **__):
-        """Publishes the current value of the 'read_write_lists' property.
+        """ Publishes the current value of the 'read_write_lists' property.
 
         Accepts unused args and kwargs to make this a usable callback for application code.
-
+        
         """
         with self._property_read_write_lists.mutex:
             self._property_read_write_lists.version += 1
             read_write_lists_prop_obj = self._property_read_write_lists.get_value()
-            state_msg = MessageCreator.property_state_message(
-                "{prefix}/testable/{service_id}/property/read_write_lists/value".format(**self._topic_template_kwargs), read_write_lists_prop_obj, self._property_read_write_lists.version
-            )
+            state_msg = MessageCreator.property_state_message("{prefix}/testable/{service_id}/property/read_write_lists/value".format(**self._topic_template_kwargs), read_write_lists_prop_obj, self._property_read_write_lists.version)
             self._conn.publish(state_msg)
 
     def _publish_all_properties(self):
-        """Publishes the current value of all properties."""
+        """ Publishes the current value of all properties.
+        """
         self.publish_read_write_integer_value()
         self.publish_read_only_integer_value()
         self.publish_read_write_optional_integer_value()
@@ -715,23 +577,23 @@ class TestableServer:
         self.publish_read_write_list_of_strings_value()
         self.publish_read_write_lists_value()
 
+    
+    
     def _receive_read_write_integer_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a4c80>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_integer/update` topic
         in order to update the `read_write_integer` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_integer.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_integer.version}' of the 'read_write_integer' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_integer.version}' of the 'read_write_integer' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -746,22 +608,21 @@ class TestableServer:
             with self._property_read_write_integer.mutex:
                 self._property_read_write_integer.version += 1
                 self._property_read_write_integer.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteIntegerProperty(value=self._property_read_write_integer.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_integer/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_integer.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_integer.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_integer.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -774,24 +635,26 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_integer.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
+    
+    
     def _receive_read_write_optional_integer_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a53a0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_optional_integer/update` topic
         in order to update the `read_write_optional_integer` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_integer.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_integer.version}' of the 'read_write_optional_integer' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_integer.version}' of the 'read_write_optional_integer' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -806,22 +669,21 @@ class TestableServer:
             with self._property_read_write_optional_integer.mutex:
                 self._property_read_write_optional_integer.version += 1
                 self._property_read_write_optional_integer.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteOptionalIntegerProperty(value=self._property_read_write_optional_integer.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_integer/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_integer.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_optional_integer.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_optional_integer.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -834,24 +696,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_integer.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_two_integers_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a4d40>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_two_integers/update` topic
         in order to update the `read_write_two_integers` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_integers.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_integers.version}' of the 'read_write_two_integers' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_integers.version}' of the 'read_write_two_integers' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -862,26 +724,25 @@ class TestableServer:
 
             recv_prop_obj = ReadWriteTwoIntegersProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: ReadWriteTwoIntegersProperty
+            prop_value = recv_prop_obj # type: ReadWriteTwoIntegersProperty
             with self._property_read_write_two_integers.mutex:
                 self._property_read_write_two_integers.version += 1
                 self._property_read_write_two_integers.set_value(prop_value)
-
-                current_prop_obj = self._property_read_write_two_integers.get_value()  # type: ReadWriteTwoIntegersProperty
-
+                
+                current_prop_obj = self._property_read_write_two_integers.get_value() # type: ReadWriteTwoIntegersProperty
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_integers/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_integers.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_two_integers.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_two_integers.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -894,24 +755,26 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_integers.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
+    
+    
     def _receive_read_write_string_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5250>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_string/update` topic
         in order to update the `read_write_string` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_string.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_string.version}' of the 'read_write_string' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_string.version}' of the 'read_write_string' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -926,22 +789,21 @@ class TestableServer:
             with self._property_read_write_string.mutex:
                 self._property_read_write_string.version += 1
                 self._property_read_write_string.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteStringProperty(value=self._property_read_write_string.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_string/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_string.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_string.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_string.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -954,24 +816,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_string.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_optional_string_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a57c0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_optional_string/update` topic
         in order to update the `read_write_optional_string` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_string.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_string.version}' of the 'read_write_optional_string' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_string.version}' of the 'read_write_optional_string' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -986,22 +848,21 @@ class TestableServer:
             with self._property_read_write_optional_string.mutex:
                 self._property_read_write_optional_string.version += 1
                 self._property_read_write_optional_string.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteOptionalStringProperty(value=self._property_read_write_optional_string.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_string/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_string.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_optional_string.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_optional_string.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1014,24 +875,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_string.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_two_strings_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5760>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_two_strings/update` topic
         in order to update the `read_write_two_strings` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_strings.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_strings.version}' of the 'read_write_two_strings' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_strings.version}' of the 'read_write_two_strings' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1042,26 +903,25 @@ class TestableServer:
 
             recv_prop_obj = ReadWriteTwoStringsProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: ReadWriteTwoStringsProperty
+            prop_value = recv_prop_obj # type: ReadWriteTwoStringsProperty
             with self._property_read_write_two_strings.mutex:
                 self._property_read_write_two_strings.version += 1
                 self._property_read_write_two_strings.set_value(prop_value)
-
-                current_prop_obj = self._property_read_write_two_strings.get_value()  # type: ReadWriteTwoStringsProperty
-
+                
+                current_prop_obj = self._property_read_write_two_strings.get_value() # type: ReadWriteTwoStringsProperty
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_strings/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_strings.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_two_strings.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_two_strings.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1074,24 +934,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_strings.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_struct_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a54c0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_struct/update` topic
         in order to update the `read_write_struct` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_struct.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_struct.version}' of the 'read_write_struct' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_struct.version}' of the 'read_write_struct' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1106,22 +966,21 @@ class TestableServer:
             with self._property_read_write_struct.mutex:
                 self._property_read_write_struct.version += 1
                 self._property_read_write_struct.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteStructProperty(value=self._property_read_write_struct.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_struct/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_struct.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_struct.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_struct.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1134,24 +993,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_struct.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_optional_struct_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbdf60320>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_optional_struct/update` topic
         in order to update the `read_write_optional_struct` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_struct.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_struct.version}' of the 'read_write_optional_struct' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_struct.version}' of the 'read_write_optional_struct' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1166,22 +1025,21 @@ class TestableServer:
             with self._property_read_write_optional_struct.mutex:
                 self._property_read_write_optional_struct.version += 1
                 self._property_read_write_optional_struct.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteOptionalStructProperty(value=self._property_read_write_optional_struct.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_struct/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_struct.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_optional_struct.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_optional_struct.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1194,24 +1052,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_struct.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_two_structs_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a55b0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_two_structs/update` topic
         in order to update the `read_write_two_structs` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_structs.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_structs.version}' of the 'read_write_two_structs' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_structs.version}' of the 'read_write_two_structs' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1222,26 +1080,25 @@ class TestableServer:
 
             recv_prop_obj = ReadWriteTwoStructsProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: ReadWriteTwoStructsProperty
+            prop_value = recv_prop_obj # type: ReadWriteTwoStructsProperty
             with self._property_read_write_two_structs.mutex:
                 self._property_read_write_two_structs.version += 1
                 self._property_read_write_two_structs.set_value(prop_value)
-
-                current_prop_obj = self._property_read_write_two_structs.get_value()  # type: ReadWriteTwoStructsProperty
-
+                
+                current_prop_obj = self._property_read_write_two_structs.get_value() # type: ReadWriteTwoStructsProperty
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_structs/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_structs.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_two_structs.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_two_structs.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1254,18 +1111,22 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_structs.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
+    
+    
     def _receive_read_write_enum_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5820>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_enum/update` topic
         in order to update the `read_write_enum` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_enum.version):
@@ -1284,22 +1145,21 @@ class TestableServer:
             with self._property_read_write_enum.mutex:
                 self._property_read_write_enum.version += 1
                 self._property_read_write_enum.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteEnumProperty(value=self._property_read_write_enum.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_enum/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_enum.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_enum.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_enum.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1312,24 +1172,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_enum.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_optional_enum_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5a00>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_optional_enum/update` topic
         in order to update the `read_write_optional_enum` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_enum.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_enum.version}' of the 'read_write_optional_enum' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_enum.version}' of the 'read_write_optional_enum' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1344,22 +1204,21 @@ class TestableServer:
             with self._property_read_write_optional_enum.mutex:
                 self._property_read_write_optional_enum.version += 1
                 self._property_read_write_optional_enum.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteOptionalEnumProperty(value=self._property_read_write_optional_enum.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_enum/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_enum.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_optional_enum.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_optional_enum.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1372,24 +1231,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_enum.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_two_enums_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5ca0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_two_enums/update` topic
         in order to update the `read_write_two_enums` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_enums.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_enums.version}' of the 'read_write_two_enums' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_enums.version}' of the 'read_write_two_enums' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1400,26 +1259,25 @@ class TestableServer:
 
             recv_prop_obj = ReadWriteTwoEnumsProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: ReadWriteTwoEnumsProperty
+            prop_value = recv_prop_obj # type: ReadWriteTwoEnumsProperty
             with self._property_read_write_two_enums.mutex:
                 self._property_read_write_two_enums.version += 1
                 self._property_read_write_two_enums.set_value(prop_value)
-
-                current_prop_obj = self._property_read_write_two_enums.get_value()  # type: ReadWriteTwoEnumsProperty
-
+                
+                current_prop_obj = self._property_read_write_two_enums.get_value() # type: ReadWriteTwoEnumsProperty
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_enums/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_enums.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_two_enums.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_two_enums.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1432,24 +1290,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_enums.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_datetime_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5fa0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_datetime/update` topic
         in order to update the `read_write_datetime` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_datetime.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_datetime.version}' of the 'read_write_datetime' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_datetime.version}' of the 'read_write_datetime' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1464,22 +1322,21 @@ class TestableServer:
             with self._property_read_write_datetime.mutex:
                 self._property_read_write_datetime.version += 1
                 self._property_read_write_datetime.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteDatetimeProperty(value=self._property_read_write_datetime.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_datetime/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_datetime.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_datetime.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_datetime.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1492,24 +1349,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_datetime.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_optional_datetime_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5af0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_optional_datetime/update` topic
         in order to update the `read_write_optional_datetime` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_datetime.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_datetime.version}' of the 'read_write_optional_datetime' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_datetime.version}' of the 'read_write_optional_datetime' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1524,22 +1381,21 @@ class TestableServer:
             with self._property_read_write_optional_datetime.mutex:
                 self._property_read_write_optional_datetime.version += 1
                 self._property_read_write_optional_datetime.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteOptionalDatetimeProperty(value=self._property_read_write_optional_datetime.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_datetime/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_datetime.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_optional_datetime.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_optional_datetime.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1552,24 +1408,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_datetime.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_two_datetimes_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5670>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_two_datetimes/update` topic
         in order to update the `read_write_two_datetimes` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_datetimes.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_datetimes.version}' of the 'read_write_two_datetimes' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_datetimes.version}' of the 'read_write_two_datetimes' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1580,26 +1436,25 @@ class TestableServer:
 
             recv_prop_obj = ReadWriteTwoDatetimesProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: ReadWriteTwoDatetimesProperty
+            prop_value = recv_prop_obj # type: ReadWriteTwoDatetimesProperty
             with self._property_read_write_two_datetimes.mutex:
                 self._property_read_write_two_datetimes.version += 1
                 self._property_read_write_two_datetimes.set_value(prop_value)
-
-                current_prop_obj = self._property_read_write_two_datetimes.get_value()  # type: ReadWriteTwoDatetimesProperty
-
+                
+                current_prop_obj = self._property_read_write_two_datetimes.get_value() # type: ReadWriteTwoDatetimesProperty
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_datetimes/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_datetimes.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_two_datetimes.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_two_datetimes.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1612,24 +1467,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_datetimes.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_duration_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a6330>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_duration/update` topic
         in order to update the `read_write_duration` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_duration.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_duration.version}' of the 'read_write_duration' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_duration.version}' of the 'read_write_duration' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1644,22 +1499,21 @@ class TestableServer:
             with self._property_read_write_duration.mutex:
                 self._property_read_write_duration.version += 1
                 self._property_read_write_duration.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteDurationProperty(value=self._property_read_write_duration.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_duration/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_duration.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_duration.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_duration.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1672,24 +1526,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_duration.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_optional_duration_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5fd0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_optional_duration/update` topic
         in order to update the `read_write_optional_duration` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_duration.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_duration.version}' of the 'read_write_optional_duration' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_duration.version}' of the 'read_write_optional_duration' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1704,22 +1558,21 @@ class TestableServer:
             with self._property_read_write_optional_duration.mutex:
                 self._property_read_write_optional_duration.version += 1
                 self._property_read_write_optional_duration.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteOptionalDurationProperty(value=self._property_read_write_optional_duration.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_duration/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_duration.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_optional_duration.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_optional_duration.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1732,24 +1585,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_duration.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_two_durations_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5df0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_two_durations/update` topic
         in order to update the `read_write_two_durations` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_durations.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_durations.version}' of the 'read_write_two_durations' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_durations.version}' of the 'read_write_two_durations' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1760,26 +1613,25 @@ class TestableServer:
 
             recv_prop_obj = ReadWriteTwoDurationsProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: ReadWriteTwoDurationsProperty
+            prop_value = recv_prop_obj # type: ReadWriteTwoDurationsProperty
             with self._property_read_write_two_durations.mutex:
                 self._property_read_write_two_durations.version += 1
                 self._property_read_write_two_durations.set_value(prop_value)
-
-                current_prop_obj = self._property_read_write_two_durations.get_value()  # type: ReadWriteTwoDurationsProperty
-
+                
+                current_prop_obj = self._property_read_write_two_durations.get_value() # type: ReadWriteTwoDurationsProperty
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_durations/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_durations.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_two_durations.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_two_durations.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1792,24 +1644,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_durations.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_binary_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a6180>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_binary/update` topic
         in order to update the `read_write_binary` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_binary.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_binary.version}' of the 'read_write_binary' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_binary.version}' of the 'read_write_binary' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1824,22 +1676,21 @@ class TestableServer:
             with self._property_read_write_binary.mutex:
                 self._property_read_write_binary.version += 1
                 self._property_read_write_binary.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteBinaryProperty(value=self._property_read_write_binary.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_binary/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_binary.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_binary.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_binary.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1852,24 +1703,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_binary.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_optional_binary_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a5c70>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_optional_binary/update` topic
         in order to update the `read_write_optional_binary` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_optional_binary.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_binary.version}' of the 'read_write_optional_binary' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_optional_binary.version}' of the 'read_write_optional_binary' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1884,22 +1735,21 @@ class TestableServer:
             with self._property_read_write_optional_binary.mutex:
                 self._property_read_write_optional_binary.version += 1
                 self._property_read_write_optional_binary.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteOptionalBinaryProperty(value=self._property_read_write_optional_binary.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_binary/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_optional_binary.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_optional_binary.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_optional_binary.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1912,24 +1762,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_optional_binary.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_two_binaries_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a6630>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_two_binaries/update` topic
         in order to update the `read_write_two_binaries` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_two_binaries.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_binaries.version}' of the 'read_write_two_binaries' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_two_binaries.version}' of the 'read_write_two_binaries' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -1940,26 +1790,25 @@ class TestableServer:
 
             recv_prop_obj = ReadWriteTwoBinariesProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: ReadWriteTwoBinariesProperty
+            prop_value = recv_prop_obj # type: ReadWriteTwoBinariesProperty
             with self._property_read_write_two_binaries.mutex:
                 self._property_read_write_two_binaries.version += 1
                 self._property_read_write_two_binaries.set_value(prop_value)
-
-                current_prop_obj = self._property_read_write_two_binaries.get_value()  # type: ReadWriteTwoBinariesProperty
-
+                
+                current_prop_obj = self._property_read_write_two_binaries.get_value() # type: ReadWriteTwoBinariesProperty
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_binaries/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_two_binaries.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_two_binaries.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_two_binaries.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -1972,24 +1821,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_two_binaries.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_list_of_strings_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a64e0>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_list_of_strings/update` topic
         in order to update the `read_write_list_of_strings` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_list_of_strings.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_list_of_strings.version}' of the 'read_write_list_of_strings' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_list_of_strings.version}' of the 'read_write_list_of_strings' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -2004,22 +1853,21 @@ class TestableServer:
             with self._property_read_write_list_of_strings.mutex:
                 self._property_read_write_list_of_strings.version += 1
                 self._property_read_write_list_of_strings.set_value(prop_value)
-
+                
                 current_prop_obj = ReadWriteListOfStringsProperty(value=self._property_read_write_list_of_strings.get_value())
-
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_list_of_strings/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_list_of_strings.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_list_of_strings.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_list_of_strings.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -2032,24 +1880,24 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_list_of_strings.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
-
+    
+    
+    
     def _receive_read_write_lists_update_request_message(self, message: Message):
-        """When the MQTT client receives a message to the `<bound method Property.update_topic of <stingeripc.components.Property object at 0x71efbd1a6780>>` topic
+        """ When the MQTT client receives a message to the `{prefix}/testable/{service_id}/property/read_write_lists/update` topic
         in order to update the `read_write_lists` property, this method is called to process that message
         and update the value of the property.
         """
-        user_properties = message.user_properties or dict()  # type: Dict[str, str]
-        prop_version_str = user_properties.get("PropertyVersion", "-1")  # type: str
+        user_properties = message.user_properties or dict() # type: Dict[str, str]
+        prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
-        correlation_id = message.correlation_data  # type: Optional[bytes]
-        response_topic = message.response_topic  # type: Optional[str]
-        content_type = message.content_type  # type: Optional[str]
+        correlation_id = message.correlation_data # type: Optional[bytes]
+        response_topic = message.response_topic # type: Optional[str]
+        content_type = message.content_type # type: Optional[str]
 
         try:
             if int(prop_version) != int(self._property_read_write_lists.version):
-                raise OutOfSyncStingerMethodException(
-                    f"Request version '{prop_version}'' does not match current version '{self._property_read_write_lists.version}' of the 'read_write_lists' property"
-                )
+                raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_read_write_lists.version}' of the 'read_write_lists' property")
 
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming application/json.  content-type will be enforced in the future.", message.topic)
@@ -2060,26 +1908,25 @@ class TestableServer:
 
             recv_prop_obj = ReadWriteListsProperty.model_validate_json(message.payload)
 
-            prop_value = recv_prop_obj  # type: ReadWriteListsProperty
+            prop_value = recv_prop_obj # type: ReadWriteListsProperty
             with self._property_read_write_lists.mutex:
                 self._property_read_write_lists.version += 1
                 self._property_read_write_lists.set_value(prop_value)
-
-                current_prop_obj = self._property_read_write_lists.get_value()  # type: ReadWriteListsProperty
-
+                
+                current_prop_obj = self._property_read_write_lists.get_value() # type: ReadWriteListsProperty
+                
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_lists/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, current_prop_obj, self._property_read_write_lists.version)
                 self._conn.publish(state_msg)
-
+            
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = MessageCreator.property_response_message(
-                        response_topic, current_prop_obj, str(self._property_read_write_lists.version), MethodReturnCode.SUCCESS.value, correlation_id
-                    )
+                    prop_resp_msg = MessageCreator.property_response_message(response_topic, current_prop_obj, str(self._property_read_write_lists.version), MethodReturnCode.SUCCESS.value, correlation_id)
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
 
+            
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
             if response_topic is not None:
@@ -2092,18 +1939,20 @@ class TestableServer:
                     return_code = MethodReturnCode.SERVER_ERROR
                 prop_resp_msg = MessageCreator.property_response_message(response_topic, prop_obj, str(self._property_read_write_lists.version), return_code.value, correlation_id, str(e))
                 self._conn.publish(prop_resp_msg)
+    
+    
 
     def _receive_message(self, message: Message):
-        """This is the callback that is called whenever any message is received on a subscribed topic."""
+        """ This is the callback that is called whenever any message is received on a subscribed topic.
+        """
         self._logger.warning("Received unexpected message: %s", message)
 
-    def emit_empty(
-        self,
-    ):
-        """Server application code should call this method to emit the 'empty' signal.
+    def emit_empty(self, ):
+        """ Server application code should call this method to emit the 'empty' signal.
 
         EmptySignalPayload is a pydantic BaseModel which will validate the arguments.
         """
+        
 
         payload = EmptySignalPayload()
         signal_topic = "{prefix}/testable/{service_id}/signal/empty".format(**self._topic_template_kwargs)
@@ -2111,12 +1960,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_int(self, value: int):
-        """Server application code should call this method to emit the 'singleInt' signal.
+        """ Server application code should call this method to emit the 'singleInt' signal.
 
         SingleIntSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, int), f"The 'value' argument must be of type int, but was {type(value)}"
+        
 
         payload = SingleIntSignalPayload(
             value=value,
@@ -2126,12 +1976,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_optional_int(self, value: Optional[int]):
-        """Server application code should call this method to emit the 'singleOptionalInt' signal.
+        """ Server application code should call this method to emit the 'singleOptionalInt' signal.
 
         SingleOptionalIntSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, int) or value is None, f"The 'value' argument must be of type Optional[int], but was {type(value)}"
+        
 
         payload = SingleOptionalIntSignalPayload(
             value=value if value is not None else None,
@@ -2141,20 +1992,23 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_three_integers(self, first: int, second: int, third: Optional[int]):
-        """Server application code should call this method to emit the 'threeIntegers' signal.
+        """ Server application code should call this method to emit the 'threeIntegers' signal.
 
         ThreeIntegersSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(first, int), f"The 'first' argument must be of type int, but was {type(first)}"
-
+        
         assert isinstance(second, int), f"The 'second' argument must be of type int, but was {type(second)}"
-
+        
         assert isinstance(third, int) or third is None, f"The 'third' argument must be of type Optional[int], but was {type(third)}"
+        
 
         payload = ThreeIntegersSignalPayload(
             first=first,
+        
             second=second,
+        
             third=third if third is not None else None,
         )
         signal_topic = "{prefix}/testable/{service_id}/signal/threeIntegers".format(**self._topic_template_kwargs)
@@ -2162,12 +2016,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_string(self, value: str):
-        """Server application code should call this method to emit the 'singleString' signal.
+        """ Server application code should call this method to emit the 'singleString' signal.
 
         SingleStringSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, str), f"The 'value' argument must be of type str, but was {type(value)}"
+        
 
         payload = SingleStringSignalPayload(
             value=value,
@@ -2177,12 +2032,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_optional_string(self, value: Optional[str]):
-        """Server application code should call this method to emit the 'singleOptionalString' signal.
+        """ Server application code should call this method to emit the 'singleOptionalString' signal.
 
         SingleOptionalStringSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, str) or value is None, f"The 'value' argument must be of type Optional[str], but was {type(value)}"
+        
 
         payload = SingleOptionalStringSignalPayload(
             value=value if value is not None else None,
@@ -2192,20 +2048,23 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_three_strings(self, first: str, second: str, third: Optional[str]):
-        """Server application code should call this method to emit the 'threeStrings' signal.
+        """ Server application code should call this method to emit the 'threeStrings' signal.
 
         ThreeStringsSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(first, str), f"The 'first' argument must be of type str, but was {type(first)}"
-
+        
         assert isinstance(second, str), f"The 'second' argument must be of type str, but was {type(second)}"
-
+        
         assert isinstance(third, str) or third is None, f"The 'third' argument must be of type Optional[str], but was {type(third)}"
+        
 
         payload = ThreeStringsSignalPayload(
             first=first,
+        
             second=second,
+        
             third=third if third is not None else None,
         )
         signal_topic = "{prefix}/testable/{service_id}/signal/threeStrings".format(**self._topic_template_kwargs)
@@ -2213,12 +2072,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_enum(self, value: Numbers):
-        """Server application code should call this method to emit the 'singleEnum' signal.
+        """ Server application code should call this method to emit the 'singleEnum' signal.
 
         SingleEnumSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, Numbers), f"The 'value' argument must be of type Numbers, but was {type(value)}"
+        
 
         payload = SingleEnumSignalPayload(
             value=value,
@@ -2228,12 +2088,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_optional_enum(self, value: Optional[Numbers]):
-        """Server application code should call this method to emit the 'singleOptionalEnum' signal.
+        """ Server application code should call this method to emit the 'singleOptionalEnum' signal.
 
         SingleOptionalEnumSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, Numbers) or value is None, f"The 'value' argument must be of type Optional[Numbers], but was {type(value)}"
+        
 
         payload = SingleOptionalEnumSignalPayload(
             value=value if value is not None else None,
@@ -2243,20 +2104,23 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_three_enums(self, first: Numbers, second: Numbers, third: Optional[Numbers]):
-        """Server application code should call this method to emit the 'threeEnums' signal.
+        """ Server application code should call this method to emit the 'threeEnums' signal.
 
         ThreeEnumsSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(first, Numbers), f"The 'first' argument must be of type Numbers, but was {type(first)}"
-
+        
         assert isinstance(second, Numbers), f"The 'second' argument must be of type Numbers, but was {type(second)}"
-
+        
         assert isinstance(third, Numbers) or third is None, f"The 'third' argument must be of type Optional[Numbers], but was {type(third)}"
+        
 
         payload = ThreeEnumsSignalPayload(
             first=first,
+        
             second=second,
+        
             third=third if third is not None else None,
         )
         signal_topic = "{prefix}/testable/{service_id}/signal/threeEnums".format(**self._topic_template_kwargs)
@@ -2264,12 +2128,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_struct(self, value: AllTypes):
-        """Server application code should call this method to emit the 'singleStruct' signal.
+        """ Server application code should call this method to emit the 'singleStruct' signal.
 
         SingleStructSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, AllTypes), f"The 'value' argument must be of type AllTypes, but was {type(value)}"
+        
 
         payload = SingleStructSignalPayload(
             value=value,
@@ -2279,12 +2144,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_optional_struct(self, value: Optional[AllTypes]):
-        """Server application code should call this method to emit the 'singleOptionalStruct' signal.
+        """ Server application code should call this method to emit the 'singleOptionalStruct' signal.
 
         SingleOptionalStructSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, AllTypes) or value is None, f"The 'value' argument must be of type Optional[AllTypes], but was {type(value)}"
+        
 
         payload = SingleOptionalStructSignalPayload(
             value=value if value is not None else None,
@@ -2294,20 +2160,23 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_three_structs(self, first: AllTypes, second: AllTypes, third: Optional[AllTypes]):
-        """Server application code should call this method to emit the 'threeStructs' signal.
+        """ Server application code should call this method to emit the 'threeStructs' signal.
 
         ThreeStructsSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(first, AllTypes), f"The 'first' argument must be of type AllTypes, but was {type(first)}"
-
+        
         assert isinstance(second, AllTypes), f"The 'second' argument must be of type AllTypes, but was {type(second)}"
-
+        
         assert isinstance(third, AllTypes) or third is None, f"The 'third' argument must be of type Optional[AllTypes], but was {type(third)}"
+        
 
         payload = ThreeStructsSignalPayload(
             first=first,
+        
             second=second,
+        
             third=third if third is not None else None,
         )
         signal_topic = "{prefix}/testable/{service_id}/signal/threeStructs".format(**self._topic_template_kwargs)
@@ -2315,12 +2184,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_date_time(self, value: datetime):
-        """Server application code should call this method to emit the 'singleDateTime' signal.
+        """ Server application code should call this method to emit the 'singleDateTime' signal.
 
         SingleDateTimeSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, datetime), f"The 'value' argument must be of type datetime, but was {type(value)}"
+        
 
         payload = SingleDateTimeSignalPayload(
             value=value,
@@ -2330,12 +2200,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_optional_datetime(self, value: Optional[datetime]):
-        """Server application code should call this method to emit the 'singleOptionalDatetime' signal.
+        """ Server application code should call this method to emit the 'singleOptionalDatetime' signal.
 
         SingleOptionalDatetimeSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, datetime) or value is None, f"The 'value' argument must be of type Optional[datetime], but was {type(value)}"
+        
 
         payload = SingleOptionalDatetimeSignalPayload(
             value=value if value is not None else None,
@@ -2345,20 +2216,23 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_three_date_times(self, first: datetime, second: datetime, third: Optional[datetime]):
-        """Server application code should call this method to emit the 'threeDateTimes' signal.
+        """ Server application code should call this method to emit the 'threeDateTimes' signal.
 
         ThreeDateTimesSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(first, datetime), f"The 'first' argument must be of type datetime, but was {type(first)}"
-
+        
         assert isinstance(second, datetime), f"The 'second' argument must be of type datetime, but was {type(second)}"
-
+        
         assert isinstance(third, datetime) or third is None, f"The 'third' argument must be of type Optional[datetime], but was {type(third)}"
+        
 
         payload = ThreeDateTimesSignalPayload(
             first=first,
+        
             second=second,
+        
             third=third if third is not None else None,
         )
         signal_topic = "{prefix}/testable/{service_id}/signal/threeDateTimes".format(**self._topic_template_kwargs)
@@ -2366,12 +2240,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_duration(self, value: timedelta):
-        """Server application code should call this method to emit the 'singleDuration' signal.
+        """ Server application code should call this method to emit the 'singleDuration' signal.
 
         SingleDurationSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, timedelta), f"The 'value' argument must be of type timedelta, but was {type(value)}"
+        
 
         payload = SingleDurationSignalPayload(
             value=value,
@@ -2381,12 +2256,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_optional_duration(self, value: Optional[timedelta]):
-        """Server application code should call this method to emit the 'singleOptionalDuration' signal.
+        """ Server application code should call this method to emit the 'singleOptionalDuration' signal.
 
         SingleOptionalDurationSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, timedelta) or value is None, f"The 'value' argument must be of type Optional[timedelta], but was {type(value)}"
+        
 
         payload = SingleOptionalDurationSignalPayload(
             value=value if value is not None else None,
@@ -2396,20 +2272,23 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_three_durations(self, first: timedelta, second: timedelta, third: Optional[timedelta]):
-        """Server application code should call this method to emit the 'threeDurations' signal.
+        """ Server application code should call this method to emit the 'threeDurations' signal.
 
         ThreeDurationsSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(first, timedelta), f"The 'first' argument must be of type timedelta, but was {type(first)}"
-
+        
         assert isinstance(second, timedelta), f"The 'second' argument must be of type timedelta, but was {type(second)}"
-
+        
         assert isinstance(third, timedelta) or third is None, f"The 'third' argument must be of type Optional[timedelta], but was {type(third)}"
+        
 
         payload = ThreeDurationsSignalPayload(
             first=first,
+        
             second=second,
+        
             third=third if third is not None else None,
         )
         signal_topic = "{prefix}/testable/{service_id}/signal/threeDurations".format(**self._topic_template_kwargs)
@@ -2417,12 +2296,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_binary(self, value: bytes):
-        """Server application code should call this method to emit the 'singleBinary' signal.
+        """ Server application code should call this method to emit the 'singleBinary' signal.
 
         SingleBinarySignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, bytes), f"The 'value' argument must be of type bytes, but was {type(value)}"
+        
 
         payload = SingleBinarySignalPayload(
             value=value,
@@ -2432,12 +2312,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_optional_binary(self, value: Optional[bytes]):
-        """Server application code should call this method to emit the 'singleOptionalBinary' signal.
+        """ Server application code should call this method to emit the 'singleOptionalBinary' signal.
 
         SingleOptionalBinarySignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(value, bytes) or value is None, f"The 'value' argument must be of type Optional[bytes], but was {type(value)}"
+        
 
         payload = SingleOptionalBinarySignalPayload(
             value=value if value is not None else None,
@@ -2447,20 +2328,23 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_three_binaries(self, first: bytes, second: bytes, third: Optional[bytes]):
-        """Server application code should call this method to emit the 'threeBinaries' signal.
+        """ Server application code should call this method to emit the 'threeBinaries' signal.
 
         ThreeBinariesSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(first, bytes), f"The 'first' argument must be of type bytes, but was {type(first)}"
-
+        
         assert isinstance(second, bytes), f"The 'second' argument must be of type bytes, but was {type(second)}"
-
+        
         assert isinstance(third, bytes) or third is None, f"The 'third' argument must be of type Optional[bytes], but was {type(third)}"
+        
 
         payload = ThreeBinariesSignalPayload(
             first=first,
+        
             second=second,
+        
             third=third if third is not None else None,
         )
         signal_topic = "{prefix}/testable/{service_id}/signal/threeBinaries".format(**self._topic_template_kwargs)
@@ -2468,12 +2352,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_array_of_integers(self, values: List[int]):
-        """Server application code should call this method to emit the 'singleArrayOfIntegers' signal.
+        """ Server application code should call this method to emit the 'singleArrayOfIntegers' signal.
 
         SingleArrayOfIntegersSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(values, list), f"The 'values' argument must be of type List[int], but was {type(values)}"
+        
 
         payload = SingleArrayOfIntegersSignalPayload(
             values=values,
@@ -2483,12 +2368,13 @@ class TestableServer:
         self._conn.publish(sig_msg)
 
     def emit_single_optional_array_of_strings(self, values: Optional[List[str]]):
-        """Server application code should call this method to emit the 'singleOptionalArrayOfStrings' signal.
+        """ Server application code should call this method to emit the 'singleOptionalArrayOfStrings' signal.
 
         SingleOptionalArrayOfStringsSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(values, list) or values is None, f"The 'values' argument must be of type Optional[List[str]], but was {type(values)}"
+        
 
         payload = SingleOptionalArrayOfStringsSignalPayload(
             values=values if values is not None else None,
@@ -2497,61 +2383,63 @@ class TestableServer:
         sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
-    def emit_array_of_every_type(
-        self,
-        first_of_integers: List[int],
-        second_of_floats: List[float],
-        third_of_strings: List[str],
-        fourth_of_enums: List[Numbers],
-        fifth_of_structs: List[Entry],
-        sixth_of_datetimes: List[datetime],
-        seventh_of_durations: List[timedelta],
-        eighth_of_binaries: List[bytes],
-    ):
-        """Server application code should call this method to emit the 'arrayOfEveryType' signal.
+    def emit_array_of_every_type(self, first_of_integers: List[int], second_of_floats: List[float], third_of_strings: List[str], fourth_of_enums: List[Numbers], fifth_of_structs: List[Entry], sixth_of_datetimes: List[datetime], seventh_of_durations: List[timedelta], eighth_of_binaries: List[bytes]):
+        """ Server application code should call this method to emit the 'arrayOfEveryType' signal.
 
         ArrayOfEveryTypeSignalPayload is a pydantic BaseModel which will validate the arguments.
         """
-
+        
         assert isinstance(first_of_integers, list), f"The 'first_of_integers' argument must be of type List[int], but was {type(first_of_integers)}"
-
+        
         assert isinstance(second_of_floats, list), f"The 'second_of_floats' argument must be of type List[float], but was {type(second_of_floats)}"
-
+        
         assert isinstance(third_of_strings, list), f"The 'third_of_strings' argument must be of type List[str], but was {type(third_of_strings)}"
-
+        
         assert isinstance(fourth_of_enums, list), f"The 'fourth_of_enums' argument must be of type List[Numbers], but was {type(fourth_of_enums)}"
-
+        
         assert isinstance(fifth_of_structs, list), f"The 'fifth_of_structs' argument must be of type List[Entry], but was {type(fifth_of_structs)}"
-
+        
         assert isinstance(sixth_of_datetimes, list), f"The 'sixth_of_datetimes' argument must be of type List[datetime], but was {type(sixth_of_datetimes)}"
-
+        
         assert isinstance(seventh_of_durations, list), f"The 'seventh_of_durations' argument must be of type List[timedelta], but was {type(seventh_of_durations)}"
-
+        
         assert isinstance(eighth_of_binaries, list), f"The 'eighth_of_binaries' argument must be of type List[bytes], but was {type(eighth_of_binaries)}"
+        
 
         payload = ArrayOfEveryTypeSignalPayload(
             first_of_integers=first_of_integers,
+        
             second_of_floats=second_of_floats,
+        
             third_of_strings=third_of_strings,
+        
             fourth_of_enums=fourth_of_enums,
+        
             fifth_of_structs=fifth_of_structs,
+        
             sixth_of_datetimes=sixth_of_datetimes,
+        
             seventh_of_durations=seventh_of_durations,
+        
             eighth_of_binaries=eighth_of_binaries,
         )
         signal_topic = "{prefix}/testable/{service_id}/signal/arrayOfEveryType".format(**self._topic_template_kwargs)
         sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
+    
+
+    
     def handle_call_with_nothing(self, handler: Callable[[], None]):
-        """This is a decorator to decorate a method that will handle the 'callWithNothing' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callWithNothing' method calls.
+        """
         if self._method_call_with_nothing_handler is None and handler is not None:
             self._method_call_with_nothing_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_with_nothing_call(self, message: Message):
-        """This processes a call to the 'callWithNothing' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callWithNothing' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -2569,15 +2457,16 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_with_nothing_handler is not None:
-            method_args = []  # type: List[Any]
-
+            method_args = [] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 self._method_call_with_nothing_handler(*method_args)
-
+                
+                
                 return_data = "{}"
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callWithNothing: %s", e)
                 if response_topic is not None:
@@ -2607,15 +2496,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callWithNothing' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_one_integer(self, handler: Callable[[int], int]):
-        """This is a decorator to decorate a method that will handle the 'callOneInteger' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOneInteger' method calls.
+        """
         if self._method_call_one_integer_handler is None and handler is not None:
             self._method_call_one_integer_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_one_integer_call(self, message: Message):
-        """This processes a call to the 'callOneInteger' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOneInteger' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -2633,20 +2524,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_one_integer_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_one_integer_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, int):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
                 ret_obj = CallOneIntegerMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneInteger: %s", e)
                 if response_topic is not None:
@@ -2676,15 +2566,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneInteger' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_optional_integer(self, handler: Callable[[Optional[int]], Optional[int]]):
-        """This is a decorator to decorate a method that will handle the 'callOptionalInteger' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOptionalInteger' method calls.
+        """
         if self._method_call_optional_integer_handler is None and handler is not None:
             self._method_call_optional_integer_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_optional_integer_call(self, message: Message):
-        """This processes a call to the 'callOptionalInteger' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOptionalInteger' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -2702,20 +2594,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_optional_integer_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_optional_integer_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, int) and return_values is not None:
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type int, but was {type(return_values)}")
                 ret_obj = CallOptionalIntegerMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalInteger: %s", e)
                 if response_topic is not None:
@@ -2745,15 +2636,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalInteger' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_three_integers(self, handler: Callable[[int, int, Optional[int]], CallThreeIntegersMethodResponse]):
-        """This is a decorator to decorate a method that will handle the 'callThreeIntegers' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callThreeIntegers' method calls.
+        """
         if self._method_call_three_integers_handler is None and handler is not None:
             self._method_call_three_integers_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_three_integers_call(self, message: Message):
-        """This processes a call to the 'callThreeIntegers' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callThreeIntegers' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -2771,21 +2664,18 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_three_integers_handler is not None:
-            method_args = [
-                payload.input1,
-                payload.input2,
-                payload.input3,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, payload.input2, payload.input3, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_three_integers_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, CallThreeIntegersMethodResponse):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeIntegersMethodResponse, but was {type(return_values)}")
                 return_data = return_values
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeIntegers: %s", e)
                 if response_topic is not None:
@@ -2815,15 +2705,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeIntegers' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_one_string(self, handler: Callable[[str], str]):
-        """This is a decorator to decorate a method that will handle the 'callOneString' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOneString' method calls.
+        """
         if self._method_call_one_string_handler is None and handler is not None:
             self._method_call_one_string_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_one_string_call(self, message: Message):
-        """This processes a call to the 'callOneString' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOneString' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -2841,20 +2733,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_one_string_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_one_string_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, str):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type str, but was {type(return_values)}")
                 ret_obj = CallOneStringMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneString: %s", e)
                 if response_topic is not None:
@@ -2884,15 +2775,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneString' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_optional_string(self, handler: Callable[[Optional[str]], Optional[str]]):
-        """This is a decorator to decorate a method that will handle the 'callOptionalString' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOptionalString' method calls.
+        """
         if self._method_call_optional_string_handler is None and handler is not None:
             self._method_call_optional_string_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_optional_string_call(self, message: Message):
-        """This processes a call to the 'callOptionalString' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOptionalString' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -2910,20 +2803,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_optional_string_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_optional_string_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, str) and return_values is not None:
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type str, but was {type(return_values)}")
                 ret_obj = CallOptionalStringMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalString: %s", e)
                 if response_topic is not None:
@@ -2953,15 +2845,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalString' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_three_strings(self, handler: Callable[[str, Optional[str], str], CallThreeStringsMethodResponse]):
-        """This is a decorator to decorate a method that will handle the 'callThreeStrings' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callThreeStrings' method calls.
+        """
         if self._method_call_three_strings_handler is None and handler is not None:
             self._method_call_three_strings_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_three_strings_call(self, message: Message):
-        """This processes a call to the 'callThreeStrings' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callThreeStrings' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -2979,21 +2873,18 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_three_strings_handler is not None:
-            method_args = [
-                payload.input1,
-                payload.input2,
-                payload.input3,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, payload.input2, payload.input3, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_three_strings_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, CallThreeStringsMethodResponse):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeStringsMethodResponse, but was {type(return_values)}")
                 return_data = return_values
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeStrings: %s", e)
                 if response_topic is not None:
@@ -3023,15 +2914,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeStrings' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_one_enum(self, handler: Callable[[Numbers], Numbers]):
-        """This is a decorator to decorate a method that will handle the 'callOneEnum' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOneEnum' method calls.
+        """
         if self._method_call_one_enum_handler is None and handler is not None:
             self._method_call_one_enum_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_one_enum_call(self, message: Message):
-        """This processes a call to the 'callOneEnum' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOneEnum' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3049,20 +2942,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_one_enum_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_one_enum_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, Numbers):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type Numbers, but was {type(return_values)}")
                 ret_obj = CallOneEnumMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneEnum: %s", e)
                 if response_topic is not None:
@@ -3092,15 +2984,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneEnum' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_optional_enum(self, handler: Callable[[Optional[Numbers]], Optional[Numbers]]):
-        """This is a decorator to decorate a method that will handle the 'callOptionalEnum' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOptionalEnum' method calls.
+        """
         if self._method_call_optional_enum_handler is None and handler is not None:
             self._method_call_optional_enum_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_optional_enum_call(self, message: Message):
-        """This processes a call to the 'callOptionalEnum' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOptionalEnum' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3118,20 +3012,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_optional_enum_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_optional_enum_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, Numbers) and return_values is not None:
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type Numbers, but was {type(return_values)}")
                 ret_obj = CallOptionalEnumMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalEnum: %s", e)
                 if response_topic is not None:
@@ -3161,15 +3054,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalEnum' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_three_enums(self, handler: Callable[[Numbers, Numbers, Optional[Numbers]], CallThreeEnumsMethodResponse]):
-        """This is a decorator to decorate a method that will handle the 'callThreeEnums' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callThreeEnums' method calls.
+        """
         if self._method_call_three_enums_handler is None and handler is not None:
             self._method_call_three_enums_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_three_enums_call(self, message: Message):
-        """This processes a call to the 'callThreeEnums' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callThreeEnums' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3187,21 +3082,18 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_three_enums_handler is not None:
-            method_args = [
-                payload.input1,
-                payload.input2,
-                payload.input3,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, payload.input2, payload.input3, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_three_enums_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, CallThreeEnumsMethodResponse):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeEnumsMethodResponse, but was {type(return_values)}")
                 return_data = return_values
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeEnums: %s", e)
                 if response_topic is not None:
@@ -3231,15 +3123,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeEnums' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_one_struct(self, handler: Callable[[AllTypes], AllTypes]):
-        """This is a decorator to decorate a method that will handle the 'callOneStruct' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOneStruct' method calls.
+        """
         if self._method_call_one_struct_handler is None and handler is not None:
             self._method_call_one_struct_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_one_struct_call(self, message: Message):
-        """This processes a call to the 'callOneStruct' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOneStruct' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3257,20 +3151,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_one_struct_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_one_struct_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, AllTypes):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type AllTypes, but was {type(return_values)}")
                 ret_obj = CallOneStructMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneStruct: %s", e)
                 if response_topic is not None:
@@ -3300,15 +3193,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneStruct' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_optional_struct(self, handler: Callable[[Optional[AllTypes]], Optional[AllTypes]]):
-        """This is a decorator to decorate a method that will handle the 'callOptionalStruct' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOptionalStruct' method calls.
+        """
         if self._method_call_optional_struct_handler is None and handler is not None:
             self._method_call_optional_struct_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_optional_struct_call(self, message: Message):
-        """This processes a call to the 'callOptionalStruct' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOptionalStruct' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3326,20 +3221,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_optional_struct_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_optional_struct_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, AllTypes) and return_values is not None:
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type AllTypes, but was {type(return_values)}")
                 ret_obj = CallOptionalStructMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalStruct: %s", e)
                 if response_topic is not None:
@@ -3369,15 +3263,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalStruct' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_three_structs(self, handler: Callable[[Optional[AllTypes], AllTypes, AllTypes], CallThreeStructsMethodResponse]):
-        """This is a decorator to decorate a method that will handle the 'callThreeStructs' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callThreeStructs' method calls.
+        """
         if self._method_call_three_structs_handler is None and handler is not None:
             self._method_call_three_structs_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_three_structs_call(self, message: Message):
-        """This processes a call to the 'callThreeStructs' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callThreeStructs' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3395,21 +3291,18 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_three_structs_handler is not None:
-            method_args = [
-                payload.input1,
-                payload.input2,
-                payload.input3,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, payload.input2, payload.input3, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_three_structs_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, CallThreeStructsMethodResponse):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeStructsMethodResponse, but was {type(return_values)}")
                 return_data = return_values
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeStructs: %s", e)
                 if response_topic is not None:
@@ -3439,15 +3332,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeStructs' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_one_date_time(self, handler: Callable[[datetime], datetime]):
-        """This is a decorator to decorate a method that will handle the 'callOneDateTime' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOneDateTime' method calls.
+        """
         if self._method_call_one_date_time_handler is None and handler is not None:
             self._method_call_one_date_time_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_one_date_time_call(self, message: Message):
-        """This processes a call to the 'callOneDateTime' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOneDateTime' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3465,20 +3360,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_one_date_time_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_one_date_time_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, datetime):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime, but was {type(return_values)}")
                 ret_obj = CallOneDateTimeMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneDateTime: %s", e)
                 if response_topic is not None:
@@ -3508,15 +3402,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneDateTime' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_optional_date_time(self, handler: Callable[[Optional[datetime]], Optional[datetime]]):
-        """This is a decorator to decorate a method that will handle the 'callOptionalDateTime' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOptionalDateTime' method calls.
+        """
         if self._method_call_optional_date_time_handler is None and handler is not None:
             self._method_call_optional_date_time_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_optional_date_time_call(self, message: Message):
-        """This processes a call to the 'callOptionalDateTime' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOptionalDateTime' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3534,20 +3430,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_optional_date_time_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_optional_date_time_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, datetime) and return_values is not None:
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type datetime, but was {type(return_values)}")
                 ret_obj = CallOptionalDateTimeMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalDateTime: %s", e)
                 if response_topic is not None:
@@ -3577,15 +3472,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalDateTime' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_three_date_times(self, handler: Callable[[datetime, datetime, Optional[datetime]], CallThreeDateTimesMethodResponse]):
-        """This is a decorator to decorate a method that will handle the 'callThreeDateTimes' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callThreeDateTimes' method calls.
+        """
         if self._method_call_three_date_times_handler is None and handler is not None:
             self._method_call_three_date_times_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_three_date_times_call(self, message: Message):
-        """This processes a call to the 'callThreeDateTimes' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callThreeDateTimes' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3603,21 +3500,18 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_three_date_times_handler is not None:
-            method_args = [
-                payload.input1,
-                payload.input2,
-                payload.input3,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, payload.input2, payload.input3, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_three_date_times_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, CallThreeDateTimesMethodResponse):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeDateTimesMethodResponse, but was {type(return_values)}")
                 return_data = return_values
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeDateTimes: %s", e)
                 if response_topic is not None:
@@ -3647,15 +3541,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeDateTimes' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_one_duration(self, handler: Callable[[timedelta], timedelta]):
-        """This is a decorator to decorate a method that will handle the 'callOneDuration' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOneDuration' method calls.
+        """
         if self._method_call_one_duration_handler is None and handler is not None:
             self._method_call_one_duration_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_one_duration_call(self, message: Message):
-        """This processes a call to the 'callOneDuration' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOneDuration' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3673,20 +3569,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_one_duration_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_one_duration_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, timedelta):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type timedelta, but was {type(return_values)}")
                 ret_obj = CallOneDurationMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneDuration: %s", e)
                 if response_topic is not None:
@@ -3716,15 +3611,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneDuration' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_optional_duration(self, handler: Callable[[Optional[timedelta]], Optional[timedelta]]):
-        """This is a decorator to decorate a method that will handle the 'callOptionalDuration' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOptionalDuration' method calls.
+        """
         if self._method_call_optional_duration_handler is None and handler is not None:
             self._method_call_optional_duration_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_optional_duration_call(self, message: Message):
-        """This processes a call to the 'callOptionalDuration' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOptionalDuration' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3742,20 +3639,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_optional_duration_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_optional_duration_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, timedelta) and return_values is not None:
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type timedelta, but was {type(return_values)}")
                 ret_obj = CallOptionalDurationMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalDuration: %s", e)
                 if response_topic is not None:
@@ -3785,15 +3681,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalDuration' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_three_durations(self, handler: Callable[[timedelta, timedelta, Optional[timedelta]], CallThreeDurationsMethodResponse]):
-        """This is a decorator to decorate a method that will handle the 'callThreeDurations' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callThreeDurations' method calls.
+        """
         if self._method_call_three_durations_handler is None and handler is not None:
             self._method_call_three_durations_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_three_durations_call(self, message: Message):
-        """This processes a call to the 'callThreeDurations' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callThreeDurations' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3811,21 +3709,18 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_three_durations_handler is not None:
-            method_args = [
-                payload.input1,
-                payload.input2,
-                payload.input3,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, payload.input2, payload.input3, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_three_durations_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, CallThreeDurationsMethodResponse):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeDurationsMethodResponse, but was {type(return_values)}")
                 return_data = return_values
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeDurations: %s", e)
                 if response_topic is not None:
@@ -3855,15 +3750,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeDurations' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_one_binary(self, handler: Callable[[bytes], bytes]):
-        """This is a decorator to decorate a method that will handle the 'callOneBinary' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOneBinary' method calls.
+        """
         if self._method_call_one_binary_handler is None and handler is not None:
             self._method_call_one_binary_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_one_binary_call(self, message: Message):
-        """This processes a call to the 'callOneBinary' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOneBinary' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3881,20 +3778,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_one_binary_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_one_binary_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, bytes):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type bytes, but was {type(return_values)}")
                 ret_obj = CallOneBinaryMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneBinary: %s", e)
                 if response_topic is not None:
@@ -3924,15 +3820,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneBinary' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_optional_binary(self, handler: Callable[[Optional[bytes]], Optional[bytes]]):
-        """This is a decorator to decorate a method that will handle the 'callOptionalBinary' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOptionalBinary' method calls.
+        """
         if self._method_call_optional_binary_handler is None and handler is not None:
             self._method_call_optional_binary_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_optional_binary_call(self, message: Message):
-        """This processes a call to the 'callOptionalBinary' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOptionalBinary' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -3950,20 +3848,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_optional_binary_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_optional_binary_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, bytes) and return_values is not None:
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type bytes, but was {type(return_values)}")
                 ret_obj = CallOptionalBinaryMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalBinary: %s", e)
                 if response_topic is not None:
@@ -3993,15 +3890,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalBinary' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_three_binaries(self, handler: Callable[[bytes, bytes, Optional[bytes]], CallThreeBinariesMethodResponse]):
-        """This is a decorator to decorate a method that will handle the 'callThreeBinaries' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callThreeBinaries' method calls.
+        """
         if self._method_call_three_binaries_handler is None and handler is not None:
             self._method_call_three_binaries_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_three_binaries_call(self, message: Message):
-        """This processes a call to the 'callThreeBinaries' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callThreeBinaries' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -4019,21 +3918,18 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_three_binaries_handler is not None:
-            method_args = [
-                payload.input1,
-                payload.input2,
-                payload.input3,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, payload.input2, payload.input3, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_three_binaries_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, CallThreeBinariesMethodResponse):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallThreeBinariesMethodResponse, but was {type(return_values)}")
                 return_data = return_values
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callThreeBinaries: %s", e)
                 if response_topic is not None:
@@ -4063,15 +3959,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callThreeBinaries' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_one_list_of_integers(self, handler: Callable[[List[int]], List[int]]):
-        """This is a decorator to decorate a method that will handle the 'callOneListOfIntegers' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOneListOfIntegers' method calls.
+        """
         if self._method_call_one_list_of_integers_handler is None and handler is not None:
             self._method_call_one_list_of_integers_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_one_list_of_integers_call(self, message: Message):
-        """This processes a call to the 'callOneListOfIntegers' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOneListOfIntegers' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -4089,20 +3987,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_one_list_of_integers_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_one_list_of_integers_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, list):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type list, but was {type(return_values)}")
                 ret_obj = CallOneListOfIntegersMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOneListOfIntegers: %s", e)
                 if response_topic is not None:
@@ -4132,15 +4029,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOneListOfIntegers' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_optional_list_of_floats(self, handler: Callable[[Optional[List[float]]], Optional[List[float]]]):
-        """This is a decorator to decorate a method that will handle the 'callOptionalListOfFloats' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callOptionalListOfFloats' method calls.
+        """
         if self._method_call_optional_list_of_floats_handler is None and handler is not None:
             self._method_call_optional_list_of_floats_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_optional_list_of_floats_call(self, message: Message):
-        """This processes a call to the 'callOptionalListOfFloats' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callOptionalListOfFloats' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -4158,20 +4057,19 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_optional_list_of_floats_handler is not None:
-            method_args = [
-                payload.input1,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_optional_list_of_floats_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, list) and return_values is not None:
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type list, but was {type(return_values)}")
                 ret_obj = CallOptionalListOfFloatsMethodResponse(output1=return_values)
                 return_data = ret_obj
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callOptionalListOfFloats: %s", e)
                 if response_topic is not None:
@@ -4201,15 +4099,17 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callOptionalListOfFloats' method")
                 self._conn.publish(err_msg)
 
+    
     def handle_call_two_lists(self, handler: Callable[[List[Numbers], Optional[List[str]]], CallTwoListsMethodResponse]):
-        """This is a decorator to decorate a method that will handle the 'callTwoLists' method calls."""
+        """ This is a decorator to decorate a method that will handle the 'callTwoLists' method calls.
+        """
         if self._method_call_two_lists_handler is None and handler is not None:
             self._method_call_two_lists_handler = handler
         else:
             raise Exception("Method handler already set")
 
     def _process_call_two_lists_call(self, message: Message):
-        """This processes a call to the 'callTwoLists' method.  It deserializes the payload to find the method arguments,
+        """ This processes a call to the 'callTwoLists' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
         try:
@@ -4227,20 +4127,18 @@ class TestableServer:
         response_topic = message.response_topic
 
         if self._method_call_two_lists_handler is not None:
-            method_args = [
-                payload.input1,
-                payload.input2,
-            ]  # type: List[Any]
-
+            method_args = [payload.input1, payload.input2, ] # type: List[Any]
+            
             return_json = ""
-            debug_msg = None  # type: Optional[str]
+            debug_msg = None # type: Optional[str]
             try:
                 return_values = self._method_call_two_lists_handler(*method_args)
-
+                
+                
                 if not isinstance(return_values, CallTwoListsMethodResponse):
                     raise ServerSerializationErrorStingerMethodException(f"The return value must be of type CallTwoListsMethodResponse, but was {type(return_values)}")
                 return_data = return_values
-
+                
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling callTwoLists: %s", e)
                 if response_topic is not None:
@@ -4270,21 +4168,24 @@ class TestableServer:
                 err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for 'callTwoLists' method")
                 self._conn.publish(err_msg)
 
+    
+    
+    
     @property
     def read_write_integer(self) -> Optional[int]:
-        """This property returns the last received (int) value for the 'read_write_integer' property.
-
+        """ This property returns the last received (int) value for the 'read_write_integer' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_integer.get_value()
 
     @read_write_integer.setter
     def read_write_integer(self, value: int):
-        """This property sets (publishes) a new int value for the 'read_write_integer' property.
-
+        """ This property sets (publishes) a new int value for the 'read_write_integer' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, int):
+        if (not isinstance(value, int)):
             raise ValueError(f"The value must be int .")
 
         value_updated = False
@@ -4297,32 +4198,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_integer/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_integer.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_integer(self, value: int):
-        """This method sets (publishes) a new value for the 'read_write_integer' property."""
+        """ This method sets (publishes) a new value for the 'read_write_integer' property.
+        """
         if not isinstance(value, int):
             raise ValueError(f"The 'value' value must be int.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_integer = obj
 
+    
+    
+    
     @property
     def read_only_integer(self) -> Optional[int]:
-        """This property returns the last received (int) value for the 'read_only_integer' property.
-
+        """ This property returns the last received (int) value for the 'read_only_integer' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_only_integer.get_value()
 
     @read_only_integer.setter
     def read_only_integer(self, value: int):
-        """This property sets (publishes) a new int value for the 'read_only_integer' property.
-
+        """ This property sets (publishes) a new int value for the 'read_only_integer' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, int):
+        if (not isinstance(value, int)):
             raise ValueError(f"The value must be int .")
 
         value_updated = False
@@ -4335,29 +4243,36 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_only_integer/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_only_integer.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_only_integer(self, value: int):
-        """This method sets (publishes) a new value for the 'read_only_integer' property."""
+        """ This method sets (publishes) a new value for the 'read_only_integer' property.
+        """
         if not isinstance(value, int):
             raise ValueError(f"The 'value' value must be int.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_only_integer = obj
 
+    
+    
+    
     @property
     def read_write_optional_integer(self) -> Optional[int]:
-        """This property returns the last received (Optional[int]) value for the 'read_write_optional_integer' property.
-
+        """ This property returns the last received (Optional[int]) value for the 'read_write_optional_integer' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_optional_integer.get_value()
 
     @read_write_optional_integer.setter
     def read_write_optional_integer(self, value: Optional[int]):
-        """This property sets (publishes) a new Optional[int] value for the 'read_write_optional_integer' property.
-
+        """ This property sets (publishes) a new Optional[int] value for the 'read_write_optional_integer' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if (value is not None) and (not isinstance(value, int)):
@@ -4373,32 +4288,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_integer/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_integer.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_optional_integer(self, value: Optional[int]):
-        """This method sets (publishes) a new value for the 'read_write_optional_integer' property."""
+        """ This method sets (publishes) a new value for the 'read_write_optional_integer' property.
+        """
         if not isinstance(value, int) and value is not None:
             raise ValueError(f"The 'value' value must be Optional[int].")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_optional_integer = obj
 
+    
+    
+     
     @property
     def read_write_two_integers(self) -> ReadWriteTwoIntegersProperty:
-        """This property returns the last received value for the 'read_write_two_integers' property.
-        The 'read_write_two_integers' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'read_write_two_integers' property.
+        The 'read_write_two_integers' property contains multiple values, so we operate on the full 
         `ReadWriteTwoIntegersProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_read_write_two_integers.get_value()
 
     @read_write_two_integers.setter
     def read_write_two_integers(self, value: ReadWriteTwoIntegersProperty):
-        """This property sets (publishes) a new value structure for the 'read_write_two_integers' property.
-
+        """ This property sets (publishes) a new value structure for the 'read_write_two_integers' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, ReadWriteTwoIntegersProperty):
@@ -4413,37 +4335,47 @@ class TestableServer:
                     prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_integers/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_integers.get_value(), self._property_read_write_two_integers.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_read_write_two_integers(self, first: int, second: Optional[int]):
-        """This method sets (publishes) a new value for the 'read_write_two_integers' property."""
+        """ This method sets (publishes) a new value for the 'read_write_two_integers' property.
+        """
         if not isinstance(first, int):
             raise ValueError(f"The 'first' value must be int.")
         if not isinstance(second, int) and second is not None:
             raise ValueError(f"The 'second' value must be Optional[int].")
 
+        
         obj = ReadWriteTwoIntegersProperty(
             first=first,
+            
             second=second,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_two_integers = obj
 
+    
+    
+    
     @property
     def read_only_string(self) -> Optional[str]:
-        """This property returns the last received (str) value for the 'read_only_string' property.
-
+        """ This property returns the last received (str) value for the 'read_only_string' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_only_string.get_value()
 
     @read_only_string.setter
     def read_only_string(self, value: str):
-        """This property sets (publishes) a new str value for the 'read_only_string' property.
-
+        """ This property sets (publishes) a new str value for the 'read_only_string' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, str):
+        if (not isinstance(value, str)):
             raise ValueError(f"The value must be str .")
 
         value_updated = False
@@ -4456,32 +4388,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_only_string/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_only_string.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_only_string(self, value: str):
-        """This method sets (publishes) a new value for the 'read_only_string' property."""
+        """ This method sets (publishes) a new value for the 'read_only_string' property.
+        """
         if not isinstance(value, str):
             raise ValueError(f"The 'value' value must be str.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_only_string = obj
 
+    
+    
+    
     @property
     def read_write_string(self) -> Optional[str]:
-        """This property returns the last received (str) value for the 'read_write_string' property.
-
+        """ This property returns the last received (str) value for the 'read_write_string' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_string.get_value()
 
     @read_write_string.setter
     def read_write_string(self, value: str):
-        """This property sets (publishes) a new str value for the 'read_write_string' property.
-
+        """ This property sets (publishes) a new str value for the 'read_write_string' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, str):
+        if (not isinstance(value, str)):
             raise ValueError(f"The value must be str .")
 
         value_updated = False
@@ -4494,29 +4433,36 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_string/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_string.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_string(self, value: str):
-        """This method sets (publishes) a new value for the 'read_write_string' property."""
+        """ This method sets (publishes) a new value for the 'read_write_string' property.
+        """
         if not isinstance(value, str):
             raise ValueError(f"The 'value' value must be str.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_string = obj
 
+    
+    
+    
     @property
     def read_write_optional_string(self) -> Optional[str]:
-        """This property returns the last received (Optional[str]) value for the 'read_write_optional_string' property.
-
+        """ This property returns the last received (Optional[str]) value for the 'read_write_optional_string' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_optional_string.get_value()
 
     @read_write_optional_string.setter
     def read_write_optional_string(self, value: Optional[str]):
-        """This property sets (publishes) a new Optional[str] value for the 'read_write_optional_string' property.
-
+        """ This property sets (publishes) a new Optional[str] value for the 'read_write_optional_string' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if (value is not None) and (not isinstance(value, str)):
@@ -4532,32 +4478,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_string/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_string.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_optional_string(self, value: Optional[str]):
-        """This method sets (publishes) a new value for the 'read_write_optional_string' property."""
+        """ This method sets (publishes) a new value for the 'read_write_optional_string' property.
+        """
         if not isinstance(value, str) and value is not None:
             raise ValueError(f"The 'value' value must be Optional[str].")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_optional_string = obj
 
+    
+    
+     
     @property
     def read_write_two_strings(self) -> ReadWriteTwoStringsProperty:
-        """This property returns the last received value for the 'read_write_two_strings' property.
-        The 'read_write_two_strings' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'read_write_two_strings' property.
+        The 'read_write_two_strings' property contains multiple values, so we operate on the full 
         `ReadWriteTwoStringsProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_read_write_two_strings.get_value()
 
     @read_write_two_strings.setter
     def read_write_two_strings(self, value: ReadWriteTwoStringsProperty):
-        """This property sets (publishes) a new value structure for the 'read_write_two_strings' property.
-
+        """ This property sets (publishes) a new value structure for the 'read_write_two_strings' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, ReadWriteTwoStringsProperty):
@@ -4572,37 +4525,47 @@ class TestableServer:
                     prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_strings/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_strings.get_value(), self._property_read_write_two_strings.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_read_write_two_strings(self, first: str, second: Optional[str]):
-        """This method sets (publishes) a new value for the 'read_write_two_strings' property."""
+        """ This method sets (publishes) a new value for the 'read_write_two_strings' property.
+        """
         if not isinstance(first, str):
             raise ValueError(f"The 'first' value must be str.")
         if not isinstance(second, str) and second is not None:
             raise ValueError(f"The 'second' value must be Optional[str].")
 
+        
         obj = ReadWriteTwoStringsProperty(
             first=first,
+            
             second=second,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_two_strings = obj
 
+    
+    
+    
     @property
     def read_write_struct(self) -> Optional[AllTypes]:
-        """This property returns the last received (AllTypes) value for the 'read_write_struct' property.
-
+        """ This property returns the last received (AllTypes) value for the 'read_write_struct' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_struct.get_value()
 
     @read_write_struct.setter
     def read_write_struct(self, value: AllTypes):
-        """This property sets (publishes) a new AllTypes value for the 'read_write_struct' property.
-
+        """ This property sets (publishes) a new AllTypes value for the 'read_write_struct' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, AllTypes):
+        if (not isinstance(value, AllTypes)):
             raise ValueError(f"The value must be AllTypes .")
 
         value_updated = False
@@ -4615,29 +4578,36 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_struct/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_struct.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_struct(self, value: AllTypes):
-        """This method sets (publishes) a new value for the 'read_write_struct' property."""
+        """ This method sets (publishes) a new value for the 'read_write_struct' property.
+        """
         if not isinstance(value, AllTypes):
             raise ValueError(f"The 'value' value must be AllTypes.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_struct = obj
 
+    
+    
+    
     @property
     def read_write_optional_struct(self) -> Optional[AllTypes]:
-        """This property returns the last received (Optional[AllTypes]) value for the 'read_write_optional_struct' property.
-
+        """ This property returns the last received (Optional[AllTypes]) value for the 'read_write_optional_struct' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_optional_struct.get_value()
 
     @read_write_optional_struct.setter
     def read_write_optional_struct(self, value: Optional[AllTypes]):
-        """This property sets (publishes) a new Optional[AllTypes] value for the 'read_write_optional_struct' property.
-
+        """ This property sets (publishes) a new Optional[AllTypes] value for the 'read_write_optional_struct' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if (value is not None) and (not isinstance(value, AllTypes)):
@@ -4653,32 +4623,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_struct/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_struct.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_optional_struct(self, value: Optional[AllTypes]):
-        """This method sets (publishes) a new value for the 'read_write_optional_struct' property."""
+        """ This method sets (publishes) a new value for the 'read_write_optional_struct' property.
+        """
         if not isinstance(value, AllTypes) and value is not None:
             raise ValueError(f"The 'value' value must be Optional[AllTypes].")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_optional_struct = obj
 
+    
+    
+     
     @property
     def read_write_two_structs(self) -> ReadWriteTwoStructsProperty:
-        """This property returns the last received value for the 'read_write_two_structs' property.
-        The 'read_write_two_structs' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'read_write_two_structs' property.
+        The 'read_write_two_structs' property contains multiple values, so we operate on the full 
         `ReadWriteTwoStructsProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_read_write_two_structs.get_value()
 
     @read_write_two_structs.setter
     def read_write_two_structs(self, value: ReadWriteTwoStructsProperty):
-        """This property sets (publishes) a new value structure for the 'read_write_two_structs' property.
-
+        """ This property sets (publishes) a new value structure for the 'read_write_two_structs' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, ReadWriteTwoStructsProperty):
@@ -4693,37 +4670,47 @@ class TestableServer:
                     prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_structs/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_structs.get_value(), self._property_read_write_two_structs.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_read_write_two_structs(self, first: AllTypes, second: Optional[AllTypes]):
-        """This method sets (publishes) a new value for the 'read_write_two_structs' property."""
+        """ This method sets (publishes) a new value for the 'read_write_two_structs' property.
+        """
         if not isinstance(first, AllTypes):
             raise ValueError(f"The 'first' value must be AllTypes.")
         if not isinstance(second, AllTypes) and second is not None:
             raise ValueError(f"The 'second' value must be Optional[AllTypes].")
 
+        
         obj = ReadWriteTwoStructsProperty(
             first=first,
+            
             second=second,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_two_structs = obj
 
+    
+    
+    
     @property
     def read_only_enum(self) -> Optional[Numbers]:
-        """This property returns the last received (Numbers) value for the 'read_only_enum' property.
-
+        """ This property returns the last received (Numbers) value for the 'read_only_enum' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_only_enum.get_value()
 
     @read_only_enum.setter
     def read_only_enum(self, value: Numbers):
-        """This property sets (publishes) a new Numbers value for the 'read_only_enum' property.
-
+        """ This property sets (publishes) a new Numbers value for the 'read_only_enum' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, Numbers):
+        if (not isinstance(value, Numbers)):
             raise ValueError(f"The value must be Numbers .")
 
         value_updated = False
@@ -4736,32 +4723,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_only_enum/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_only_enum.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_only_enum(self, value: Numbers):
-        """This method sets (publishes) a new value for the 'read_only_enum' property."""
+        """ This method sets (publishes) a new value for the 'read_only_enum' property.
+        """
         if not isinstance(value, Numbers):
             raise ValueError(f"The 'value' value must be Numbers.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_only_enum = obj
 
+    
+    
+    
     @property
     def read_write_enum(self) -> Optional[Numbers]:
-        """This property returns the last received (Numbers) value for the 'read_write_enum' property.
-
+        """ This property returns the last received (Numbers) value for the 'read_write_enum' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_enum.get_value()
 
     @read_write_enum.setter
     def read_write_enum(self, value: Numbers):
-        """This property sets (publishes) a new Numbers value for the 'read_write_enum' property.
-
+        """ This property sets (publishes) a new Numbers value for the 'read_write_enum' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, Numbers):
+        if (not isinstance(value, Numbers)):
             raise ValueError(f"The value must be Numbers .")
 
         value_updated = False
@@ -4774,29 +4768,36 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_enum/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_enum.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_enum(self, value: Numbers):
-        """This method sets (publishes) a new value for the 'read_write_enum' property."""
+        """ This method sets (publishes) a new value for the 'read_write_enum' property.
+        """
         if not isinstance(value, Numbers):
             raise ValueError(f"The 'value' value must be Numbers.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_enum = obj
 
+    
+    
+    
     @property
     def read_write_optional_enum(self) -> Optional[Numbers]:
-        """This property returns the last received (Optional[Numbers]) value for the 'read_write_optional_enum' property.
-
+        """ This property returns the last received (Optional[Numbers]) value for the 'read_write_optional_enum' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_optional_enum.get_value()
 
     @read_write_optional_enum.setter
     def read_write_optional_enum(self, value: Optional[Numbers]):
-        """This property sets (publishes) a new Optional[Numbers] value for the 'read_write_optional_enum' property.
-
+        """ This property sets (publishes) a new Optional[Numbers] value for the 'read_write_optional_enum' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if (value is not None) and (not isinstance(value, Numbers)):
@@ -4812,32 +4813,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_enum/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_enum.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_optional_enum(self, value: Optional[Numbers]):
-        """This method sets (publishes) a new value for the 'read_write_optional_enum' property."""
+        """ This method sets (publishes) a new value for the 'read_write_optional_enum' property.
+        """
         if not isinstance(value, Numbers) and value is not None:
             raise ValueError(f"The 'value' value must be Optional[Numbers].")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_optional_enum = obj
 
+    
+    
+     
     @property
     def read_write_two_enums(self) -> ReadWriteTwoEnumsProperty:
-        """This property returns the last received value for the 'read_write_two_enums' property.
-        The 'read_write_two_enums' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'read_write_two_enums' property.
+        The 'read_write_two_enums' property contains multiple values, so we operate on the full 
         `ReadWriteTwoEnumsProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_read_write_two_enums.get_value()
 
     @read_write_two_enums.setter
     def read_write_two_enums(self, value: ReadWriteTwoEnumsProperty):
-        """This property sets (publishes) a new value structure for the 'read_write_two_enums' property.
-
+        """ This property sets (publishes) a new value structure for the 'read_write_two_enums' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, ReadWriteTwoEnumsProperty):
@@ -4852,37 +4860,47 @@ class TestableServer:
                     prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_enums/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_enums.get_value(), self._property_read_write_two_enums.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_read_write_two_enums(self, first: Numbers, second: Optional[Numbers]):
-        """This method sets (publishes) a new value for the 'read_write_two_enums' property."""
+        """ This method sets (publishes) a new value for the 'read_write_two_enums' property.
+        """
         if not isinstance(first, Numbers):
             raise ValueError(f"The 'first' value must be Numbers.")
         if not isinstance(second, Numbers) and second is not None:
             raise ValueError(f"The 'second' value must be Optional[Numbers].")
 
+        
         obj = ReadWriteTwoEnumsProperty(
             first=first,
+            
             second=second,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_two_enums = obj
 
+    
+    
+    
     @property
     def read_write_datetime(self) -> Optional[datetime]:
-        """This property returns the last received (datetime) value for the 'read_write_datetime' property.
-
+        """ This property returns the last received (datetime) value for the 'read_write_datetime' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_datetime.get_value()
 
     @read_write_datetime.setter
     def read_write_datetime(self, value: datetime):
-        """This property sets (publishes) a new datetime value for the 'read_write_datetime' property.
-
+        """ This property sets (publishes) a new datetime value for the 'read_write_datetime' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, datetime):
+        if (not isinstance(value, datetime)):
             raise ValueError(f"The value must be datetime .")
 
         value_updated = False
@@ -4895,29 +4913,36 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_datetime/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_datetime.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_datetime(self, value: datetime):
-        """This method sets (publishes) a new value for the 'read_write_datetime' property."""
+        """ This method sets (publishes) a new value for the 'read_write_datetime' property.
+        """
         if not isinstance(value, datetime):
             raise ValueError(f"The 'value' value must be datetime.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_datetime = obj
 
+    
+    
+    
     @property
     def read_write_optional_datetime(self) -> Optional[datetime]:
-        """This property returns the last received (Optional[datetime]) value for the 'read_write_optional_datetime' property.
-
+        """ This property returns the last received (Optional[datetime]) value for the 'read_write_optional_datetime' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_optional_datetime.get_value()
 
     @read_write_optional_datetime.setter
     def read_write_optional_datetime(self, value: Optional[datetime]):
-        """This property sets (publishes) a new Optional[datetime] value for the 'read_write_optional_datetime' property.
-
+        """ This property sets (publishes) a new Optional[datetime] value for the 'read_write_optional_datetime' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if (value is not None) and (not isinstance(value, datetime)):
@@ -4933,32 +4958,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_datetime/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_datetime.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_optional_datetime(self, value: Optional[datetime]):
-        """This method sets (publishes) a new value for the 'read_write_optional_datetime' property."""
+        """ This method sets (publishes) a new value for the 'read_write_optional_datetime' property.
+        """
         if not isinstance(value, datetime) and value is not None:
             raise ValueError(f"The 'value' value must be Optional[datetime].")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_optional_datetime = obj
 
+    
+    
+     
     @property
     def read_write_two_datetimes(self) -> ReadWriteTwoDatetimesProperty:
-        """This property returns the last received value for the 'read_write_two_datetimes' property.
-        The 'read_write_two_datetimes' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'read_write_two_datetimes' property.
+        The 'read_write_two_datetimes' property contains multiple values, so we operate on the full 
         `ReadWriteTwoDatetimesProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_read_write_two_datetimes.get_value()
 
     @read_write_two_datetimes.setter
     def read_write_two_datetimes(self, value: ReadWriteTwoDatetimesProperty):
-        """This property sets (publishes) a new value structure for the 'read_write_two_datetimes' property.
-
+        """ This property sets (publishes) a new value structure for the 'read_write_two_datetimes' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, ReadWriteTwoDatetimesProperty):
@@ -4973,37 +5005,47 @@ class TestableServer:
                     prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_datetimes/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_datetimes.get_value(), self._property_read_write_two_datetimes.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_read_write_two_datetimes(self, first: datetime, second: Optional[datetime]):
-        """This method sets (publishes) a new value for the 'read_write_two_datetimes' property."""
+        """ This method sets (publishes) a new value for the 'read_write_two_datetimes' property.
+        """
         if not isinstance(first, datetime):
             raise ValueError(f"The 'first' value must be datetime.")
         if not isinstance(second, datetime) and second is not None:
             raise ValueError(f"The 'second' value must be Optional[datetime].")
 
+        
         obj = ReadWriteTwoDatetimesProperty(
             first=first,
+            
             second=second,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_two_datetimes = obj
 
+    
+    
+    
     @property
     def read_write_duration(self) -> Optional[timedelta]:
-        """This property returns the last received (timedelta) value for the 'read_write_duration' property.
-
+        """ This property returns the last received (timedelta) value for the 'read_write_duration' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_duration.get_value()
 
     @read_write_duration.setter
     def read_write_duration(self, value: timedelta):
-        """This property sets (publishes) a new timedelta value for the 'read_write_duration' property.
-
+        """ This property sets (publishes) a new timedelta value for the 'read_write_duration' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, timedelta):
+        if (not isinstance(value, timedelta)):
             raise ValueError(f"The value must be timedelta .")
 
         value_updated = False
@@ -5016,29 +5058,36 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_duration/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_duration.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_duration(self, value: timedelta):
-        """This method sets (publishes) a new value for the 'read_write_duration' property."""
+        """ This method sets (publishes) a new value for the 'read_write_duration' property.
+        """
         if not isinstance(value, timedelta):
             raise ValueError(f"The 'value' value must be timedelta.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_duration = obj
 
+    
+    
+    
     @property
     def read_write_optional_duration(self) -> Optional[timedelta]:
-        """This property returns the last received (Optional[timedelta]) value for the 'read_write_optional_duration' property.
-
+        """ This property returns the last received (Optional[timedelta]) value for the 'read_write_optional_duration' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_optional_duration.get_value()
 
     @read_write_optional_duration.setter
     def read_write_optional_duration(self, value: Optional[timedelta]):
-        """This property sets (publishes) a new Optional[timedelta] value for the 'read_write_optional_duration' property.
-
+        """ This property sets (publishes) a new Optional[timedelta] value for the 'read_write_optional_duration' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if (value is not None) and (not isinstance(value, timedelta)):
@@ -5054,32 +5103,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_duration/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_duration.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_optional_duration(self, value: Optional[timedelta]):
-        """This method sets (publishes) a new value for the 'read_write_optional_duration' property."""
+        """ This method sets (publishes) a new value for the 'read_write_optional_duration' property.
+        """
         if not isinstance(value, timedelta) and value is not None:
             raise ValueError(f"The 'value' value must be Optional[timedelta].")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_optional_duration = obj
 
+    
+    
+     
     @property
     def read_write_two_durations(self) -> ReadWriteTwoDurationsProperty:
-        """This property returns the last received value for the 'read_write_two_durations' property.
-        The 'read_write_two_durations' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'read_write_two_durations' property.
+        The 'read_write_two_durations' property contains multiple values, so we operate on the full 
         `ReadWriteTwoDurationsProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_read_write_two_durations.get_value()
 
     @read_write_two_durations.setter
     def read_write_two_durations(self, value: ReadWriteTwoDurationsProperty):
-        """This property sets (publishes) a new value structure for the 'read_write_two_durations' property.
-
+        """ This property sets (publishes) a new value structure for the 'read_write_two_durations' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, ReadWriteTwoDurationsProperty):
@@ -5094,37 +5150,47 @@ class TestableServer:
                     prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_durations/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_durations.get_value(), self._property_read_write_two_durations.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_read_write_two_durations(self, first: timedelta, second: Optional[timedelta]):
-        """This method sets (publishes) a new value for the 'read_write_two_durations' property."""
+        """ This method sets (publishes) a new value for the 'read_write_two_durations' property.
+        """
         if not isinstance(first, timedelta):
             raise ValueError(f"The 'first' value must be timedelta.")
         if not isinstance(second, timedelta) and second is not None:
             raise ValueError(f"The 'second' value must be Optional[timedelta].")
 
+        
         obj = ReadWriteTwoDurationsProperty(
             first=first,
+            
             second=second,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_two_durations = obj
 
+    
+    
+    
     @property
     def read_write_binary(self) -> Optional[bytes]:
-        """This property returns the last received (bytes) value for the 'read_write_binary' property.
-
+        """ This property returns the last received (bytes) value for the 'read_write_binary' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_binary.get_value()
 
     @read_write_binary.setter
     def read_write_binary(self, value: bytes):
-        """This property sets (publishes) a new bytes value for the 'read_write_binary' property.
-
+        """ This property sets (publishes) a new bytes value for the 'read_write_binary' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, bytes):
+        if (not isinstance(value, bytes)):
             raise ValueError(f"The value must be bytes .")
 
         value_updated = False
@@ -5137,29 +5203,36 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_binary/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_binary.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_binary(self, value: bytes):
-        """This method sets (publishes) a new value for the 'read_write_binary' property."""
+        """ This method sets (publishes) a new value for the 'read_write_binary' property.
+        """
         if not isinstance(value, bytes):
             raise ValueError(f"The 'value' value must be bytes.")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_binary = obj
 
+    
+    
+    
     @property
     def read_write_optional_binary(self) -> Optional[bytes]:
-        """This property returns the last received (Optional[bytes]) value for the 'read_write_optional_binary' property.
-
+        """ This property returns the last received (Optional[bytes]) value for the 'read_write_optional_binary' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_optional_binary.get_value()
 
     @read_write_optional_binary.setter
     def read_write_optional_binary(self, value: Optional[bytes]):
-        """This property sets (publishes) a new Optional[bytes] value for the 'read_write_optional_binary' property.
-
+        """ This property sets (publishes) a new Optional[bytes] value for the 'read_write_optional_binary' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if (value is not None) and (not isinstance(value, bytes)):
@@ -5175,32 +5248,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_optional_binary/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_optional_binary.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_optional_binary(self, value: Optional[bytes]):
-        """This method sets (publishes) a new value for the 'read_write_optional_binary' property."""
+        """ This method sets (publishes) a new value for the 'read_write_optional_binary' property.
+        """
         if not isinstance(value, bytes) and value is not None:
             raise ValueError(f"The 'value' value must be Optional[bytes].")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_optional_binary = obj
 
+    
+    
+     
     @property
     def read_write_two_binaries(self) -> ReadWriteTwoBinariesProperty:
-        """This property returns the last received value for the 'read_write_two_binaries' property.
-        The 'read_write_two_binaries' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'read_write_two_binaries' property.
+        The 'read_write_two_binaries' property contains multiple values, so we operate on the full 
         `ReadWriteTwoBinariesProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_read_write_two_binaries.get_value()
 
     @read_write_two_binaries.setter
     def read_write_two_binaries(self, value: ReadWriteTwoBinariesProperty):
-        """This property sets (publishes) a new value structure for the 'read_write_two_binaries' property.
-
+        """ This property sets (publishes) a new value structure for the 'read_write_two_binaries' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, ReadWriteTwoBinariesProperty):
@@ -5215,37 +5295,47 @@ class TestableServer:
                     prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_two_binaries/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_two_binaries.get_value(), self._property_read_write_two_binaries.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_read_write_two_binaries(self, first: bytes, second: Optional[bytes]):
-        """This method sets (publishes) a new value for the 'read_write_two_binaries' property."""
+        """ This method sets (publishes) a new value for the 'read_write_two_binaries' property.
+        """
         if not isinstance(first, bytes):
             raise ValueError(f"The 'first' value must be bytes.")
         if not isinstance(second, bytes) and second is not None:
             raise ValueError(f"The 'second' value must be Optional[bytes].")
 
+        
         obj = ReadWriteTwoBinariesProperty(
             first=first,
+            
             second=second,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_two_binaries = obj
 
+    
+    
+    
     @property
     def read_write_list_of_strings(self) -> Optional[List[str]]:
-        """This property returns the last received (List[str]) value for the 'read_write_list_of_strings' property.
-
+        """ This property returns the last received (List[str]) value for the 'read_write_list_of_strings' property.
+        
         This calls back into the application code to get the current value of the property.
         """
         return self._property_read_write_list_of_strings.get_value()
 
     @read_write_list_of_strings.setter
     def read_write_list_of_strings(self, value: List[str]):
-        """This property sets (publishes) a new List[str] value for the 'read_write_list_of_strings' property.
-
+        """ This property sets (publishes) a new List[str] value for the 'read_write_list_of_strings' property.
+        
         This call the setter callback into the application code to set the property value.
         """
-        if not isinstance(value, list):
+        if (not isinstance(value, list)):
             raise ValueError(f"The value must be list .")
 
         value_updated = False
@@ -5258,32 +5348,39 @@ class TestableServer:
                 prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_list_of_strings/value".format(**self._topic_template_kwargs)
                 state_msg = MessageCreator.property_state_message(prop_value_topic, prop_obj, self._property_read_write_list_of_strings.version)
                 self._conn.publish(state_msg)
+        
 
     def set_read_write_list_of_strings(self, value: List[str]):
-        """This method sets (publishes) a new value for the 'read_write_list_of_strings' property."""
+        """ This method sets (publishes) a new value for the 'read_write_list_of_strings' property.
+        """
         if not isinstance(value, list):
             raise ValueError(f"The 'value' value must be List[str].")
 
+        
         obj = value
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_list_of_strings = obj
 
+    
+    
+     
     @property
     def read_write_lists(self) -> ReadWriteListsProperty:
-        """This property returns the last received value for the 'read_write_lists' property.
-        The 'read_write_lists' property contains multiple values, so we operate on the full
+        """ This property returns the last received value for the 'read_write_lists' property.
+        The 'read_write_lists' property contains multiple values, so we operate on the full 
         `ReadWriteListsProperty` structure.
-
+        
         This calls back into the application code to get the current value of the property.
-
+        
         """
         return self._property_read_write_lists.get_value()
 
     @read_write_lists.setter
     def read_write_lists(self, value: ReadWriteListsProperty):
-        """This property sets (publishes) a new value structure for the 'read_write_lists' property.
-
+        """ This property sets (publishes) a new value structure for the 'read_write_lists' property.
+        
         This call the setter callback into the application code to set the property value.
         """
         if not isinstance(value, ReadWriteListsProperty):
@@ -5298,22 +5395,31 @@ class TestableServer:
                     prop_value_topic = "{prefix}/testable/{service_id}/property/read_write_lists/value".format(**self._topic_template_kwargs)
                     state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_read_write_lists.get_value(), self._property_read_write_lists.version)
                     self._conn.publish(state_msg)
+            
+    
 
     def set_read_write_lists(self, the_list: List[Numbers], optional_list: Optional[List[datetime]]):
-        """This method sets (publishes) a new value for the 'read_write_lists' property."""
+        """ This method sets (publishes) a new value for the 'read_write_lists' property.
+        """
         if not isinstance(the_list, list):
             raise ValueError(f"The 'the_list' value must be List[Numbers].")
         if not isinstance(optional_list, list) and optional_list is not None:
             raise ValueError(f"The 'optional_list' value must be Optional[List[datetime]].")
 
+        
         obj = ReadWriteListsProperty(
             the_list=the_list,
+            
             optional_list=optional_list,
+            
         )
+        
 
         # Use the property.setter to do that actual work.
         self.read_write_lists = obj
 
+    
+    
 
 class TestableServerBuilder:
     """
@@ -5321,7 +5427,8 @@ class TestableServerBuilder:
     """
 
     def __init__(self):
-
+        
+        
         self._call_with_nothing_method_handler: Optional[Callable[[], None]] = None
         self._call_one_integer_method_handler: Optional[Callable[[int], int]] = None
         self._call_optional_integer_method_handler: Optional[Callable[[Optional[int]], Optional[int]]] = None
@@ -5347,290 +5454,262 @@ class TestableServerBuilder:
         self._call_one_list_of_integers_method_handler: Optional[Callable[[List[int]], List[int]]] = None
         self._call_optional_list_of_floats_method_handler: Optional[Callable[[Optional[List[float]]], Optional[List[float]]]] = None
         self._call_two_lists_method_handler: Optional[Callable[[List[Numbers], Optional[List[str]]], CallTwoListsMethodResponse]] = None
-
+        
+    
     def handle_call_with_nothing(self, handler: Callable[[], None]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_with_nothing_method_handler is None and handler is not None:
             self._call_with_nothing_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_one_integer(self, handler: Callable[[int], int]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_one_integer_method_handler is None and handler is not None:
             self._call_one_integer_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_optional_integer(self, handler: Callable[[Optional[int]], Optional[int]]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_optional_integer_method_handler is None and handler is not None:
             self._call_optional_integer_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_three_integers(self, handler: Callable[[int, int, Optional[int]], CallThreeIntegersMethodResponse]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_three_integers_method_handler is None and handler is not None:
             self._call_three_integers_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_one_string(self, handler: Callable[[str], str]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_one_string_method_handler is None and handler is not None:
             self._call_one_string_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_optional_string(self, handler: Callable[[Optional[str]], Optional[str]]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_optional_string_method_handler is None and handler is not None:
             self._call_optional_string_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_three_strings(self, handler: Callable[[str, Optional[str], str], CallThreeStringsMethodResponse]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_three_strings_method_handler is None and handler is not None:
             self._call_three_strings_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_one_enum(self, handler: Callable[[Numbers], Numbers]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_one_enum_method_handler is None and handler is not None:
             self._call_one_enum_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_optional_enum(self, handler: Callable[[Optional[Numbers]], Optional[Numbers]]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_optional_enum_method_handler is None and handler is not None:
             self._call_optional_enum_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_three_enums(self, handler: Callable[[Numbers, Numbers, Optional[Numbers]], CallThreeEnumsMethodResponse]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_three_enums_method_handler is None and handler is not None:
             self._call_three_enums_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_one_struct(self, handler: Callable[[AllTypes], AllTypes]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_one_struct_method_handler is None and handler is not None:
             self._call_one_struct_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_optional_struct(self, handler: Callable[[Optional[AllTypes]], Optional[AllTypes]]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_optional_struct_method_handler is None and handler is not None:
             self._call_optional_struct_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_three_structs(self, handler: Callable[[Optional[AllTypes], AllTypes, AllTypes], CallThreeStructsMethodResponse]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_three_structs_method_handler is None and handler is not None:
             self._call_three_structs_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_one_date_time(self, handler: Callable[[datetime], datetime]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_one_date_time_method_handler is None and handler is not None:
             self._call_one_date_time_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_optional_date_time(self, handler: Callable[[Optional[datetime]], Optional[datetime]]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_optional_date_time_method_handler is None and handler is not None:
             self._call_optional_date_time_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_three_date_times(self, handler: Callable[[datetime, datetime, Optional[datetime]], CallThreeDateTimesMethodResponse]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_three_date_times_method_handler is None and handler is not None:
             self._call_three_date_times_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_one_duration(self, handler: Callable[[timedelta], timedelta]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_one_duration_method_handler is None and handler is not None:
             self._call_one_duration_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_optional_duration(self, handler: Callable[[Optional[timedelta]], Optional[timedelta]]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_optional_duration_method_handler is None and handler is not None:
             self._call_optional_duration_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_three_durations(self, handler: Callable[[timedelta, timedelta, Optional[timedelta]], CallThreeDurationsMethodResponse]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_three_durations_method_handler is None and handler is not None:
             self._call_three_durations_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_one_binary(self, handler: Callable[[bytes], bytes]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_one_binary_method_handler is None and handler is not None:
             self._call_one_binary_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_optional_binary(self, handler: Callable[[Optional[bytes]], Optional[bytes]]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_optional_binary_method_handler is None and handler is not None:
             self._call_optional_binary_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_three_binaries(self, handler: Callable[[bytes, bytes, Optional[bytes]], CallThreeBinariesMethodResponse]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_three_binaries_method_handler is None and handler is not None:
             self._call_three_binaries_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_one_list_of_integers(self, handler: Callable[[List[int]], List[int]]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_one_list_of_integers_method_handler is None and handler is not None:
             self._call_one_list_of_integers_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_optional_list_of_floats(self, handler: Callable[[Optional[List[float]]], Optional[List[float]]]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_optional_list_of_floats_method_handler is None and handler is not None:
             self._call_optional_list_of_floats_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
+    
     def handle_call_two_lists(self, handler: Callable[[List[Numbers], Optional[List[str]]], CallTwoListsMethodResponse]):
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
-
         if self._call_two_lists_method_handler is None and handler is not None:
             self._call_two_lists_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
         return wrapper
-
-    def build(self, connection: IBrokerConnection, instance_id: str, property_access: TestablePropertyAccess, prefix: str, binding: Optional[Any] = None) -> TestableServer:
-        new_server = TestableServer(
-            connection,
-            instance_id,
-            property_access,
-            prefix,
-        )
-
+    
+    
+    def build(self, connection: stinger::utils::IConnection, instance_id: str, property_access: TestablePropertyAccess, prefix: str, binding: Optional[Any]=None) -> TestableServer:
+        new_server = TestableServer(connection, instance_id, property_access, prefix, )
+        
         if self._call_with_nothing_method_handler is not None:
             if binding:
                 new_server.handle_call_with_nothing(self._call_with_nothing_method_handler.__get__(binding, binding.__class__))
@@ -5756,5 +5835,5 @@ class TestableServerBuilder:
                 new_server.handle_call_two_lists(self._call_two_lists_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_call_two_lists(self._call_two_lists_method_handler)
-
+        
         return new_server

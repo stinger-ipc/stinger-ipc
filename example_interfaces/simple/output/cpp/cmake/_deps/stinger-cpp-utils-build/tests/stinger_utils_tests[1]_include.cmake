@@ -1,0 +1,5 @@
+if(EXISTS "/home/jacob/projects/stinger-ipc/example_interfaces/simple/output/cpp/cmake/_deps/stinger-cpp-utils-build/tests/stinger_utils_tests[1]_tests.cmake")
+  include("/home/jacob/projects/stinger-ipc/example_interfaces/simple/output/cpp/cmake/_deps/stinger-cpp-utils-build/tests/stinger_utils_tests[1]_tests.cmake")
+else()
+  add_test(stinger_utils_tests_NOT_BUILT stinger_utils_tests_NOT_BUILT)
+endif()

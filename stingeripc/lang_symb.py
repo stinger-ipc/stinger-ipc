@@ -33,13 +33,6 @@ class PythonSymbolsProvider(ISymbolsProvider):
             return PythonMethodSymbols(model)
         return None
 
-class CppSymbolsProvider(ISymbolsProvider):
-
-    def for_model(self, model_class_name:str, model) -> object|None:
-        if model_class_name == "StingerSpec":
-            return CppInterfaceSymbols(model)
-        return None
-
 class PythonSymbols:
 
     def __init__(self):
@@ -123,6 +116,15 @@ class RustInterfaceSymbols(RustSymbols):
         """ Name of the struct for the interface server."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Server"
 
+class CppSymbolsProvider(ISymbolsProvider):
+
+    def for_model(self, model_class_name:str, model) -> object|None:
+        if model_class_name == "StingerSpec":
+            return CppInterfaceSymbols(model)
+        elif model_class_name == "Property":
+            return CppPropertySymbols(model)
+        return None
+
 class CppSymbols:
     def __init__(self):
         pass
@@ -149,3 +151,12 @@ class CppInterfaceSymbols(CppSymbols):
     def property_struct_header_file(self) -> str:
         return "property_structs.hpp"
 
+class CppPropertySymbols(CppSymbols):
+
+    def __init__(self, prop):
+        super().__init__()
+        self._prop = prop
+
+    @property
+    def property_struct_name(self) -> str:
+        return f"{stringmanip.upper_camel_case(self._prop.name)}Property"

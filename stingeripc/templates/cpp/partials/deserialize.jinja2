@@ -7,13 +7,13 @@
 {{target}} = {{arg.cpp_type}}::FromRapidJsonObject(itr->value);
 {%-elif arg.arg_type.name.lower() == 'datetime'%}
 auto temp{{arg.name|UpperCamelCase}}IsoString = itr->value.GetString();
-{{target}} = parseIsoTimestamp(temp{{arg.name|UpperCamelCase}}IsoString);
+{{target}} = stinger::utils::parseIsoTimestamp(temp{{arg.name|UpperCamelCase}}IsoString);
 {%-elif arg.arg_type.name.lower() == 'duration'%}
 auto temp{{arg.name|UpperCamelCase}}IsoString = itr->value.GetString();
-{{target}} = parseIsoDuration(temp{{arg.name|UpperCamelCase}}IsoString);
+{{target}} = stinger::utils::parseIsoDuration(temp{{arg.name|UpperCamelCase}}IsoString);
 {%-elif arg.arg_type.name.lower() == 'binary'%}
 auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
-{{target}} = base64Decode(temp{{arg.name|UpperCamelCase}}B64String);
+{{target}} = stinger::utils::base64Decode(temp{{arg.name|UpperCamelCase}}B64String);
 {%elif arg.arg_type.name.lower() == 'array'%}
 {
     std::vector<{{arg.element.cpp_temp_type}}> tempArray;
@@ -28,17 +28,17 @@ auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
             {%elif arg.element.arg_type.name.lower() == 'datetime'%}
             {
                 std::string tempIsoString = item.GetString();
-                tempArray.push_back(parseIsoTimestamp(tempIsoString));
+                tempArray.push_back(stinger::utils::parseIsoTimestamp(tempIsoString));
             }
             {%elif arg.element.arg_type.name.lower() == 'duration'%}
             {
                 std::string tempIsoString = item.GetString();
-                tempArray.push_back(parseIsoDuration(tempIsoString));
+                tempArray.push_back(stinger::utils::parseIsoDuration(tempIsoString));
             }
             {%elif arg.element.arg_type.name.lower() == 'binary'%}
             {
                 std::string tempB64String = item.GetString();
-                tempArray.push_back(base64Decode(tempB64String));
+                tempArray.push_back(stinger::utils::base64Decode(tempB64String));
             }
             {%else%}
             TEMPLATE ERROR BECAUSE {{arg.element.arg_type.name.lower()}} NOT HANDLED

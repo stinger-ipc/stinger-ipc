@@ -10,13 +10,17 @@
 #include <cstdint>
 #include <cstring>
 #include <sstream>
-#include "utils.hpp"
 #include <algorithm>
 #include <iterator>
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
+
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
 
 // Utility function to convert ISO timestamp string to time_point
-std::chrono::time_point<std::chrono::system_clock> parseIsoTimestamp(const std::string& isoTimestamp)
+std::chrono::time_point<std::chrono::system_clock> stinger::utils::parseIsoTimestamp(const std::string& isoTimestamp)
 {
     std::tm tm = {};
     std::istringstream ss(isoTimestamp);
@@ -35,7 +39,7 @@ std::chrono::time_point<std::chrono::system_clock> parseIsoTimestamp(const std::
 }
 
 // Utility function to convert time_point to ISO timestamp string
-std::string timePointToIsoString(const std::chrono::time_point<std::chrono::system_clock>& timePoint)
+std::string stinger::utils::timePointToIsoString(const std::chrono::time_point<std::chrono::system_clock>& timePoint)
 {
     std::time_t time = std::chrono::system_clock::to_time_t(timePoint);
     std::tm* tm = std::gmtime(&time);
@@ -45,7 +49,7 @@ std::string timePointToIsoString(const std::chrono::time_point<std::chrono::syst
     return ss.str();
 }
 
-std::string durationToIsoString(const std::chrono::duration<double>& duration)
+std::string stinger::utils::durationToIsoString(const std::chrono::duration<double>& duration)
 {
     using namespace std::chrono;
     auto secs = duration_cast<seconds>(duration);
@@ -62,7 +66,7 @@ std::string durationToIsoString(const std::chrono::duration<double>& duration)
     return ss.str();
 }
 
-std::chrono::duration<double> parseIsoDuration(const std::string& isoDuration)
+std::chrono::duration<double> stinger::utils::parseIsoDuration(const std::string& isoDuration)
 {
     // Only supports simple "PTnS" or "PTn.mS" (seconds, optional milliseconds)
     if (isoDuration.size() < 3 || isoDuration.substr(0, 2) != "PT" || isoDuration.back() != 'S')
@@ -89,7 +93,7 @@ static inline bool is_base64(unsigned char c) {
     return (std::isalnum(c) || (c == '+') || (c == '/'));
 }
 
-std::string base64Encode(const std::vector<unsigned char>& bytes_to_encode) {
+std::string stinger::utils::base64Encode(const std::vector<unsigned char>& bytes_to_encode) {
     std::string ret;
     int i = 0;
     unsigned char char_array_3[3];
@@ -133,7 +137,7 @@ std::string base64Encode(const std::vector<unsigned char>& bytes_to_encode) {
     return ret;
 }
 
-std::vector<unsigned char> base64Decode(const std::string& encoded_string) {
+std::vector<unsigned char> stinger::utils::base64Decode(const std::string& encoded_string) {
     int in_len = encoded_string.size();
     int i = 0;
     int in_ = 0;
@@ -172,3 +176,8 @@ std::vector<unsigned char> base64Decode(const std::string& encoded_string) {
 
     return ret;
 }
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

@@ -25,21 +25,17 @@ int main(int argc, char** argv)
     // Wait for the future to resolve (with a timeout)
     auto status = future.wait_for(std::chrono::seconds(10));
 
-    if (status == std::future_status::ready)
-    {
+    if (status == std::future_status::ready) {
         std::string instance_id = future.get();
         std::cout << "Got singleton instance: " << instance_id << std::endl;
 
         // Get all discovered instances
         auto all_instances = discovery.GetInstanceIds();
         std::cout << "Total instances discovered: " << all_instances.size() << std::endl;
-        for (const auto& id: all_instances)
-        {
+        for (const auto& id: all_instances) {
             std::cout << "  - " << id << std::endl;
         }
-    }
-    else
-    {
+    } else {
         std::cout << "Timeout waiting for service instance" << std::endl;
     }
 

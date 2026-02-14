@@ -3,29 +3,30 @@
 #include "property_structs.hpp"
 #include <rapidjson/document.h>
 
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
 LocationProperty LocationProperty::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     LocationProperty location;
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("latitude");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble()) {
             location.latitude = itr->value.GetDouble();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'latitude' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("longitude");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble()) {
             location.longitude = itr->value.GetDouble();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'longitude' argument doesn't have required value/type");
         }
     }
@@ -46,12 +47,10 @@ CurrentTemperatureProperty CurrentTemperatureProperty::FromRapidJsonObject(const
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("temperature_f");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble()) {
             currentTemperature.temperatureF = itr->value.GetDouble();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'temperature_f' argument doesn't have required value/type");
         }
     }
@@ -70,23 +69,19 @@ CurrentConditionProperty CurrentConditionProperty::FromRapidJsonObject(const rap
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("condition");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             currentCondition.condition = static_cast<WeatherCondition>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'condition' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("description");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             currentCondition.description = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'description' argument doesn't have required value/type");
         }
     }
@@ -111,34 +106,28 @@ DailyForecastProperty DailyForecastProperty::FromRapidJsonObject(const rapidjson
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("monday");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             dailyForecast.monday = ForecastForDay::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'monday' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("tuesday");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             dailyForecast.tuesday = ForecastForDay::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'tuesday' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("wednesday");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             dailyForecast.wednesday = ForecastForDay::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'wednesday' argument doesn't have required value/type");
         }
     }
@@ -182,45 +171,37 @@ HourlyForecastProperty HourlyForecastProperty::FromRapidJsonObject(const rapidjs
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("hour_0");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             hourlyForecast.hour0 = ForecastForHour::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'hour_0' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("hour_1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             hourlyForecast.hour1 = ForecastForHour::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'hour_1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("hour_2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             hourlyForecast.hour2 = ForecastForHour::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'hour_2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("hour_3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             hourlyForecast.hour3 = ForecastForHour::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'hour_3' argument doesn't have required value/type");
         }
     }
@@ -273,12 +254,10 @@ CurrentConditionRefreshIntervalProperty CurrentConditionRefreshIntervalProperty:
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("seconds");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             currentConditionRefreshInterval.seconds = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'seconds' argument doesn't have required value/type");
         }
     }
@@ -297,12 +276,10 @@ HourlyForecastRefreshIntervalProperty HourlyForecastRefreshIntervalProperty::Fro
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("seconds");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             hourlyForecastRefreshInterval.seconds = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'seconds' argument doesn't have required value/type");
         }
     }
@@ -321,12 +298,10 @@ DailyForecastRefreshIntervalProperty DailyForecastRefreshIntervalProperty::FromR
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("seconds");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             dailyForecastRefreshInterval.seconds = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'seconds' argument doesn't have required value/type");
         }
     }
@@ -338,3 +313,9 @@ void DailyForecastRefreshIntervalProperty::AddToRapidJsonObject(rapidjson::Value
 {
     parent.AddMember("seconds", seconds, allocator);
 }
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

@@ -12,33 +12,38 @@ include(CMakePackageConfigHelpers)
 # more secure code
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(PkgConfig REQUIRED)
 find_package(RapidJSON REQUIRED)
-pkg_check_modules(mosquitto REQUIRED libmosquitto IMPORTED_TARGET)
+
+# Fetch stinger-cpp-utils dependency
+include(FetchContent)
+FetchContent_Declare(
+	stinger-cpp-utils
+	GIT_REPOSITORY https://github.com/stinger-ipc/stinger-cpp-utils.git
+	GIT_TAG main  # or specify a specific tag/commit
+)
+FetchContent_MakeAvailable(stinger-cpp-utils)
 
 set(CLIENT_SOURCE_FILES
-	src/broker.cpp
-	src/client.cpp
 	src/conversions.cpp
 	src/discovery.cpp
-	src/interface_exceptions.cpp
-	src/method_payloads.cpp
-	src/property_structs.cpp
-	src/signal_payloads.cpp
-	src/structs.cpp
-	)
-
-set(SERVER_SOURCE_FILES
-	src/broker.cpp
-	src/conversions.cpp
-	src/discovery.cpp
-	src/interface_exceptions.cpp
 	src/method_payloads.cpp
 	src/property_structs.cpp
 	src/server.cpp
 	src/signal_payloads.cpp
 	src/structs.cpp
-	)
+	
+)
+
+set(SERVER_SOURCE_FILES
+	src/client.cpp
+	src/conversions.cpp
+	src/discovery.cpp
+	src/method_payloads.cpp
+	src/property_structs.cpp
+	src/signal_payloads.cpp
+	src/structs.cpp
+	
+)
 
 # server lib
 add_library(signal-only-server ${SERVER_SOURCE_FILES})
@@ -47,12 +52,11 @@ target_include_directories(signal-only-server
 	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-		${mosquitto_INCLUDE_DIRS}
 		${rapidJSON_INCLUDE_DIRS}
 )
 target_link_libraries(signal-only-server
 	PUBLIC
-		PkgConfig::mosquitto
+		Stinger::Utils
 )
 
 # client lib
@@ -66,7 +70,7 @@ target_include_directories(signal-only-client
 )
 target_link_libraries(signal-only-client
 	PUBLIC
-		PkgConfig::mosquitto
+		Stinger::Utils
 )
 
 # example client
@@ -109,7 +113,7 @@ set_target_properties(
 
 # help cmake find this
 configure_package_config_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/cmake/SignalOnly-config.cmake.in
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/SignalOnly-config.cmake
 	INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/SignalOnly
 	PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
@@ -140,6 +144,7 @@ install(TARGETS
 	signal-only-client-demo
 	signal-only-discovery-example
 	signal-only-discovery-publisher
+	stinger_utils
 	EXPORT SignalOnlyTargets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # .a files
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # .so files

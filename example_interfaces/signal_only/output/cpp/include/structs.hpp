@@ -13,7 +13,17 @@ TODO: Get license text from stinger file
 #include <cstddef>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 #include "enums.hpp"
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace signal_only {
+
+} // namespace signal_only
+
+} // namespace gen
+
+} // namespace stinger

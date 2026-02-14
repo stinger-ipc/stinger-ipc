@@ -13,11 +13,15 @@ TODO: Get license text from stinger file
 #include <map>
 #include <string>
 
+namespace stinger {
+
+namespace gen {
+namespace simple {
+
 /** 
  * @enum Gender
  */
-enum class Gender
-{
+enum class Gender {
     MALE = 1,
     FEMALE = 2,
     OTHER = 3
@@ -29,3 +33,9 @@ static const std::map<int, std::string> genderStrings = {
 
     { 3, "other" }
 };
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/simple-discovery-publisher.dir/link.d "CMakeFiles/simple-discovery-publisher.dir/examples/discovery_publisher.cpp.o" -o simple-discovery-publisher  libsimple-client.a _deps/stinger-cpp-utils-build/libstinger_utils.a -lmosquitto

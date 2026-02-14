@@ -1,6 +1,11 @@
 
 #include "signal_payloads.hpp"
 
+namespace stinger {
+
+namespace gen {
+namespace simple {
+
 // --- (De-)Serialization for person_entered signal payload ---
 PersonEnteredPayload PersonEnteredPayload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
@@ -8,12 +13,10 @@ PersonEnteredPayload PersonEnteredPayload::FromRapidJsonObject(const rapidjson::
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("person");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             personEnteredPayload.person = Person::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'person' argument doesn't have required value/type");
         }
     }
@@ -32,3 +35,9 @@ void PersonEnteredPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidj
         parent.AddMember("person", tempStructValue, allocator);
     }
 }
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

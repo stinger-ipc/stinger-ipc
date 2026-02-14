@@ -35,30 +35,23 @@ int main(int argc, char** argv)
     std::thread periodicEmitter([server, &keepRunning]()
                                 {
                                     int loopCount = 0;
-                                    while (keepRunning)
-                                    {
+                                    while (keepRunning) {
                                         loopCount++;
                                         // Call emitTodayIsSignal; do not block forever waiting for publish
-                                        try
-                                        {
+                                        try {
                                             auto person_enteredFuture = server->emitPersonEnteredSignal(Person{ "apples", Gender::MALE });
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                             person_enteredFuture.wait();
-                                        }
-                                        catch (...)
-                                        {
-                                        }
+                                        } catch (...) { }
 
                                         std::cout << "Periodic update iteration " << loopCount << " complete. Sleeping for 59 ...\n";
 
                                         // Sleep in 1-second increments so we can stop quickly
-                                        for (int i = 0; i < 59 && keepRunning; ++i)
-                                        {
+                                        for (int i = 0; i < 59 && keepRunning; ++i) {
                                             std::this_thread::sleep_for(std::chrono::seconds(1));
                                         }
 
-                                        if (loopCount % 3 == 0)
-                                        {
+                                        if (loopCount % 3 == 0) {
                                             std::cout << "Updating value for property 'school'.\n";
                                             server->updateSchoolProperty("apples");
                                         }
@@ -70,8 +63,7 @@ int main(int argc, char** argv)
 
     // Signal the emitter thread to stop and join it
     keepRunning = false;
-    if (periodicEmitter.joinable())
-    {
+    if (periodicEmitter.joinable()) {
         periodicEmitter.join();
     }
 

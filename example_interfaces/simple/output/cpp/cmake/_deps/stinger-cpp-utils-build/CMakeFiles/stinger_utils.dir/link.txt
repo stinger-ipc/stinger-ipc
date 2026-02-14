@@ -1,0 +1,2 @@
+/usr/bin/ar qc libstinger_utils.a CMakeFiles/stinger_utils.dir/src/conversions.cpp.o CMakeFiles/stinger_utils.dir/src/format.cpp.o CMakeFiles/stinger_utils.dir/src/hash.cpp.o CMakeFiles/stinger_utils.dir/src/mqttbrokerconnection.cpp.o CMakeFiles/stinger_utils.dir/src/mqttmessage.cpp.o CMakeFiles/stinger_utils.dir/src/return_codes.cpp.o
+/usr/bin/ranlib libstinger_utils.a

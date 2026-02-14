@@ -12,12 +12,15 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
-struct TodayIsPayload
-{
+namespace stinger {
+
+namespace gen {
+namespace full {
+
+struct TodayIsPayload {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static TodayIsPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
@@ -25,11 +28,16 @@ struct TodayIsPayload
     DayOfTheWeek dayOfWeek;
 };
 
-struct RandomWordPayload
-{
+struct RandomWordPayload {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static RandomWordPayload FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::string word;
     std::chrono::time_point<std::chrono::system_clock> time;
 };
+
+} // namespace full
+
+} // namespace gen
+
+} // namespace stinger
