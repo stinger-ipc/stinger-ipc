@@ -82,11 +82,7 @@ private:
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const stinger::utils::MqttProperties& mqttProps
-    );
+    void _receiveMessage(const stinger::utils::MqttMessage& msg);
 
     // ------------------ SIGNALS --------------------
 
@@ -102,7 +98,7 @@ private:
     std::map<std::vector<std::byte>, std::promise<int>> _pendingTradeNumbersMethodCalls;
     int _tradeNumbersMethodSubscriptionId = -1;
     // This is called internally to process responses to `trade_numbers` method calls.
-    void _handleTradeNumbersResponse(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps);
+    void _handleTradeNumbersResponse(const stinger::utils::MqttMessage& msg);
 
     // ---------------- PROPERTIES ------------------
 
@@ -121,7 +117,7 @@ private:
     int _schoolPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `school` property.
-    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveSchoolPropertyUpdate(const stinger::utils::MqttMessage& msg);
 
     // Callbacks registered for changes to the `school` property.
     std::vector<std::function<void(std::string)>> _schoolPropertyCallbacks;

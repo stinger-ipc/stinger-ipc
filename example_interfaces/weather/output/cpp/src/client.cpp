@@ -90,7 +90,7 @@ WeatherClient::~WeatherClient()
 void WeatherClient::_receiveMessage(const stinger::utils::MqttMessage& msg)
 {
     const int noSubId = -1;
-    int subscriptionId = msg.mqttProps.subscriptionId.value_or(noSubId);
+    int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);
     _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", msg.topic.c_str(), subscriptionId);
     if (subscriptionId == _currentTimeSignalSubscriptionId) {
         _broker->Log(LOG_INFO, "Handling current_time signal");

@@ -30,11 +30,9 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
         
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
-            const std::string& topic, 
-            const std::string& payload, 
-            const stinger::utils::MqttProperties& mqttProps)
+            const stinger::utils::MqttMessage& msg)
     {
-        _receiveMessage(topic, payload, mqttProps);
+        _receiveMessage(msg);
     });
 
     std::map<std::string, std::string> topicArgs;
@@ -46,10 +44,10 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
     {%-endfor%}
 
     {%for method in stinger.methods.values()%}
-    _{{method.name | camelCase}}MethodSubscriptionId = _broker->Subscribe((format("{{method.request_topic()}}") % _instanceId).str(), 2);
+    _{{method.name | camelCase}}MethodSubscriptionId = _broker->Subscribe(stinger::utils::format("{{method.request_topic()}}", topicArgs), 2);
     {%-endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
-    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe((format("{{prop.update_topic()}}") % _instanceId).str(), 1);
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{{prop.update_topic()}}", topicArgs), 1);
     {%-endfor%}
 
     // Start the service advertisement thread
@@ -73,14 +71,27 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
         _advertisementThread.join();
     }
 
-    std::string topic = (format("{{stinger.interface_info_topic}}") % _instanceId).str();
-    _broker->Publish(topic, "", 1, true, stinger::utils::MqttProperties());
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    {%- for topic_param in config.topics.params %}
+    topicArgs["{{topic_param}}"] = _{{topic_param|lowerCamelCase}}TopicParam;
+    {%-endfor%}
+
+    std::string topic = stinger::utils::format("{{stinger.interface_info_topic}}", topicArgs);
+    stinger::utils::MqttMessage msg;
+    msg.topic = topic;
+    msg.payload = "";
+    msg.qos = 1;
+    msg.retain = true;
+    _broker->Publish(msg);
 
     {%for method in stinger.methods.values()%}
-    _broker->Unsubscribe((format("{{method.topic}}") % _instanceId).str());
+    _broker->Unsubscribe(stinger::utils::format("{{method.topic}}", topicArgs));
     {%-endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
-    _broker->Unsubscribe((format("{{prop.update_topic}}") % _instanceId).str());
+    _broker->Unsubscribe(stinger::utils::format("{{prop.update_topic}}", topicArgs));
     {%-endfor%}
 }
 

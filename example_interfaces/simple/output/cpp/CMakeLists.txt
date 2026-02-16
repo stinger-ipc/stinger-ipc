@@ -24,7 +24,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(stinger-cpp-utils)
 
 set(CLIENT_SOURCE_FILES
-	src/conversions.cpp
 	src/discovery.cpp
 	src/method_payloads.cpp
 	src/property_structs.cpp
@@ -36,7 +35,6 @@ set(CLIENT_SOURCE_FILES
 
 set(SERVER_SOURCE_FILES
 	src/client.cpp
-	src/conversions.cpp
 	src/discovery.cpp
 	src/method_payloads.cpp
 	src/property_structs.cpp

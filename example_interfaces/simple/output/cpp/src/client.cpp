@@ -36,20 +36,21 @@ SimpleClient::SimpleClient(std::shared_ptr<stinger::utils::IConnection> broker, 
                                                                    _receiveMessage(msg);
                                                                });
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto personEnteredTopic = stinger::utils::format("{prefix}/Simple/{service_id}/signal/person_entered", topicArgs);
+    auto personEnteredTopic = stinger::utils::format("{prefix}/Simple/{service_id}/signal/person_entered", topicParams);
     _personEnteredSignalSubscriptionId = _broker->Subscribe(personEnteredTopic, 2);
     { // Restrict scope
-        auto tradeNumbersRequestTopic = stinger::utils::format("{prefix}/Simple/{service_id}/method/trade_numbers/request", topicArgs);
+        auto tradeNumbersRequestTopic = stinger::utils::format("{prefix}/Simple/{service_id}/method/trade_numbers/request", topicParams);
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << stinger::utils::format(tradeNumbersRequestTopic, topicArgs);
+        responseTopicStringStream << stinger::utils::format(tradeNumbersRequestTopic, topicParams);
         _tradeNumbersMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
-    auto schoolValueTopic = stinger::utils::format("{prefix}/Simple/{service_id}/property/school/value", topicArgs);
+    auto schoolValueTopic = stinger::utils::format("{prefix}/Simple/{service_id}/property/school/value", topicParams);
     _schoolPropertySubscriptionId = _broker->Subscribe(schoolValueTopic, 1);
 }
 
@@ -64,7 +65,7 @@ SimpleClient::~SimpleClient()
 void SimpleClient::_receiveMessage(const stinger::utils::MqttMessage& msg)
 {
     const int noSubId = -1;
-    int subscriptionId = msg.mqttProps.subscriptionId.value_or(noSubId);
+    int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);
     _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", msg.topic.c_str(), subscriptionId);
     if (subscriptionId == _personEnteredSignalSubscriptionId) {
         _broker->Log(LOG_INFO, "Handling person_entered signal");
@@ -104,10 +105,10 @@ void SimpleClient::_receiveMessage(const stinger::utils::MqttMessage& msg)
     }
     if (subscriptionId == _tradeNumbersMethodSubscriptionId) {
         _broker->Log(LOG_DEBUG, "Matched topic for trade_numbers response");
-        _handleTradeNumbersResponse(topic, payload, mqttProps);
+        _handleTradeNumbersResponse(msg);
     }
-    if ((subscriptionId == _schoolPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x724b366dcec0>>") % _instanceId).str())) {
-        _receiveSchoolPropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    if (subscriptionId == _schoolPropertySubscriptionId) {
+        _receiveSchoolPropertyUpdate(msg);
     }
 }
 
@@ -119,8 +120,8 @@ void SimpleClient::registerPersonEnteredCallback(const std::function<void(Person
 
 std::future<int> SimpleClient::tradeNumbers(int yourNumber)
 {
-    std::vector<std::byte> correlationId = generate_uuid_bytes();
-    _pendingTradeNumbersMethodCalls[correlationId] = std::promise<int>();
+    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
+    _pendingTradeNumbersMethodCalls[correlationData] = std::promise<int>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -131,31 +132,29 @@ std::future<int> SimpleClient::tradeNumbers(int yourNumber)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["client_id"] = _broker->GetClientId();
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Simple/responses", topicArgs);
-    auto requestTopic = stinger::utils::format("{prefix}/Simple/{service_id}/method/trade_numbers/request", topicArgs);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationId, responseTopic);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Simple/responses", topicParams);
+    auto requestTopic = stinger::utils::format("{prefix}/Simple/{service_id}/method/trade_numbers/request", topicParams);
+    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
-    return _pendingTradeNumbersMethodCalls[correlationId].get_future();
+    return _pendingTradeNumbersMethodCalls[correlationData].get_future();
 }
 
 void SimpleClient::_handleTradeNumbersResponse(
-        const std::string& topic,
-        const std::string& payload,
-        const stinger::utils::MqttProperties& mqttProps
+        const stinger::utils::MqttMessage& msg
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for trade_numbers");
 
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse trade_numbers signal payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -164,12 +163,12 @@ void SimpleClient::_handleTradeNumbersResponse(
         throw std::runtime_error("Received payload for 'trade_numbers' response is not an object");
     }
 
-    auto correlationId = mqttProps.correlationId.value_or(std::string());
-    auto promiseItr = _pendingTradeNumbersMethodCalls.find(correlationId);
+    auto correlationData = msg.properties.correlationData.value_or({});
+    auto promiseItr = _pendingTradeNumbersMethodCalls.find(correlationData);
     if (promiseItr != _pendingTradeNumbersMethodCalls.end()) {
-        if (mqttProps.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(mqttProps.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
+        if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
             // The method call failed, so set an exception on the promise.
-            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(mqttProps.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
             return;
         }
 
@@ -183,10 +182,10 @@ void SimpleClient::_handleTradeNumbersResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for trade_numbers");
 }
 
-void SimpleClient::_receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void SimpleClient::_receiveSchoolPropertyUpdate(const stinger::utils::MqttMessage& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse school property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -210,7 +209,7 @@ void SimpleClient::_receiveSchoolPropertyUpdate(const std::string& topic, const 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_schoolPropertyMutex);
         _schoolProperty = tempValue;
-        _lastSchoolPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastSchoolPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -251,8 +250,18 @@ std::future<bool> SimpleClient::updateSchoolProperty(std::string name) const
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x724b366dcec0>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/Simple/{service_id}/property/school/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Simple/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::utils::MqttMessage::PropertyUpdateRequest(update_topic, buf.GetString(), _lastSchoolPropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
 } // namespace simple

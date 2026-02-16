@@ -32,3 +32,5 @@ build/
 .mypy_cache/
 .task/
 .venv/
+
+pytest-warnings.json

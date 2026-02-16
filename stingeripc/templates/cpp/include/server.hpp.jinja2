@@ -43,7 +43,7 @@ public:
     static constexpr const char NAME[] = "{{stinger.name}}";
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
-    {{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId);
+    {{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, {%for topic_param in config.topics.params %}const std::string& {{topic_param | lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
 
     virtual ~{{stinger.cpp.server_class_name}}();
 
@@ -66,11 +66,7 @@ private:
     std::string _{{topic_param | lowerCamelCase}}TopicParam;
     {%endfor%}
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
-    void _receiveMessage(
-            const std::string& topic, 
-            const std::string& payload, 
-            const stinger::utils::MqttProperties& mqttProps
-    );
+    void _receiveMessage(const stinger::utils::MqttMessage& msg);
 
     {%for method_name, method in stinger.methods.items()%}
     void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;

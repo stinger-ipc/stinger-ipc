@@ -178,8 +178,8 @@ void FullDiscovery::_onMessage(const std::string& topic, const std::string& payl
         std::vector<std::string> hashableIdentifiers;
         std::string propertyName;
         uint32_t propertyVersion = 0;
-        if (mqttProps.hasUserProperty("PropertyVersion")) {
-            propertyVersion = mqttProps.userProperty("PropertyVersion");
+        if (mqttProps.propertyVersion.has_value()) {
+            propertyVersion = std::stoul(mqttProps.propertyVersion.value());
         }
         const uint8_t instance_id_expected_index = 2;
         const uint8_t prefix_expected_index = 0;
