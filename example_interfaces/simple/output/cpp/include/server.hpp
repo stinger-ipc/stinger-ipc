@@ -40,7 +40,7 @@ public:
     static constexpr const char NAME[] = "Simple";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
-    SimpleServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId);
+    SimpleServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix);
 
     virtual ~SimpleServer();
 
@@ -70,13 +70,9 @@ private:
     std::string _prefixTopicParam;
 
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const stinger::utils::MqttProperties& mqttProps
-    );
+    void _receiveMessage(const stinger::utils::MqttMessage& msg);
 
-    void _callTradeNumbersHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callTradeNumbersHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& correlationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<int(int)> _tradeNumbersHandler;
     int _tradeNumbersMethodSubscriptionId;
 
@@ -97,7 +93,7 @@ private:
     int _schoolPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `school` property.
-    void _receiveSchoolPropertyUpdate(const stinger::utils::MqttMessage& msg);
+    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
 
     // Callbacks registered for changes to the `school` property.
     std::vector<std::function<void(std::string)>> _schoolPropertyCallbacks;

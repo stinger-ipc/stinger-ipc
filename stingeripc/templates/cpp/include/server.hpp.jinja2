@@ -69,7 +69,7 @@ private:
     void _receiveMessage(const stinger::utils::MqttMessage& msg);
 
     {%for method_name, method in stinger.methods.items()%}
-    void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& correlationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
     int _{{method_name | camelCase}}MethodSubscriptionId;
     {%endfor%}

@@ -187,6 +187,7 @@ tasks:
       - clang-format-config.yaml
     generates:
       - example_interfaces/{{.IFACE}}/output/cpp/**
+      - example_interfaces/{{.IFACE}}/output/cpp/cmake/**
     cmds:
       - uv run stinger generate {{.CLI_ARGS}} --language cpp --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/cpp/
       - clang-format --style=file:clang-format-config.yaml ./example_interfaces/{{.IFACE}}/output/cpp/include/*.hpp ./example_interfaces/{{.IFACE}}/output/cpp/src/*.cpp ./example_interfaces/{{.IFACE}}/output/cpp/examples/*.cpp -i
