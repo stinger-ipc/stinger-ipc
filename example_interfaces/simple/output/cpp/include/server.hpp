@@ -25,7 +25,7 @@ TODO: Get license text from stinger file
 #include "property_structs.hpp"
 
 #include <stinger/utils/iconnection.hpp>
-#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include "enums.hpp"
 
 #include "method_payloads.hpp"
@@ -70,9 +70,9 @@ private:
     std::string _prefixTopicParam;
 
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
-    void _receiveMessage(const stinger::utils::MqttMessage& msg);
+    void _receiveMessage(const stinger::mqtt::Message& msg);
 
-    void _callTradeNumbersHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& correlationData, const std::optional<std::string>& optResponseTopic) const;
+    void _callTradeNumbersHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<int(int)> _tradeNumbersHandler;
     int _tradeNumbersMethodSubscriptionId;
 
@@ -93,7 +93,7 @@ private:
     int _schoolPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `school` property.
-    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveSchoolPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `school` property.
     std::vector<std::function<void(std::string)>> _schoolPropertyCallbacks;

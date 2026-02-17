@@ -19,7 +19,7 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include <stinger/utils/iconnection.hpp>
 #include <stinger/error/return_codes.hpp>
 #include "{{stinger.cpp.enum_header_file}}"
@@ -79,7 +79,7 @@ private:
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
-    void _receiveMessage(const stinger::utils::MqttMessage& msg);
+    void _receiveMessage(const stinger::mqtt::Message& msg);
     {%if stinger.signals|length > 0 %}
     // ------------------ SIGNALS --------------------
     {%for sig_name, sig in stinger.signals.items()%}
@@ -99,7 +99,7 @@ private:
     std::map<std::vector<std::byte>, std::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
     int _{{method_name | lowerCamelCase}}MethodSubscriptionId = -1;
     // This is called internally to process responses to `{{method_name}}` method calls.
-    void _handle{{method_name|UpperCamelCase}}Response(const stinger::utils::MqttMessage& msg);
+    void _handle{{method_name|UpperCamelCase}}Response(const stinger::mqtt::Message& msg);
     {%endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}

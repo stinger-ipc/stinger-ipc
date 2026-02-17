@@ -2,7 +2,9 @@
 #include <thread>
 #include <chrono>
 #include <sstream>
-#include "broker.hpp"
+#include <stinger/mqtt/brokerconnection.hpp>
+#include <stinger/mqtt/message.hpp>
+
 
 int main(int argc, char** argv)
 {
@@ -15,7 +17,7 @@ int main(int argc, char** argv)
     std::string instance_id = argv[1];
     
     // Create a broker connection
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "Discovery-publisher");
+    auto conn = std::make_shared<stinger::mqtt::BrokerConnection>("localhost", 1883, "Discovery-publisher");
     
     // Wait a moment for connection to establish
     std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -28,8 +30,8 @@ int main(int argc, char** argv)
     std::cout << "Topic: myservice/myapp/interface" << std::endl;
     std::cout << "Payload: " << json.str() << std::endl;
     
-    stinger::utils::MqttProperties props;
-    conn->Publish("myservice/myapp/interface", json.str(), 0, false, props);
+    auto msg = stinger::mqtt::Message::ServiceOnline("myservice/myapp/interface", json.str(), 15);
+    conn->Publish(msg);
     
     // Wait a moment for the message to be sent
     std::this_thread::sleep_for(std::chrono::seconds(2));

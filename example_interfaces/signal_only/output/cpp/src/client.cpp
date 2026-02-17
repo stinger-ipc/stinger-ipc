@@ -31,25 +31,26 @@ constexpr const char SignalOnlyClient::INTERFACE_VERSION[];
 SignalOnlyClient::SignalOnlyClient(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo):
     _broker(broker), _instanceId(instanceInfo.serviceId.value_or("error_service_id_not_found")), _instanceInfo(instanceInfo)
 {
-    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::utils::MqttMessage& msg)
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::mqtt::Message& msg)
                                                                {
                                                                    _receiveMessage(msg);
                                                                });
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto anotherSignalTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/anotherSignal", topicArgs);
+    auto anotherSignalTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/anotherSignal", topicParams);
     _anotherSignalSignalSubscriptionId = _broker->Subscribe(anotherSignalTopic, 2);
-    auto barkTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/bark", topicArgs);
+    auto barkTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/bark", topicParams);
     _barkSignalSubscriptionId = _broker->Subscribe(barkTopic, 2);
-    auto maybeNumberTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/maybe_number", topicArgs);
+    auto maybeNumberTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/maybe_number", topicParams);
     _maybeNumberSignalSubscriptionId = _broker->Subscribe(maybeNumberTopic, 2);
-    auto maybeNameTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/maybe_name", topicArgs);
+    auto maybeNameTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/maybe_name", topicParams);
     _maybeNameSignalSubscriptionId = _broker->Subscribe(maybeNameTopic, 2);
-    auto nowTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/now", topicArgs);
+    auto nowTopic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/now", topicParams);
     _nowSignalSubscriptionId = _broker->Subscribe(nowTopic, 2);
 }
 
@@ -61,7 +62,7 @@ SignalOnlyClient::~SignalOnlyClient()
     }
 }
 
-void SignalOnlyClient::_receiveMessage(const stinger::utils::MqttMessage& msg)
+void SignalOnlyClient::_receiveMessage(const stinger::mqtt::Message& msg)
 {
     const int noSubId = -1;
     int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);

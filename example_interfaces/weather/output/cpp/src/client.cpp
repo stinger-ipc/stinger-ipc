@@ -31,51 +31,52 @@ constexpr const char WeatherClient::INTERFACE_VERSION[];
 WeatherClient::WeatherClient(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo):
     _broker(broker), _instanceId(instanceInfo.serviceId.value_or("error_service_id_not_found")), _instanceInfo(instanceInfo)
 {
-    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::utils::MqttMessage& msg)
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::mqtt::Message& msg)
                                                                {
                                                                    _receiveMessage(msg);
                                                                });
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto currentTimeTopic = stinger::utils::format("{prefix}/weather/{service_id}/signal/current_time", topicArgs);
+    auto currentTimeTopic = stinger::utils::format("{prefix}/weather/{service_id}/signal/current_time", topicParams);
     _currentTimeSignalSubscriptionId = _broker->Subscribe(currentTimeTopic, 2);
     { // Restrict scope
-        auto refreshDailyForecastRequestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_daily_forecast/request", topicArgs);
+        auto refreshDailyForecastRequestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_daily_forecast/request", topicParams);
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << stinger::utils::format(refreshDailyForecastRequestTopic, topicArgs);
+        responseTopicStringStream << stinger::utils::format(refreshDailyForecastRequestTopic, topicParams);
         _refreshDailyForecastMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
-        auto refreshHourlyForecastRequestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request", topicArgs);
+        auto refreshHourlyForecastRequestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request", topicParams);
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << stinger::utils::format(refreshHourlyForecastRequestTopic, topicArgs);
+        responseTopicStringStream << stinger::utils::format(refreshHourlyForecastRequestTopic, topicParams);
         _refreshHourlyForecastMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
-        auto refreshCurrentConditionsRequestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_current_conditions/request", topicArgs);
+        auto refreshCurrentConditionsRequestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_current_conditions/request", topicParams);
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << stinger::utils::format(refreshCurrentConditionsRequestTopic, topicArgs);
+        responseTopicStringStream << stinger::utils::format(refreshCurrentConditionsRequestTopic, topicParams);
         _refreshCurrentConditionsMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
-    auto locationValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/location/value", topicArgs);
+    auto locationValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/location/value", topicParams);
     _locationPropertySubscriptionId = _broker->Subscribe(locationValueTopic, 1);
-    auto currentTemperatureValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_temperature/value", topicArgs);
+    auto currentTemperatureValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_temperature/value", topicParams);
     _currentTemperaturePropertySubscriptionId = _broker->Subscribe(currentTemperatureValueTopic, 1);
-    auto currentConditionValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition/value", topicArgs);
+    auto currentConditionValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition/value", topicParams);
     _currentConditionPropertySubscriptionId = _broker->Subscribe(currentConditionValueTopic, 1);
-    auto dailyForecastValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast/value", topicArgs);
+    auto dailyForecastValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast/value", topicParams);
     _dailyForecastPropertySubscriptionId = _broker->Subscribe(dailyForecastValueTopic, 1);
-    auto hourlyForecastValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast/value", topicArgs);
+    auto hourlyForecastValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast/value", topicParams);
     _hourlyForecastPropertySubscriptionId = _broker->Subscribe(hourlyForecastValueTopic, 1);
-    auto currentConditionRefreshIntervalValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition_refresh_interval/value", topicArgs);
+    auto currentConditionRefreshIntervalValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition_refresh_interval/value", topicParams);
     _currentConditionRefreshIntervalPropertySubscriptionId = _broker->Subscribe(currentConditionRefreshIntervalValueTopic, 1);
-    auto hourlyForecastRefreshIntervalValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/value", topicArgs);
+    auto hourlyForecastRefreshIntervalValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/value", topicParams);
     _hourlyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe(hourlyForecastRefreshIntervalValueTopic, 1);
-    auto dailyForecastRefreshIntervalValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value", topicArgs);
+    auto dailyForecastRefreshIntervalValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value", topicParams);
     _dailyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe(dailyForecastRefreshIntervalValueTopic, 1);
 }
 
@@ -87,7 +88,7 @@ WeatherClient::~WeatherClient()
     }
 }
 
-void WeatherClient::_receiveMessage(const stinger::utils::MqttMessage& msg)
+void WeatherClient::_receiveMessage(const stinger::mqtt::Message& msg)
 {
     const int noSubId = -1;
     int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);
@@ -132,30 +133,30 @@ void WeatherClient::_receiveMessage(const stinger::utils::MqttMessage& msg)
     }
     if (subscriptionId == _refreshDailyForecastMethodSubscriptionId) {
         _broker->Log(LOG_DEBUG, "Matched topic for refresh_daily_forecast response");
-        _handleRefreshDailyForecastResponse(topic, payload, mqttProps);
+        _handleRefreshDailyForecastResponse(msg);
     } else if (subscriptionId == _refreshHourlyForecastMethodSubscriptionId) {
         _broker->Log(LOG_DEBUG, "Matched topic for refresh_hourly_forecast response");
-        _handleRefreshHourlyForecastResponse(topic, payload, mqttProps);
+        _handleRefreshHourlyForecastResponse(msg);
     } else if (subscriptionId == _refreshCurrentConditionsMethodSubscriptionId) {
         _broker->Log(LOG_DEBUG, "Matched topic for refresh_current_conditions response");
-        _handleRefreshCurrentConditionsResponse(topic, payload, mqttProps);
+        _handleRefreshCurrentConditionsResponse(msg);
     }
-    if ((subscriptionId == _locationPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x79c28c9b07d0>>") % _instanceId).str())) {
-        _receiveLocationPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _currentTemperaturePropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x79c28c9b11c0>>") % _instanceId).str())) {
-        _receiveCurrentTemperaturePropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _currentConditionPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x79c28c9b1b80>>") % _instanceId).str())) {
-        _receiveCurrentConditionPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _dailyForecastPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x79c28d9bd040>>") % _instanceId).str())) {
-        _receiveDailyForecastPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _hourlyForecastPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x79c28c9b2240>>") % _instanceId).str())) {
-        _receiveHourlyForecastPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _currentConditionRefreshIntervalPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x79c28c9b1430>>") % _instanceId).str())) {
-        _receiveCurrentConditionRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _hourlyForecastRefreshIntervalPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x79c28c9b21b0>>") % _instanceId).str())) {
-        _receiveHourlyForecastRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _dailyForecastRefreshIntervalPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x79c28c9b2150>>") % _instanceId).str())) {
-        _receiveDailyForecastRefreshIntervalPropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    if (subscriptionId == _locationPropertySubscriptionId) {
+        _receiveLocationPropertyUpdate(msg);
+    } else if (subscriptionId == _currentTemperaturePropertySubscriptionId) {
+        _receiveCurrentTemperaturePropertyUpdate(msg);
+    } else if (subscriptionId == _currentConditionPropertySubscriptionId) {
+        _receiveCurrentConditionPropertyUpdate(msg);
+    } else if (subscriptionId == _dailyForecastPropertySubscriptionId) {
+        _receiveDailyForecastPropertyUpdate(msg);
+    } else if (subscriptionId == _hourlyForecastPropertySubscriptionId) {
+        _receiveHourlyForecastPropertyUpdate(msg);
+    } else if (subscriptionId == _currentConditionRefreshIntervalPropertySubscriptionId) {
+        _receiveCurrentConditionRefreshIntervalPropertyUpdate(msg);
+    } else if (subscriptionId == _hourlyForecastRefreshIntervalPropertySubscriptionId) {
+        _receiveHourlyForecastRefreshIntervalPropertyUpdate(msg);
+    } else if (subscriptionId == _dailyForecastRefreshIntervalPropertySubscriptionId) {
+        _receiveDailyForecastRefreshIntervalPropertyUpdate(msg);
     }
 }
 
@@ -167,8 +168,8 @@ void WeatherClient::registerCurrentTimeCallback(const std::function<void(std::st
 
 std::future<void> WeatherClient::refreshDailyForecast()
 {
-    std::vector<std::byte> correlationId = generate_uuid_bytes();
-    _pendingRefreshDailyForecastMethodCalls[correlationId] = std::promise<void>();
+    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
+    _pendingRefreshDailyForecastMethodCalls[correlationData] = std::promise<void>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -177,35 +178,33 @@ std::future<void> WeatherClient::refreshDailyForecast()
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["client_id"] = _broker->GetClientId();
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/weather/responses", topicArgs);
-    auto requestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_daily_forecast/request", topicArgs);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationId, responseTopic);
+    auto responseTopic = stinger::utils::format("client/{client_id}/weather/responses", topicParams);
+    auto requestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_daily_forecast/request", topicParams);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
-    return _pendingRefreshDailyForecastMethodCalls[correlationId].get_future();
+    return _pendingRefreshDailyForecastMethodCalls[correlationData].get_future();
 }
 
 void WeatherClient::_handleRefreshDailyForecastResponse(
-        const std::string& topic,
-        const std::string& payload,
-        const stinger::utils::MqttProperties& mqttProps
+        const stinger::mqtt::Message& msg
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for refresh_daily_forecast");
 
-    auto correlationId = mqttProps.correlationId.value_or(std::string());
-    auto promiseItr = _pendingRefreshDailyForecastMethodCalls.find(correlationId);
+    auto correlationData = msg.properties.correlationData.value_or({});
+    auto promiseItr = _pendingRefreshDailyForecastMethodCalls.find(correlationData);
     if (promiseItr != _pendingRefreshDailyForecastMethodCalls.end()) {
-        if (mqttProps.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(mqttProps.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
+        if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
             // The method call failed, so set an exception on the promise.
-            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(mqttProps.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
             return;
         }
 
@@ -220,8 +219,8 @@ void WeatherClient::_handleRefreshDailyForecastResponse(
 
 std::future<void> WeatherClient::refreshHourlyForecast()
 {
-    std::vector<std::byte> correlationId = generate_uuid_bytes();
-    _pendingRefreshHourlyForecastMethodCalls[correlationId] = std::promise<void>();
+    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
+    _pendingRefreshHourlyForecastMethodCalls[correlationData] = std::promise<void>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -230,35 +229,33 @@ std::future<void> WeatherClient::refreshHourlyForecast()
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["client_id"] = _broker->GetClientId();
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/weather/responses", topicArgs);
-    auto requestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request", topicArgs);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationId, responseTopic);
+    auto responseTopic = stinger::utils::format("client/{client_id}/weather/responses", topicParams);
+    auto requestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request", topicParams);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
-    return _pendingRefreshHourlyForecastMethodCalls[correlationId].get_future();
+    return _pendingRefreshHourlyForecastMethodCalls[correlationData].get_future();
 }
 
 void WeatherClient::_handleRefreshHourlyForecastResponse(
-        const std::string& topic,
-        const std::string& payload,
-        const stinger::utils::MqttProperties& mqttProps
+        const stinger::mqtt::Message& msg
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for refresh_hourly_forecast");
 
-    auto correlationId = mqttProps.correlationId.value_or(std::string());
-    auto promiseItr = _pendingRefreshHourlyForecastMethodCalls.find(correlationId);
+    auto correlationData = msg.properties.correlationData.value_or({});
+    auto promiseItr = _pendingRefreshHourlyForecastMethodCalls.find(correlationData);
     if (promiseItr != _pendingRefreshHourlyForecastMethodCalls.end()) {
-        if (mqttProps.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(mqttProps.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
+        if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
             // The method call failed, so set an exception on the promise.
-            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(mqttProps.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
             return;
         }
 
@@ -273,8 +270,8 @@ void WeatherClient::_handleRefreshHourlyForecastResponse(
 
 std::future<void> WeatherClient::refreshCurrentConditions()
 {
-    std::vector<std::byte> correlationId = generate_uuid_bytes();
-    _pendingRefreshCurrentConditionsMethodCalls[correlationId] = std::promise<void>();
+    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
+    _pendingRefreshCurrentConditionsMethodCalls[correlationData] = std::promise<void>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -283,35 +280,33 @@ std::future<void> WeatherClient::refreshCurrentConditions()
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["client_id"] = _broker->GetClientId();
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/weather/responses", topicArgs);
-    auto requestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_current_conditions/request", topicArgs);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationId, responseTopic);
+    auto responseTopic = stinger::utils::format("client/{client_id}/weather/responses", topicParams);
+    auto requestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_current_conditions/request", topicParams);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
-    return _pendingRefreshCurrentConditionsMethodCalls[correlationId].get_future();
+    return _pendingRefreshCurrentConditionsMethodCalls[correlationData].get_future();
 }
 
 void WeatherClient::_handleRefreshCurrentConditionsResponse(
-        const std::string& topic,
-        const std::string& payload,
-        const stinger::utils::MqttProperties& mqttProps
+        const stinger::mqtt::Message& msg
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for refresh_current_conditions");
 
-    auto correlationId = mqttProps.correlationId.value_or(std::string());
-    auto promiseItr = _pendingRefreshCurrentConditionsMethodCalls.find(correlationId);
+    auto correlationData = msg.properties.correlationData.value_or({});
+    auto promiseItr = _pendingRefreshCurrentConditionsMethodCalls.find(correlationData);
     if (promiseItr != _pendingRefreshCurrentConditionsMethodCalls.end()) {
-        if (mqttProps.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(mqttProps.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
+        if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
             // The method call failed, so set an exception on the promise.
-            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(mqttProps.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
             return;
         }
 
@@ -324,10 +319,10 @@ void WeatherClient::_handleRefreshCurrentConditionsResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for refresh_current_conditions");
 }
 
-void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void WeatherClient::_receiveLocationPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse location property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -360,7 +355,7 @@ void WeatherClient::_receiveLocationPropertyUpdate(const std::string& topic, con
     { // Scope lock
         std::lock_guard<std::mutex> lock(_locationPropertyMutex);
         _locationProperty = tempValue;
-        _lastLocationPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastLocationPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -399,14 +394,24 @@ std::future<bool> WeatherClient::updateLocationProperty(double latitude, double 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x79c28c9b07d0>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/weather/{service_id}/property/location/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/weather/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastLocationPropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
-void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse current_temperature property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -430,7 +435,7 @@ void WeatherClient::_receiveCurrentTemperaturePropertyUpdate(const std::string& 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
         _currentTemperatureProperty = tempValue;
-        _lastCurrentTemperaturePropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastCurrentTemperaturePropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -457,10 +462,10 @@ void WeatherClient::registerCurrentTemperaturePropertyCallback(const std::functi
     _currentTemperaturePropertyCallbacks.push_back(cb);
 }
 
-void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void WeatherClient::_receiveCurrentConditionPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse current_condition property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -493,7 +498,7 @@ void WeatherClient::_receiveCurrentConditionPropertyUpdate(const std::string& to
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
         _currentConditionProperty = tempValue;
-        _lastCurrentConditionPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastCurrentConditionPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -520,10 +525,10 @@ void WeatherClient::registerCurrentConditionPropertyCallback(const std::function
     _currentConditionPropertyCallbacks.push_back(cb);
 }
 
-void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void WeatherClient::_receiveDailyForecastPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse daily_forecast property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -565,7 +570,7 @@ void WeatherClient::_receiveDailyForecastPropertyUpdate(const std::string& topic
     { // Scope lock
         std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
         _dailyForecastProperty = tempValue;
-        _lastDailyForecastPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastDailyForecastPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -592,10 +597,10 @@ void WeatherClient::registerDailyForecastPropertyCallback(const std::function<vo
     _dailyForecastPropertyCallbacks.push_back(cb);
 }
 
-void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void WeatherClient::_receiveHourlyForecastPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse hourly_forecast property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -646,7 +651,7 @@ void WeatherClient::_receiveHourlyForecastPropertyUpdate(const std::string& topi
     { // Scope lock
         std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
         _hourlyForecastProperty = tempValue;
-        _lastHourlyForecastPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastHourlyForecastPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -673,10 +678,10 @@ void WeatherClient::registerHourlyForecastPropertyCallback(const std::function<v
     _hourlyForecastPropertyCallbacks.push_back(cb);
 }
 
-void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse current_condition_refresh_interval property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -700,7 +705,7 @@ void WeatherClient::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
         _currentConditionRefreshIntervalProperty = tempValue;
-        _lastCurrentConditionRefreshIntervalPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastCurrentConditionRefreshIntervalPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -737,14 +742,24 @@ std::future<bool> WeatherClient::updateCurrentConditionRefreshIntervalProperty(i
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x79c28c9b1430>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition_refresh_interval/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/weather/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastCurrentConditionRefreshIntervalPropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
-void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse hourly_forecast_refresh_interval property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -768,7 +783,7 @@ void WeatherClient::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const st
     { // Scope lock
         std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
         _hourlyForecastRefreshIntervalProperty = tempValue;
-        _lastHourlyForecastRefreshIntervalPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastHourlyForecastRefreshIntervalPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -805,14 +820,24 @@ std::future<bool> WeatherClient::updateHourlyForecastRefreshIntervalProperty(int
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x79c28c9b21b0>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/weather/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastHourlyForecastRefreshIntervalPropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
-void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse daily_forecast_refresh_interval property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -836,7 +861,7 @@ void WeatherClient::_receiveDailyForecastRefreshIntervalPropertyUpdate(const std
     { // Scope lock
         std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
         _dailyForecastRefreshIntervalProperty = tempValue;
-        _lastDailyForecastRefreshIntervalPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastDailyForecastRefreshIntervalPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -873,8 +898,18 @@ std::future<bool> WeatherClient::updateDailyForecastRefreshIntervalProperty(int 
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x79c28c9b2150>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/weather/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastDailyForecastRefreshIntervalPropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
 } // namespace weather

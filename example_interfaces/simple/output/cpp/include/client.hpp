@@ -18,7 +18,7 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include <stinger/utils/iconnection.hpp>
 #include <stinger/error/return_codes.hpp>
 #include "enums.hpp"
@@ -82,7 +82,7 @@ private:
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
-    void _receiveMessage(const stinger::utils::MqttMessage& msg);
+    void _receiveMessage(const stinger::mqtt::Message& msg);
 
     // ------------------ SIGNALS --------------------
 
@@ -98,7 +98,7 @@ private:
     std::map<std::vector<std::byte>, std::promise<int>> _pendingTradeNumbersMethodCalls;
     int _tradeNumbersMethodSubscriptionId = -1;
     // This is called internally to process responses to `trade_numbers` method calls.
-    void _handleTradeNumbersResponse(const stinger::utils::MqttMessage& msg);
+    void _handleTradeNumbersResponse(const stinger::mqtt::Message& msg);
 
     // ---------------- PROPERTIES ------------------
 
@@ -117,7 +117,7 @@ private:
     int _schoolPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `school` property.
-    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveSchoolPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `school` property.
     std::vector<std::function<void(std::string)>> _schoolPropertyCallbacks;

@@ -25,7 +25,7 @@ TODO: Get license text from stinger file
 #include "property_structs.hpp"
 
 #include <stinger/utils/iconnection.hpp>
-#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include "enums.hpp"
 
 #include "method_payloads.hpp"
@@ -40,7 +40,7 @@ public:
     static constexpr const char NAME[] = "weather";
     static constexpr const char INTERFACE_VERSION[] = "0.1.2";
 
-    WeatherServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId);
+    WeatherServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix);
 
     virtual ~WeatherServer();
 
@@ -179,21 +179,17 @@ private:
     std::string _prefixTopicParam;
 
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const stinger::utils::MqttProperties& mqttProps
-    );
+    void _receiveMessage(const stinger::mqtt::Message& msg);
 
-    void _callRefreshDailyForecastHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callRefreshDailyForecastHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<void()> _refreshDailyForecastHandler;
     int _refreshDailyForecastMethodSubscriptionId;
 
-    void _callRefreshHourlyForecastHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callRefreshHourlyForecastHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<void()> _refreshHourlyForecastHandler;
     int _refreshHourlyForecastMethodSubscriptionId;
 
-    void _callRefreshCurrentConditionsHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callRefreshCurrentConditionsHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<void()> _refreshCurrentConditionsHandler;
     int _refreshCurrentConditionsMethodSubscriptionId;
 
@@ -214,7 +210,7 @@ private:
     int _locationPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `location` property.
-    void _receiveLocationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveLocationPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `location` property.
     std::vector<std::function<void(double, double)>> _locationPropertyCallbacks;
@@ -235,7 +231,7 @@ private:
     int _currentTemperaturePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `current_temperature` property.
-    void _receiveCurrentTemperaturePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveCurrentTemperaturePropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `current_temperature` property.
     std::vector<std::function<void(double)>> _currentTemperaturePropertyCallbacks;
@@ -256,7 +252,7 @@ private:
     int _currentConditionPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `current_condition` property.
-    void _receiveCurrentConditionPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveCurrentConditionPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `current_condition` property.
     std::vector<std::function<void(WeatherCondition, std::string)>> _currentConditionPropertyCallbacks;
@@ -277,7 +273,7 @@ private:
     int _dailyForecastPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `daily_forecast` property.
-    void _receiveDailyForecastPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveDailyForecastPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `daily_forecast` property.
     std::vector<std::function<void(ForecastForDay, ForecastForDay, ForecastForDay)>> _dailyForecastPropertyCallbacks;
@@ -298,7 +294,7 @@ private:
     int _hourlyForecastPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `hourly_forecast` property.
-    void _receiveHourlyForecastPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveHourlyForecastPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `hourly_forecast` property.
     std::vector<std::function<void(ForecastForHour, ForecastForHour, ForecastForHour, ForecastForHour)>> _hourlyForecastPropertyCallbacks;
@@ -319,7 +315,7 @@ private:
     int _currentConditionRefreshIntervalPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `current_condition_refresh_interval` property.
-    void _receiveCurrentConditionRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveCurrentConditionRefreshIntervalPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `current_condition_refresh_interval` property.
     std::vector<std::function<void(int)>> _currentConditionRefreshIntervalPropertyCallbacks;
@@ -340,7 +336,7 @@ private:
     int _hourlyForecastRefreshIntervalPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `hourly_forecast_refresh_interval` property.
-    void _receiveHourlyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveHourlyForecastRefreshIntervalPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `hourly_forecast_refresh_interval` property.
     std::vector<std::function<void(int)>> _hourlyForecastRefreshIntervalPropertyCallbacks;
@@ -361,7 +357,7 @@ private:
     int _dailyForecastRefreshIntervalPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `daily_forecast_refresh_interval` property.
-    void _receiveDailyForecastRefreshIntervalPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveDailyForecastRefreshIntervalPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `daily_forecast_refresh_interval` property.
     std::vector<std::function<void(int)>> _dailyForecastRefreshIntervalPropertyCallbacks;

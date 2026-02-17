@@ -4,20 +4,23 @@
 #include <thread>
 #include <atomic>
 
-#include "broker.hpp"
 #include "server.hpp"
 #include "enums.hpp"
+#include <stinger/mqtt/brokerconnection.hpp>
+#include <stinger/error/return_codes.hpp>
+
+using namespace stinger::gen::signal_only;
 
 int main(int argc, char** argv)
 {
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "cpp-server-demo");
+    auto conn = std::make_shared<stinger::mqtt::BrokerConnection>("localhost", 1883, "cpp-server-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg)
                          {
                              std::cout << "[" << level << "] " << msg << std::endl;
                          });
 
-    auto server = std::make_shared<SignalOnlyServer>(conn, "cpp-server-demo:1");
+    auto server = std::make_shared<SignalOnlyServer>(conn, "cpp-server-demo:1", "example_prefix");
 
     auto anotherSignalFuture = server->emitAnotherSignalSignal(3.14, true, "apples");
     auto barkFuture = server->emitBarkSignal("apples");

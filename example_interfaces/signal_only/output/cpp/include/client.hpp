@@ -18,7 +18,7 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include <stinger/utils/iconnection.hpp>
 #include <stinger/error/return_codes.hpp>
 #include "enums.hpp"
@@ -75,11 +75,7 @@ private:
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const stinger::utils::MqttProperties& mqttProps
-    );
+    void _receiveMessage(const stinger::mqtt::Message& msg);
 
     // ------------------ SIGNALS --------------------
 

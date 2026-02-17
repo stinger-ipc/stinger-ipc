@@ -1,8 +1,8 @@
 #include "discovery.hpp"
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
-#include <stinger/util/format.hpp>
-#include <stinger/util/hash.hpp
+#include <stinger/utils/format.hpp>
+#include <stinger/utils/hash.hpp>
 #include <iostream>
 #include <algorithm>
 #include <sstream>
@@ -14,6 +14,25 @@ namespace signal_only {
 
 bool InitialPropertyValues::isComplete() const
 {
+    return true;
+}
+
+bool InstanceInfo::isComplete() const
+{
+    if (!serviceId.has_value()) {
+        return false;
+    }
+
+    if (!prefix.has_value()) {
+        return false;
+    }
+
+    if (!prefix.has_value()) {
+        return false;
+    }
+    if (!initial_property_values.isComplete()) {
+        return false;
+    }
     return true;
 }
 
@@ -53,13 +72,9 @@ SignalOnlyDiscovery::SignalOnlyDiscovery(std::shared_ptr<stinger::utils::IConnec
     _allPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/SignalOnly/{service_id}/property/+/value", topicArgs), 1);
 
     // Register message callback
-    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
-                                                                       const std::string& topic,
-                                                                       const std::string& payload,
-                                                                       const stinger::utils::MqttProperties& mqttProps
-                                                               )
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::mqtt::Message& msg)
                                                                {
-                                                                   _onMessage(topic, payload, mqttProps);
+                                                                   _onMessage(msg);
                                                                });
 }
 
@@ -77,14 +92,14 @@ void SignalOnlyDiscovery::SetDiscoveryCallback(const std::function<void(const In
     _discovery_callback = cb;
 }
 
-std::future<std::string> SignalOnlyDiscovery::GetSingleton()
+std::future<InstanceInfo> SimpleDiscovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
     // If we already have at least one instance, return it immediately
-    if (!_instance_ids.empty()) {
-        std::promise<std::string> promise;
-        promise.set_value(_instance_ids[0]);
+    if (!_discoveredInstances.empty()) {
+        std::promise<InstanceInfo> promise;
+        promise.set_value(_discoveredInstances.begin()->second);
         return promise.get_future();
     }
 
@@ -103,17 +118,17 @@ std::vector<InstanceInfo> SignalOnlyDiscovery::GetInstances() const
     return instances;
 }
 
-void SignalOnlyDiscovery::_onMessage(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps)
+void SignalOnlyDiscovery::_onMessage(const stinger::mqtt::Message& msg)
 {
     // Check content type
-    if (!mqttProps.contentType.has_value() || mqttProps.contentType.value() != "application/json") {
+    if (!msg.properties.contentType.has_value() || msg.properties.contentType.value() != "application/json") {
         std::cerr << "Invalid content type in Discovery message. Expected 'application/json'" << std::endl;
         return;
     }
 
     // Parse the JSON payload
     rapidjson::Document document;
-    document.Parse(payload.c_str());
+    document.Parse(msg.payload.c_str());
 
     if (document.HasParseError()) {
         std::cerr << "JSON parse error in Discovery: "
@@ -124,14 +139,14 @@ void SignalOnlyDiscovery::_onMessage(const std::string& topic, const std::string
 
     InstanceInfo* infoPtr = nullptr;
 
-    if (mqttProps.subscriptionId == _discoverySubscriptionId) {
+    if (msg.properties.subscriptionId == _discoverySubscriptionId) {
         std::vector<std::string> hashableIdentifiers;
         const uint8_t instance_id_expected_index = 2;
         const uint8_t prefix_expected_index = 0;
 
         // Split topic by '/' into vector of strings
         std::vector<std::string> topicParts;
-        std::stringstream ss(topic);
+        std::stringstream ss(msg.topic);
         std::string part;
         uint8_t index = 0;
         while (std::getline(ss, part, '/')) {
@@ -168,10 +183,10 @@ void SignalOnlyDiscovery::_onMessage(const std::string& topic, const std::string
 
         // Call the discovery callback if set
         if (_discovery_callback) {
-            _discovery_callback(instance_id);
+            _discovery_callback(*infoPtr);
         }
     }
-}
+} // end of _onMessage
 
 } // namespace signal_only
 

@@ -24,13 +24,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(stinger-cpp-utils)
 
 set(CLIENT_SOURCE_FILES
-	{%for src_file in output_files|match_regex("^src/.*\.cpp$")|exclude_regex("client.cpp$")|sort-%}
+	{%for src_file in output_files|match_regex("^src/.*\.cpp$")|exclude_regex("server.cpp$")|sort-%}
 		{{src_file}}
 	{%endfor%}
 )
 
 set(SERVER_SOURCE_FILES
-	{%for src_file in output_files|match_regex("^src/.*\.cpp$")|exclude_regex("server.cpp$")|sort-%}
+	{%for src_file in output_files|match_regex("^src/.*\.cpp$")|exclude_regex("client.cpp$")|sort-%}
 		{{src_file}}
 	{%endfor%}
 )

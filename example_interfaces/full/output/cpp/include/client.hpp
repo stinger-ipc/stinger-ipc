@@ -18,7 +18,7 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include <stinger/utils/iconnection.hpp>
 #include <stinger/error/return_codes.hpp>
 #include "enums.hpp"
@@ -161,11 +161,7 @@ private:
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const stinger::utils::MqttProperties& mqttProps
-    );
+    void _receiveMessage(const stinger::mqtt::Message& msg);
 
     // ------------------ SIGNALS --------------------
 
@@ -188,25 +184,25 @@ private:
     std::map<std::vector<std::byte>, std::promise<int>> _pendingAddNumbersMethodCalls;
     int _addNumbersMethodSubscriptionId = -1;
     // This is called internally to process responses to `addNumbers` method calls.
-    void _handleAddNumbersResponse(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps);
+    void _handleAddNumbersResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `doSomething` method calls.
     std::map<std::vector<std::byte>, std::promise<DoSomethingReturnValues>> _pendingDoSomethingMethodCalls;
     int _doSomethingMethodSubscriptionId = -1;
     // This is called internally to process responses to `doSomething` method calls.
-    void _handleDoSomethingResponse(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps);
+    void _handleDoSomethingResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `what_time_is_it` method calls.
     std::map<std::vector<std::byte>, std::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingWhatTimeIsItMethodCalls;
     int _whatTimeIsItMethodSubscriptionId = -1;
     // This is called internally to process responses to `what_time_is_it` method calls.
-    void _handleWhatTimeIsItResponse(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps);
+    void _handleWhatTimeIsItResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `hold_temperature` method calls.
     std::map<std::vector<std::byte>, std::promise<bool>> _pendingHoldTemperatureMethodCalls;
     int _holdTemperatureMethodSubscriptionId = -1;
     // This is called internally to process responses to `hold_temperature` method calls.
-    void _handleHoldTemperatureResponse(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps);
+    void _handleHoldTemperatureResponse(const stinger::mqtt::Message& msg);
 
     // ---------------- PROPERTIES ------------------
 
@@ -225,7 +221,7 @@ private:
     int _favoriteNumberPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `favorite_number` property.
-    void _receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveFavoriteNumberPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `favorite_number` property.
     std::vector<std::function<void(int)>> _favoriteNumberPropertyCallbacks;
@@ -246,7 +242,7 @@ private:
     int _favoriteFoodsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `favorite_foods` property.
-    void _receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveFavoriteFoodsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `favorite_foods` property.
     std::vector<std::function<void(std::string, int, std::optional<std::string>)>> _favoriteFoodsPropertyCallbacks;
@@ -267,7 +263,7 @@ private:
     int _lunchMenuPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `lunch_menu` property.
-    void _receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveLunchMenuPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `lunch_menu` property.
     std::vector<std::function<void(Lunch, Lunch)>> _lunchMenuPropertyCallbacks;
@@ -288,7 +284,7 @@ private:
     int _familyNamePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `family_name` property.
-    void _receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveFamilyNamePropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `family_name` property.
     std::vector<std::function<void(std::string)>> _familyNamePropertyCallbacks;
@@ -309,7 +305,7 @@ private:
     int _lastBreakfastTimePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `last_breakfast_time` property.
-    void _receiveLastBreakfastTimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveLastBreakfastTimePropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `last_breakfast_time` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _lastBreakfastTimePropertyCallbacks;
@@ -330,7 +326,7 @@ private:
     int _lastBirthdaysPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `last_birthdays` property.
-    void _receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveLastBirthdaysPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `last_birthdays` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>, std::optional<int>)>> _lastBirthdaysPropertyCallbacks;

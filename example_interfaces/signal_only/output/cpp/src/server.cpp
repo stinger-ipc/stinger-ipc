@@ -1,5 +1,4 @@
 
-
 #include <vector>
 #include <iostream>
 #include <syslog.h>
@@ -14,6 +13,7 @@
 #include "enums.hpp"
 #include <stinger/utils/iconnection.hpp>
 #include <stinger/utils/format.hpp>
+#include <stinger/error/return_codes.hpp>
 
 namespace stinger {
 
@@ -24,20 +24,18 @@ constexpr const char SignalOnlyServer::NAME[];
 constexpr const char SignalOnlyServer::INTERFACE_VERSION[];
 
 SignalOnlyServer::SignalOnlyServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix):
-    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false), _prefixTopicParam(prefix),
+    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false), _prefixTopicParam(prefix)
 
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
-                                                                       const std::string& topic,
-                                                                       const std::string& payload,
-                                                                       const stinger::utils::MqttProperties& mqttProps
+                                                                       const stinger::mqtt::Message& msg
                                                                )
                                                                {
-                                                                   _receiveMessage(topic, payload, mqttProps);
+                                                                   _receiveMessage(msg);
                                                                });
 
     std::map<std::string, std::string> topicArgs;
-    topicArgs["service_id"] = instanceId;
+    topicArgs["service_id"] = _instanceId;
     topicArgs["interface_name"] = NAME;
     topicArgs["client_id"] = _broker->GetClientId();
     topicArgs["prefix"] = _prefixTopicParam;
@@ -61,18 +59,21 @@ SignalOnlyServer::~SignalOnlyServer()
         _advertisementThread.join();
     }
 
-    std::string topic = (format("<bound method StingerSpec.interface_info_topic of <stingeripc.components.StingerSpec object at 0x7fa113d84e60>>") % _instanceId).str();
-    _broker->Publish(topic, "", 1, true, stinger::utils::MqttProperties());
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    std::string topic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/interface", topicArgs);
+    auto msg = stinger::mqtt::Message::ServiceOffline(topic);
+    _broker->Publish(msg);
 }
 
-void SignalOnlyServer::_receiveMessage(
-        const std::string& topic,
-        const std::string& payload,
-        const stinger::utils::MqttProperties& mqttProps
-)
+void SignalOnlyServer::_receiveMessage(const stinger::mqtt::Message& msg)
 {
     const int noSubId = -1;
-    int subscriptionId = mqttProps.subscriptionId.value_or(noSubId);
+    int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);
 }
 
 std::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two, std::string three)
@@ -93,8 +94,16 @@ std::future<bool> SignalOnlyServer::emitAnotherSignalSignal(double one, bool two
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7fa113ed1d30>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["signal_name"] = "anotherSignal";
+    topicArgs["prefix"] = _prefixTopicParam;
+    auto topic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/anotherSignal", topicArgs);
+    auto msg = stinger::mqtt::Message::Signal(topic, buf.GetString());
+    return _broker->Publish(msg);
 }
 
 std::future<bool> SignalOnlyServer::emitBarkSignal(std::string word)
@@ -111,8 +120,16 @@ std::future<bool> SignalOnlyServer::emitBarkSignal(std::string word)
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7fa115065d00>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["signal_name"] = "bark";
+    topicArgs["prefix"] = _prefixTopicParam;
+    auto topic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/bark", topicArgs);
+    auto msg = stinger::mqtt::Message::Signal(topic, buf.GetString());
+    return _broker->Publish(msg);
 }
 
 std::future<bool> SignalOnlyServer::emitMaybeNumberSignal(std::optional<int> number)
@@ -125,8 +142,16 @@ std::future<bool> SignalOnlyServer::emitMaybeNumberSignal(std::optional<int> num
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7fa11324ef90>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["signal_name"] = "maybe_number";
+    topicArgs["prefix"] = _prefixTopicParam;
+    auto topic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/maybe_number", topicArgs);
+    auto msg = stinger::mqtt::Message::Signal(topic, buf.GetString());
+    return _broker->Publish(msg);
 }
 
 std::future<bool> SignalOnlyServer::emitMaybeNameSignal(std::optional<std::string> name)
@@ -142,8 +167,16 @@ std::future<bool> SignalOnlyServer::emitMaybeNameSignal(std::optional<std::strin
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7fa11324f440>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["signal_name"] = "maybe_name";
+    topicArgs["prefix"] = _prefixTopicParam;
+    auto topic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/maybe_name", topicArgs);
+    auto msg = stinger::mqtt::Message::Signal(topic, buf.GetString());
+    return _broker->Publish(msg);
 }
 
 std::future<bool> SignalOnlyServer::emitNowSignal(std::chrono::time_point<std::chrono::system_clock> timestamp)
@@ -161,8 +194,16 @@ std::future<bool> SignalOnlyServer::emitNowSignal(std::chrono::time_point<std::c
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish((format("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7fa11324f5c0>>") % _instanceId).str(), buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["signal_name"] = "now";
+    topicArgs["prefix"] = _prefixTopicParam;
+    auto topic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/signal/now", topicArgs);
+    auto msg = stinger::mqtt::Message::Signal(topic, buf.GetString());
+    return _broker->Publish(msg);
 }
 
 void SignalOnlyServer::_advertisementThreadLoop()
@@ -184,18 +225,23 @@ void SignalOnlyServer::_advertisementThreadLoop()
         doc.AddMember("connection_topic", rapidjson::Value(_broker->GetOnlineTopic().c_str(), allocator), allocator);
         doc.AddMember("timestamp", rapidjson::Value(timestamp.c_str(), allocator), allocator);
 
+        doc.AddMember("prefix", rapidjson::Value(_prefixTopicParam.c_str(), allocator), allocator);
+
         // Convert to JSON string
         rapidjson::StringBuffer buf;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
         doc.Accept(writer);
 
-        // Create MQTT properties with message expiry interval of 150 seconds
-        stinger::utils::MqttProperties mqttProps;
-        mqttProps.messageExpiryInterval = 150;
+        std::map<std::string, std::string> topicArgs;
+        topicArgs["service_id"] = _instanceId;
+        topicArgs["interface_name"] = NAME;
+        topicArgs["client_id"] = _broker->GetClientId();
+        topicArgs["prefix"] = _prefixTopicParam;
 
-        // Publish to <bound method StingerSpec.interface_info_topic of <stingeripc.components.StingerSpec object at 0x7fa113d84e60>>
-        std::string topic = (format("<bound method StingerSpec.interface_info_topic of <stingeripc.components.StingerSpec object at 0x7fa113d84e60>>") % _instanceId).str();
-        _broker->Publish(topic, buf.GetString(), 1, true, mqttProps);
+        // Publish to "{prefix}/SignalOnly/{service_id}/interface"
+        std::string topic = stinger::utils::format("{prefix}/SignalOnly/{service_id}/interface", topicArgs);
+        auto msg = stinger::mqtt::Message::ServiceOnline(topic, buf.GetString(), 120);
+        _broker->Publish(msg);
 
         _broker->Log(LOG_INFO, "Published service advertisement to %s", topic.c_str());
 

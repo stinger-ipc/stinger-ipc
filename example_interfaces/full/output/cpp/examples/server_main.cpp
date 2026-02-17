@@ -4,20 +4,23 @@
 #include <thread>
 #include <atomic>
 
-#include "broker.hpp"
 #include "server.hpp"
 #include "enums.hpp"
+#include <stinger/mqtt/brokerconnection.hpp>
+#include <stinger/error/return_codes.hpp>
+
+using namespace stinger::gen::full;
 
 int main(int argc, char** argv)
 {
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "cpp-server-demo");
+    auto conn = std::make_shared<stinger::mqtt::BrokerConnection>("localhost", 1883, "cpp-server-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg)
                          {
                              std::cout << "[" << level << "] " << msg << std::endl;
                          });
 
-    auto server = std::make_shared<FullServer>(conn, "cpp-server-demo:1");
+    auto server = std::make_shared<FullServer>(conn, "cpp-server-demo:1", "example_prefix");
 
     std::cout << "Setting initial value for property 'favorite_number'.\n";
     server->updateFavoriteNumberProperty(42);

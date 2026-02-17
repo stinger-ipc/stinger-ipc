@@ -5,17 +5,19 @@
 #include <syslog.h>
 #include <chrono>
 #include <thread>
-#include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
 #include "enums.hpp"
-#include "interface_exceptions.hpp"
+#include <stinger/error/return_codes.hpp>
+#include <stinger/mqtt/brokerconnection.hpp>
+
+using namespace stinger::gen::testable;
 
 int main(int argc, char** argv)
 {
     // Create a connection to the broker
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "testable-client-demo");
+    auto conn = std::make_shared<stinger::mqtt::BrokerConnection>("localhost", 1883, "testable-client-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg)
                          {
@@ -23,20 +25,20 @@ int main(int argc, char** argv)
                          });
 
     // Discover a service ID for a testable service.
-    std::string serviceId;
+    InstanceInfo serviceInfo;
     { // restrict scope
         TestableDiscovery discovery(conn);
-        auto serviceIdFut = discovery.GetSingleton();
-        auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
-        if (serviceIdFutStatus == std::future_status::timeout) {
+        auto serviceInfoFut = discovery.GetSingleton();
+        auto serviceInfoFutStatus = serviceInfoFut.wait_for(std::chrono::seconds(15));
+        if (serviceInfoFutStatus == std::future_status::timeout) {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
         }
-        serviceId = serviceIdFut.get();
+        serviceInfo = serviceInfoFut.get();
     }
 
     // Create the client object.
-    TestableClient client(conn, serviceId);
+    TestableClient client(conn, serviceInfo);
 
     // Register callbacks for signals.
     client.registerEmptyCallback([]()
@@ -432,7 +434,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOneIntegerResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_ONE_INTEGER Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -455,7 +457,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOptionalIntegerResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_INTEGER Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -485,7 +487,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callThreeIntegersResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_THREE_INTEGERS Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -515,7 +517,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOneStringResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_ONE_STRING Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -538,7 +540,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOptionalStringResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_STRING Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -568,7 +570,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callThreeStringsResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_THREE_STRINGS Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -598,7 +600,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOneEnumResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_ONE_ENUM Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -621,7 +623,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOptionalEnumResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_ENUM Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -651,7 +653,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callThreeEnumsResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_THREE_ENUMS Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -682,7 +684,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOneStructResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_ONE_STRUCT Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -706,7 +708,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOptionalStructResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_STRUCT Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -741,7 +743,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callThreeStructsResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_THREE_STRUCTS Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -771,7 +773,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOneDateTimeResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_ONE_DATE_TIME Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -794,7 +796,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOptionalDateTimeResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_DATE_TIME Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -824,7 +826,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callThreeDateTimesResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_THREE_DATE_TIMES Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -854,7 +856,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOneDurationResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_ONE_DURATION Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -877,7 +879,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOptionalDurationResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_DURATION Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -907,7 +909,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callThreeDurationsResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_THREE_DURATIONS Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -937,7 +939,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOneBinaryResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_ONE_BINARY Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -961,7 +963,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOptionalBinaryResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_BINARY Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -991,7 +993,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callThreeBinariesResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_THREE_BINARIES Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -1023,7 +1025,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOneListOfIntegersResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_ONE_LIST_OF_INTEGERS Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -1046,7 +1048,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callOptionalListOfFloatsResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_OPTIONAL_LIST_OF_FLOATS Exception: " << ex.what() << std::endl;
             }
             if (success) {
@@ -1076,7 +1078,7 @@ int main(int argc, char** argv)
             try {
                 returnValue = callTwoListsResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex) {
+            } catch (const stinger::error::StingerMethodException& ex) {
                 std::cout << "CALL_TWO_LISTS Exception: " << ex.what() << std::endl;
             }
             if (success) {

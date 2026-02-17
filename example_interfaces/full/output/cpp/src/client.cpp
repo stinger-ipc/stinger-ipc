@@ -31,55 +31,56 @@ constexpr const char FullClient::INTERFACE_VERSION[];
 FullClient::FullClient(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo):
     _broker(broker), _instanceId(instanceInfo.serviceId.value_or("error_service_id_not_found")), _instanceInfo(instanceInfo)
 {
-    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::utils::MqttMessage& msg)
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::mqtt::Message& msg)
                                                                {
                                                                    _receiveMessage(msg);
                                                                });
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto todayIsTopic = stinger::utils::format("{prefix}/Full/{service_id}/signal/todayIs", topicArgs);
+    auto todayIsTopic = stinger::utils::format("{prefix}/Full/{service_id}/signal/todayIs", topicParams);
     _todayIsSignalSubscriptionId = _broker->Subscribe(todayIsTopic, 2);
-    auto randomWordTopic = stinger::utils::format("{prefix}/Full/{service_id}/signal/randomWord", topicArgs);
+    auto randomWordTopic = stinger::utils::format("{prefix}/Full/{service_id}/signal/randomWord", topicParams);
     _randomWordSignalSubscriptionId = _broker->Subscribe(randomWordTopic, 2);
     { // Restrict scope
-        auto addNumbersRequestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/addNumbers/request", topicArgs);
+        auto addNumbersRequestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/addNumbers/request", topicParams);
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << stinger::utils::format(addNumbersRequestTopic, topicArgs);
+        responseTopicStringStream << stinger::utils::format(addNumbersRequestTopic, topicParams);
         _addNumbersMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
-        auto doSomethingRequestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/doSomething/request", topicArgs);
+        auto doSomethingRequestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/doSomething/request", topicParams);
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << stinger::utils::format(doSomethingRequestTopic, topicArgs);
+        responseTopicStringStream << stinger::utils::format(doSomethingRequestTopic, topicParams);
         _doSomethingMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
-        auto whatTimeIsItRequestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/what_time_is_it/request", topicArgs);
+        auto whatTimeIsItRequestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/what_time_is_it/request", topicParams);
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << stinger::utils::format(whatTimeIsItRequestTopic, topicArgs);
+        responseTopicStringStream << stinger::utils::format(whatTimeIsItRequestTopic, topicParams);
         _whatTimeIsItMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
     { // Restrict scope
-        auto holdTemperatureRequestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/hold_temperature/request", topicArgs);
+        auto holdTemperatureRequestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/hold_temperature/request", topicParams);
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << stinger::utils::format(holdTemperatureRequestTopic, topicArgs);
+        responseTopicStringStream << stinger::utils::format(holdTemperatureRequestTopic, topicParams);
         _holdTemperatureMethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
     }
-    auto favoriteNumberValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/favorite_number/value", topicArgs);
+    auto favoriteNumberValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/favorite_number/value", topicParams);
     _favoriteNumberPropertySubscriptionId = _broker->Subscribe(favoriteNumberValueTopic, 1);
-    auto favoriteFoodsValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/favorite_foods/value", topicArgs);
+    auto favoriteFoodsValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/favorite_foods/value", topicParams);
     _favoriteFoodsPropertySubscriptionId = _broker->Subscribe(favoriteFoodsValueTopic, 1);
-    auto lunchMenuValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/lunch_menu/value", topicArgs);
+    auto lunchMenuValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/lunch_menu/value", topicParams);
     _lunchMenuPropertySubscriptionId = _broker->Subscribe(lunchMenuValueTopic, 1);
-    auto familyNameValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/family_name/value", topicArgs);
+    auto familyNameValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/family_name/value", topicParams);
     _familyNamePropertySubscriptionId = _broker->Subscribe(familyNameValueTopic, 1);
-    auto lastBreakfastTimeValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/last_breakfast_time/value", topicArgs);
+    auto lastBreakfastTimeValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/last_breakfast_time/value", topicParams);
     _lastBreakfastTimePropertySubscriptionId = _broker->Subscribe(lastBreakfastTimeValueTopic, 1);
-    auto lastBirthdaysValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/last_birthdays/value", topicArgs);
+    auto lastBirthdaysValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/last_birthdays/value", topicParams);
     _lastBirthdaysPropertySubscriptionId = _broker->Subscribe(lastBirthdaysValueTopic, 1);
 }
 
@@ -91,7 +92,7 @@ FullClient::~FullClient()
     }
 }
 
-void FullClient::_receiveMessage(const stinger::utils::MqttMessage& msg)
+void FullClient::_receiveMessage(const stinger::mqtt::Message& msg)
 {
     const int noSubId = -1;
     int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);
@@ -202,29 +203,29 @@ void FullClient::_receiveMessage(const stinger::utils::MqttMessage& msg)
     }
     if (subscriptionId == _addNumbersMethodSubscriptionId) {
         _broker->Log(LOG_DEBUG, "Matched topic for addNumbers response");
-        _handleAddNumbersResponse(topic, payload, mqttProps);
+        _handleAddNumbersResponse(msg);
     } else if (subscriptionId == _doSomethingMethodSubscriptionId) {
         _broker->Log(LOG_DEBUG, "Matched topic for doSomething response");
-        _handleDoSomethingResponse(topic, payload, mqttProps);
+        _handleDoSomethingResponse(msg);
     } else if (subscriptionId == _whatTimeIsItMethodSubscriptionId) {
         _broker->Log(LOG_DEBUG, "Matched topic for what_time_is_it response");
-        _handleWhatTimeIsItResponse(topic, payload, mqttProps);
+        _handleWhatTimeIsItResponse(msg);
     } else if (subscriptionId == _holdTemperatureMethodSubscriptionId) {
         _broker->Log(LOG_DEBUG, "Matched topic for hold_temperature response");
-        _handleHoldTemperatureResponse(topic, payload, mqttProps);
+        _handleHoldTemperatureResponse(msg);
     }
-    if ((subscriptionId == _favoriteNumberPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x738693f6b770>>") % _instanceId).str())) {
-        _receiveFavoriteNumberPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _favoriteFoodsPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x738695a78c50>>") % _instanceId).str())) {
-        _receiveFavoriteFoodsPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _lunchMenuPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x738693fa8410>>") % _instanceId).str())) {
-        _receiveLunchMenuPropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _familyNamePropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x738693fa8920>>") % _instanceId).str())) {
-        _receiveFamilyNamePropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _lastBreakfastTimePropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x738693fa8950>>") % _instanceId).str())) {
-        _receiveLastBreakfastTimePropertyUpdate(topic, payload, mqttProps.propertyVersion);
-    } else if ((subscriptionId == _lastBirthdaysPropertySubscriptionId) || (subscriptionId == noSubId && topic == (format("<bound method Property.value_topic of <stingeripc.components.Property object at 0x738693fa8ce0>>") % _instanceId).str())) {
-        _receiveLastBirthdaysPropertyUpdate(topic, payload, mqttProps.propertyVersion);
+    if (subscriptionId == _favoriteNumberPropertySubscriptionId) {
+        _receiveFavoriteNumberPropertyUpdate(msg);
+    } else if (subscriptionId == _favoriteFoodsPropertySubscriptionId) {
+        _receiveFavoriteFoodsPropertyUpdate(msg);
+    } else if (subscriptionId == _lunchMenuPropertySubscriptionId) {
+        _receiveLunchMenuPropertyUpdate(msg);
+    } else if (subscriptionId == _familyNamePropertySubscriptionId) {
+        _receiveFamilyNamePropertyUpdate(msg);
+    } else if (subscriptionId == _lastBreakfastTimePropertySubscriptionId) {
+        _receiveLastBreakfastTimePropertyUpdate(msg);
+    } else if (subscriptionId == _lastBirthdaysPropertySubscriptionId) {
+        _receiveLastBirthdaysPropertyUpdate(msg);
     }
 }
 
@@ -242,8 +243,8 @@ void FullClient::registerRandomWordCallback(const std::function<void(std::string
 
 std::future<int> FullClient::addNumbers(int first, int second, std::optional<int> third)
 {
-    std::vector<std::byte> correlationId = generate_uuid_bytes();
-    _pendingAddNumbersMethodCalls[correlationId] = std::promise<int>();
+    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
+    _pendingAddNumbersMethodCalls[correlationData] = std::promise<int>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -259,31 +260,29 @@ std::future<int> FullClient::addNumbers(int first, int second, std::optional<int
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["client_id"] = _broker->GetClientId();
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Full/responses", topicArgs);
-    auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/addNumbers/request", topicArgs);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationId, responseTopic);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Full/responses", topicParams);
+    auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/addNumbers/request", topicParams);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
-    return _pendingAddNumbersMethodCalls[correlationId].get_future();
+    return _pendingAddNumbersMethodCalls[correlationData].get_future();
 }
 
 void FullClient::_handleAddNumbersResponse(
-        const std::string& topic,
-        const std::string& payload,
-        const stinger::utils::MqttProperties& mqttProps
+        const stinger::mqtt::Message& msg
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for addNumbers");
 
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse addNumbers signal payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -292,12 +291,12 @@ void FullClient::_handleAddNumbersResponse(
         throw std::runtime_error("Received payload for 'addNumbers' response is not an object");
     }
 
-    auto correlationId = mqttProps.correlationId.value_or(std::string());
-    auto promiseItr = _pendingAddNumbersMethodCalls.find(correlationId);
+    auto correlationData = msg.properties.correlationData.value_or({});
+    auto promiseItr = _pendingAddNumbersMethodCalls.find(correlationData);
     if (promiseItr != _pendingAddNumbersMethodCalls.end()) {
-        if (mqttProps.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(mqttProps.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
+        if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
             // The method call failed, so set an exception on the promise.
-            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(mqttProps.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
             return;
         }
 
@@ -313,8 +312,8 @@ void FullClient::_handleAddNumbersResponse(
 
 std::future<DoSomethingReturnValues> FullClient::doSomething(std::string taskToDo)
 {
-    std::vector<std::byte> correlationId = generate_uuid_bytes();
-    _pendingDoSomethingMethodCalls[correlationId] = std::promise<DoSomethingReturnValues>();
+    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
+    _pendingDoSomethingMethodCalls[correlationData] = std::promise<DoSomethingReturnValues>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -329,31 +328,29 @@ std::future<DoSomethingReturnValues> FullClient::doSomething(std::string taskToD
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["client_id"] = _broker->GetClientId();
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Full/responses", topicArgs);
-    auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/doSomething/request", topicArgs);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationId, responseTopic);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Full/responses", topicParams);
+    auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/doSomething/request", topicParams);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
-    return _pendingDoSomethingMethodCalls[correlationId].get_future();
+    return _pendingDoSomethingMethodCalls[correlationData].get_future();
 }
 
 void FullClient::_handleDoSomethingResponse(
-        const std::string& topic,
-        const std::string& payload,
-        const stinger::utils::MqttProperties& mqttProps
+        const stinger::mqtt::Message& msg
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for doSomething");
 
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse doSomething signal payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -362,12 +359,12 @@ void FullClient::_handleDoSomethingResponse(
         throw std::runtime_error("Received payload for 'doSomething' response is not an object");
     }
 
-    auto correlationId = mqttProps.correlationId.value_or(std::string());
-    auto promiseItr = _pendingDoSomethingMethodCalls.find(correlationId);
+    auto correlationData = msg.properties.correlationData.value_or({});
+    auto promiseItr = _pendingDoSomethingMethodCalls.find(correlationData);
     if (promiseItr != _pendingDoSomethingMethodCalls.end()) {
-        if (mqttProps.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(mqttProps.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
+        if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
             // The method call failed, so set an exception on the promise.
-            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(mqttProps.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
             return;
         }
 
@@ -383,8 +380,8 @@ void FullClient::_handleDoSomethingResponse(
 
 std::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::whatTimeIsIt()
 {
-    std::vector<std::byte> correlationId = generate_uuid_bytes();
-    _pendingWhatTimeIsItMethodCalls[correlationId] = std::promise<std::chrono::time_point<std::chrono::system_clock>>();
+    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
+    _pendingWhatTimeIsItMethodCalls[correlationData] = std::promise<std::chrono::time_point<std::chrono::system_clock>>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -393,31 +390,29 @@ std::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::what
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["client_id"] = _broker->GetClientId();
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Full/responses", topicArgs);
-    auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/what_time_is_it/request", topicArgs);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationId, responseTopic);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Full/responses", topicParams);
+    auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/what_time_is_it/request", topicParams);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
-    return _pendingWhatTimeIsItMethodCalls[correlationId].get_future();
+    return _pendingWhatTimeIsItMethodCalls[correlationData].get_future();
 }
 
 void FullClient::_handleWhatTimeIsItResponse(
-        const std::string& topic,
-        const std::string& payload,
-        const stinger::utils::MqttProperties& mqttProps
+        const stinger::mqtt::Message& msg
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for what_time_is_it");
 
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse what_time_is_it signal payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -426,12 +421,12 @@ void FullClient::_handleWhatTimeIsItResponse(
         throw std::runtime_error("Received payload for 'what_time_is_it' response is not an object");
     }
 
-    auto correlationId = mqttProps.correlationId.value_or(std::string());
-    auto promiseItr = _pendingWhatTimeIsItMethodCalls.find(correlationId);
+    auto correlationData = msg.properties.correlationData.value_or({});
+    auto promiseItr = _pendingWhatTimeIsItMethodCalls.find(correlationData);
     if (promiseItr != _pendingWhatTimeIsItMethodCalls.end()) {
-        if (mqttProps.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(mqttProps.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
+        if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
             // The method call failed, so set an exception on the promise.
-            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(mqttProps.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
             return;
         }
 
@@ -447,8 +442,8 @@ void FullClient::_handleWhatTimeIsItResponse(
 
 std::future<bool> FullClient::holdTemperature(double temperatureCelsius)
 {
-    std::vector<std::byte> correlationId = generate_uuid_bytes();
-    _pendingHoldTemperatureMethodCalls[correlationId] = std::promise<bool>();
+    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
+    _pendingHoldTemperatureMethodCalls[correlationData] = std::promise<bool>();
 
     rapidjson::Document doc;
     doc.SetObject();
@@ -459,31 +454,29 @@ std::future<bool> FullClient::holdTemperature(double temperatureCelsius)
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
 
-    std::map<std::string, std::string> topicArgs;
-    topicArgs["client_id"] = _broker->GetClientId();
-    topicArgs["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
-    topicArgs["interface_name"] = NAME;
-    topicArgs["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Full/responses", topicArgs);
-    auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/hold_temperature/request", topicArgs);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationId, responseTopic);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Full/responses", topicParams);
+    auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/hold_temperature/request", topicParams);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
-    return _pendingHoldTemperatureMethodCalls[correlationId].get_future();
+    return _pendingHoldTemperatureMethodCalls[correlationData].get_future();
 }
 
 void FullClient::_handleHoldTemperatureResponse(
-        const std::string& topic,
-        const std::string& payload,
-        const stinger::utils::MqttProperties& mqttProps
+        const stinger::mqtt::Message& msg
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for hold_temperature");
 
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse hold_temperature signal payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -492,12 +485,12 @@ void FullClient::_handleHoldTemperatureResponse(
         throw std::runtime_error("Received payload for 'hold_temperature' response is not an object");
     }
 
-    auto correlationId = mqttProps.correlationId.value_or(std::string());
-    auto promiseItr = _pendingHoldTemperatureMethodCalls.find(correlationId);
+    auto correlationData = msg.properties.correlationData.value_or({});
+    auto promiseItr = _pendingHoldTemperatureMethodCalls.find(correlationData);
     if (promiseItr != _pendingHoldTemperatureMethodCalls.end()) {
-        if (mqttProps.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(mqttProps.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
+        if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS)) {
             // The method call failed, so set an exception on the promise.
-            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(mqttProps.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), mqttProps.debugInfo.value_or("Exception returned via MQTT")));
+            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
             return;
         }
 
@@ -511,10 +504,10 @@ void FullClient::_handleHoldTemperatureResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for hold_temperature");
 }
 
-void FullClient::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void FullClient::_receiveFavoriteNumberPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse favorite_number property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -538,7 +531,7 @@ void FullClient::_receiveFavoriteNumberPropertyUpdate(const std::string& topic, 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_favoriteNumberPropertyMutex);
         _favoriteNumberProperty = tempValue;
-        _lastFavoriteNumberPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastFavoriteNumberPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -575,14 +568,24 @@ std::future<bool> FullClient::updateFavoriteNumberProperty(int number) const
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x738693f6b770>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/favorite_number/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastFavoriteNumberPropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
-void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void FullClient::_receiveFavoriteFoodsPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse favorite_foods property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -624,7 +627,7 @@ void FullClient::_receiveFavoriteFoodsPropertyUpdate(const std::string& topic, c
     { // Scope lock
         std::lock_guard<std::mutex> lock(_favoriteFoodsPropertyMutex);
         _favoriteFoodsProperty = tempValue;
-        _lastFavoriteFoodsPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastFavoriteFoodsPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -673,14 +676,24 @@ std::future<bool> FullClient::updateFavoriteFoodsProperty(std::string drink, int
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x738695a78c50>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/favorite_foods/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastFavoriteFoodsPropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
-void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void FullClient::_receiveLunchMenuPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse lunch_menu property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -713,7 +726,7 @@ void FullClient::_receiveLunchMenuPropertyUpdate(const std::string& topic, const
     { // Scope lock
         std::lock_guard<std::mutex> lock(_lunchMenuPropertyMutex);
         _lunchMenuProperty = tempValue;
-        _lastLunchMenuPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastLunchMenuPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -740,10 +753,10 @@ void FullClient::registerLunchMenuPropertyCallback(const std::function<void(Lunc
     _lunchMenuPropertyCallbacks.push_back(cb);
 }
 
-void FullClient::_receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void FullClient::_receiveFamilyNamePropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse family_name property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -767,7 +780,7 @@ void FullClient::_receiveFamilyNamePropertyUpdate(const std::string& topic, cons
     { // Scope lock
         std::lock_guard<std::mutex> lock(_familyNamePropertyMutex);
         _familyNameProperty = tempValue;
-        _lastFamilyNamePropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastFamilyNamePropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -808,14 +821,24 @@ std::future<bool> FullClient::updateFamilyNameProperty(std::string familyName) c
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x738693fa8920>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/family_name/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastFamilyNamePropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
-void FullClient::_receiveLastBreakfastTimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void FullClient::_receiveLastBreakfastTimePropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse last_breakfast_time property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -840,7 +863,7 @@ void FullClient::_receiveLastBreakfastTimePropertyUpdate(const std::string& topi
     { // Scope lock
         std::lock_guard<std::mutex> lock(_lastBreakfastTimePropertyMutex);
         _lastBreakfastTimeProperty = tempValue;
-        _lastLastBreakfastTimePropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastLastBreakfastTimePropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -882,14 +905,24 @@ std::future<bool> FullClient::updateLastBreakfastTimeProperty(std::chrono::time_
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x738693fa8950>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/last_breakfast_time/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastLastBreakfastTimePropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
-void FullClient::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion)
+void FullClient::_receiveLastBirthdaysPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok) {
         //Log("Could not JSON parse last_birthdays property update payload.");
         throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
@@ -943,7 +976,7 @@ void FullClient::_receiveLastBirthdaysPropertyUpdate(const std::string& topic, c
     { // Scope lock
         std::lock_guard<std::mutex> lock(_lastBirthdaysPropertyMutex);
         _lastBirthdaysProperty = tempValue;
-        _lastLastBirthdaysPropertyVersion = optPropertyVersion ? *optPropertyVersion : -1;
+        _lastLastBirthdaysPropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
     }
     // Notify all registered callbacks.
     { // Scope lock
@@ -1002,8 +1035,18 @@ std::future<bool> FullClient::updateLastBirthdaysProperty(std::chrono::time_poin
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
-    stinger::utils::MqttProperties mqttProps;
-    return _broker->Publish("<bound method Property.update_topic of <stingeripc.components.Property object at 0x738693fa8ce0>>", buf.GetString(), 1, false, mqttProps);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
+
+    std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/last_birthdays/update", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/responses", topicParams);
+    auto correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastLastBirthdaysPropertyVersion, correlationData, response_topic);
+    return _broker->Publish(msg);
 }
 
 } // namespace full

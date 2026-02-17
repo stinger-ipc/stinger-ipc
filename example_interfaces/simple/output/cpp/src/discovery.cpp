@@ -20,6 +20,25 @@ bool InitialPropertyValues::isComplete() const
     return true;
 }
 
+bool InstanceInfo::isComplete() const
+{
+    if (!serviceId.has_value()) {
+        return false;
+    }
+
+    if (!prefix.has_value()) {
+        return false;
+    }
+
+    if (!prefix.has_value()) {
+        return false;
+    }
+    if (!initial_property_values.isComplete()) {
+        return false;
+    }
+    return true;
+}
+
 void InstanceInfo::UpdateFromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     if (jsonObj.HasMember("service_id") && jsonObj["service_id"].IsString()) {
@@ -56,7 +75,7 @@ SimpleDiscovery::SimpleDiscovery(std::shared_ptr<stinger::utils::IConnection> br
     _allPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/Simple/{service_id}/property/+/value", topicArgs), 1);
 
     // Register message callback
-    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::utils::MqttMessage& msg)
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::mqtt::Message& msg)
                                                                {
                                                                    _onMessage(msg);
                                                                });
@@ -102,7 +121,7 @@ std::vector<InstanceInfo> SimpleDiscovery::GetInstances() const
     return instances;
 }
 
-void SimpleDiscovery::_onMessage(const stinger::utils::MqttMessage& msg)
+void SimpleDiscovery::_onMessage(const stinger::mqtt::Message& msg)
 {
     // Check content type
     if (!msg.properties.contentType.has_value() || msg.properties.contentType.value() != "application/json") {

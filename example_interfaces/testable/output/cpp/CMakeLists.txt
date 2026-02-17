@@ -24,22 +24,20 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(stinger-cpp-utils)
 
 set(CLIENT_SOURCE_FILES
-	src/conversions.cpp
+	src/client.cpp
 	src/discovery.cpp
 	src/method_payloads.cpp
 	src/property_structs.cpp
-	src/server.cpp
 	src/signal_payloads.cpp
 	src/structs.cpp
 	
 )
 
 set(SERVER_SOURCE_FILES
-	src/client.cpp
-	src/conversions.cpp
 	src/discovery.cpp
 	src/method_payloads.cpp
 	src/property_structs.cpp
+	src/server.cpp
 	src/signal_payloads.cpp
 	src/structs.cpp
 	

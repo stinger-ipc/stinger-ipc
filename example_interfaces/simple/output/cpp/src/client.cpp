@@ -31,7 +31,7 @@ constexpr const char SimpleClient::INTERFACE_VERSION[];
 SimpleClient::SimpleClient(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo):
     _broker(broker), _instanceId(instanceInfo.serviceId.value_or("error_service_id_not_found")), _instanceInfo(instanceInfo)
 {
-    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::utils::MqttMessage& msg)
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::mqtt::Message& msg)
                                                                {
                                                                    _receiveMessage(msg);
                                                                });
@@ -62,7 +62,7 @@ SimpleClient::~SimpleClient()
     }
 }
 
-void SimpleClient::_receiveMessage(const stinger::utils::MqttMessage& msg)
+void SimpleClient::_receiveMessage(const stinger::mqtt::Message& msg)
 {
     const int noSubId = -1;
     int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);
@@ -140,7 +140,7 @@ std::future<int> SimpleClient::tradeNumbers(int yourNumber)
 
     auto responseTopic = stinger::utils::format("client/{client_id}/Simple/responses", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/Simple/{service_id}/method/trade_numbers/request", topicParams);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
@@ -148,7 +148,7 @@ std::future<int> SimpleClient::tradeNumbers(int yourNumber)
 }
 
 void SimpleClient::_handleTradeNumbersResponse(
-        const stinger::utils::MqttMessage& msg
+        const stinger::mqtt::Message& msg
 )
 {
     _broker->Log(LOG_DEBUG, "In response handler for trade_numbers");
@@ -182,7 +182,7 @@ void SimpleClient::_handleTradeNumbersResponse(
     _broker->Log(LOG_DEBUG, "End of response handler for trade_numbers");
 }
 
-void SimpleClient::_receiveSchoolPropertyUpdate(const stinger::utils::MqttMessage& msg)
+void SimpleClient::_receiveSchoolPropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
@@ -260,7 +260,7 @@ std::future<bool> SimpleClient::updateSchoolProperty(std::string name) const
     std::string update_topic = stinger::utils::format("{prefix}/Simple/{service_id}/property/school/update", topicParams);
     std::string response_topic = stinger::utils::format("client/{client_id}/Simple/responses", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
-    auto msg = stinger::utils::MqttMessage::PropertyUpdateRequest(update_topic, buf.GetString(), _lastSchoolPropertyVersion, correlationData, response_topic);
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastSchoolPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
 }
 

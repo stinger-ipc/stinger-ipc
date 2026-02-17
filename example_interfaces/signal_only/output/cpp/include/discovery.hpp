@@ -10,9 +10,10 @@ Discovery service for finding available service instances.
 #include <functional>
 #include <mutex>
 #include <stinger/utils/iconnection.hpp>
-#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include "structs.hpp"
 #include "enums.hpp"
+#include "property_structs.hpp"
 
 namespace stinger {
 
@@ -48,7 +49,7 @@ public:
     std::vector<InstanceInfo> GetInstances() const;
 
 private:
-    void _onMessage(const std::string& topic, const std::string& payload, const stinger::utils::MqttProperties& mqttProps);
+    void _onMessage(const stinger::mqtt::Message& msg);
     int _discoverySubscriptionId = -1;
     int _allPropertySubscriptionId = -1;
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;

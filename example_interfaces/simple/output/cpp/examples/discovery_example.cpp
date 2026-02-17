@@ -1,21 +1,23 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include "broker.hpp"
 #include "discovery.hpp"
+#include <stinger/mqtt/brokerconnection.hpp>
+
+using namespace stinger::gen::simple;
 
 int main(int argc, char** argv)
 {
     // Create a broker connection
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "Discovery-example");
+    auto conn = std::make_shared<stinger::mqtt::BrokerConnection>("localhost", 1883, "Discovery-example");
 
     // Create a Discovery instance for service "myapp"
     SimpleDiscovery discovery(conn);
 
     // Set up a callback for when new services are discovered
-    discovery.SetDiscoveryCallback([](const std::string& instance_id)
+    discovery.SetDiscoveryCallback([](const InstanceInfo& info)
                                    {
-                                       std::cout << "New service instance discovered: " << instance_id << std::endl;
+                                       std::cout << "New service instance discovered: " << info.serviceId.value_or("error") << std::endl;
                                    });
 
     // Try to get a singleton instance
@@ -26,14 +28,14 @@ int main(int argc, char** argv)
     auto status = future.wait_for(std::chrono::seconds(10));
 
     if (status == std::future_status::ready) {
-        std::string instance_id = future.get();
-        std::cout << "Got singleton instance: " << instance_id << std::endl;
+        InstanceInfo info = future.get();
+        std::cout << "Got singleton instance: " << info.serviceId.value_or("error") << std::endl;
 
         // Get all discovered instances
-        auto all_instances = discovery.GetInstanceIds();
-        std::cout << "Total instances discovered: " << all_instances.size() << std::endl;
-        for (const auto& id: all_instances) {
-            std::cout << "  - " << id << std::endl;
+        auto allInstances = discovery.GetInstances();
+        std::cout << "Total instances discovered: " << allInstances.size() << std::endl;
+        for (const auto& info: allInstances) {
+            std::cout << "  - " << info.serviceId.value_or("error") << std::endl;
         }
     } else {
         std::cout << "Timeout waiting for service instance" << std::endl;

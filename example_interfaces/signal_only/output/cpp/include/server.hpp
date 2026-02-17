@@ -23,7 +23,7 @@ TODO: Get license text from stinger file
 #include <rapidjson/document.h>
 
 #include <stinger/utils/iconnection.hpp>
-#include <stinger/utils/mqttproperties.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include "enums.hpp"
 
 namespace stinger {
@@ -36,7 +36,7 @@ public:
     static constexpr const char NAME[] = "SignalOnly";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
-    SignalOnlyServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId);
+    SignalOnlyServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix);
 
     virtual ~SignalOnlyServer();
 
@@ -57,11 +57,7 @@ private:
     std::string _prefixTopicParam;
 
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const stinger::utils::MqttProperties& mqttProps
-    );
+    void _receiveMessage(const stinger::mqtt::Message& msg);
 
     // ---------------- SERVICE ADVERTISEMENT ------------------
 

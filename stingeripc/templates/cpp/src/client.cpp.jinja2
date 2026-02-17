@@ -34,7 +34,7 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
 {{stinger.cpp.client_class_name}}::{{stinger.cpp.client_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo)
         : _broker(broker), _instanceId(instanceInfo.serviceId.value_or("error_service_id_not_found")), _instanceInfo(instanceInfo)
 {
-    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::utils::MqttMessage& msg)
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::mqtt::Message& msg)
     {
         _receiveMessage(msg);
     });
@@ -75,7 +75,7 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     }
 }
 
-void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::utils::MqttMessage& msg)
+void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Message& msg)
 {
     const int noSubId = -1;
     int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);
@@ -198,7 +198,7 @@ std::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}
 
     auto responseTopic = stinger::utils::format("{{method.response_topic()}}", topicParams);
     auto requestTopic = stinger::utils::format("{{method.request_topic()}}", topicParams);
-    auto msg = stinger::utils::MqttMessage::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
     _broker->Publish(msg);
 
@@ -206,7 +206,7 @@ std::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}
 }
 
 void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Response(
-        const stinger::utils::MqttMessage& msg) 
+        const stinger::mqtt::Message& msg) 
 {
     _broker->Log(LOG_DEBUG, "In response handler for {{method_name}}");
     
@@ -252,7 +252,7 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
 }
 {%endfor%}{# end for each method #}
 {%for prop_name, prop in stinger.properties.items()%}
-void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const stinger::utils::MqttMessage& msg)
+void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const stinger::mqtt::Message& msg)
 {
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
@@ -312,7 +312,7 @@ std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop_name | UpperCa
     std::string update_topic = stinger::utils::format("{{prop.update_topic()}}", topicParams);
     std::string response_topic = stinger::utils::format("{{prop.response_topic()}}", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
-    auto msg = stinger::utils::MqttMessage::PropertyUpdateRequest(update_topic, buf.GetString(), _last{{prop_name | UpperCamelCase}}PropertyVersion, correlationData, response_topic);
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _last{{prop_name | UpperCamelCase}}PropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
 
 }
