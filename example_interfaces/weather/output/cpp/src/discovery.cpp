@@ -116,7 +116,7 @@ void WeatherDiscovery::SetDiscoveryCallback(const std::function<void(const Insta
     _discovery_callback = cb;
 }
 
-std::future<InstanceInfo> SimpleDiscovery::GetSingleton()
+std::future<InstanceInfo> WeatherDiscovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 

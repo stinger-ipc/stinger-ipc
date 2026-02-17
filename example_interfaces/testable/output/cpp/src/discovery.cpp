@@ -170,7 +170,7 @@ void TestableDiscovery::SetDiscoveryCallback(const std::function<void(const Inst
     _discovery_callback = cb;
 }
 
-std::future<InstanceInfo> SimpleDiscovery::GetSingleton()
+std::future<InstanceInfo> TestableDiscovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 

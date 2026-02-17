@@ -12,6 +12,7 @@ namespace {{ns}} {
 {%endfor-%}
 namespace {{stinger.name|snake_case}} {
 
+{%if stinger.properties|length > 0%}
 bool InitialPropertyValues::isComplete() const
 {
     {%-for prop_name, prop in stinger.properties.items() %}
@@ -22,6 +23,7 @@ bool InitialPropertyValues::isComplete() const
     {%-endfor%}
     return true;
 }
+{%endif%}
 
 bool InstanceInfo::isComplete() const
 {
@@ -36,9 +38,11 @@ bool InstanceInfo::isComplete() const
     if (!prefix.has_value()) {
         return false;
     }
+    {%- if stinger.properties|length > 0 %}
     if (!initial_property_values.isComplete()) {
         return false;
     }
+    {%- endif %}
     return true;
 }
 
@@ -108,7 +112,7 @@ void {{stinger.name|UpperCamelCase}}Discovery::SetDiscoveryCallback(const std::f
     _discovery_callback = cb;
 }
 
-std::future<InstanceInfo> SimpleDiscovery::GetSingleton()
+std::future<InstanceInfo> {{stinger.name|UpperCamelCase}}Discovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 

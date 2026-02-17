@@ -13,6 +13,7 @@ TODO: Get license text from stinger file
 #include <cstddef>
 #include <chrono>
 #include <vector>
+#include <optional>
 #include <rapidjson/document.h>
 #include "enums.hpp"
 #include <stinger/utils/conversions.hpp>

@@ -86,12 +86,16 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
 
+    var interface_name = "{{stinger.name}}";
+    var client_id = clientId;
+    // TODO: support all the topic params
+
     $scope.methods = {
         {%-for method_name, method in stinger.methods.items() %}
         "{{method_name | lowerCamelCase}}": {
             "name": "{{method_name}}",
             "mqtt_topic": "{{method.topic}}",
-            "response_topic": "{{method.response_topic((method.name|lowerCamelCase), '"+clientId+"')}}",
+            "response_topic": `{{ method.response_topic() | regex_replace( '{', '${' ) }}`,
             "pending_correlation_id": null,
             "args": { {%-for arg in method.arg_list %}
                 "{{arg.name}}": {

@@ -93,15 +93,15 @@ wheels = [
 
 [[package]]
 name = "jacobs-jinja-too"
-version = "0.2.11"
+version = "0.2.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja-markdown" },
     { name = "jinja2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4c/81/a336baad1de1c7037105695e7d338ecb7246ea501ed30299d55c8fef4d57/jacobs_jinja_too-0.2.11.tar.gz", hash = "sha256:3b4eaabfba303a2b59163b648b7e55509d96e774205f280e6a422afe80c6f55a", size = 13855, upload-time = "2026-01-20T03:50:33.15Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/4c/3878554094be4f7bdcb517f120985405d904f7926bb34b44d0e2f5bf0f56/jacobs_jinja_too-0.2.12.tar.gz", hash = "sha256:93fed52b6f9830cf029c063d1c38c544b3cab7a86a429a1224faff975d90b748", size = 15037, upload-time = "2026-02-17T15:59:04.02Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/ef/1a80cb5a28691e721b4c7ba2830dd07a983384609006e232e405d6e28ba7/jacobs_jinja_too-0.2.11-py3-none-any.whl", hash = "sha256:e09cddcf237f4b06c2d355587fc87f63d202133a55f2217aa9fce69df53c8bc6", size = 13732, upload-time = "2026-01-20T03:50:34.254Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/ad/667fa19778bb97318e727dea11cd01435cfc72af8ab6a166cfb32c9c1f51/jacobs_jinja_too-0.2.12-py3-none-any.whl", hash = "sha256:969051c262ba01c6a044b00f6fcf0c04efb6168dfd35ccd6a03928c4e3667afd", size = 13896, upload-time = "2026-02-17T15:59:02.119Z" },
 ]
 
 [[package]]
@@ -695,7 +695,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "go-task-bin", specifier = ">=3.46.2" },
-    { name = "jacobs-jinja-too", specifier = ">=0.2.10" },
+    { name = "jacobs-jinja-too", specifier = ">=0.2.12" },
     { name = "jsonschema-rs", specifier = ">=0.34.0" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "pydantic", specifier = ">=2.11.7" },

@@ -110,7 +110,7 @@ void FullDiscovery::SetDiscoveryCallback(const std::function<void(const Instance
     _discovery_callback = cb;
 }
 
-std::future<InstanceInfo> SimpleDiscovery::GetSingleton()
+std::future<InstanceInfo> FullDiscovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 

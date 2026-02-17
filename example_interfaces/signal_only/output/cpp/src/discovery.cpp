@@ -12,11 +12,6 @@ namespace stinger {
 namespace gen {
 namespace signal_only {
 
-bool InitialPropertyValues::isComplete() const
-{
-    return true;
-}
-
 bool InstanceInfo::isComplete() const
 {
     if (!serviceId.has_value()) {
@@ -28,9 +23,6 @@ bool InstanceInfo::isComplete() const
     }
 
     if (!prefix.has_value()) {
-        return false;
-    }
-    if (!initial_property_values.isComplete()) {
         return false;
     }
     return true;
@@ -92,7 +84,7 @@ void SignalOnlyDiscovery::SetDiscoveryCallback(const std::function<void(const In
     _discovery_callback = cb;
 }
 
-std::future<InstanceInfo> SimpleDiscovery::GetSingleton()
+std::future<InstanceInfo> SignalOnlyDiscovery::GetSingleton()
 {
     std::lock_guard<std::mutex> lock(_mutex);
 

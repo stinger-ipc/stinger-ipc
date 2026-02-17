@@ -6,5 +6,7 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
+
 from pydantic import BaseModel
 from .interface_types import *
+
