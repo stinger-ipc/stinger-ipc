@@ -19,7 +19,7 @@ UTC = timezone.utc
 
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
-from pyqttier.interface import IConnection
+from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 import concurrent.futures as futures
 import asyncio
@@ -61,7 +61,7 @@ class DiscoveredInstance(BaseModel):
 
 class FullClient:
 
-    def __init__(self, connection: IConnection, instance_info: DiscoveredInstance):
+    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
         """Constructor for a `FullClient` object."""
         self._logger = logging.getLogger("FullClient")
         self._logger.setLevel(logging.DEBUG)
@@ -108,10 +108,12 @@ class FullClient:
         self._changed_value_callbacks_for_last_birthdays: List[LastBirthdaysPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_today_is: List[TodayIsSignalCallbackType] = []
         self._signal_recv_callbacks_for_random_word: List[RandomWordSignalCallbackType] = []
-        self._all_methods_response_topic = "client/{client_id}/Full/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._all_methods_response_topic = "client/{client_id}/Full/method/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._logger.debug("Subscribing to method response topic %s", self._all_methods_response_topic)
         self._conn.subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
 
-        self._property_response_topic = "client/{client_id}/Full/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._property_response_topic = "client/{client_id}/Full/property/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._logger.debug("Subscribing to property response topic %s", self._property_response_topic)
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
 
     @property
@@ -335,7 +337,11 @@ class FullClient:
         self._do_callbacks_for(self._signal_recv_callbacks_for_random_word, **kwargs)
 
     def _receive_any_method_response_message(self, message: Message):
-        # Handle '' method response.
+        """
+        Handle '' method response.  This is the callback provided to the MQTT client
+        for receiving method responses, so it receives all method responses.
+        """
+        self._logger.debug("Received method response message on topic %s", message.topic)
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if message.user_properties:
@@ -721,7 +727,7 @@ class FullClientBuilder:
         self._property_updated_callbacks_for_last_birthdays.append(wrapper)
         return wrapper
 
-    def build(self, broker: IConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> FullClient:
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> FullClient:
         """Builds a new FullClient."""
         self._logger.debug("Building FullClient for service instance %s", instance_info.instance_id)
         client = FullClient(broker, instance_info)
@@ -779,7 +785,7 @@ class FullClientBuilder:
 
 class FullClientDiscoverer:
 
-    def __init__(self, connection: IConnection, builder: Optional[FullClientBuilder] = None, build_binding: Optional[Any] = None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[FullClientBuilder] = None, build_binding: Optional[Any] = None):
         """Creates a new FullClientDiscoverer."""
         self._conn = connection
         self._builder = builder

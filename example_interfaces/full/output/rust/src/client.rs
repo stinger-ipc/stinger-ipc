@@ -146,7 +146,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         topic_map.insert("method_name".to_string(), "+".to_string());
         let topic_any_method_response =
-            strfmt("client/{client_id}/Full/responses", &topic_map).unwrap();
+            strfmt("client/{client_id}/Full/method/responses", &topic_map).unwrap();
         let subscription_id_any_method_response = connection
             .subscribe(
                 topic_any_method_response,
@@ -317,7 +317,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
 
         topic_map.insert("property_name".to_string(), "+".to_string());
         let topic_any_property_update_response =
-            strfmt("client/{client_id}/Full/responses", &topic_map).unwrap();
+            strfmt("client/{client_id}/Full/property/responses", &topic_map).unwrap();
         let subscription_id_any_property_update_response = connection
             .subscribe(
                 topic_any_property_update_response,
@@ -444,7 +444,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         )
         .unwrap();
         let response_topic: String =
-            strfmt("client/{client_id}/Full/responses", &topic_param_map).unwrap();
+            strfmt("client/{client_id}/Full/method/responses", &topic_param_map).unwrap();
         let msg = message::request(&request_topic, &data, correlation_id, response_topic).unwrap();
         info!("Sending request to topic '{}': {:?}", request_topic, data);
         let _ = self.mqtt_client.publish(msg).await;
@@ -507,7 +507,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         )
         .unwrap();
         let response_topic: String =
-            strfmt("client/{client_id}/Full/responses", &topic_param_map).unwrap();
+            strfmt("client/{client_id}/Full/method/responses", &topic_param_map).unwrap();
         let msg = message::request(&request_topic, &data, correlation_id, response_topic).unwrap();
         info!("Sending request to topic '{}': {:?}", request_topic, data);
         let _ = self.mqtt_client.publish(msg).await;
@@ -565,7 +565,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         )
         .unwrap();
         let response_topic: String =
-            strfmt("client/{client_id}/Full/responses", &topic_param_map).unwrap();
+            strfmt("client/{client_id}/Full/method/responses", &topic_param_map).unwrap();
         let msg = message::request(&request_topic, &data, correlation_id, response_topic).unwrap();
         info!("Sending request to topic '{}': {:?}", request_topic, data);
         let _ = self.mqtt_client.publish(msg).await;
@@ -627,7 +627,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
         )
         .unwrap();
         let response_topic: String =
-            strfmt("client/{client_id}/Full/responses", &topic_param_map).unwrap();
+            strfmt("client/{client_id}/Full/method/responses", &topic_param_map).unwrap();
         let msg = message::request(&request_topic, &data, correlation_id, response_topic).unwrap();
         info!("Sending request to topic '{}': {:?}", request_topic, data);
         let _ = self.mqtt_client.publish(msg).await;
@@ -858,9 +858,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         )
                         .unwrap();
                         if let Some(responder) = opt_responder {
-                            let resp_topic =
-                                strfmt("client/{client_id}/Full/responses", &topic_param_map)
-                                    .unwrap();
+                            let resp_topic = strfmt(
+                                "client/{client_id}/Full/property/responses",
+                                &topic_param_map,
+                            )
+                            .unwrap();
                             let correlation_id = Uuid::new_v4();
                             let (sender, receiver) = oneshot::channel();
                             {
@@ -962,9 +964,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         )
                         .unwrap();
                         if let Some(responder) = opt_responder {
-                            let resp_topic =
-                                strfmt("client/{client_id}/Full/responses", &topic_param_map)
-                                    .unwrap();
+                            let resp_topic = strfmt(
+                                "client/{client_id}/Full/property/responses",
+                                &topic_param_map,
+                            )
+                            .unwrap();
                             let correlation_id = Uuid::new_v4();
                             let (sender, receiver) = oneshot::channel();
                             {
@@ -1060,9 +1064,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         )
                         .unwrap();
                         if let Some(responder) = opt_responder {
-                            let resp_topic =
-                                strfmt("client/{client_id}/Full/responses", &topic_param_map)
-                                    .unwrap();
+                            let resp_topic = strfmt(
+                                "client/{client_id}/Full/property/responses",
+                                &topic_param_map,
+                            )
+                            .unwrap();
                             let correlation_id = Uuid::new_v4();
                             let (sender, receiver) = oneshot::channel();
                             {
@@ -1156,9 +1162,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         )
                         .unwrap();
                         if let Some(responder) = opt_responder {
-                            let resp_topic =
-                                strfmt("client/{client_id}/Full/responses", &topic_param_map)
-                                    .unwrap();
+                            let resp_topic = strfmt(
+                                "client/{client_id}/Full/property/responses",
+                                &topic_param_map,
+                            )
+                            .unwrap();
                             let correlation_id = Uuid::new_v4();
                             let (sender, receiver) = oneshot::channel();
                             {
@@ -1262,9 +1270,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         )
                         .unwrap();
                         if let Some(responder) = opt_responder {
-                            let resp_topic =
-                                strfmt("client/{client_id}/Full/responses", &topic_param_map)
-                                    .unwrap();
+                            let resp_topic = strfmt(
+                                "client/{client_id}/Full/property/responses",
+                                &topic_param_map,
+                            )
+                            .unwrap();
                             let correlation_id = Uuid::new_v4();
                             let (sender, receiver) = oneshot::channel();
                             {
@@ -1367,9 +1377,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> FullClient<C> {
                         )
                         .unwrap();
                         if let Some(responder) = opt_responder {
-                            let resp_topic =
-                                strfmt("client/{client_id}/Full/responses", &topic_param_map)
-                                    .unwrap();
+                            let resp_topic = strfmt(
+                                "client/{client_id}/Full/property/responses",
+                                &topic_param_map,
+                            )
+                            .unwrap();
                             let correlation_id = Uuid::new_v4();
                             let (sender, receiver) = oneshot::channel();
                             {

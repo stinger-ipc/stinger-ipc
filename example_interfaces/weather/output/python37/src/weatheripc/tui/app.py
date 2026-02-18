@@ -29,12 +29,10 @@ class WeatherIPCApp(App):
         # Import screens here to avoid circular imports
         from weatheripc.tui.connection import ConnectionScreen
         from weatheripc.tui.discovery import DiscoveryScreen
-        from weatheripc.tui.client import ClientScreen
 
         # Install screens
         self.install_screen(ConnectionScreen(), name="connection")
         self.install_screen(DiscoveryScreen(), name="discovery")
-        self.install_screen(ClientScreen(), name="client")
 
         # Start with connection screen
         self.push_screen("connection")

@@ -1,6 +1,6 @@
 """Configuration models for Stinger IPC."""
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 from pathlib import Path
 from typing import List, Optional
 import tomllib
@@ -33,9 +33,9 @@ class TopicConfig(BaseModel):
     signals: str = Field(default="{interface_name}/{service_id}/signal/{signal_name}", description="Topic template for signals")
     property_values: str = Field(default="{interface_name}/{service_id}/property/{property_name}/value", description="Topic template for property values")
     property_updates: str = Field(default="{interface_name}/{service_id}/property/{property_name}/update", description="Topic template for property updates")
-    property_update_responses: str = Field(default="client/{client_id}/{interface_name}/responses", description="Topic template for property update responses")
+    property_update_responses: str = Field(default="client/{client_id}/{interface_name}/property/responses", description="Topic template for property update responses")
     method_requests: str = Field(default="{interface_name}/{service_id}/method/{method_name}/request", description="Topic template for method requests")
-    method_responses: str = Field(default="client/{client_id}/{interface_name}/responses", description="Topic template for method responses")
+    method_responses: str = Field(default="client/{client_id}/{interface_name}/method/responses", description="Topic template for method responses")
     interface_discovery: str = Field(default="{interface_name}/{service_id}/interface", description="Topic template for interface discovery")
 
     @field_validator('property_values')
@@ -46,6 +46,13 @@ class TopicConfig(BaseModel):
         if get_argument_position(v, 'service_id') is None:
             raise ValueError('"property_values" topic template must contain {service_id} placeholder')
         return v
+    
+    @model_validator(mode='after')
+    @classmethod
+    def validate_topic_values(cls, config: 'TopicConfig') -> 'TopicConfig':
+        if config.property_update_responses == config.method_responses:
+            raise ValueError('"property_update_responses" and "method_responses" topic templates must be different to avoid routing conflicts')
+        return config
 
 class LanguagePluginConfig(BaseModel):
     """ Configuration for languages that are provided via plugins """

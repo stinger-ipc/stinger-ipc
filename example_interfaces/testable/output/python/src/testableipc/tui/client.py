@@ -10,6 +10,11 @@ from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Labe
 from textual.containers import Horizontal, VerticalScroll, Vertical  # typing: ignore
 from testableipc.interface_types import *
 from testableipc.client import TestableClient
+import logging
+
+# Configure logging
+logger = logging.getLogger("TUI-Client")
+logger.setLevel(logging.DEBUG)
 
 
 class PropertyEditModal(ModalScreen[bool]):
@@ -518,6 +523,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
     def _call_method(self) -> None:
         """Call the method with collected inputs."""
         assert self.result_widget is not None, "result_widget must be initialized"
+        logger.debug("Calling method '%s' with params: %s", self.method_name, self.params)
         try:
             # Collect inputs
             kwargs = {}
@@ -668,6 +674,8 @@ class ClientScreen(Screen):
 
     def on_mount(self) -> None:
         """Set up signal handlers when screen mounts."""
+        logger.debug("Mounting client screen")
+
         # Get the client from the app
         self.client = self.app.testable_client
 
@@ -683,6 +691,9 @@ class ClientScreen(Screen):
 
         # Register all property handlers
         self._register_property_handlers()
+
+    def on_show(self):
+        logger.debug("Showing client screen")
 
     def _add_method_buttons(self) -> None:
         """Add buttons for all call_* methods."""
@@ -819,30 +830,55 @@ class ClientScreen(Screen):
 
         # Register all signal handlers
         assert self.client is not None, "Client must be initialized"
+        logger.debug("Registering TUI handler for signal '%s'", "empty")
         self.client.receive_empty(make_handler("empty"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_int")
         self.client.receive_single_int(make_handler("single_int"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_optional_int")
         self.client.receive_single_optional_int(make_handler("single_optional_int"))
+        logger.debug("Registering TUI handler for signal '%s'", "three_integers")
         self.client.receive_three_integers(make_handler("three_integers"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_string")
         self.client.receive_single_string(make_handler("single_string"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_optional_string")
         self.client.receive_single_optional_string(make_handler("single_optional_string"))
+        logger.debug("Registering TUI handler for signal '%s'", "three_strings")
         self.client.receive_three_strings(make_handler("three_strings"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_enum")
         self.client.receive_single_enum(make_handler("single_enum"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_optional_enum")
         self.client.receive_single_optional_enum(make_handler("single_optional_enum"))
+        logger.debug("Registering TUI handler for signal '%s'", "three_enums")
         self.client.receive_three_enums(make_handler("three_enums"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_struct")
         self.client.receive_single_struct(make_handler("single_struct"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_optional_struct")
         self.client.receive_single_optional_struct(make_handler("single_optional_struct"))
+        logger.debug("Registering TUI handler for signal '%s'", "three_structs")
         self.client.receive_three_structs(make_handler("three_structs"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_date_time")
         self.client.receive_single_date_time(make_handler("single_date_time"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_optional_datetime")
         self.client.receive_single_optional_datetime(make_handler("single_optional_datetime"))
+        logger.debug("Registering TUI handler for signal '%s'", "three_date_times")
         self.client.receive_three_date_times(make_handler("three_date_times"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_duration")
         self.client.receive_single_duration(make_handler("single_duration"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_optional_duration")
         self.client.receive_single_optional_duration(make_handler("single_optional_duration"))
+        logger.debug("Registering TUI handler for signal '%s'", "three_durations")
         self.client.receive_three_durations(make_handler("three_durations"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_binary")
         self.client.receive_single_binary(make_handler("single_binary"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_optional_binary")
         self.client.receive_single_optional_binary(make_handler("single_optional_binary"))
+        logger.debug("Registering TUI handler for signal '%s'", "three_binaries")
         self.client.receive_three_binaries(make_handler("three_binaries"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_array_of_integers")
         self.client.receive_single_array_of_integers(make_handler("single_array_of_integers"))
+        logger.debug("Registering TUI handler for signal '%s'", "single_optional_array_of_strings")
         self.client.receive_single_optional_array_of_strings(make_handler("single_optional_array_of_strings"))
+        logger.debug("Registering TUI handler for signal '%s'", "array_of_every_type")
         self.client.receive_array_of_every_type(make_handler("array_of_every_type"))
 
     def _register_property_handlers(self) -> None:

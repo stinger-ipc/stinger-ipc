@@ -19,7 +19,7 @@ UTC = timezone.utc
 
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
-from pyqttier.interface import IConnection
+from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 import concurrent.futures as futures
 import asyncio
@@ -61,7 +61,7 @@ class DiscoveredInstance(BaseModel):
 
 class WeatherClient:
 
-    def __init__(self, connection: IConnection, instance_info: DiscoveredInstance):
+    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
         """Constructor for a `WeatherClient` object."""
         self._logger = logging.getLogger("WeatherClient")
         self._logger.setLevel(logging.DEBUG)
@@ -117,10 +117,12 @@ class WeatherClient:
         self._conn.subscribe("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value".format(**self._topic_template_kwargs), self._receive_daily_forecast_refresh_interval_property_update_message)  # type: ignore[str-format]
         self._changed_value_callbacks_for_daily_forecast_refresh_interval: List[DailyForecastRefreshIntervalPropertyUpdatedCallbackType] = []
         self._signal_recv_callbacks_for_current_time: List[CurrentTimeSignalCallbackType] = []
-        self._all_methods_response_topic = "client/{client_id}/weather/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._all_methods_response_topic = "client/{client_id}/weather/method/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._logger.debug("Subscribing to method response topic %s", self._all_methods_response_topic)
         self._conn.subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
 
-        self._property_response_topic = "client/{client_id}/weather/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._property_response_topic = "client/{client_id}/weather/property/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._logger.debug("Subscribing to property response topic %s", self._property_response_topic)
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
 
     @property
@@ -349,7 +351,11 @@ class WeatherClient:
         self._do_callbacks_for(self._signal_recv_callbacks_for_current_time, **kwargs)
 
     def _receive_any_method_response_message(self, message: Message):
-        # Handle '' method response.
+        """
+        Handle '' method response.  This is the callback provided to the MQTT client
+        for receiving method responses, so it receives all method responses.
+        """
+        self._logger.debug("Received method response message on topic %s", message.topic)
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if message.user_properties:
@@ -744,7 +750,7 @@ class WeatherClientBuilder:
         self._property_updated_callbacks_for_daily_forecast_refresh_interval.append(wrapper)
         return wrapper
 
-    def build(self, broker: IConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> WeatherClient:
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> WeatherClient:
         """Builds a new WeatherClient."""
         self._logger.debug("Building WeatherClient for service instance %s", instance_info.instance_id)
         client = WeatherClient(broker, instance_info)
@@ -808,7 +814,7 @@ class WeatherClientBuilder:
 
 class WeatherClientDiscoverer:
 
-    def __init__(self, connection: IConnection, builder: Optional[WeatherClientBuilder] = None, build_binding: Optional[Any] = None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[WeatherClientBuilder] = None, build_binding: Optional[Any] = None):
         """Creates a new WeatherClientDiscoverer."""
         self._conn = connection
         self._builder = builder

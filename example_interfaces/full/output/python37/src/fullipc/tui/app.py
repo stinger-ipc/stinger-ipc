@@ -29,12 +29,10 @@ class FullIPCApp(App):
         # Import screens here to avoid circular imports
         from fullipc.tui.connection import ConnectionScreen
         from fullipc.tui.discovery import DiscoveryScreen
-        from fullipc.tui.client import ClientScreen
 
         # Install screens
         self.install_screen(ConnectionScreen(), name="connection")
         self.install_screen(DiscoveryScreen(), name="discovery")
-        self.install_screen(ClientScreen(), name="client")
 
         # Start with connection screen
         self.push_screen("connection")

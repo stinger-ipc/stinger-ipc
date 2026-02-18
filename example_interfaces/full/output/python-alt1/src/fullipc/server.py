@@ -23,7 +23,7 @@ from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from pyqttier.interface import IConnection
+from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import (
@@ -64,7 +64,7 @@ class PropertyControls(Generic[T]):
 
 class FullServer:
 
-    def __init__(self, connection: IConnection, instance_id: str, property_access: FullPropertyAccess, prefix: str):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, property_access: FullPropertyAccess, prefix: str):
         self._logger = logging.getLogger(f"FullServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing FullServer instance %s", instance_id)
@@ -1172,7 +1172,7 @@ class FullServerBuilder:
             raise Exception("Method handler already set")
         return wrapper
 
-    def build(self, connection: IConnection, instance_id: str, property_access: FullPropertyAccess, prefix: str, binding: Optional[Any] = None) -> FullServer:
+    def build(self, connection: IBrokerConnection, instance_id: str, property_access: FullPropertyAccess, prefix: str, binding: Optional[Any] = None) -> FullServer:
         new_server = FullServer(
             connection,
             instance_id,

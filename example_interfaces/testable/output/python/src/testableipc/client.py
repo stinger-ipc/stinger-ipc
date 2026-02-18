@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, UTC
 
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
-from pyqttier.interface import IConnection
+from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 import concurrent.futures as futures
 import asyncio
@@ -126,7 +126,7 @@ class DiscoveredInstance(BaseModel):
 
 class TestableClient:
 
-    def __init__(self, connection: IConnection, instance_info: DiscoveredInstance):
+    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
         """Constructor for a `TestableClient` object."""
         self._logger = logging.getLogger("TestableClient")
         self._logger.setLevel(logging.DEBUG)
@@ -296,10 +296,12 @@ class TestableClient:
         self._signal_recv_callbacks_for_single_array_of_integers: List[SingleArrayOfIntegersSignalCallbackType] = []
         self._signal_recv_callbacks_for_single_optional_array_of_strings: List[SingleOptionalArrayOfStringsSignalCallbackType] = []
         self._signal_recv_callbacks_for_array_of_every_type: List[ArrayOfEveryTypeSignalCallbackType] = []
-        self._all_methods_response_topic = "client/{client_id}/testable/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._all_methods_response_topic = "client/{client_id}/testable/method/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._logger.debug("Subscribing to method response topic %s", self._all_methods_response_topic)
         self._conn.subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
 
-        self._property_response_topic = "client/{client_id}/testable/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._property_response_topic = "client/{client_id}/testable/property/responses".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+        self._logger.debug("Subscribing to property response topic %s", self._property_response_topic)
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
 
     @property
@@ -1379,7 +1381,11 @@ class TestableClient:
         self._do_callbacks_for(self._signal_recv_callbacks_for_array_of_every_type, **kwargs)
 
     def _receive_any_method_response_message(self, message: Message):
-        # Handle '' method response.
+        """
+        Handle '' method response.  This is the callback provided to the MQTT client
+        for receiving method responses, so it receives all method responses.
+        """
+        self._logger.debug("Received method response message on topic %s", message.topic)
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if message.user_properties:
@@ -3445,7 +3451,7 @@ class TestableClientBuilder:
         self._property_updated_callbacks_for_read_write_lists.append(wrapper)
         return wrapper
 
-    def build(self, broker: IConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> TestableClient:
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> TestableClient:
         """Builds a new TestableClient."""
         self._logger.debug("Building TestableClient for service instance %s", instance_info.instance_id)
         client = TestableClient(broker, instance_info)
@@ -3761,7 +3767,7 @@ class TestableClientBuilder:
 
 class TestableClientDiscoverer:
 
-    def __init__(self, connection: IConnection, builder: Optional[TestableClientBuilder] = None, build_binding: Optional[Any] = None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[TestableClientBuilder] = None, build_binding: Optional[Any] = None):
         """Creates a new TestableClientDiscoverer."""
         self._conn = connection
         self._builder = builder

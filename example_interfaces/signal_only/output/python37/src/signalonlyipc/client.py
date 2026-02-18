@@ -19,7 +19,7 @@ UTC = timezone.utc
 
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
-from pyqttier.interface import IConnection
+from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 import concurrent.futures as futures
 import asyncio
@@ -51,7 +51,7 @@ class DiscoveredInstance(BaseModel):
 
 class SignalOnlyClient:
 
-    def __init__(self, connection: IConnection, instance_info: DiscoveredInstance):
+    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
         """Constructor for a `SignalOnlyClient` object."""
         self._logger = logging.getLogger("SignalOnlyClient")
         self._logger.setLevel(logging.DEBUG)
@@ -254,7 +254,7 @@ class SignalOnlyClientBuilder:
         self._signal_recv_callbacks_for_now.append(wrapper)
         return wrapper
 
-    def build(self, broker: IConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> SignalOnlyClient:
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any] = None) -> SignalOnlyClient:
         """Builds a new SignalOnlyClient."""
         self._logger.debug("Building SignalOnlyClient for service instance %s", instance_info.instance_id)
         client = SignalOnlyClient(broker, instance_info)
@@ -294,7 +294,7 @@ class SignalOnlyClientBuilder:
 
 class SignalOnlyClientDiscoverer:
 
-    def __init__(self, connection: IConnection, builder: Optional[SignalOnlyClientBuilder] = None, build_binding: Optional[Any] = None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[SignalOnlyClientBuilder] = None, build_binding: Optional[Any] = None):
         """Creates a new SignalOnlyClientDiscoverer."""
         self._conn = connection
         self._builder = builder

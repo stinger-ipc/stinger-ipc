@@ -60,7 +60,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "anotherSignal",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd705d3c50>>"
+            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39c377470>>"
         },
     
         "bark": {
@@ -68,7 +68,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "bark",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd70a54860>>"
+            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39c754860>>"
         },
     
         "maybeNumber": {
@@ -76,7 +76,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "maybe_number",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd716654f0>>"
+            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39c3be9c0>>"
         },
     
         "maybeName": {
@@ -84,7 +84,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "maybe_name",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd6fc3b2f0>>"
+            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39b9375c0>>"
         },
     
         "now": {
@@ -92,7 +92,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "now",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd6fc3b320>>"
+            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39b937200>>"
         }
     };
 
@@ -229,7 +229,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["anotherSignal"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd705d3c50>>");
+        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39c377470>>");
         client.subscribe(resolvedTopic, another_signal_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -242,7 +242,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["bark"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd70a54860>>");
+        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39c754860>>");
         client.subscribe(resolvedTopic, bark_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -255,7 +255,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["maybeNumber"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd716654f0>>");
+        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39c3be9c0>>");
         client.subscribe(resolvedTopic, maybe_number_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -268,7 +268,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["maybeName"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd6fc3b2f0>>");
+        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39b9375c0>>");
         client.subscribe(resolvedTopic, maybe_name_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -281,7 +281,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["now"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x78dd6fc3b320>>");
+        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x76c39b937200>>");
         client.subscribe(resolvedTopic, now_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

@@ -138,7 +138,7 @@ std::future<int> SimpleClient::tradeNumbers(int yourNumber)
     topicParams["interface_name"] = NAME;
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Simple/responses", topicParams);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Simple/method/responses", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/Simple/{service_id}/method/trade_numbers/request", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
@@ -258,7 +258,7 @@ std::future<bool> SimpleClient::updateSchoolProperty(std::string name) const
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/Simple/{service_id}/property/school/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/Simple/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Simple/property/responses", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastSchoolPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);

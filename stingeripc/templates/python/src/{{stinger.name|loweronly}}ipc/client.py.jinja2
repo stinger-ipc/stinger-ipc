@@ -19,7 +19,7 @@ UTC = timezone.utc
 {%endif%}
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
-from pyqttier.interface import IConnection
+from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 import concurrent.futures as futures
 import asyncio
@@ -56,7 +56,7 @@ class DiscoveredInstance(BaseModel):
 
 class {{stinger.python.client_class_name}}:
 
-    def __init__(self, connection: IConnection, instance_info: DiscoveredInstance):
+    def __init__(self, connection: IBrokerConnection, instance_info: DiscoveredInstance):
         """ Constructor for a `{{stinger.python.client_class_name}}` object.
         """
         self._logger = logging.getLogger('{{stinger.python.client_class_name}}')
@@ -87,10 +87,12 @@ class {{stinger.python.client_class_name}}:
         {%endfor-%}
         {%-if stinger.methods|length > 0-%}
         self._all_methods_response_topic = "{{stinger.all_methods_response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
+        self._logger.debug("Subscribing to method response topic %s", self._all_methods_response_topic)
         self._conn.subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
         {%endif%}
         {%if stinger.properties|length > 0%}
         self._property_response_topic = "{{stinger.all_properties_response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
+        self._logger.debug("Subscribing to property response topic %s", self._property_response_topic)
         self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
         {%endif%}
 
@@ -171,7 +173,11 @@ class {{stinger.python.client_class_name}}:
 
     {%-if stinger.methods|length > 0-%}
     def _receive_any_method_response_message(self, message: Message):
-        # Handle '{{method_name}}' method response.
+        """
+        Handle '{{method_name}}' method response.  This is the callback provided to the MQTT client
+        for receiving method responses, so it receives all method responses.
+        """
+        self._logger.debug("Received method response message on topic %s", message.topic)
         return_code = MethodReturnCode.SUCCESS
         debug_message = None
         if message.user_properties:
@@ -321,7 +327,7 @@ class {{stinger.python.client_class_name}}Builder:
         return wrapper
     {%endfor%}
 
-    def build(self, broker: IConnection, instance_info: DiscoveredInstance, binding: Optional[Any]=None) -> {{stinger.python.client_class_name}}:
+    def build(self, broker: IBrokerConnection, instance_info: DiscoveredInstance, binding: Optional[Any]=None) -> {{stinger.python.client_class_name}}:
         """ Builds a new {{stinger.python.client_class_name}}.
         """
         self._logger.debug("Building {{stinger.python.client_class_name}} for service instance %s", instance_info.instance_id)
@@ -344,7 +350,7 @@ class {{stinger.python.client_class_name}}Builder:
 
 class {{stinger.python.client_class_name}}Discoverer:
     
-    def __init__(self, connection: IConnection, builder: Optional[{{stinger.python.client_class_name}}Builder]=None, build_binding: Optional[Any]=None):
+    def __init__(self, connection: IBrokerConnection, builder: Optional[{{stinger.python.client_class_name}}Builder]=None, build_binding: Optional[Any]=None):
         """ Creates a new {{stinger.python.client_class_name}}Discoverer.
         """
         self._conn = connection

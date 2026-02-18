@@ -25,7 +25,7 @@ from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from pyqttier.interface import IConnection
+from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import (
@@ -67,7 +67,7 @@ class PropertyControls(Generic[T]):
 
 class FullServer:
 
-    def __init__(self, connection: IConnection, instance_id: str, initial_property_values: FullInitialPropertyValues, prefix: str):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: FullInitialPropertyValues, prefix: str):
         self._logger = logging.getLogger(f"FullServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing FullServer instance %s", instance_id)
@@ -1331,7 +1331,7 @@ class FullServerBuilder:
         self._last_birthdays_property_callbacks.append(wrapper)
         return wrapper
 
-    def build(self, connection: IConnection, instance_id: str, initial_property_values: FullInitialPropertyValues, prefix: str, binding: Optional[Any] = None) -> FullServer:
+    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: FullInitialPropertyValues, prefix: str, binding: Optional[Any] = None) -> FullServer:
         new_server = FullServer(
             connection,
             instance_id,

@@ -25,7 +25,7 @@ from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from pyqttier.interface import IConnection
+from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import (
@@ -67,7 +67,7 @@ class PropertyControls(Generic[T]):
 
 class SimpleServer:
 
-    def __init__(self, connection: IConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, prefix: str):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, prefix: str):
         self._logger = logging.getLogger(f"SimpleServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing SimpleServer instance %s", instance_id)
@@ -386,7 +386,7 @@ class SimpleServerBuilder:
         self._school_property_callbacks.append(wrapper)
         return wrapper
 
-    def build(self, connection: IConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, prefix: str, binding: Optional[Any] = None) -> SimpleServer:
+    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: SimpleInitialPropertyValues, prefix: str, binding: Optional[Any] = None) -> SimpleServer:
         new_server = SimpleServer(
             connection,
             instance_id,

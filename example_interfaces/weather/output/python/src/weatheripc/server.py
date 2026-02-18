@@ -23,7 +23,7 @@ from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
-from pyqttier.interface import IConnection
+from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import (
@@ -65,7 +65,7 @@ class PropertyControls(Generic[T]):
 
 class WeatherServer:
 
-    def __init__(self, connection: IConnection, instance_id: str, initial_property_values: WeatherInitialPropertyValues, prefix: str):
+    def __init__(self, connection: IBrokerConnection, instance_id: str, initial_property_values: WeatherInitialPropertyValues, prefix: str):
         self._logger = logging.getLogger(f"WeatherServer:{instance_id}")
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing WeatherServer instance %s", instance_id)
@@ -1330,7 +1330,7 @@ class WeatherServerBuilder:
         self._daily_forecast_refresh_interval_property_callbacks.append(wrapper)
         return wrapper
 
-    def build(self, connection: IConnection, instance_id: str, initial_property_values: WeatherInitialPropertyValues, prefix: str, binding: Optional[Any] = None) -> WeatherServer:
+    def build(self, connection: IBrokerConnection, instance_id: str, initial_property_values: WeatherInitialPropertyValues, prefix: str, binding: Optional[Any] = None) -> WeatherServer:
         new_server = WeatherServer(
             connection,
             instance_id,
