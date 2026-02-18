@@ -202,7 +202,9 @@ class SimpleClient:
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_person_entered.append(handler)
         if len(self._signal_recv_callbacks_for_person_entered) == 1:
-            self._conn.subscribe("{prefix}/Simple/{service_id}/signal/person_entered".format(**self._topic_template_kwargs), self._receive_person_entered_signal_message)  # type: ignore[str-format]
+            person_entered_topic = "{prefix}/Simple/{service_id}/signal/person_entered".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'person_entered' signal topic %s", person_entered_topic)
+            self._conn.subscribe(person_entered_topic, self._receive_person_entered_signal_message)
         return handler
 
     def trade_numbers(self, your_number: int) -> futures.Future:

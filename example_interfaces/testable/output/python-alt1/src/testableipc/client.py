@@ -1891,175 +1891,225 @@ class TestableClient:
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_empty.append(handler)
         if len(self._signal_recv_callbacks_for_empty) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/empty".format(**self._topic_template_kwargs), self._receive_empty_signal_message)  # type: ignore[str-format]
+            empty_topic = "{prefix}/testable/{service_id}/signal/empty".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'empty' signal topic %s", empty_topic)
+            self._conn.subscribe(empty_topic, self._receive_empty_signal_message)
         return handler
 
     def receive_single_int(self, handler: SingleIntSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_int.append(handler)
         if len(self._signal_recv_callbacks_for_single_int) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleInt".format(**self._topic_template_kwargs), self._receive_single_int_signal_message)  # type: ignore[str-format]
+            single_int_topic = "{prefix}/testable/{service_id}/signal/singleInt".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleInt' signal topic %s", single_int_topic)
+            self._conn.subscribe(single_int_topic, self._receive_single_int_signal_message)
         return handler
 
     def receive_single_optional_int(self, handler: SingleOptionalIntSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_int.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_int) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleOptionalInt".format(**self._topic_template_kwargs), self._receive_single_optional_int_signal_message)  # type: ignore[str-format]
+            single_optional_int_topic = "{prefix}/testable/{service_id}/signal/singleOptionalInt".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleOptionalInt' signal topic %s", single_optional_int_topic)
+            self._conn.subscribe(single_optional_int_topic, self._receive_single_optional_int_signal_message)
         return handler
 
     def receive_three_integers(self, handler: ThreeIntegersSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_integers.append(handler)
         if len(self._signal_recv_callbacks_for_three_integers) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/threeIntegers".format(**self._topic_template_kwargs), self._receive_three_integers_signal_message)  # type: ignore[str-format]
+            three_integers_topic = "{prefix}/testable/{service_id}/signal/threeIntegers".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'threeIntegers' signal topic %s", three_integers_topic)
+            self._conn.subscribe(three_integers_topic, self._receive_three_integers_signal_message)
         return handler
 
     def receive_single_string(self, handler: SingleStringSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_string.append(handler)
         if len(self._signal_recv_callbacks_for_single_string) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleString".format(**self._topic_template_kwargs), self._receive_single_string_signal_message)  # type: ignore[str-format]
+            single_string_topic = "{prefix}/testable/{service_id}/signal/singleString".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleString' signal topic %s", single_string_topic)
+            self._conn.subscribe(single_string_topic, self._receive_single_string_signal_message)
         return handler
 
     def receive_single_optional_string(self, handler: SingleOptionalStringSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_string.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_string) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleOptionalString".format(**self._topic_template_kwargs), self._receive_single_optional_string_signal_message)  # type: ignore[str-format]
+            single_optional_string_topic = "{prefix}/testable/{service_id}/signal/singleOptionalString".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleOptionalString' signal topic %s", single_optional_string_topic)
+            self._conn.subscribe(single_optional_string_topic, self._receive_single_optional_string_signal_message)
         return handler
 
     def receive_three_strings(self, handler: ThreeStringsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_strings.append(handler)
         if len(self._signal_recv_callbacks_for_three_strings) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/threeStrings".format(**self._topic_template_kwargs), self._receive_three_strings_signal_message)  # type: ignore[str-format]
+            three_strings_topic = "{prefix}/testable/{service_id}/signal/threeStrings".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'threeStrings' signal topic %s", three_strings_topic)
+            self._conn.subscribe(three_strings_topic, self._receive_three_strings_signal_message)
         return handler
 
     def receive_single_enum(self, handler: SingleEnumSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_enum.append(handler)
         if len(self._signal_recv_callbacks_for_single_enum) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleEnum".format(**self._topic_template_kwargs), self._receive_single_enum_signal_message)  # type: ignore[str-format]
+            single_enum_topic = "{prefix}/testable/{service_id}/signal/singleEnum".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleEnum' signal topic %s", single_enum_topic)
+            self._conn.subscribe(single_enum_topic, self._receive_single_enum_signal_message)
         return handler
 
     def receive_single_optional_enum(self, handler: SingleOptionalEnumSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_enum.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_enum) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleOptionalEnum".format(**self._topic_template_kwargs), self._receive_single_optional_enum_signal_message)  # type: ignore[str-format]
+            single_optional_enum_topic = "{prefix}/testable/{service_id}/signal/singleOptionalEnum".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleOptionalEnum' signal topic %s", single_optional_enum_topic)
+            self._conn.subscribe(single_optional_enum_topic, self._receive_single_optional_enum_signal_message)
         return handler
 
     def receive_three_enums(self, handler: ThreeEnumsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_enums.append(handler)
         if len(self._signal_recv_callbacks_for_three_enums) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/threeEnums".format(**self._topic_template_kwargs), self._receive_three_enums_signal_message)  # type: ignore[str-format]
+            three_enums_topic = "{prefix}/testable/{service_id}/signal/threeEnums".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'threeEnums' signal topic %s", three_enums_topic)
+            self._conn.subscribe(three_enums_topic, self._receive_three_enums_signal_message)
         return handler
 
     def receive_single_struct(self, handler: SingleStructSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_struct.append(handler)
         if len(self._signal_recv_callbacks_for_single_struct) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleStruct".format(**self._topic_template_kwargs), self._receive_single_struct_signal_message)  # type: ignore[str-format]
+            single_struct_topic = "{prefix}/testable/{service_id}/signal/singleStruct".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleStruct' signal topic %s", single_struct_topic)
+            self._conn.subscribe(single_struct_topic, self._receive_single_struct_signal_message)
         return handler
 
     def receive_single_optional_struct(self, handler: SingleOptionalStructSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_struct.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_struct) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleOptionalStruct".format(**self._topic_template_kwargs), self._receive_single_optional_struct_signal_message)  # type: ignore[str-format]
+            single_optional_struct_topic = "{prefix}/testable/{service_id}/signal/singleOptionalStruct".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleOptionalStruct' signal topic %s", single_optional_struct_topic)
+            self._conn.subscribe(single_optional_struct_topic, self._receive_single_optional_struct_signal_message)
         return handler
 
     def receive_three_structs(self, handler: ThreeStructsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_structs.append(handler)
         if len(self._signal_recv_callbacks_for_three_structs) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/threeStructs".format(**self._topic_template_kwargs), self._receive_three_structs_signal_message)  # type: ignore[str-format]
+            three_structs_topic = "{prefix}/testable/{service_id}/signal/threeStructs".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'threeStructs' signal topic %s", three_structs_topic)
+            self._conn.subscribe(three_structs_topic, self._receive_three_structs_signal_message)
         return handler
 
     def receive_single_date_time(self, handler: SingleDateTimeSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_date_time.append(handler)
         if len(self._signal_recv_callbacks_for_single_date_time) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleDateTime".format(**self._topic_template_kwargs), self._receive_single_date_time_signal_message)  # type: ignore[str-format]
+            single_date_time_topic = "{prefix}/testable/{service_id}/signal/singleDateTime".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleDateTime' signal topic %s", single_date_time_topic)
+            self._conn.subscribe(single_date_time_topic, self._receive_single_date_time_signal_message)
         return handler
 
     def receive_single_optional_datetime(self, handler: SingleOptionalDatetimeSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_datetime.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_datetime) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleOptionalDatetime".format(**self._topic_template_kwargs), self._receive_single_optional_datetime_signal_message)  # type: ignore[str-format]
+            single_optional_datetime_topic = "{prefix}/testable/{service_id}/signal/singleOptionalDatetime".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleOptionalDatetime' signal topic %s", single_optional_datetime_topic)
+            self._conn.subscribe(single_optional_datetime_topic, self._receive_single_optional_datetime_signal_message)
         return handler
 
     def receive_three_date_times(self, handler: ThreeDateTimesSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_date_times.append(handler)
         if len(self._signal_recv_callbacks_for_three_date_times) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/threeDateTimes".format(**self._topic_template_kwargs), self._receive_three_date_times_signal_message)  # type: ignore[str-format]
+            three_date_times_topic = "{prefix}/testable/{service_id}/signal/threeDateTimes".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'threeDateTimes' signal topic %s", three_date_times_topic)
+            self._conn.subscribe(three_date_times_topic, self._receive_three_date_times_signal_message)
         return handler
 
     def receive_single_duration(self, handler: SingleDurationSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_duration.append(handler)
         if len(self._signal_recv_callbacks_for_single_duration) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleDuration".format(**self._topic_template_kwargs), self._receive_single_duration_signal_message)  # type: ignore[str-format]
+            single_duration_topic = "{prefix}/testable/{service_id}/signal/singleDuration".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleDuration' signal topic %s", single_duration_topic)
+            self._conn.subscribe(single_duration_topic, self._receive_single_duration_signal_message)
         return handler
 
     def receive_single_optional_duration(self, handler: SingleOptionalDurationSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_duration.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_duration) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleOptionalDuration".format(**self._topic_template_kwargs), self._receive_single_optional_duration_signal_message)  # type: ignore[str-format]
+            single_optional_duration_topic = "{prefix}/testable/{service_id}/signal/singleOptionalDuration".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleOptionalDuration' signal topic %s", single_optional_duration_topic)
+            self._conn.subscribe(single_optional_duration_topic, self._receive_single_optional_duration_signal_message)
         return handler
 
     def receive_three_durations(self, handler: ThreeDurationsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_durations.append(handler)
         if len(self._signal_recv_callbacks_for_three_durations) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/threeDurations".format(**self._topic_template_kwargs), self._receive_three_durations_signal_message)  # type: ignore[str-format]
+            three_durations_topic = "{prefix}/testable/{service_id}/signal/threeDurations".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'threeDurations' signal topic %s", three_durations_topic)
+            self._conn.subscribe(three_durations_topic, self._receive_three_durations_signal_message)
         return handler
 
     def receive_single_binary(self, handler: SingleBinarySignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_binary.append(handler)
         if len(self._signal_recv_callbacks_for_single_binary) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleBinary".format(**self._topic_template_kwargs), self._receive_single_binary_signal_message)  # type: ignore[str-format]
+            single_binary_topic = "{prefix}/testable/{service_id}/signal/singleBinary".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleBinary' signal topic %s", single_binary_topic)
+            self._conn.subscribe(single_binary_topic, self._receive_single_binary_signal_message)
         return handler
 
     def receive_single_optional_binary(self, handler: SingleOptionalBinarySignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_binary.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_binary) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleOptionalBinary".format(**self._topic_template_kwargs), self._receive_single_optional_binary_signal_message)  # type: ignore[str-format]
+            single_optional_binary_topic = "{prefix}/testable/{service_id}/signal/singleOptionalBinary".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleOptionalBinary' signal topic %s", single_optional_binary_topic)
+            self._conn.subscribe(single_optional_binary_topic, self._receive_single_optional_binary_signal_message)
         return handler
 
     def receive_three_binaries(self, handler: ThreeBinariesSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_three_binaries.append(handler)
         if len(self._signal_recv_callbacks_for_three_binaries) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/threeBinaries".format(**self._topic_template_kwargs), self._receive_three_binaries_signal_message)  # type: ignore[str-format]
+            three_binaries_topic = "{prefix}/testable/{service_id}/signal/threeBinaries".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'threeBinaries' signal topic %s", three_binaries_topic)
+            self._conn.subscribe(three_binaries_topic, self._receive_three_binaries_signal_message)
         return handler
 
     def receive_single_array_of_integers(self, handler: SingleArrayOfIntegersSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_array_of_integers.append(handler)
         if len(self._signal_recv_callbacks_for_single_array_of_integers) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleArrayOfIntegers".format(**self._topic_template_kwargs), self._receive_single_array_of_integers_signal_message)  # type: ignore[str-format]
+            single_array_of_integers_topic = "{prefix}/testable/{service_id}/signal/singleArrayOfIntegers".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleArrayOfIntegers' signal topic %s", single_array_of_integers_topic)
+            self._conn.subscribe(single_array_of_integers_topic, self._receive_single_array_of_integers_signal_message)
         return handler
 
     def receive_single_optional_array_of_strings(self, handler: SingleOptionalArrayOfStringsSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_single_optional_array_of_strings.append(handler)
         if len(self._signal_recv_callbacks_for_single_optional_array_of_strings) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/singleOptionalArrayOfStrings".format(**self._topic_template_kwargs), self._receive_single_optional_array_of_strings_signal_message)  # type: ignore[str-format]
+            single_optional_array_of_strings_topic = "{prefix}/testable/{service_id}/signal/singleOptionalArrayOfStrings".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'singleOptionalArrayOfStrings' signal topic %s", single_optional_array_of_strings_topic)
+            self._conn.subscribe(single_optional_array_of_strings_topic, self._receive_single_optional_array_of_strings_signal_message)
         return handler
 
     def receive_array_of_every_type(self, handler: ArrayOfEveryTypeSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_array_of_every_type.append(handler)
         if len(self._signal_recv_callbacks_for_array_of_every_type) == 1:
-            self._conn.subscribe("{prefix}/testable/{service_id}/signal/arrayOfEveryType".format(**self._topic_template_kwargs), self._receive_array_of_every_type_signal_message)  # type: ignore[str-format]
+            array_of_every_type_topic = "{prefix}/testable/{service_id}/signal/arrayOfEveryType".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'arrayOfEveryType' signal topic %s", array_of_every_type_topic)
+            self._conn.subscribe(array_of_every_type_topic, self._receive_array_of_every_type_signal_message)
         return handler
 
     def call_with_nothing(

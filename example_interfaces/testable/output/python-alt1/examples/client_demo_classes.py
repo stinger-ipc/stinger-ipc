@@ -779,11 +779,11 @@ class SuperAwesomeDoerOfThings:
 
             self.client.read_write_datetime = datetime.now(UTC)
 
-            self.client.read_write_optional_datetime = None
+            self.client.read_write_optional_datetime = datetime.now(UTC)
 
             self.client.read_write_two_datetimes = ReadWriteTwoDatetimesProperty(
                 first=datetime.now(UTC),
-                second=datetime.now(UTC),
+                second=None,
             )
 
             self.client.read_write_duration = timedelta(seconds=3536)

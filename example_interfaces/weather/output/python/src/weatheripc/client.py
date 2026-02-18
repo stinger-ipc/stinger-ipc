@@ -535,7 +535,9 @@ class WeatherClient:
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_current_time.append(handler)
         if len(self._signal_recv_callbacks_for_current_time) == 1:
-            self._conn.subscribe("{prefix}/weather/{service_id}/signal/current_time".format(**self._topic_template_kwargs), self._receive_current_time_signal_message)  # type: ignore[str-format]
+            current_time_topic = "{prefix}/weather/{service_id}/signal/current_time".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'current_time' signal topic %s", current_time_topic)
+            self._conn.subscribe(current_time_topic, self._receive_current_time_signal_message)
         return handler
 
     def refresh_daily_forecast(

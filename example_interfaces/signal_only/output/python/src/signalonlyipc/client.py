@@ -154,35 +154,45 @@ class SignalOnlyClient:
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_another_signal.append(handler)
         if len(self._signal_recv_callbacks_for_another_signal) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/anotherSignal".format(**self._topic_template_kwargs), self._receive_another_signal_signal_message)  # type: ignore[str-format]
+            another_signal_topic = "{prefix}/SignalOnly/{service_id}/signal/anotherSignal".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'anotherSignal' signal topic %s", another_signal_topic)
+            self._conn.subscribe(another_signal_topic, self._receive_another_signal_signal_message)
         return handler
 
     def receive_bark(self, handler: BarkSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_bark.append(handler)
         if len(self._signal_recv_callbacks_for_bark) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/bark".format(**self._topic_template_kwargs), self._receive_bark_signal_message)  # type: ignore[str-format]
+            bark_topic = "{prefix}/SignalOnly/{service_id}/signal/bark".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'bark' signal topic %s", bark_topic)
+            self._conn.subscribe(bark_topic, self._receive_bark_signal_message)
         return handler
 
     def receive_maybe_number(self, handler: MaybeNumberSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_maybe_number.append(handler)
         if len(self._signal_recv_callbacks_for_maybe_number) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/maybe_number".format(**self._topic_template_kwargs), self._receive_maybe_number_signal_message)  # type: ignore[str-format]
+            maybe_number_topic = "{prefix}/SignalOnly/{service_id}/signal/maybe_number".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'maybe_number' signal topic %s", maybe_number_topic)
+            self._conn.subscribe(maybe_number_topic, self._receive_maybe_number_signal_message)
         return handler
 
     def receive_maybe_name(self, handler: MaybeNameSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_maybe_name.append(handler)
         if len(self._signal_recv_callbacks_for_maybe_name) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/maybe_name".format(**self._topic_template_kwargs), self._receive_maybe_name_signal_message)  # type: ignore[str-format]
+            maybe_name_topic = "{prefix}/SignalOnly/{service_id}/signal/maybe_name".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'maybe_name' signal topic %s", maybe_name_topic)
+            self._conn.subscribe(maybe_name_topic, self._receive_maybe_name_signal_message)
         return handler
 
     def receive_now(self, handler: NowSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_now.append(handler)
         if len(self._signal_recv_callbacks_for_now) == 1:
-            self._conn.subscribe("{prefix}/SignalOnly/{service_id}/signal/now".format(**self._topic_template_kwargs), self._receive_now_signal_message)  # type: ignore[str-format]
+            now_topic = "{prefix}/SignalOnly/{service_id}/signal/now".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'now' signal topic %s", now_topic)
+            self._conn.subscribe(now_topic, self._receive_now_signal_message)
         return handler
 
 

@@ -485,14 +485,18 @@ class FullClient:
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_today_is.append(handler)
         if len(self._signal_recv_callbacks_for_today_is) == 1:
-            self._conn.subscribe("{prefix}/Full/{service_id}/signal/todayIs".format(**self._topic_template_kwargs), self._receive_today_is_signal_message)  # type: ignore[str-format]
+            today_is_topic = "{prefix}/Full/{service_id}/signal/todayIs".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'todayIs' signal topic %s", today_is_topic)
+            self._conn.subscribe(today_is_topic, self._receive_today_is_signal_message)
         return handler
 
     def receive_random_word(self, handler: RandomWordSignalCallbackType):
         """Used as a decorator for methods which handle particular signals."""
         self._signal_recv_callbacks_for_random_word.append(handler)
         if len(self._signal_recv_callbacks_for_random_word) == 1:
-            self._conn.subscribe("{prefix}/Full/{service_id}/signal/randomWord".format(**self._topic_template_kwargs), self._receive_random_word_signal_message)  # type: ignore[str-format]
+            random_word_topic = "{prefix}/Full/{service_id}/signal/randomWord".format(**self._topic_template_kwargs)  # type: ignore[str-format]
+            self._logger.debug("Subscribing to 'randomWord' signal topic %s", random_word_topic)
+            self._conn.subscribe(random_word_topic, self._receive_random_word_signal_message)
         return handler
 
     def add_numbers(self, first: int, second: int, third: Optional[int]) -> futures.Future:

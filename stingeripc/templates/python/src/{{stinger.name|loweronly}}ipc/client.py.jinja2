@@ -240,7 +240,9 @@ class {{stinger.python.client_class_name}}:
         """
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
         if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) == 1:
-            self._conn.subscribe("{{sig.topic()}}".format(**self._topic_template_kwargs), self._receive_{{sig_name|snake_case}}_signal_message) # type: ignore[str-format]
+            {{sig_name|snake_case}}_topic = "{{sig.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format] 
+            self._logger.debug("Subscribing to '{{sig_name}}' signal topic %s", {{sig_name|snake_case}}_topic)
+            self._conn.subscribe({{sig_name|snake_case}}_topic, self._receive_{{sig_name|snake_case}}_signal_message)
         return handler
     {%endfor%}
 
