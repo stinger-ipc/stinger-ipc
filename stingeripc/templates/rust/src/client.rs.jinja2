@@ -495,12 +495,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         _i if _i == sub_ids.any_property_update_response => {
                             debug!("Received property update response message");
                             if opt_corr_id.is_some() {
+                                // Find the oneshot::sender channel for the provided correlation id.
                                 let opt_sender = opt_corr_id
                                     .and_then(|uuid| {
                                         let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
                                         hashmap.remove(&uuid)
                                     });
                                 if let Some(sender) = opt_sender {
+                                    // Send the return code back to the waiting property update handler.
                                     let oss: oneshot::Sender<MethodReturnCode> = sender;
                                     if oss.send(return_code.clone()).is_err() {
                                         warn!("Failed to propagate property update response to waiting receiver");

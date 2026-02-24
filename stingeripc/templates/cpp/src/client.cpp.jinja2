@@ -49,21 +49,25 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
 
     {%for sig_name, sig in stinger.signals.items() %}
     auto {{sig_name | lowerCamelCase}}Topic = stinger::utils::format("{{sig.topic()}}", topicParams);
-    _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe({{sig_name | lowerCamelCase}}Topic, 2);
+    _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe({{sig_name | lowerCamelCase}}Topic, {{stinger.signal_qos}});
     {%-endfor%}
     {%-for method_name, method in stinger.methods.items() %}
     { // Restrict scope
         auto {{method_name | lowerCamelCase}}RequestTopic = stinger::utils::format("{{method.request_topic()}}", topicParams);
         std::stringstream responseTopicStringStream;
         responseTopicStringStream << stinger::utils::format({{method_name|lowerCamelCase}}RequestTopic, topicParams);
-        _{{method_name | lowerCamelCase}}MethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), 2);
+        _{{method_name | lowerCamelCase}}MethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), {{stinger.method_request_qos}});
     }
     {%-endfor%}
 
     {%-for prop_name, prop in stinger.properties.items() %}
     auto {{prop_name | lowerCamelCase}}ValueTopic = stinger::utils::format("{{prop.value_topic()}}", topicParams);
-    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe({{prop_name | lowerCamelCase}}ValueTopic, 1);
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe({{prop_name | lowerCamelCase}}ValueTopic, {{stinger.property_value_qos}});
     {%-endfor%}
+    {%if stinger.properties|length > 0 %}
+    auto anyPropertyUpdateResponseTopic = stinger::utils::format("{{stinger.any_property_update_response_topic()}}", topicParams);
+    _anyPropertyUpdateResponseSubscriptionId = _broker->Subscribe(anyPropertyUpdateResponseTopic, 1);
+    {%endif%}
 }
 
 {{stinger.cpp.client_class_name}}::~{{stinger.cpp.client_class_name}}()
@@ -153,14 +157,17 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
         _broker->Log(LOG_DEBUG, "Matched topic for {{method_name}} response");
         _handle{{method_name|UpperCamelCase}}Response(msg);
     }
-    {%-endfor%}{# for methods #}
-
+    {%-endfor%}{# for methods #}%}
     {%-for prop_name, prop in stinger.properties.items() %}
     {%if not loop.first%}else {%endif%}if (subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId)
     {
         _receive{{prop_name | UpperCamelCase}}PropertyUpdate(msg);
     }
     {%-endfor%}{# for properties #}
+    {%if stinger.properties|length > 0 %}else if (subscriptionId == _anyPropertyUpdateResponseSubscriptionId)
+    {
+        _broker->Log(LOG_DEBUG, "Matched topic for any property update response");
+    }
 }
 
 
