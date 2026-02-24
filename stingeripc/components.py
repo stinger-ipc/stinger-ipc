@@ -1468,15 +1468,39 @@ class StingerSpec(LanguageSymbolMixin):
     def version(self):
         return self._version
 
+    @property
+    def signal_qos(self) -> int:
+        return 2
+
+    @property
+    def method_request_qos(self) -> int:
+        return 2
+
     def all_methods_response_topic(self) -> str:
         topic_template = self._config.topics.method_responses
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, method_name="+")
         return topic_template
 
+    @property
+    def method_response_qos(self) -> int:
+        return 1
+
+    @property
+    def property_value_qos(self) -> int:
+        return 1
+    
+    @property
+    def property_update_qos(self) -> int:
+        return 1
+
     def all_properties_response_topic(self) -> str:
         topic_template = self._config.topics.property_update_responses
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, property_name="+")
         return topic_template
+
+    @property
+    def property_response_qos(self) -> int:
+        return 1
 
     def all_properties_value_topic(self) -> str:
         topic_template = self._config.topics.property_values

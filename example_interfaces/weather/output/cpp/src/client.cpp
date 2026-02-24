@@ -78,6 +78,9 @@ WeatherClient::WeatherClient(std::shared_ptr<stinger::utils::IConnection> broker
     _hourlyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe(hourlyForecastRefreshIntervalValueTopic, 1);
     auto dailyForecastRefreshIntervalValueTopic = stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value", topicParams);
     _dailyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe(dailyForecastRefreshIntervalValueTopic, 1);
+
+    auto anyPropertyUpdateResponseTopic = stinger::utils::format("client/{client_id}/weather/property/+/update/response", topicParams);
+    _anyPropertyUpdateResponseSubscriptionId = _broker->Subscribe(anyPropertyUpdateResponseTopic, 1);
 }
 
 WeatherClient::~WeatherClient()
@@ -157,6 +160,8 @@ void WeatherClient::_receiveMessage(const stinger::mqtt::Message& msg)
         _receiveHourlyForecastRefreshIntervalPropertyUpdate(msg);
     } else if (subscriptionId == _dailyForecastRefreshIntervalPropertySubscriptionId) {
         _receiveDailyForecastRefreshIntervalPropertyUpdate(msg);
+    } else if (subscriptionId == _anyPropertyUpdateResponseSubscriptionId) {
+        _broker->Log(LOG_DEBUG, "Matched topic for any property update response");
     }
 }
 
@@ -184,7 +189,7 @@ std::future<void> WeatherClient::refreshDailyForecast()
     topicParams["interface_name"] = NAME;
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/weather/method/responses", topicParams);
+    auto responseTopic = stinger::utils::format("client/{client_id}/weather/method/refresh_daily_forecast/response", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_daily_forecast/request", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
@@ -235,7 +240,7 @@ std::future<void> WeatherClient::refreshHourlyForecast()
     topicParams["interface_name"] = NAME;
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/weather/method/responses", topicParams);
+    auto responseTopic = stinger::utils::format("client/{client_id}/weather/method/refresh_hourly_forecast/response", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
@@ -286,7 +291,7 @@ std::future<void> WeatherClient::refreshCurrentConditions()
     topicParams["interface_name"] = NAME;
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/weather/method/responses", topicParams);
+    auto responseTopic = stinger::utils::format("client/{client_id}/weather/method/refresh_current_conditions/response", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_current_conditions/request", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
@@ -402,7 +407,7 @@ std::future<bool> WeatherClient::updateLocationProperty(double latitude, double 
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/weather/{service_id}/property/location/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/weather/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/weather/property/location/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastLocationPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
@@ -750,7 +755,7 @@ std::future<bool> WeatherClient::updateCurrentConditionRefreshIntervalProperty(i
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition_refresh_interval/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/weather/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/weather/property/current_condition_refresh_interval/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastCurrentConditionRefreshIntervalPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
@@ -828,7 +833,7 @@ std::future<bool> WeatherClient::updateHourlyForecastRefreshIntervalProperty(int
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/weather/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/weather/property/hourly_forecast_refresh_interval/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastHourlyForecastRefreshIntervalPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
@@ -906,7 +911,7 @@ std::future<bool> WeatherClient::updateDailyForecastRefreshIntervalProperty(int 
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/weather/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/weather/property/daily_forecast_refresh_interval/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastDailyForecastRefreshIntervalPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);

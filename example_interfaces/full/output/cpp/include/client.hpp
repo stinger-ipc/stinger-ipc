@@ -205,6 +205,7 @@ private:
     void _handleHoldTemperatureResponse(const stinger::mqtt::Message& msg);
 
     // ---------------- PROPERTIES ------------------
+    int _anyPropertyUpdateResponseSubscriptionId = -1;
 
     // ---favorite_number Property---
 

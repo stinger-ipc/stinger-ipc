@@ -104,22 +104,27 @@ class {{stinger.python.client_class_name}}:
 
     {%for prop_name, prop_spec in stinger.properties.items()-%}
     @property
-    def {{prop_name}}(self) -> {{prop_spec.python_annotation}}:
+    def {{prop_name}}(self) -> {{prop_spec.python.getter_value_annotation}}:
         """ Property '{{prop_name}}' getter.
         """
         with self._property_{{prop_name|snake_case}}_mutex:
             return self._property_{{prop_name|snake_case}}
     {%if not prop_spec.read_only %}
     @{{prop_name}}.setter
-    def {{prop_name}}(self, value: {{prop_spec.python_annotation}}):
+    def {{prop_name}}(self, value: {{prop_spec.python.setter_value_annotation}}):
         """ Serializes and publishes the '{{prop_name}}' property.
         """
-        if not isinstance(value, {{prop_spec.python_local_type}}){%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} and value is not None{%endif%}:
-            raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}{%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} or None{%endif%}.")
+        if not isinstance(value, {{prop_spec.python_local_type}}){%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} and value is not None and not (isinstance(value, {{prop_spec.python.model_class_name}})){%endif%}:
+            raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}{%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} or None or {{prop_spec.python.model_class_name}}.{%endif%}")
         {%if prop_spec.arg_list | length > 1 -%}
+        # value must be the model object.
         property_obj = value
         {%else-%}
-        property_obj = {{prop_name|UpperCamelCase}}Property({{prop_spec.arg_list[0].name|snake_case}}=value)
+        # Use the model object if passed, otherwise take the raw value and create a new model object.
+        if isinstance(value, {{prop_spec.python.model_class_name}}):
+            property_obj = value
+        else:
+            property_obj = {{prop_name|UpperCamelCase}}Property({{prop_spec.arg_list[0].name|snake_case}}=value)
         {%endif-%}
         self._logger.debug("Setting '{{prop_name}}' property to %s", property_obj)
         with self._property_{{prop_name|snake_case}}_mutex:
@@ -148,16 +153,6 @@ class {{stinger.python.client_class_name}}:
         """
         for cb in callbacks:
             cb(**kwargs)
-
-    @staticmethod
-    def _filter_for_args(args: Dict[str, Any], allowed_args: List[str]) -> Dict[str, Any]:
-        """ Given a dictionary, reduce the dictionary so that it only has keys in the allowed list.
-        """
-        filtered_args = {}
-        for k, v in args.items():
-            if k in allowed_args:
-                filtered_args[k] = v
-        return filtered_args
 
     {%for sig_name, sig in stinger.signals.items()-%}
     def _receive_{{sig_name|snake_case}}_signal_message(self, message: Message):
@@ -248,14 +243,20 @@ class {{stinger.python.client_class_name}}:
 
     {%for method_name, method in stinger.methods.items()%}
     def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
-        """ Calling this initiates a `{{method_name}}` IPC method call.
+        """ Calling this method with individual arguments initiates a `{{method_name}}` IPC method call.
+        """
+        payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}
+            {{arg.name}}={{arg.name|snake_case}},{%endfor%}
+        )
+        return self.call_{{method_name | snake_case}}(payload)
+
+    def call_{{method_name | snake_case}}(self, payload: {{method_name|UpperCamelCase}}MethodRequest) -> futures.Future:
+        """ Calling this method with a model payload initiates a `{{method_name}}` IPC method call.
         """
         fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
         self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
-        payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}
-            {{arg.name}}={{arg.name|snake_case}},{%endfor%}
-        )
+
         self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
         req_msg = MessageCreator.request_message("{{method.request_topic()}}".format(**self._topic_template_kwargs), payload, self._all_methods_response_topic, correlation_id) # type: ignore[str-format]
         self._conn.publish(req_msg)

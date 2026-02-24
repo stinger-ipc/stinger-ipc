@@ -52,6 +52,9 @@ SimpleClient::SimpleClient(std::shared_ptr<stinger::utils::IConnection> broker, 
     }
     auto schoolValueTopic = stinger::utils::format("{prefix}/Simple/{service_id}/property/school/value", topicParams);
     _schoolPropertySubscriptionId = _broker->Subscribe(schoolValueTopic, 1);
+
+    auto anyPropertyUpdateResponseTopic = stinger::utils::format("client/{client_id}/Simple/property/+/update/response", topicParams);
+    _anyPropertyUpdateResponseSubscriptionId = _broker->Subscribe(anyPropertyUpdateResponseTopic, 1);
 }
 
 SimpleClient::~SimpleClient()
@@ -109,6 +112,8 @@ void SimpleClient::_receiveMessage(const stinger::mqtt::Message& msg)
     }
     if (subscriptionId == _schoolPropertySubscriptionId) {
         _receiveSchoolPropertyUpdate(msg);
+    } else if (subscriptionId == _anyPropertyUpdateResponseSubscriptionId) {
+        _broker->Log(LOG_DEBUG, "Matched topic for any property update response");
     }
 }
 
@@ -138,7 +143,7 @@ std::future<int> SimpleClient::tradeNumbers(int yourNumber)
     topicParams["interface_name"] = NAME;
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Simple/method/responses", topicParams);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Simple/method/trade_numbers/response", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/Simple/{service_id}/method/trade_numbers/request", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
@@ -258,7 +263,7 @@ std::future<bool> SimpleClient::updateSchoolProperty(std::string name) const
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/Simple/{service_id}/property/school/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/Simple/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Simple/property/school/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastSchoolPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);

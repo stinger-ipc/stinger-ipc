@@ -33,9 +33,9 @@ class TopicConfig(BaseModel):
     signals: str = Field(default="{interface_name}/{service_id}/signal/{signal_name}", description="Topic template for signals")
     property_values: str = Field(default="{interface_name}/{service_id}/property/{property_name}/value", description="Topic template for property values")
     property_updates: str = Field(default="{interface_name}/{service_id}/property/{property_name}/update", description="Topic template for property updates")
-    property_update_responses: str = Field(default="client/{client_id}/{interface_name}/property/responses", description="Topic template for property update responses")
+    property_update_responses: str = Field(default="client/{client_id}/{interface_name}/property/{property_name}/update/response", description="Topic template for property update responses")
     method_requests: str = Field(default="{interface_name}/{service_id}/method/{method_name}/request", description="Topic template for method requests")
-    method_responses: str = Field(default="client/{client_id}/{interface_name}/method/responses", description="Topic template for method responses")
+    method_responses: str = Field(default="client/{client_id}/{interface_name}/method/{method_name}/response", description="Topic template for method responses")
     interface_discovery: str = Field(default="{interface_name}/{service_id}/interface", description="Topic template for interface discovery")
 
     @field_validator('property_values')
@@ -47,6 +47,20 @@ class TopicConfig(BaseModel):
             raise ValueError('"property_values" topic template must contain {service_id} placeholder')
         return v
     
+    @field_validator('property_update_responses')
+    @classmethod
+    def validate_property_update_responses(cls, v: str) -> str:
+        if get_argument_position(v, 'property_name') is None:
+            raise ValueError('"property_update_responses" topic template must contain {property_name} placeholder')
+        return v
+    
+    @field_validator('method_responses')
+    @classmethod
+    def validate_method_responses(cls, v: str) -> str:
+        if get_argument_position(v, 'method_name') is None:
+            raise ValueError('"method_responses" topic template must contain {method_name} placeholder')
+        return v
+
     @model_validator(mode='after')
     @classmethod
     def validate_topic_values(cls, config: 'TopicConfig') -> 'TopicConfig':

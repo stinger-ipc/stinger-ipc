@@ -49,3 +49,6 @@ module = [
     "textual.*",
 ]
 ignore_missing_imports = true
+
+[project.entry-points."stinger_python_utils.mcp_plugins"]
+{{stinger.name|snake_case}} = "{{stinger.name|loweronly}}ipc.mcp:{{stinger.name|UpperCamelCase}}MCPPlugin"

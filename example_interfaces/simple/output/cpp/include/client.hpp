@@ -101,6 +101,7 @@ private:
     void _handleTradeNumbersResponse(const stinger::mqtt::Message& msg);
 
     // ---------------- PROPERTIES ------------------
+    int _anyPropertyUpdateResponseSubscriptionId = -1;
 
     // ---school Property---
 

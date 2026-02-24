@@ -76,7 +76,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "current_time",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7fb45602f020>>"
+            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x778fce9b1160>>"
         }
     };
 
@@ -89,8 +89,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "longitude": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7fb45602efc0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x7fb45602efc0>>",
+            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x778fce9b0e90>>",
+            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x778fce9b0e90>>",
             "property_version": -1
         },
     
@@ -100,7 +100,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "temperature_f": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7fb45602f200>>",
+            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x778fce9b1040>>",
             "property_version": -1
         },
     
@@ -112,7 +112,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "description": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7fb45602f9b0>>",
+            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x778fce9b1a90>>",
             "property_version": -1
         },
     
@@ -156,7 +156,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "end_time": ""
                  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7fb4569a5910>>",
+            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x778fce9b1cd0>>",
             "property_version": -1
         },
     
@@ -196,7 +196,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "condition": ""
                  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7fb45602fe60>>",
+            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x778fce9b17c0>>",
             "property_version": -1
         },
     
@@ -206,8 +206,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "seconds": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7fb45602ffe0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x7fb45602ffe0>>",
+            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x778fce9b1ac0>>",
+            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x778fce9b1ac0>>",
             "property_version": -1
         },
     
@@ -217,8 +217,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "seconds": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7fb45602fef0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x7fb45602fef0>>",
+            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x778fce9b20f0>>",
+            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x778fce9b20f0>>",
             "property_version": -1
         },
     
@@ -228,8 +228,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "seconds": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7fb4560844a0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x7fb4560844a0>>",
+            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x778fce9b24e0>>",
+            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x778fce9b24e0>>",
             "property_version": -1
         }
     };
@@ -242,7 +242,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "refreshDailyForecast": {
             "name": "refresh_daily_forecast",
             "mqtt_topic": "",
-            "response_topic": `client/${client_id}/weather/method/responses`,
+            "response_topic": `client/${client_id}/weather/method/refresh_daily_forecast/response`,
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -251,7 +251,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "refreshHourlyForecast": {
             "name": "refresh_hourly_forecast",
             "mqtt_topic": "",
-            "response_topic": `client/${client_id}/weather/method/responses`,
+            "response_topic": `client/${client_id}/weather/method/refresh_hourly_forecast/response`,
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -260,7 +260,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "refreshCurrentConditions": {
             "name": "refresh_current_conditions",
             "mqtt_topic": "",
-            "response_topic": `client/${client_id}/weather/method/responses`,
+            "response_topic": `client/${client_id}/weather/method/refresh_current_conditions/response`,
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -392,7 +392,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["currentTime"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7fb45602f020>>");
+        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x778fce9b1160>>");
         client.subscribe(resolvedTopic, current_time_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

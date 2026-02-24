@@ -82,6 +82,9 @@ FullClient::FullClient(std::shared_ptr<stinger::utils::IConnection> broker, cons
     _lastBreakfastTimePropertySubscriptionId = _broker->Subscribe(lastBreakfastTimeValueTopic, 1);
     auto lastBirthdaysValueTopic = stinger::utils::format("{prefix}/Full/{service_id}/property/last_birthdays/value", topicParams);
     _lastBirthdaysPropertySubscriptionId = _broker->Subscribe(lastBirthdaysValueTopic, 1);
+
+    auto anyPropertyUpdateResponseTopic = stinger::utils::format("client/{client_id}/Full/property/+/update/response", topicParams);
+    _anyPropertyUpdateResponseSubscriptionId = _broker->Subscribe(anyPropertyUpdateResponseTopic, 1);
 }
 
 FullClient::~FullClient()
@@ -226,6 +229,8 @@ void FullClient::_receiveMessage(const stinger::mqtt::Message& msg)
         _receiveLastBreakfastTimePropertyUpdate(msg);
     } else if (subscriptionId == _lastBirthdaysPropertySubscriptionId) {
         _receiveLastBirthdaysPropertyUpdate(msg);
+    } else if (subscriptionId == _anyPropertyUpdateResponseSubscriptionId) {
+        _broker->Log(LOG_DEBUG, "Matched topic for any property update response");
     }
 }
 
@@ -266,7 +271,7 @@ std::future<int> FullClient::addNumbers(int first, int second, std::optional<int
     topicParams["interface_name"] = NAME;
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Full/method/responses", topicParams);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Full/method/addNumbers/response", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/addNumbers/request", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
@@ -334,7 +339,7 @@ std::future<DoSomethingReturnValues> FullClient::doSomething(std::string taskToD
     topicParams["interface_name"] = NAME;
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Full/method/responses", topicParams);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Full/method/doSomething/response", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/doSomething/request", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
@@ -396,7 +401,7 @@ std::future<std::chrono::time_point<std::chrono::system_clock>> FullClient::what
     topicParams["interface_name"] = NAME;
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Full/method/responses", topicParams);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Full/method/what_time_is_it/response", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/what_time_is_it/request", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
@@ -460,7 +465,7 @@ std::future<bool> FullClient::holdTemperature(double temperatureCelsius)
     topicParams["interface_name"] = NAME;
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
-    auto responseTopic = stinger::utils::format("client/{client_id}/Full/method/responses", topicParams);
+    auto responseTopic = stinger::utils::format("client/{client_id}/Full/method/hold_temperature/response", topicParams);
     auto requestTopic = stinger::utils::format("{prefix}/Full/{service_id}/method/hold_temperature/request", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
 
@@ -576,7 +581,7 @@ std::future<bool> FullClient::updateFavoriteNumberProperty(int number) const
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/favorite_number/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/favorite_number/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastFavoriteNumberPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
@@ -684,7 +689,7 @@ std::future<bool> FullClient::updateFavoriteFoodsProperty(std::string drink, int
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/favorite_foods/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/favorite_foods/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastFavoriteFoodsPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
@@ -829,7 +834,7 @@ std::future<bool> FullClient::updateFamilyNameProperty(std::string familyName) c
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/family_name/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/family_name/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastFamilyNamePropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
@@ -913,7 +918,7 @@ std::future<bool> FullClient::updateLastBreakfastTimeProperty(std::chrono::time_
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/last_breakfast_time/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/last_breakfast_time/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastLastBreakfastTimePropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
@@ -1043,7 +1048,7 @@ std::future<bool> FullClient::updateLastBirthdaysProperty(std::chrono::time_poin
     topicParams["prefix"] = _instanceInfo.prefix.value_or("error_prefix_not_found");
 
     std::string update_topic = stinger::utils::format("{prefix}/Full/{service_id}/property/last_birthdays/update", topicParams);
-    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/responses", topicParams);
+    std::string response_topic = stinger::utils::format("client/{client_id}/Full/property/last_birthdays/update/response", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _lastLastBirthdaysPropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);

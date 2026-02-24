@@ -68,7 +68,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "person_entered",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7b2985b95be0>>"
+            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7c9e0fec9970>>"
         }
     };
 
@@ -79,8 +79,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "name": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b29851373e0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b29851373e0>>",
+            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9e0ee63800>>",
+            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c9e0ee63800>>",
             "property_version": -1
         }
     };
@@ -93,7 +93,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "tradeNumbers": {
             "name": "trade_numbers",
             "mqtt_topic": "",
-            "response_topic": `client/${client_id}/Simple/method/responses`,
+            "response_topic": `client/${client_id}/Simple/method/trade_numbers/response`,
             "pending_correlation_id": null,
             "args": {
                 "your_number": {
@@ -230,7 +230,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["personEntered"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7b2985b95be0>>");
+        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7c9e0fec9970>>");
         client.subscribe(resolvedTopic, person_entered_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

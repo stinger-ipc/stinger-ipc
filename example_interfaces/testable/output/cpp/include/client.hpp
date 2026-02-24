@@ -924,6 +924,7 @@ private:
     void _handleCallTwoListsResponse(const stinger::mqtt::Message& msg);
 
     // ---------------- PROPERTIES ------------------
+    int _anyPropertyUpdateResponseSubscriptionId = -1;
 
     // ---read_write_integer Property---
 

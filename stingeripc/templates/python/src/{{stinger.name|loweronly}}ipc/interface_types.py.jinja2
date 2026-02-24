@@ -105,7 +105,7 @@ class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
 
 # There are {{stinger.properties|length}} property definitions
 {%-for prop_name, prop in stinger.properties.items()%}
-class {{prop_name|UpperCamelCase}}Property(BaseModel):
+class {{prop.python.model_class_name}}(BaseModel):
     """ Interface property `{{prop_name}}` (multi-value struct).{%if prop.documentation%}
     
     {{prop.documentation}}{%endif%}

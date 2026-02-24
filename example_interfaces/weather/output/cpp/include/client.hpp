@@ -204,6 +204,7 @@ private:
     void _handleRefreshCurrentConditionsResponse(const stinger::mqtt::Message& msg);
 
     // ---------------- PROPERTIES ------------------
+    int _anyPropertyUpdateResponseSubscriptionId = -1;
 
     // ---location Property---
 
