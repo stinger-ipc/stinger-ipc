@@ -95,7 +95,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "{{method_name | lowerCamelCase}}": {
             "name": "{{method_name}}",
             "mqtt_topic": "{{method.request_topic()}}",
-            "response_topic": `{{ method.response_topic() | regex_replace( '\{', '${' ) }}`,
+            "response_topic": "{{ method.response_topic() }}",
             "pending_correlation_id": null,
             "args": { {%-for arg in method.arg_list %}
                 "{{arg.name}}": {
