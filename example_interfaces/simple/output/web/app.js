@@ -68,7 +68,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "person_entered",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7c9e0fec9970>>"
+            "mqtt_topic": "{prefix}/Simple/{service_id}/signal/person_entered"
         }
     };
 
@@ -79,8 +79,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "name": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9e0ee63800>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c9e0ee63800>>",
+            "mqtt_topic": "{prefix}/Simple/{service_id}/property/school/value",
+            "update_topic": "{prefix}/Simple/{service_id}/property/school/update",
             "property_version": -1
         }
     };
@@ -92,7 +92,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     $scope.methods = {
         "tradeNumbers": {
             "name": "trade_numbers",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/Simple/{service_id}/method/trade_numbers/request",
             "response_topic": `client/${client_id}/Simple/method/trade_numbers/response`,
             "pending_correlation_id": null,
             "args": {
@@ -230,7 +230,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["personEntered"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7c9e0fec9970>>");
+        var resolvedTopic = resolveTopic("{prefix}/Simple/{service_id}/signal/person_entered");
         client.subscribe(resolvedTopic, person_entered_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

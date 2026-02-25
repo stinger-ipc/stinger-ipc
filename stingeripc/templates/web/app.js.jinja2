@@ -67,7 +67,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "{{sig_name}}",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "{{signal.topic}}"
+            "mqtt_topic": "{{signal.topic()}}"
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
 
@@ -80,8 +80,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "{{member.name}}": "{{member.value}}"{%if not loop.last%},{%endif%}
                 {%endfor%} }{%endif%}{%if not loop.last%},{%endif%}
             {%endfor%} },
-            "mqtt_topic": "{{prop.value_topic}}",{%if not prop.read_only %}
-            "update_topic": "{{prop.update_topic}}",{%endif%}
+            "mqtt_topic": "{{prop.value_topic()}}",{%if not prop.read_only %}
+            "update_topic": "{{prop.update_topic()}}",{%endif%}
             "property_version": -1
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
@@ -94,8 +94,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         {%-for method_name, method in stinger.methods.items() %}
         "{{method_name | lowerCamelCase}}": {
             "name": "{{method_name}}",
-            "mqtt_topic": "{{method.topic}}",
-            "response_topic": `{{ method.response_topic() | regex_replace( '{', '${' ) }}`,
+            "mqtt_topic": "{{method.request_topic()}}",
+            "response_topic": `{{ method.response_topic() | regex_replace( '\{', '${' ) }}`,
             "pending_correlation_id": null,
             "args": { {%-for arg in method.arg_list %}
                 "{{arg.name}}": {
@@ -233,7 +233,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["{{signal_name | lowerCamelCase}}"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("{{signal.topic}}");
+        var resolvedTopic = resolveTopic("{{signal.topic()}}");
         client.subscribe(resolvedTopic, {{signal_name|snake_case}}_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

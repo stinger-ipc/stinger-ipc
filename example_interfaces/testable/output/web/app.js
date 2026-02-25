@@ -68,7 +68,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "empty",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d580ef0>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/empty"
         },
     
         "singleInt": {
@@ -76,7 +76,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleInt",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d582c30>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleInt"
         },
     
         "singleOptionalInt": {
@@ -84,7 +84,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleOptionalInt",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d581df0>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleOptionalInt"
         },
     
         "threeIntegers": {
@@ -92,7 +92,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "threeIntegers",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583050>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/threeIntegers"
         },
     
         "singleString": {
@@ -100,7 +100,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleString",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d582f30>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleString"
         },
     
         "singleOptionalString": {
@@ -108,7 +108,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleOptionalString",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583140>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleOptionalString"
         },
     
         "threeStrings": {
@@ -116,7 +116,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "threeStrings",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583380>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/threeStrings"
         },
     
         "singleEnum": {
@@ -124,7 +124,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleEnum",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583530>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleEnum"
         },
     
         "singleOptionalEnum": {
@@ -132,7 +132,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleOptionalEnum",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583770>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleOptionalEnum"
         },
     
         "threeEnums": {
@@ -140,7 +140,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "threeEnums",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d5837a0>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/threeEnums"
         },
     
         "singleStruct": {
@@ -148,7 +148,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleStruct",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d582a50>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleStruct"
         },
     
         "singleOptionalStruct": {
@@ -156,7 +156,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleOptionalStruct",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d5836b0>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleOptionalStruct"
         },
     
         "threeStructs": {
@@ -164,7 +164,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "threeStructs",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d582f00>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/threeStructs"
         },
     
         "singleDateTime": {
@@ -172,7 +172,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleDateTime",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583c20>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleDateTime"
         },
     
         "singleOptionalDatetime": {
@@ -180,7 +180,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleOptionalDatetime",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583c80>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleOptionalDatetime"
         },
     
         "threeDateTimes": {
@@ -188,7 +188,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "threeDateTimes",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583830>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/threeDateTimes"
         },
     
         "singleDuration": {
@@ -196,7 +196,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleDuration",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583d40>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleDuration"
         },
     
         "singleOptionalDuration": {
@@ -204,7 +204,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleOptionalDuration",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583d70>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleOptionalDuration"
         },
     
         "threeDurations": {
@@ -212,7 +212,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "threeDurations",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583650>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/threeDurations"
         },
     
         "singleBinary": {
@@ -220,7 +220,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleBinary",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583c50>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleBinary"
         },
     
         "singleOptionalBinary": {
@@ -228,7 +228,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleOptionalBinary",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d588380>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleOptionalBinary"
         },
     
         "threeBinaries": {
@@ -236,7 +236,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "threeBinaries",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d588590>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/threeBinaries"
         },
     
         "singleArrayOfIntegers": {
@@ -244,7 +244,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleArrayOfIntegers",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d5885c0>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleArrayOfIntegers"
         },
     
         "singleOptionalArrayOfStrings": {
@@ -252,7 +252,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "singleOptionalArrayOfStrings",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d588560>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/singleOptionalArrayOfStrings"
         },
     
         "arrayOfEveryType": {
@@ -260,7 +260,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "arrayOfEveryType",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d588ad0>>"
+            "mqtt_topic": "{prefix}/testable/{service_id}/signal/arrayOfEveryType"
         }
     };
 
@@ -271,8 +271,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d550890>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d550890>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_integer/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_integer/update",
             "property_version": -1
         },
     
@@ -282,7 +282,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d550560>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_only_integer/value",
             "property_version": -1
         },
     
@@ -292,8 +292,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551040>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551040>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_optional_integer/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_optional_integer/update",
             "property_version": -1
         },
     
@@ -305,8 +305,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d550e90>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d550e90>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_two_integers/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_two_integers/update",
             "property_version": -1
         },
     
@@ -316,7 +316,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d5511c0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_only_string/value",
             "property_version": -1
         },
     
@@ -326,8 +326,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551730>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551730>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_string/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_string/update",
             "property_version": -1
         },
     
@@ -337,8 +337,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d550350>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d550350>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_optional_string/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_optional_string/update",
             "property_version": -1
         },
     
@@ -350,8 +350,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d550f80>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d550f80>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_two_strings/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_two_strings/update",
             "property_version": -1
         },
     
@@ -421,8 +421,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "optional_array_of_entry_objects": ""
                  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d5511f0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d5511f0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_struct/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_struct/update",
             "property_version": -1
         },
     
@@ -492,8 +492,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "optional_array_of_entry_objects": ""
                  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d550380>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d550380>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_optional_struct/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_optional_struct/update",
             "property_version": -1
         },
     
@@ -625,8 +625,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "optional_array_of_entry_objects": ""
                  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551be0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551be0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_two_structs/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_two_structs/update",
             "property_version": -1
         },
     
@@ -636,7 +636,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d5506b0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_only_enum/value",
             "property_version": -1
         },
     
@@ -646,8 +646,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551250>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551250>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_enum/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_enum/update",
             "property_version": -1
         },
     
@@ -657,8 +657,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551910>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551910>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_optional_enum/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_optional_enum/update",
             "property_version": -1
         },
     
@@ -670,8 +670,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d552120>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d552120>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_two_enums/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_two_enums/update",
             "property_version": -1
         },
     
@@ -681,8 +681,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551550>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551550>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_datetime/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_datetime/update",
             "property_version": -1
         },
     
@@ -692,8 +692,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551ee0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551ee0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_optional_datetime/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_optional_datetime/update",
             "property_version": -1
         },
     
@@ -705,8 +705,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551c10>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551c10>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_two_datetimes/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_two_datetimes/update",
             "property_version": -1
         },
     
@@ -716,8 +716,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551eb0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551eb0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_duration/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_duration/update",
             "property_version": -1
         },
     
@@ -727,8 +727,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d5522d0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d5522d0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_optional_duration/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_optional_duration/update",
             "property_version": -1
         },
     
@@ -740,8 +740,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d5517f0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d5517f0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_two_durations/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_two_durations/update",
             "property_version": -1
         },
     
@@ -751,8 +751,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d552510>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d552510>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_binary/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_binary/update",
             "property_version": -1
         },
     
@@ -762,8 +762,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d551a90>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d551a90>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_optional_binary/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_optional_binary/update",
             "property_version": -1
         },
     
@@ -775,8 +775,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "second": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d5521e0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d5521e0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_two_binaries/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_two_binaries/update",
             "property_version": -1
         },
     
@@ -786,8 +786,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "value": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d552ae0>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d552ae0>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_list_of_strings/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_list_of_strings/update",
             "property_version": -1
         },
     
@@ -799,8 +799,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "optionalList": {  }
              },
-            "mqtt_topic": "<bound method Property.value_topic of <stingeripc.components.Property object at 0x777b2d552330>>",
-            "update_topic": "<bound method Property.update_topic of <stingeripc.components.Property object at 0x777b2d552330>>",
+            "mqtt_topic": "{prefix}/testable/{service_id}/property/read_write_lists/value",
+            "update_topic": "{prefix}/testable/{service_id}/property/read_write_lists/update",
             "property_version": -1
         }
     };
@@ -812,7 +812,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
     $scope.methods = {
         "callWithNothing": {
             "name": "callWithNothing",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callWithNothing/request",
             "response_topic": `client/${client_id}/testable/method/callWithNothing/response`,
             "pending_correlation_id": null,
             "args": {},
@@ -821,7 +821,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOneInteger": {
             "name": "callOneInteger",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOneInteger/request",
             "response_topic": `client/${client_id}/testable/method/callOneInteger/response`,
             "pending_correlation_id": null,
             "args": {
@@ -835,7 +835,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOptionalInteger": {
             "name": "callOptionalInteger",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOptionalInteger/request",
             "response_topic": `client/${client_id}/testable/method/callOptionalInteger/response`,
             "pending_correlation_id": null,
             "args": {
@@ -849,7 +849,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callThreeIntegers": {
             "name": "callThreeIntegers",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callThreeIntegers/request",
             "response_topic": `client/${client_id}/testable/method/callThreeIntegers/response`,
             "pending_correlation_id": null,
             "args": {
@@ -873,7 +873,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOneString": {
             "name": "callOneString",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOneString/request",
             "response_topic": `client/${client_id}/testable/method/callOneString/response`,
             "pending_correlation_id": null,
             "args": {
@@ -887,7 +887,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOptionalString": {
             "name": "callOptionalString",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOptionalString/request",
             "response_topic": `client/${client_id}/testable/method/callOptionalString/response`,
             "pending_correlation_id": null,
             "args": {
@@ -901,7 +901,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callThreeStrings": {
             "name": "callThreeStrings",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callThreeStrings/request",
             "response_topic": `client/${client_id}/testable/method/callThreeStrings/response`,
             "pending_correlation_id": null,
             "args": {
@@ -925,7 +925,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOneEnum": {
             "name": "callOneEnum",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOneEnum/request",
             "response_topic": `client/${client_id}/testable/method/callOneEnum/response`,
             "pending_correlation_id": null,
             "args": {
@@ -939,7 +939,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOptionalEnum": {
             "name": "callOptionalEnum",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOptionalEnum/request",
             "response_topic": `client/${client_id}/testable/method/callOptionalEnum/response`,
             "pending_correlation_id": null,
             "args": {
@@ -953,7 +953,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callThreeEnums": {
             "name": "callThreeEnums",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callThreeEnums/request",
             "response_topic": `client/${client_id}/testable/method/callThreeEnums/response`,
             "pending_correlation_id": null,
             "args": {
@@ -977,7 +977,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOneStruct": {
             "name": "callOneStruct",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOneStruct/request",
             "response_topic": `client/${client_id}/testable/method/callOneStruct/response`,
             "pending_correlation_id": null,
             "args": {
@@ -991,7 +991,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOptionalStruct": {
             "name": "callOptionalStruct",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOptionalStruct/request",
             "response_topic": `client/${client_id}/testable/method/callOptionalStruct/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1005,7 +1005,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callThreeStructs": {
             "name": "callThreeStructs",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callThreeStructs/request",
             "response_topic": `client/${client_id}/testable/method/callThreeStructs/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1029,7 +1029,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOneDateTime": {
             "name": "callOneDateTime",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOneDateTime/request",
             "response_topic": `client/${client_id}/testable/method/callOneDateTime/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1043,7 +1043,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOptionalDateTime": {
             "name": "callOptionalDateTime",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOptionalDateTime/request",
             "response_topic": `client/${client_id}/testable/method/callOptionalDateTime/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1057,7 +1057,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callThreeDateTimes": {
             "name": "callThreeDateTimes",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callThreeDateTimes/request",
             "response_topic": `client/${client_id}/testable/method/callThreeDateTimes/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1081,7 +1081,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOneDuration": {
             "name": "callOneDuration",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOneDuration/request",
             "response_topic": `client/${client_id}/testable/method/callOneDuration/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1095,7 +1095,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOptionalDuration": {
             "name": "callOptionalDuration",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOptionalDuration/request",
             "response_topic": `client/${client_id}/testable/method/callOptionalDuration/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1109,7 +1109,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callThreeDurations": {
             "name": "callThreeDurations",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callThreeDurations/request",
             "response_topic": `client/${client_id}/testable/method/callThreeDurations/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1133,7 +1133,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOneBinary": {
             "name": "callOneBinary",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOneBinary/request",
             "response_topic": `client/${client_id}/testable/method/callOneBinary/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1147,7 +1147,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOptionalBinary": {
             "name": "callOptionalBinary",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOptionalBinary/request",
             "response_topic": `client/${client_id}/testable/method/callOptionalBinary/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1161,7 +1161,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callThreeBinaries": {
             "name": "callThreeBinaries",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callThreeBinaries/request",
             "response_topic": `client/${client_id}/testable/method/callThreeBinaries/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1185,7 +1185,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOneListOfIntegers": {
             "name": "callOneListOfIntegers",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOneListOfIntegers/request",
             "response_topic": `client/${client_id}/testable/method/callOneListOfIntegers/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1199,7 +1199,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callOptionalListOfFloats": {
             "name": "callOptionalListOfFloats",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callOptionalListOfFloats/request",
             "response_topic": `client/${client_id}/testable/method/callOptionalListOfFloats/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1213,7 +1213,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "callTwoLists": {
             "name": "callTwoLists",
-            "mqtt_topic": "",
+            "mqtt_topic": "{prefix}/testable/{service_id}/method/callTwoLists/request",
             "response_topic": `client/${client_id}/testable/method/callTwoLists/response`,
             "pending_correlation_id": null,
             "args": {
@@ -1356,7 +1356,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["empty"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d580ef0>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/empty");
         client.subscribe(resolvedTopic, empty_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1369,7 +1369,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleInt"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d582c30>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleInt");
         client.subscribe(resolvedTopic, single_int_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1382,7 +1382,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleOptionalInt"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d581df0>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleOptionalInt");
         client.subscribe(resolvedTopic, single_optional_int_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1395,7 +1395,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["threeIntegers"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583050>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/threeIntegers");
         client.subscribe(resolvedTopic, three_integers_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1408,7 +1408,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleString"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d582f30>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleString");
         client.subscribe(resolvedTopic, single_string_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1421,7 +1421,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleOptionalString"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583140>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleOptionalString");
         client.subscribe(resolvedTopic, single_optional_string_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1434,7 +1434,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["threeStrings"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583380>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/threeStrings");
         client.subscribe(resolvedTopic, three_strings_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1447,7 +1447,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleEnum"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583530>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleEnum");
         client.subscribe(resolvedTopic, single_enum_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1460,7 +1460,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleOptionalEnum"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583770>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleOptionalEnum");
         client.subscribe(resolvedTopic, single_optional_enum_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1473,7 +1473,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["threeEnums"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d5837a0>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/threeEnums");
         client.subscribe(resolvedTopic, three_enums_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1486,7 +1486,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleStruct"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d582a50>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleStruct");
         client.subscribe(resolvedTopic, single_struct_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1499,7 +1499,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleOptionalStruct"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d5836b0>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleOptionalStruct");
         client.subscribe(resolvedTopic, single_optional_struct_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1512,7 +1512,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["threeStructs"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d582f00>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/threeStructs");
         client.subscribe(resolvedTopic, three_structs_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1525,7 +1525,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleDateTime"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583c20>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleDateTime");
         client.subscribe(resolvedTopic, single_date_time_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1538,7 +1538,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleOptionalDatetime"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583c80>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleOptionalDatetime");
         client.subscribe(resolvedTopic, single_optional_datetime_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1551,7 +1551,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["threeDateTimes"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583830>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/threeDateTimes");
         client.subscribe(resolvedTopic, three_date_times_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1564,7 +1564,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleDuration"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583d40>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleDuration");
         client.subscribe(resolvedTopic, single_duration_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1577,7 +1577,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleOptionalDuration"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583d70>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleOptionalDuration");
         client.subscribe(resolvedTopic, single_optional_duration_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1590,7 +1590,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["threeDurations"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583650>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/threeDurations");
         client.subscribe(resolvedTopic, three_durations_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1603,7 +1603,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleBinary"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d583c50>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleBinary");
         client.subscribe(resolvedTopic, single_binary_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1616,7 +1616,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleOptionalBinary"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d588380>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleOptionalBinary");
         client.subscribe(resolvedTopic, single_optional_binary_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1629,7 +1629,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["threeBinaries"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d588590>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/threeBinaries");
         client.subscribe(resolvedTopic, three_binaries_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1642,7 +1642,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleArrayOfIntegers"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d5885c0>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleArrayOfIntegers");
         client.subscribe(resolvedTopic, single_array_of_integers_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1655,7 +1655,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["singleOptionalArrayOfStrings"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d588560>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/singleOptionalArrayOfStrings");
         client.subscribe(resolvedTopic, single_optional_array_of_strings_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -1668,7 +1668,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["arrayOfEveryType"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("<bound method Signal.topic of <stingeripc.components.Signal object at 0x777b2d588ad0>>");
+        var resolvedTopic = resolveTopic("{prefix}/testable/{service_id}/signal/arrayOfEveryType");
         client.subscribe(resolvedTopic, array_of_every_type_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
