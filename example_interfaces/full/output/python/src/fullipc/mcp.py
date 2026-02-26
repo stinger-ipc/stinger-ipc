@@ -38,22 +38,22 @@ class FullMCPPlugin(StingerMCPPlugin):
             MethodDefinition(
                 name="add_numbers",
                 description="",
-                arguments_schema=AddNumbersMethodRequest.model_json_schema(),
+                arguments_model=AddNumbersMethodRequest,
             ),
             MethodDefinition(
                 name="do_something",
                 description="",
-                arguments_schema=DoSomethingMethodRequest.model_json_schema(),
+                arguments_model=DoSomethingMethodRequest,
             ),
             MethodDefinition(
                 name="what_time_is_it",
                 description="Get the current date and time.",
-                arguments_schema=WhatTimeIsItMethodRequest.model_json_schema(),
+                arguments_model=WhatTimeIsItMethodRequest,
             ),
             MethodDefinition(
                 name="hold_temperature",
                 description="Hold a temperature for a specified duration.",
-                arguments_schema=HoldTemperatureMethodRequest.model_json_schema(),
+                arguments_model=HoldTemperatureMethodRequest,
             ),
         ]
 

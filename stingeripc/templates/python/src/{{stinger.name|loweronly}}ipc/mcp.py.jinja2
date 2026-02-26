@@ -36,7 +36,7 @@ class {{stinger.name|UpperCamelCase}}MCPPlugin(StingerMCPPlugin):
             MethodDefinition(
                 name="{{method_name|snake_case}}",
                 description="{{method.documentation | replace('\n', ' ') if method.documentation else ''}}",
-                arguments_schema={{method_name|UpperCamelCase}}MethodRequest.model_json_schema(),
+                arguments_model={{method_name|UpperCamelCase}}MethodRequest,
             ),
             {%endfor%}
         ]

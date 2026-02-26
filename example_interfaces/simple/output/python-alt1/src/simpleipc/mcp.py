@@ -34,7 +34,7 @@ class SimpleMCPPlugin(StingerMCPPlugin):
             MethodDefinition(
                 name="trade_numbers",
                 description="A simple method which trades favorite numbers.",
-                arguments_schema=TradeNumbersMethodRequest.model_json_schema(),
+                arguments_model=TradeNumbersMethodRequest,
             ),
         ]
 

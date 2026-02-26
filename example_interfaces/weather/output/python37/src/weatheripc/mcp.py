@@ -34,17 +34,17 @@ class WeatherMCPPlugin(StingerMCPPlugin):
             MethodDefinition(
                 name="refresh_daily_forecast",
                 description="When called, this method will force the retrieval of the daily weather forecast from the NWS weather API.    When called, the `daily_forecast` API property will be republished with the latest data.  This method has no arguments and provides no return values. ",
-                arguments_schema=RefreshDailyForecastMethodRequest.model_json_schema(),
+                arguments_model=RefreshDailyForecastMethodRequest,
             ),
             MethodDefinition(
                 name="refresh_hourly_forecast",
                 description="When called, this method will force the retrieval of the hourly weather forecast from the NWS weather API.    When called, the `hourly_forecast` API property will be republished with the latest data.  This method has no arguments and provides no return values. ",
-                arguments_schema=RefreshHourlyForecastMethodRequest.model_json_schema(),
+                arguments_model=RefreshHourlyForecastMethodRequest,
             ),
             MethodDefinition(
                 name="refresh_current_conditions",
                 description="When called, this method will force the retrieval of the latest weather conditions from the nearest weather station.  It also forces a re-calculation of the current temperature.  When called, the `current_temperature` and `current_condition` API properties are republished with the latest value.  This method has no arguments and provides no return values. ",
-                arguments_schema=RefreshCurrentConditionsMethodRequest.model_json_schema(),
+                arguments_model=RefreshCurrentConditionsMethodRequest,
             ),
         ]
 
