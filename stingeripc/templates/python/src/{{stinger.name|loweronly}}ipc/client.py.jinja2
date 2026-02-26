@@ -517,7 +517,7 @@ class {{stinger.python.client_class_name}}Discoverer:
             if instance_id not in self._discovered_properties:
                 self._discovered_properties[instance_id] = dict()
             {%for prop_name, prop in stinger.properties.items()%}
-            {%if not loop.first%}el{%endif%}if property_name == "{{prop_name|lowerCamelCase}}":
+            {%if not loop.first%}el{%endif%}if property_name == "{{prop_name}}":
                 try:
                     {{prop_name|snake_case}}_prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
                 except Exception as e:

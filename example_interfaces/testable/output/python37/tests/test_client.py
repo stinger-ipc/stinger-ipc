@@ -648,7 +648,7 @@ class TestClientMethods:
 
     def test_call_optional_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
-            "input1": None,
+            "input1": datetime.now(UTC),
         }  # type: Dict[str, Any]
         client.call_optional_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_date_time' method call"
