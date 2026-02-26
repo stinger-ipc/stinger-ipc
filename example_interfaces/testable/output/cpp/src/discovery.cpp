@@ -105,9 +105,6 @@ bool InstanceInfo::isComplete() const
         return false;
     }
 
-    if (!prefix.has_value()) {
-        return false;
-    }
     if (!initial_property_values.isComplete()) {
         return false;
     }

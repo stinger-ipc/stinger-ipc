@@ -93,7 +93,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "tradeNumbers": {
             "name": "trade_numbers",
             "mqtt_topic": "{prefix}/Simple/{service_id}/method/trade_numbers/request",
-            "response_topic": `client/${client_id}/Simple/method/trade_numbers/response`,
+            "response_topic": "client/{client_id}/Simple/method/trade_numbers/response",
             "pending_correlation_id": null,
             "args": {
                 "your_number": {

@@ -2,14 +2,14 @@ from stinger_python_utils.mcp import (
     MethodDefinition,
     PropertyDefinition,
     SignalDefinition,
-    SingerMCPPlugin,
+    StingerMCPPlugin,
 )
 
 from signalonlyipc.client import SignalOnlyClient, SignalOnlyClientDiscoverer
 from signalonlyipc.interface_types import *
 
 
-class SignalOnlyMCPPlugin(SingerMCPPlugin):
+class SignalOnlyMCPPlugin(StingerMCPPlugin):
     """MCP plugin for the SignalOnly interface."""
 
     def get_plugin_name(self) -> str:

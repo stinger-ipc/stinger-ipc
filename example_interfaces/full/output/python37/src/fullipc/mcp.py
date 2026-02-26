@@ -2,14 +2,14 @@ from stinger_python_utils.mcp import (
     MethodDefinition,
     PropertyDefinition,
     SignalDefinition,
-    SingerMCPPlugin,
+    StingerMCPPlugin,
 )
 
 from fullipc.client import FullClient, FullClientDiscoverer
 from fullipc.interface_types import *
 
 
-class FullMCPPlugin(SingerMCPPlugin):
+class FullMCPPlugin(StingerMCPPlugin):
     """MCP plugin for the Full interface."""
 
     def get_plugin_name(self) -> str:

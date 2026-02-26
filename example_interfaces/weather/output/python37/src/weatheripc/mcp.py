@@ -2,14 +2,14 @@ from stinger_python_utils.mcp import (
     MethodDefinition,
     PropertyDefinition,
     SignalDefinition,
-    SingerMCPPlugin,
+    StingerMCPPlugin,
 )
 
 from weatheripc.client import WeatherClient, WeatherClientDiscoverer
 from weatheripc.interface_types import *
 
 
-class WeatherMCPPlugin(SingerMCPPlugin):
+class WeatherMCPPlugin(StingerMCPPlugin):
     """MCP plugin for the weather interface."""
 
     def get_plugin_name(self) -> str:

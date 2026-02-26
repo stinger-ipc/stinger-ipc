@@ -2,14 +2,14 @@ from stinger_python_utils.mcp import (
     MethodDefinition,
     PropertyDefinition,
     SignalDefinition,
-    SingerMCPPlugin,
+    StingerMCPPlugin,
 )
 
 from simpleipc.client import SimpleClient, SimpleClientDiscoverer
 from simpleipc.interface_types import *
 
 
-class SimpleMCPPlugin(SingerMCPPlugin):
+class SimpleMCPPlugin(StingerMCPPlugin):
     """MCP plugin for the Simple interface."""
 
     def get_plugin_name(self) -> str:

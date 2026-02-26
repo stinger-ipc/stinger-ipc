@@ -2,14 +2,14 @@ from stinger_python_utils.mcp import (
     MethodDefinition,
     PropertyDefinition,
     SignalDefinition,
-    SingerMCPPlugin,
+    StingerMCPPlugin,
 )
 
 from testableipc.client import TestableClient, TestableClientDiscoverer
 from testableipc.interface_types import *
 
 
-class TestableMCPPlugin(SingerMCPPlugin):
+class TestableMCPPlugin(StingerMCPPlugin):
     """MCP plugin for the testable interface."""
 
     def get_plugin_name(self) -> str:
