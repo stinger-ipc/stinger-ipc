@@ -35,9 +35,6 @@ bool InstanceInfo::isComplete() const
         return false;
     }
     {%endfor%}
-    if (!prefix.has_value()) {
-        return false;
-    }
     {%- if stinger.properties|length > 0 %}
     if (!initial_property_values.isComplete()) {
         return false;

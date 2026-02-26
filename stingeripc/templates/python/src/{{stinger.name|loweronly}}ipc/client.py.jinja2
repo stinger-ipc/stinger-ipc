@@ -114,8 +114,8 @@ class {{stinger.python.client_class_name}}:
     def {{prop_name}}(self, value: {{prop_spec.python.setter_value_annotation}}):
         """ Serializes and publishes the '{{prop_name}}' property.
         """
-        if not isinstance(value, {{prop_spec.python_local_type}}){%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} and value is not None and not (isinstance(value, {{prop_spec.python.model_class_name}})){%endif%}:
-            raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}{%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} or None or {{prop_spec.python.model_class_name}}.{%endif%}")
+        #if not isinstance(value, {{prop_spec.python_local_type}}){%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} and value is not None and not (isinstance(value, {{prop_spec.python.model_class_name}})){%endif%}:
+        #    raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}{%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} or None or {{prop_spec.python.model_class_name}}.{%endif%}")
         {%if prop_spec.arg_list | length > 1 -%}
         # value must be the model object.
         property_obj = value
@@ -361,10 +361,17 @@ class {{stinger.python.client_class_name}}Discoverer:
         self._build_binding = build_binding
         self._logger = logging.getLogger('{{stinger.python.client_class_name}}Discoverer')
         self._logger.setLevel(logging.DEBUG)
-        service_discovery_topic = "{{stinger.interface_info_topic()}}".format(client_id='+', service_id='+', {% for topic_param in config.topics.params %}{{topic_param}}='+', {% endfor %}) # type: ignore[str-format]
+        topic_params = {
+            "client_id": '+',
+            "service_id": '+',
+            {%- for topic_param in config.topics.params %}
+            "{{topic_param}}": '+',
+            {%- endfor %}
+        }
+        service_discovery_topic = "{{stinger.interface_info_topic()}}".format(**topic_params) # type: ignore[str-format]
         self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
         {%-if stinger.properties|length > 0%}
-        all_property_discovery_topic = "{{stinger.all_properties_value_topic()}}".format(client_id='+', service_id='+', {% for topic_param in config.topics.params %}{{topic_param}}='+', {% endfor %}) # type: ignore[str-format]
+        all_property_discovery_topic = "{{stinger.all_properties_value_topic()}}".format(**topic_params) # type: ignore[str-format]
         self._conn.subscribe(all_property_discovery_topic, self._process_property_value_message)
         {%-endif%}
         self._mutex = threading.Lock()

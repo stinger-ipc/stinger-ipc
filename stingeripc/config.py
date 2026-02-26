@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Optional
 import tomllib
 from .topic_util import get_argument_position
+import re
 
 class ServerConfig(BaseModel):
     """Configuration options for generating server/provider code."""
@@ -59,6 +60,18 @@ class TopicConfig(BaseModel):
     def validate_method_responses(cls, v: str) -> str:
         if get_argument_position(v, 'method_name') is None:
             raise ValueError('"method_responses" topic template must contain {method_name} placeholder')
+        return v
+
+    @field_validator('params')
+    @classmethod
+    def validate_params(cls, v: List[str]) -> List[str]:
+        reserved_params = {'interface_name', 'service_id', 'signal_name', 'property_name', 'method_name', 'client_id', 'instance_id'}
+        for param in v:
+            if param in reserved_params:
+                raise ValueError(f'Custom topic parameters cannot use reserved names: {param}')
+        for param in v:
+            if not re.match(r'^[a-zA-Z0-9]+(_[a-zA-Z0-9]+)*$', param):
+                raise ValueError(f'Custom topic parameters must be alphanumeric with optional underscores, but no consecutive underscores: {param}')
         return v
 
     @model_validator(mode='after')
