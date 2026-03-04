@@ -325,7 +325,7 @@ The `anotherSignal` signal can be subscribed to by using the client's `receive_a
 
 ```python
 @client.receive_another_signal
-def on_another_signal(one: float, two: bool, three: str):
+def on_another_signal(one: , two: , three: ):
     print(f"Got a 'anotherSignal' signal: one={ one } two={ two } three={ three } ")
 ```
 
@@ -414,7 +414,7 @@ The `bark` signal can be subscribed to by using the client's `receive_bark` deco
 
 ```python
 @client.receive_bark
-def on_bark(word: str):
+def on_bark(word: ):
     print(f"Got a 'bark' signal: word={ word } ")
 ```
 
@@ -503,7 +503,7 @@ The `maybe_number` signal can be subscribed to by using the client's `receive_ma
 
 ```python
 @client.receive_maybe_number
-def on_maybe_number(number: Optional[int]):
+def on_maybe_number(number: ):
     print(f"Got a 'maybe_number' signal: number={ number } ")
 ```
 
@@ -592,7 +592,7 @@ The `maybe_name` signal can be subscribed to by using the client's `receive_mayb
 
 ```python
 @client.receive_maybe_name
-def on_maybe_name(name: Optional[str]):
+def on_maybe_name(name: ):
     print(f"Got a 'maybe_name' signal: name={ name } ")
 ```
 
@@ -681,7 +681,7 @@ The `now` signal can be subscribed to by using the client's `receive_now` decora
 
 ```python
 @client.receive_now
-def on_now(timestamp: datetime):
+def on_now(timestamp: ):
     print(f"Got a 'now' signal: timestamp={ timestamp } ")
 ```
 

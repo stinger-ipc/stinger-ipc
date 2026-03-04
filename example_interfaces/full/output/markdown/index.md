@@ -143,7 +143,7 @@ initial_property_values = FullInitialPropertyValues(
     favorite_number_version=1,
 
     favorite_foods=
-        FavoriteFoodsProperty(
+        (
             
             drink="apples",
             
@@ -155,7 +155,7 @@ initial_property_values = FullInitialPropertyValues(
     favorite_foods_version=2,
 
     lunch_menu=
-        LunchMenuProperty(
+        (
             
             monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
             
@@ -173,7 +173,7 @@ initial_property_values = FullInitialPropertyValues(
     last_breakfast_time_version=5,
 
     last_birthdays=
-        LastBirthdaysProperty(
+        (
             
             mom=datetime.now(UTC),
             
@@ -373,7 +373,7 @@ initial_property_values = FullInitialPropertyValues(
     favorite_number_version=1,
 
     favorite_foods=
-        FavoriteFoodsProperty(
+        (
             
             drink="apples",
             
@@ -385,7 +385,7 @@ initial_property_values = FullInitialPropertyValues(
     favorite_foods_version=2,
 
     lunch_menu=
-        LunchMenuProperty(
+        (
             
             monday=Lunch(drink=True, sandwich="apples", crackers=3.14, day=DayOfTheWeek.SATURDAY, order_number=42, time_of_lunch=datetime.now(UTC), duration_of_lunch=timedelta(seconds=3536)),
             
@@ -403,7 +403,7 @@ initial_property_values = FullInitialPropertyValues(
     last_breakfast_time_version=5,
 
     last_birthdays=
-        LastBirthdaysProperty(
+        (
             
             mom=datetime.now(UTC),
             
@@ -505,7 +505,7 @@ The `todayIs` signal can be subscribed to by using the client's `receive_today_i
 
 ```python
 @client.receive_today_is
-def on_today_is(dayOfMonth: int, dayOfWeek: DayOfTheWeek):
+def on_today_is(dayOfMonth: , dayOfWeek: ):
     print(f"Got a 'todayIs' signal: dayOfMonth={ dayOfMonth } dayOfWeek={ dayOfWeek } ")
 ```
 
@@ -595,7 +595,7 @@ The `randomWord` signal can be subscribed to by using the client's `receive_rand
 
 ```python
 @client.receive_random_word
-def on_random_word(word: str, time: datetime):
+def on_random_word(word: , time: ):
     print(f"Got a 'randomWord' signal: word={ word } time={ time } ")
 ```
 
@@ -719,7 +719,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_add_numbers 
-def add_numbers(first: int, second: int, third: Optional[int]) -> int:
+def add_numbers(first: , second: , third: ) -> int:
     """ This is an example handler for the 'addNumbers' method.  """
     print(f"Running add_numbers'({first}, {second}, {third})'")
     return 42
@@ -780,7 +780,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_do_something 
-def do_something(task_to_do: str) -> DoSomethingMethodResponse:
+def do_something(task_to_do: ) -> DoSomethingMethodResponse:
     """ This is an example handler for the 'doSomething' method.  """
     print(f"Running do_something'({task_to_do})'")
     return DoSomethingMethodResponse(label="apples", identifier=42)
@@ -901,7 +901,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_hold_temperature 
-def hold_temperature(temperature_celsius: float) -> bool:
+def hold_temperature(temperature_celsius: ) -> bool:
     """ This is an example handler for the 'hold_temperature' method.  """
     print(f"Running hold_temperature'({temperature_celsius})'")
     return True

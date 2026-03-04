@@ -151,7 +151,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_integer_version=3,
 
     read_write_two_integers=
-        ReadWriteTwoIntegersProperty(
+        (
             
             first=42,
             
@@ -173,7 +173,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_string_version=7,
 
     read_write_two_strings=
-        ReadWriteTwoStringsProperty(
+        (
             
             first="apples",
             
@@ -191,7 +191,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_struct_version=10,
 
     read_write_two_structs=
-        ReadWriteTwoStructsProperty(
+        (
             
             first=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
             
@@ -213,7 +213,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_enum_version=14,
 
     read_write_two_enums=
-        ReadWriteTwoEnumsProperty(
+        (
             
             first=Numbers.ONE,
             
@@ -231,7 +231,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_datetime_version=17,
 
     read_write_two_datetimes=
-        ReadWriteTwoDatetimesProperty(
+        (
             
             first=datetime.now(UTC),
             
@@ -249,7 +249,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_duration_version=20,
 
     read_write_two_durations=
-        ReadWriteTwoDurationsProperty(
+        (
             
             first=timedelta(seconds=3536),
             
@@ -267,7 +267,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_binary_version=23,
 
     read_write_two_binaries=
-        ReadWriteTwoBinariesProperty(
+        (
             
             first=b"example binary data",
             
@@ -281,7 +281,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_list_of_strings_version=25,
 
     read_write_lists=
-        ReadWriteListsProperty(
+        (
             
             the_list=[Numbers.ONE, Numbers.ONE],
             
@@ -629,7 +629,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_integer_version=3,
 
     read_write_two_integers=
-        ReadWriteTwoIntegersProperty(
+        (
             
             first=42,
             
@@ -651,7 +651,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_string_version=7,
 
     read_write_two_strings=
-        ReadWriteTwoStringsProperty(
+        (
             
             first="apples",
             
@@ -669,7 +669,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_struct_version=10,
 
     read_write_two_structs=
-        ReadWriteTwoStructsProperty(
+        (
             
             first=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]),
             
@@ -691,7 +691,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_enum_version=14,
 
     read_write_two_enums=
-        ReadWriteTwoEnumsProperty(
+        (
             
             first=Numbers.ONE,
             
@@ -709,7 +709,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_datetime_version=17,
 
     read_write_two_datetimes=
-        ReadWriteTwoDatetimesProperty(
+        (
             
             first=datetime.now(UTC),
             
@@ -727,7 +727,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_duration_version=20,
 
     read_write_two_durations=
-        ReadWriteTwoDurationsProperty(
+        (
             
             first=timedelta(seconds=3536),
             
@@ -745,7 +745,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_optional_binary_version=23,
 
     read_write_two_binaries=
-        ReadWriteTwoBinariesProperty(
+        (
             
             first=b"example binary data",
             
@@ -759,7 +759,7 @@ initial_property_values = TestableInitialPropertyValues(
     read_write_list_of_strings_version=25,
 
     read_write_lists=
-        ReadWriteListsProperty(
+        (
             
             the_list=[Numbers.ONE, Numbers.ONE],
             
@@ -944,7 +944,7 @@ The `singleInt` signal can be subscribed to by using the client's `receive_singl
 
 ```python
 @client.receive_single_int
-def on_single_int(value: int):
+def on_single_int(value: ):
     print(f"Got a 'singleInt' signal: value={ value } ")
 ```
 
@@ -1033,7 +1033,7 @@ The `singleOptionalInt` signal can be subscribed to by using the client's `recei
 
 ```python
 @client.receive_single_optional_int
-def on_single_optional_int(value: Optional[int]):
+def on_single_optional_int(value: ):
     print(f"Got a 'singleOptionalInt' signal: value={ value } ")
 ```
 
@@ -1124,7 +1124,7 @@ The `threeIntegers` signal can be subscribed to by using the client's `receive_t
 
 ```python
 @client.receive_three_integers
-def on_three_integers(first: int, second: int, third: Optional[int]):
+def on_three_integers(first: , second: , third: ):
     print(f"Got a 'threeIntegers' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -1213,7 +1213,7 @@ The `singleString` signal can be subscribed to by using the client's `receive_si
 
 ```python
 @client.receive_single_string
-def on_single_string(value: str):
+def on_single_string(value: ):
     print(f"Got a 'singleString' signal: value={ value } ")
 ```
 
@@ -1302,7 +1302,7 @@ The `singleOptionalString` signal can be subscribed to by using the client's `re
 
 ```python
 @client.receive_single_optional_string
-def on_single_optional_string(value: Optional[str]):
+def on_single_optional_string(value: ):
     print(f"Got a 'singleOptionalString' signal: value={ value } ")
 ```
 
@@ -1393,7 +1393,7 @@ The `threeStrings` signal can be subscribed to by using the client's `receive_th
 
 ```python
 @client.receive_three_strings
-def on_three_strings(first: str, second: str, third: Optional[str]):
+def on_three_strings(first: , second: , third: ):
     print(f"Got a 'threeStrings' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -1482,7 +1482,7 @@ The `singleEnum` signal can be subscribed to by using the client's `receive_sing
 
 ```python
 @client.receive_single_enum
-def on_single_enum(value: Numbers):
+def on_single_enum(value: ):
     print(f"Got a 'singleEnum' signal: value={ value } ")
 ```
 
@@ -1571,7 +1571,7 @@ The `singleOptionalEnum` signal can be subscribed to by using the client's `rece
 
 ```python
 @client.receive_single_optional_enum
-def on_single_optional_enum(value: Optional[Numbers]):
+def on_single_optional_enum(value: ):
     print(f"Got a 'singleOptionalEnum' signal: value={ value } ")
 ```
 
@@ -1662,7 +1662,7 @@ The `threeEnums` signal can be subscribed to by using the client's `receive_thre
 
 ```python
 @client.receive_three_enums
-def on_three_enums(first: Numbers, second: Numbers, third: Optional[Numbers]):
+def on_three_enums(first: , second: , third: ):
     print(f"Got a 'threeEnums' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -1751,7 +1751,7 @@ The `singleStruct` signal can be subscribed to by using the client's `receive_si
 
 ```python
 @client.receive_single_struct
-def on_single_struct(value: AllTypes):
+def on_single_struct(value: ):
     print(f"Got a 'singleStruct' signal: value={ value } ")
 ```
 
@@ -1840,7 +1840,7 @@ The `singleOptionalStruct` signal can be subscribed to by using the client's `re
 
 ```python
 @client.receive_single_optional_struct
-def on_single_optional_struct(value: Optional[AllTypes]):
+def on_single_optional_struct(value: ):
     print(f"Got a 'singleOptionalStruct' signal: value={ value } ")
 ```
 
@@ -1931,7 +1931,7 @@ The `threeStructs` signal can be subscribed to by using the client's `receive_th
 
 ```python
 @client.receive_three_structs
-def on_three_structs(first: AllTypes, second: AllTypes, third: Optional[AllTypes]):
+def on_three_structs(first: , second: , third: ):
     print(f"Got a 'threeStructs' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -2020,7 +2020,7 @@ The `singleDateTime` signal can be subscribed to by using the client's `receive_
 
 ```python
 @client.receive_single_date_time
-def on_single_date_time(value: datetime):
+def on_single_date_time(value: ):
     print(f"Got a 'singleDateTime' signal: value={ value } ")
 ```
 
@@ -2109,7 +2109,7 @@ The `singleOptionalDatetime` signal can be subscribed to by using the client's `
 
 ```python
 @client.receive_single_optional_datetime
-def on_single_optional_datetime(value: Optional[datetime]):
+def on_single_optional_datetime(value: ):
     print(f"Got a 'singleOptionalDatetime' signal: value={ value } ")
 ```
 
@@ -2200,7 +2200,7 @@ The `threeDateTimes` signal can be subscribed to by using the client's `receive_
 
 ```python
 @client.receive_three_date_times
-def on_three_date_times(first: datetime, second: datetime, third: Optional[datetime]):
+def on_three_date_times(first: , second: , third: ):
     print(f"Got a 'threeDateTimes' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -2289,7 +2289,7 @@ The `singleDuration` signal can be subscribed to by using the client's `receive_
 
 ```python
 @client.receive_single_duration
-def on_single_duration(value: timedelta):
+def on_single_duration(value: ):
     print(f"Got a 'singleDuration' signal: value={ value } ")
 ```
 
@@ -2378,7 +2378,7 @@ The `singleOptionalDuration` signal can be subscribed to by using the client's `
 
 ```python
 @client.receive_single_optional_duration
-def on_single_optional_duration(value: Optional[timedelta]):
+def on_single_optional_duration(value: ):
     print(f"Got a 'singleOptionalDuration' signal: value={ value } ")
 ```
 
@@ -2469,7 +2469,7 @@ The `threeDurations` signal can be subscribed to by using the client's `receive_
 
 ```python
 @client.receive_three_durations
-def on_three_durations(first: timedelta, second: timedelta, third: Optional[timedelta]):
+def on_three_durations(first: , second: , third: ):
     print(f"Got a 'threeDurations' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -2558,7 +2558,7 @@ The `singleBinary` signal can be subscribed to by using the client's `receive_si
 
 ```python
 @client.receive_single_binary
-def on_single_binary(value: bytes):
+def on_single_binary(value: ):
     print(f"Got a 'singleBinary' signal: value={ value } ")
 ```
 
@@ -2647,7 +2647,7 @@ The `singleOptionalBinary` signal can be subscribed to by using the client's `re
 
 ```python
 @client.receive_single_optional_binary
-def on_single_optional_binary(value: Optional[bytes]):
+def on_single_optional_binary(value: ):
     print(f"Got a 'singleOptionalBinary' signal: value={ value } ")
 ```
 
@@ -2738,7 +2738,7 @@ The `threeBinaries` signal can be subscribed to by using the client's `receive_t
 
 ```python
 @client.receive_three_binaries
-def on_three_binaries(first: bytes, second: bytes, third: Optional[bytes]):
+def on_three_binaries(first: , second: , third: ):
     print(f"Got a 'threeBinaries' signal: first={ first } second={ second } third={ third } ")
 ```
 
@@ -2827,7 +2827,7 @@ The `singleArrayOfIntegers` signal can be subscribed to by using the client's `r
 
 ```python
 @client.receive_single_array_of_integers
-def on_single_array_of_integers(values: List[int]):
+def on_single_array_of_integers(values: ):
     print(f"Got a 'singleArrayOfIntegers' signal: values={ values } ")
 ```
 
@@ -2916,7 +2916,7 @@ The `singleOptionalArrayOfStrings` signal can be subscribed to by using the clie
 
 ```python
 @client.receive_single_optional_array_of_strings
-def on_single_optional_array_of_strings(values: Optional[List[str]]):
+def on_single_optional_array_of_strings(values: ):
     print(f"Got a 'singleOptionalArrayOfStrings' signal: values={ values } ")
 ```
 
@@ -3012,7 +3012,7 @@ The `arrayOfEveryType` signal can be subscribed to by using the client's `receiv
 
 ```python
 @client.receive_array_of_every_type
-def on_array_of_every_type(first_of_integers: List[int], second_of_floats: List[float], third_of_strings: List[str], fourth_of_enums: List[Numbers], fifth_of_structs: List[Entry], sixth_of_datetimes: List[datetime], seventh_of_durations: List[timedelta], eighth_of_binaries: List[bytes]):
+def on_array_of_every_type(first_of_integers: , second_of_floats: , third_of_strings: , fourth_of_enums: , fifth_of_structs: , sixth_of_datetimes: , seventh_of_durations: , eighth_of_binaries: ):
     print(f"Got a 'arrayOfEveryType' signal: first_of_integers={ first_of_integers } second_of_floats={ second_of_floats } third_of_strings={ third_of_strings } fourth_of_enums={ fourth_of_enums } fifth_of_structs={ fifth_of_structs } sixth_of_datetimes={ sixth_of_datetimes } seventh_of_durations={ seventh_of_durations } eighth_of_binaries={ eighth_of_binaries } ")
 ```
 
@@ -3194,7 +3194,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_integer 
-def call_one_integer(input1: int) -> int:
+def call_one_integer(input1: ) -> int:
     """ This is an example handler for the 'callOneInteger' method.  """
     print(f"Running call_one_integer'({input1})'")
     return 42
@@ -3255,7 +3255,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_integer 
-def call_optional_integer(input1: Optional[int]) -> Optional[int]:
+def call_optional_integer(input1: ) -> Optional[int]:
     """ This is an example handler for the 'callOptionalInteger' method.  """
     print(f"Running call_optional_integer'({input1})'")
     return 42
@@ -3318,7 +3318,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_integers 
-def call_three_integers(input1: int, input2: int, input3: Optional[int]) -> CallThreeIntegersMethodResponse:
+def call_three_integers(input1: , input2: , input3: ) -> CallThreeIntegersMethodResponse:
     """ This is an example handler for the 'callThreeIntegers' method.  """
     print(f"Running call_three_integers'({input1}, {input2}, {input3})'")
     return CallThreeIntegersMethodResponse(output1=42, output2=42, output3=42)
@@ -3379,7 +3379,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_string 
-def call_one_string(input1: str) -> str:
+def call_one_string(input1: ) -> str:
     """ This is an example handler for the 'callOneString' method.  """
     print(f"Running call_one_string'({input1})'")
     return "apples"
@@ -3440,7 +3440,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_string 
-def call_optional_string(input1: Optional[str]) -> Optional[str]:
+def call_optional_string(input1: ) -> Optional[str]:
     """ This is an example handler for the 'callOptionalString' method.  """
     print(f"Running call_optional_string'({input1})'")
     return "apples"
@@ -3503,7 +3503,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_strings 
-def call_three_strings(input1: str, input2: Optional[str], input3: str) -> CallThreeStringsMethodResponse:
+def call_three_strings(input1: , input2: , input3: ) -> CallThreeStringsMethodResponse:
     """ This is an example handler for the 'callThreeStrings' method.  """
     print(f"Running call_three_strings'({input1}, {input2}, {input3})'")
     return CallThreeStringsMethodResponse(output1="apples", output2="apples", output3="apples")
@@ -3564,7 +3564,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_enum 
-def call_one_enum(input1: Numbers) -> Numbers:
+def call_one_enum(input1: ) -> Numbers:
     """ This is an example handler for the 'callOneEnum' method.  """
     print(f"Running call_one_enum'({input1})'")
     return Numbers.ONE
@@ -3625,7 +3625,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_enum 
-def call_optional_enum(input1: Optional[Numbers]) -> Optional[Numbers]:
+def call_optional_enum(input1: ) -> Optional[Numbers]:
     """ This is an example handler for the 'callOptionalEnum' method.  """
     print(f"Running call_optional_enum'({input1})'")
     return Numbers.ONE
@@ -3688,7 +3688,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_enums 
-def call_three_enums(input1: Numbers, input2: Numbers, input3: Optional[Numbers]) -> CallThreeEnumsMethodResponse:
+def call_three_enums(input1: , input2: , input3: ) -> CallThreeEnumsMethodResponse:
     """ This is an example handler for the 'callThreeEnums' method.  """
     print(f"Running call_three_enums'({input1}, {input2}, {input3})'")
     return CallThreeEnumsMethodResponse(output1=Numbers.ONE, output2=Numbers.ONE, output3=Numbers.ONE)
@@ -3752,7 +3752,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_struct 
-def call_one_struct(input1: AllTypes) -> AllTypes:
+def call_one_struct(input1: ) -> AllTypes:
     """ This is an example handler for the 'callOneStruct' method.  """
     print(f"Running call_one_struct'({input1})'")
     return AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")])
@@ -3816,7 +3816,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_struct 
-def call_optional_struct(input1: Optional[AllTypes]) -> Optional[AllTypes]:
+def call_optional_struct(input1: ) -> Optional[AllTypes]:
     """ This is an example handler for the 'callOptionalStruct' method.  """
     print(f"Running call_optional_struct'({input1})'")
     return AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")])
@@ -3879,7 +3879,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_structs 
-def call_three_structs(input1: Optional[AllTypes], input2: AllTypes, input3: AllTypes) -> CallThreeStructsMethodResponse:
+def call_three_structs(input1: , input2: , input3: ) -> CallThreeStructsMethodResponse:
     """ This is an example handler for the 'callThreeStructs' method.  """
     print(f"Running call_three_structs'({input1}, {input2}, {input3})'")
     return CallThreeStructsMethodResponse(output1=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), output2=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]), output3=AllTypes(the_bool=True, the_int=42, the_number=3.14, the_str="apples", the_enum=Numbers.ONE, an_entry_object=Entry(key=42, value="apples"), date_and_time=datetime.now(UTC), time_duration=timedelta(seconds=3536), data=b"example binary data", optional_integer=42, optional_string="apples", optional_enum=Numbers.ONE, optional_entry_object=Entry(key=42, value="apples"), optional_date_time=None, optional_duration=None, optional_binary=b"example binary data", array_of_integers=[42, 2022], optional_array_of_integers=[42, 2022], array_of_strings=["apples", "foo"], optional_array_of_strings=["apples", "foo"], array_of_enums=[Numbers.ONE, Numbers.ONE], optional_array_of_enums=[Numbers.ONE, Numbers.ONE], array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)], array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)], array_of_binaries=[b"example binary data", b"example binary data"], optional_array_of_binaries=[b"example binary data", b"example binary data"], array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")], optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")]))
@@ -3940,7 +3940,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_date_time 
-def call_one_date_time(input1: datetime) -> datetime:
+def call_one_date_time(input1: ) -> datetime:
     """ This is an example handler for the 'callOneDateTime' method.  """
     print(f"Running call_one_date_time'({input1})'")
     return datetime.now(UTC)
@@ -4001,7 +4001,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_date_time 
-def call_optional_date_time(input1: Optional[datetime]) -> Optional[datetime]:
+def call_optional_date_time(input1: ) -> Optional[datetime]:
     """ This is an example handler for the 'callOptionalDateTime' method.  """
     print(f"Running call_optional_date_time'({input1})'")
     return None
@@ -4064,7 +4064,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_date_times 
-def call_three_date_times(input1: datetime, input2: datetime, input3: Optional[datetime]) -> CallThreeDateTimesMethodResponse:
+def call_three_date_times(input1: , input2: , input3: ) -> CallThreeDateTimesMethodResponse:
     """ This is an example handler for the 'callThreeDateTimes' method.  """
     print(f"Running call_three_date_times'({input1}, {input2}, {input3})'")
     return CallThreeDateTimesMethodResponse(output1=datetime.now(UTC), output2=datetime.now(UTC), output3=None)
@@ -4125,7 +4125,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_duration 
-def call_one_duration(input1: timedelta) -> timedelta:
+def call_one_duration(input1: ) -> timedelta:
     """ This is an example handler for the 'callOneDuration' method.  """
     print(f"Running call_one_duration'({input1})'")
     return timedelta(seconds=3536)
@@ -4186,7 +4186,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_duration 
-def call_optional_duration(input1: Optional[timedelta]) -> Optional[timedelta]:
+def call_optional_duration(input1: ) -> Optional[timedelta]:
     """ This is an example handler for the 'callOptionalDuration' method.  """
     print(f"Running call_optional_duration'({input1})'")
     return None
@@ -4249,7 +4249,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_durations 
-def call_three_durations(input1: timedelta, input2: timedelta, input3: Optional[timedelta]) -> CallThreeDurationsMethodResponse:
+def call_three_durations(input1: , input2: , input3: ) -> CallThreeDurationsMethodResponse:
     """ This is an example handler for the 'callThreeDurations' method.  """
     print(f"Running call_three_durations'({input1}, {input2}, {input3})'")
     return CallThreeDurationsMethodResponse(output1=timedelta(seconds=3536), output2=timedelta(seconds=3536), output3=None)
@@ -4310,7 +4310,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_binary 
-def call_one_binary(input1: bytes) -> bytes:
+def call_one_binary(input1: ) -> bytes:
     """ This is an example handler for the 'callOneBinary' method.  """
     print(f"Running call_one_binary'({input1})'")
     return b"example binary data"
@@ -4371,7 +4371,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_binary 
-def call_optional_binary(input1: Optional[bytes]) -> Optional[bytes]:
+def call_optional_binary(input1: ) -> Optional[bytes]:
     """ This is an example handler for the 'callOptionalBinary' method.  """
     print(f"Running call_optional_binary'({input1})'")
     return b"example binary data"
@@ -4434,7 +4434,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_three_binaries 
-def call_three_binaries(input1: bytes, input2: bytes, input3: Optional[bytes]) -> CallThreeBinariesMethodResponse:
+def call_three_binaries(input1: , input2: , input3: ) -> CallThreeBinariesMethodResponse:
     """ This is an example handler for the 'callThreeBinaries' method.  """
     print(f"Running call_three_binaries'({input1}, {input2}, {input3})'")
     return CallThreeBinariesMethodResponse(output1=b"example binary data", output2=b"example binary data", output3=b"example binary data")
@@ -4495,7 +4495,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_one_list_of_integers 
-def call_one_list_of_integers(input1: List[int]) -> List[int]:
+def call_one_list_of_integers(input1: ) -> List[int]:
     """ This is an example handler for the 'callOneListOfIntegers' method.  """
     print(f"Running call_one_list_of_integers'({input1})'")
     return [42, 2022]
@@ -4556,7 +4556,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_optional_list_of_floats 
-def call_optional_list_of_floats(input1: Optional[List[float]]) -> Optional[List[float]]:
+def call_optional_list_of_floats(input1: ) -> Optional[List[float]]:
     """ This is an example handler for the 'callOptionalListOfFloats' method.  """
     print(f"Running call_optional_list_of_floats'({input1})'")
     return [3.14, 1.0]
@@ -4618,7 +4618,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_call_two_lists 
-def call_two_lists(input1: List[Numbers], input2: Optional[List[str]]) -> CallTwoListsMethodResponse:
+def call_two_lists(input1: , input2: ) -> CallTwoListsMethodResponse:
     """ This is an example handler for the 'callTwoLists' method.  """
     print(f"Running call_two_lists'({input1}, {input2})'")
     return CallTwoListsMethodResponse(output1=[Numbers.ONE, Numbers.ONE], output2=["apples", "foo"])

@@ -139,7 +139,7 @@ from weatheripc.property import WeatherInitialPropertyValues
 initial_property_values = WeatherInitialPropertyValues(
 
     location=
-        LocationProperty(
+        (
             
             latitude=3.14,
             
@@ -153,7 +153,7 @@ initial_property_values = WeatherInitialPropertyValues(
     current_temperature_version=2,
 
     current_condition=
-        CurrentConditionProperty(
+        (
             
             condition=WeatherCondition.SNOWY,
             
@@ -163,7 +163,7 @@ initial_property_values = WeatherInitialPropertyValues(
     current_condition_version=3,
 
     daily_forecast=
-        DailyForecastProperty(
+        (
             
             monday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
             
@@ -175,7 +175,7 @@ initial_property_values = WeatherInitialPropertyValues(
     daily_forecast_version=4,
 
     hourly_forecast=
-        HourlyForecastProperty(
+        (
             
             hour_0=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
             
@@ -401,7 +401,7 @@ from weatheripc.server import WeatherServer, WeatherInitialPropertyValues
 initial_property_values = WeatherInitialPropertyValues(
 
     location=
-        LocationProperty(
+        (
             
             latitude=3.14,
             
@@ -415,7 +415,7 @@ initial_property_values = WeatherInitialPropertyValues(
     current_temperature_version=2,
 
     current_condition=
-        CurrentConditionProperty(
+        (
             
             condition=WeatherCondition.SNOWY,
             
@@ -425,7 +425,7 @@ initial_property_values = WeatherInitialPropertyValues(
     current_condition_version=3,
 
     daily_forecast=
-        DailyForecastProperty(
+        (
             
             monday=ForecastForDay(high_temperature=3.14, low_temperature=3.14, condition=WeatherCondition.SNOWY, start_time="apples", end_time="apples"),
             
@@ -437,7 +437,7 @@ initial_property_values = WeatherInitialPropertyValues(
     daily_forecast_version=4,
 
     hourly_forecast=
-        HourlyForecastProperty(
+        (
             
             hour_0=ForecastForHour(temperature=3.14, starttime=datetime.now(UTC), condition=WeatherCondition.SNOWY),
             
@@ -552,7 +552,7 @@ The `current_time` signal can be subscribed to by using the client's `receive_cu
 
 ```python
 @client.receive_current_time
-def on_current_time(current_time: str):
+def on_current_time(current_time: ):
     print(f"Got a 'current_time' signal: current_time={ current_time } ")
 ```
 

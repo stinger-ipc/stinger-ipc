@@ -17,10 +17,10 @@ class TestArgCreationFromSpec(unittest.TestCase):
             with self.subTest(obj):
                 arg = Arg.new_arg_from_stinger(obj)
                 self.assertEqual(arg.name, obj['name'])
-                self.assertEqual(arg.python_type, obj['python_type'])
+                self.assertEqual(arg.python.type, obj['python_type'])
                 self.assertEqual(arg.type, obj['value_type'])
                 example = arg.get_random_example_value()
-                real_python_type = eval(arg.python_type)
+                real_python_type = eval(arg.python.type)
                 self.assertIsInstance(example, real_python_type)
 
 

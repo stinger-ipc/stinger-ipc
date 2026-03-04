@@ -362,7 +362,7 @@ The `person_entered` signal can be subscribed to by using the client's `receive_
 
 ```python
 @client.receive_person_entered
-def on_person_entered(person: Person):
+def on_person_entered(person: ):
     print(f"Got a 'person_entered' signal: person={ person } ")
 ```
 
@@ -484,7 +484,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_trade_numbers 
-def trade_numbers(your_number: int) -> int:
+def trade_numbers(your_number: ) -> int:
     """ This is an example handler for the 'trade_numbers' method.  """
     print(f"Running trade_numbers'({your_number})'")
     return 42

@@ -88,7 +88,7 @@ class PropertyEditModal(ModalScreen[bool]):
                 {%if prop.arg_list[0].arg_type.name == 'ENUM'%}
                 enum_options = [
                     (f"{member.name} ({member.value})", member.value)
-                    for member in {{prop.arg_list[0].enum.python_type}}
+                    for member in {{prop.arg_list[0].enum.python.type}}
                 ]
                 yield Select(options=enum_options, value=self.current_value.value if self.current_value is not None else None, id="property_input")
                 {%else%}{# not single enum arg #}
@@ -113,8 +113,8 @@ class PropertyEditModal(ModalScreen[bool]):
 {%-elif arg.type.name == 'FLOAT'%}float({{value}})
 {%-elif arg.type.name == 'STRING'%}str({{value}})
 {%-else%}{{value}}{%endif%}
-{%-elif arg.arg_type.name == 'ENUM'%}{{arg.enum.python_type}}({{value}})
-{%-elif arg.arg_type.name == 'STRUCT'%}{{arg.struct.python_type}}.model_validate_json({{value}})
+{%-elif arg.arg_type.name == 'ENUM'%}{{arg.enum.python.type}}({{value}})
+{%-elif arg.arg_type.name == 'STRUCT'%}{{arg.struct.python.type}}.model_validate_json({{value}})
 {%-elif arg.arg_type.name == 'DATETIME'%}datetime.fromisoformat({{value}})
 {%-elif arg.arg_type.name == 'DURATION'%}isodate.parse_duration({{value}})
 {%-elif arg.arg_type.name == 'BINARY'%}{{value}}.encode('utf-8')
@@ -431,7 +431,7 @@ class ClientScreen(Screen):
         # Define all methods with their parameters
         methods = {
         {%-for method_name, method in stinger.methods.items()%}
-            "{{method_name|snake_case}}": { {% for arg in method.arg_list %}"{{arg.name|snake_case}}": {{arg.python_annotation}}, {%endfor%} }, 
+            "{{method_name|snake_case}}": { {% for arg in method.arg_list %}"{{arg.name|snake_case}}": {{arg.python.annotation}}, {%endfor%} }, 
         {%endfor%}
         } # type: Dict[str, Dict[str, Any]]
         
@@ -500,7 +500,7 @@ class ClientScreen(Screen):
             
             {%for prop_name, prop in stinger.properties.items() %}
             {%if not loop.first%}el{%endif%}if prop_name == "{{prop_name|snake_case}}":
-                def on_{{prop_name|snake_case}}_updated(value: {{prop.python_annotation}}):
+                def on_{{prop_name|snake_case}}_updated(value: {{prop.python.annotation}}):
                     prop_widget.current_value = value
                     
                     values = []

@@ -39,13 +39,13 @@ from pydantic import BaseModel, ValidationError
 logging.basicConfig(level=logging.DEBUG)
 
 {%for sig_name, sig in stinger.signals.items()-%}
-{{sig_name | UpperCamelCase}}SignalCallbackType = Union[Callable[[{%for arg in sig.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in sig.arg_list%}{%if loop.first%}, {%endif%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]
+{{sig_name | UpperCamelCase}}SignalCallbackType = Union[Callable[[{%for arg in sig.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in sig.arg_list%}{%if loop.first%}, {%endif%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]
 {%endfor%}
 {%-for method_name, method in stinger.methods.items()-%}
 {{method_name | UpperCamelCase}}MethodResponseCallbackType = Union[Callable[[{%if method.return_value%}{{method.return_value_python_annotation}}{%endif%}], None], Callable[[Any{%if method.return_value%}, {{method.return_value_python_annotation}}{%endif%}], None]]
 {%endfor%}
 {%for prop_name, prop in stinger.properties.items()-%}
-{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Union[Callable[[{{prop.python_annotation}}], None], Callable[[Any, {{prop.python_annotation}}], None]]
+{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Union[Callable[[{{prop.python.annotation}}], None], Callable[[Any, {{prop.python.annotation}}], None]]
 {%endfor%}
 
 class DiscoveredInstance(BaseModel):
@@ -76,7 +76,7 @@ class {{stinger.python.client_class_name}}:
         self._pending_method_responses: Dict[str, Callable[..., None]] = {}
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
-        self._property_{{prop_name|snake_case}} = instance_info.initial_property_values.{{prop_name|snake_case}}  # type: {{prop_spec.python_annotation}}
+        self._property_{{prop_name|snake_case}} = instance_info.initial_property_values.{{prop_name|snake_case}}  # type: {{prop_spec.python.annotation}}
         self._property_{{prop_name|snake_case}}_mutex = threading.Lock()
         self._property_{{prop_name|snake_case}}_version = instance_info.initial_property_values.{{prop_name|snake_case}}_version
         self._conn.subscribe("{{prop_spec.value_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name | snake_case}}_property_update_message) # type: ignore[str-format]
@@ -114,8 +114,8 @@ class {{stinger.python.client_class_name}}:
     def {{prop_name}}(self, value: {{prop_spec.python.setter_value_annotation}}):
         """ Serializes and publishes the '{{prop_name}}' property.
         """
-        #if not isinstance(value, {{prop_spec.python_local_type}}){%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} and value is not None and not (isinstance(value, {{prop_spec.python.model_class_name}})){%endif%}:
-        #    raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python_class}}{%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} or None or {{prop_spec.python.model_class_name}}.{%endif%}")
+        #if not isinstance(value, {{prop_spec.python.local_type}}){%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} and value is not None and not (isinstance(value, {{prop_spec.python.model_class_name}})){%endif%}:
+        #    raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python.class_name}}{%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} or None or {{prop_spec.python.model_class_name}}.{%endif%}")
         {%if prop_spec.arg_list | length > 1 -%}
         # value must be the model object.
         property_obj = value
@@ -242,7 +242,7 @@ class {{stinger.python.client_class_name}}:
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
+    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
         """ Calling this method with individual arguments initiates a `{{method_name}}` IPC method call.
         """
         payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}

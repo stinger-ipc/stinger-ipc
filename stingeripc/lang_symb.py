@@ -29,10 +29,26 @@ class PythonSymbolsProvider(ISymbolsProvider):
             return PythonInterfaceSymbols(model)
         elif model_class_name == "InterfaceStruct":
             return PythonStructSymbols(model)
+        elif model_class_name == "InterfaceEnum":
+            return PythonEnumSymbols(model)
         elif model_class_name == "Method":
             return PythonMethodSymbols(model)
         elif model_class_name == "Property":
             return PythonPropertySymbols(model)
+        elif model_class_name == "ArgEnum":
+            return PythonArgEnumSymbols(model)
+        elif model_class_name == "ArgPrimitive":
+            return PythonArgPrimitiveSymbols(model)
+        elif model_class_name == "ArgStruct":
+            return PythonArgStructSymbols(model)
+        elif model_class_name == "ArgDateTime":
+            return PythonArgDateTimeSymbols(model)
+        elif model_class_name == "ArgDuration":
+            return PythonArgDurationSymbols(model)
+        elif model_class_name == "ArgBinary":
+            return PythonArgBinarySymbols(model)
+        elif model_class_name == "ArgArray":
+            return PythonArgArraySymbols(model)
         return None
 
 class PythonSymbols:
@@ -73,6 +89,158 @@ class PythonStructSymbols(PythonSymbols):
         super().__init__()
         self._iface_struct = iface_struct
 
+    @property
+    def type(self) -> str:
+        return stringmanip.upper_camel_case(self._iface_struct.name)
+
+    @property
+    def local_type(self) -> str:
+        return stringmanip.upper_camel_case(self._iface_struct.name)
+
+
+class PythonEnumSymbols(PythonSymbols):
+
+    def __init__(self, enum):
+        super().__init__()
+        self._enum = enum
+
+    @property
+    def type(self) -> str:
+        return stringmanip.upper_camel_case(self._enum.name)
+
+    @property
+    def local_type(self) -> str:
+        return stringmanip.upper_camel_case(self._enum.name)
+
+
+class PythonArgSymbols(PythonSymbols):
+    """Base Python symbols for Arg objects."""
+
+    def __init__(self, arg):
+        super().__init__()
+        self._arg = arg
+
+    @property
+    def type(self) -> str:
+        return self._arg.name
+
+    @property
+    def class_name(self) -> str:
+        return self.type
+
+    @property
+    def local_type(self) -> str:
+        return self.type.split(".")[-1]
+
+    @property
+    def annotation(self) -> str:
+        return self.class_name
+
+
+class PythonArgEnumSymbols(PythonArgSymbols):
+
+    @property
+    def type(self) -> str:
+        return self._arg._enum.python.type
+
+    @property
+    def local_type(self) -> str:
+        return self._arg._enum.python.local_type
+
+    @property
+    def class_name(self) -> str:
+        return self._arg._enum.python.type
+
+    @property
+    def annotation(self) -> str:
+        if self._arg.optional:
+            return f"Optional[{self._arg._enum.python.type}]"
+        return self._arg._enum.python.type
+
+
+class PythonArgPrimitiveSymbols(PythonArgSymbols):
+
+    @property
+    def type(self) -> str:
+        return ArgPrimitiveType.to_python_type(self._arg._arg_type)
+
+    @property
+    def annotation(self) -> str:
+        return ArgPrimitiveType.to_python_type(self._arg._arg_type, optional=self._arg._optional)
+
+
+class PythonArgStructSymbols(PythonArgSymbols):
+
+    @property
+    def type(self) -> str:
+        return self._arg._interface_struct.python.local_type
+
+    @property
+    def local_type(self) -> str:
+        return self._arg._interface_struct.python.local_type
+
+    @property
+    def annotation(self) -> str:
+        if self._arg.optional:
+            return f"Optional[{self.type}]"
+        return self.type
+
+
+class PythonArgDateTimeSymbols(PythonArgSymbols):
+
+    @property
+    def type(self) -> str:
+        return "datetime"
+
+    @property
+    def local_type(self) -> str:
+        return "datetime"
+
+    @property
+    def annotation(self) -> str:
+        if self._arg.optional:
+            return "Optional[datetime]"
+        return "datetime"
+
+
+class PythonArgDurationSymbols(PythonArgSymbols):
+
+    @property
+    def type(self) -> str:
+        return "timedelta"
+
+    @property
+    def annotation(self) -> str:
+        if self._arg.optional:
+            return "Optional[timedelta]"
+        return "timedelta"
+
+
+class PythonArgBinarySymbols(PythonArgSymbols):
+
+    @property
+    def type(self) -> str:
+        return "bytes"
+
+    @property
+    def annotation(self) -> str:
+        if self._arg.optional:
+            return f"Optional[{self.type}]"
+        return self.type
+
+
+class PythonArgArraySymbols(PythonArgSymbols):
+
+    @property
+    def type(self) -> str:
+        return "list"
+
+    @property
+    def annotation(self) -> str:
+        if self._arg.optional:
+            return f"Optional[List[{self._arg.element.python.annotation}]]"
+        return f"List[{self._arg.element.python.annotation}]"
+
 
 class PythonMethodSymbols(PythonSymbols):
 
@@ -99,16 +267,38 @@ class PythonPropertySymbols(PythonSymbols):
         self._prop = prop
 
     @property
+    def class_name(self) -> str:
+        if len(self._prop._arg_list) == 1:
+            return self._prop._arg_list[0].python.class_name
+        else:
+            return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+
+    @property
+    def type(self) -> str:
+        return self.class_name
+
+    @property
+    def local_type(self) -> str:
+        return self.class_name.split(".")[-1]
+
+    @property
+    def annotation(self) -> str:
+        if len(self._prop._arg_list) == 1:
+            return self._prop._arg_list[0].python.annotation
+        else:
+            return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+
+    @property
     def getter_value_annotation(self) -> str:
         if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].python_annotation
+            return self._prop._arg_list[0].python.annotation
         else:
             return self.model_class_name
 
     @property
     def setter_value_annotation(self) -> str:
         if len(self._prop._arg_list) == 1:
-            return f"Union[{self._prop._arg_list[0].python_annotation}, {self.model_class_name}]"
+            return f"Union[{self._prop._arg_list[0].python.annotation}, {self.model_class_name}]"
         else:
             return self.model_class_name
 
