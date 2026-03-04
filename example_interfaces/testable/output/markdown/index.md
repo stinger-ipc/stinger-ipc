@@ -994,7 +994,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleInt` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleIntCallback([](int value) {
+client.registerSingleIntCallback([]( value) {
     std::cout << "value=" <<value <<  std::endl;
 });
 ```
@@ -1083,7 +1083,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleOptionalInt` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleOptionalIntCallback([](std::optional<int> value) {
+client.registerSingleOptionalIntCallback([]( value) {
     std::cout << "value=" << "None" <<  std::endl;
 });
 ```
@@ -1174,7 +1174,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `threeIntegers` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerThreeIntegersCallback([](int first, int second, std::optional<int> third) {
+client.registerThreeIntegersCallback([]( first,  second,  third) {
     std::cout << "first=" <<first << " | " << "second=" <<second << " | " << "third=" << "None" <<  std::endl;
 });
 ```
@@ -1263,7 +1263,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleString` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleStringCallback([](std::string value) {
+client.registerSingleStringCallback([]( value) {
     std::cout << "value=" <<value <<  std::endl;
 });
 ```
@@ -1352,7 +1352,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleOptionalString` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleOptionalStringCallback([](std::optional<std::string> value) {
+client.registerSingleOptionalStringCallback([]( value) {
     std::cout << "value=" << "None" <<  std::endl;
 });
 ```
@@ -1443,7 +1443,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `threeStrings` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerThreeStringsCallback([](std::string first, std::string second, std::optional<std::string> third) {
+client.registerThreeStringsCallback([]( first,  second,  third) {
     std::cout << "first=" <<first << " | " << "second=" <<second << " | " << "third=" << "None" <<  std::endl;
 });
 ```
@@ -1532,7 +1532,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleEnum` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleEnumCallback([](Numbers value) {
+client.registerSingleEnumCallback([]( value) {
     std::cout << "value=" <<numbersStrings[static_cast<int>(value)] <<  std::endl;
 });
 ```
@@ -1621,7 +1621,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleOptionalEnum` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleOptionalEnumCallback([](std::optional<Numbers> value) {
+client.registerSingleOptionalEnumCallback([]( value) {
     std::cout << "value=" << "None" <<  std::endl;
 });
 ```
@@ -1712,7 +1712,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `threeEnums` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerThreeEnumsCallback([](Numbers first, Numbers second, std::optional<Numbers> third) {
+client.registerThreeEnumsCallback([]( first,  second,  third) {
     std::cout << "first=" <<numbersStrings[static_cast<int>(first)] << " | " << "second=" <<numbersStrings[static_cast<int>(second)] << " | " << "third=" << "None" <<  std::endl;
 });
 ```
@@ -1801,7 +1801,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleStruct` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleStructCallback([](AllTypes value) {
+client.registerSingleStructCallback([]( value) {
     std::cout << "value=" <<value <<  std::endl;
 });
 ```
@@ -1890,7 +1890,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleOptionalStruct` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleOptionalStructCallback([](AllTypes value) {
+client.registerSingleOptionalStructCallback([]( value) {
     std::cout << "value=" << "None" <<  std::endl;
 });
 ```
@@ -1981,7 +1981,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `threeStructs` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerThreeStructsCallback([](AllTypes first, AllTypes second, AllTypes third) {
+client.registerThreeStructsCallback([]( first,  second,  third) {
     std::cout << "first=" <<first << " | " << "second=" <<second << " | " << "third=" << "None" <<  std::endl;
 });
 ```
@@ -2070,7 +2070,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleDateTime` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleDateTimeCallback([](std::chrono::time_point<std::chrono::system_clock> value) {
+client.registerSingleDateTimeCallback([]( value) {
     std::cout << "value=" <<value <<  std::endl;
 });
 ```
@@ -2159,7 +2159,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleOptionalDatetime` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleOptionalDatetimeCallback([](std::optional<std::chrono::time_point<std::chrono::system_clock>> value) {
+client.registerSingleOptionalDatetimeCallback([]( value) {
     std::cout << "value=" << "None" <<  std::endl;
 });
 ```
@@ -2250,7 +2250,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `threeDateTimes` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerThreeDateTimesCallback([](std::chrono::time_point<std::chrono::system_clock> first, std::chrono::time_point<std::chrono::system_clock> second, std::optional<std::chrono::time_point<std::chrono::system_clock>> third) {
+client.registerThreeDateTimesCallback([]( first,  second,  third) {
     std::cout << "first=" <<first << " | " << "second=" <<second << " | " << "third=" << "None" <<  std::endl;
 });
 ```
@@ -2339,7 +2339,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleDuration` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleDurationCallback([](std::chrono::duration<double> value) {
+client.registerSingleDurationCallback([]( value) {
     std::cout << "value=" <<value <<  std::endl;
 });
 ```
@@ -2428,7 +2428,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleOptionalDuration` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleOptionalDurationCallback([](std::optional<std::chrono::duration<double>> value) {
+client.registerSingleOptionalDurationCallback([]( value) {
     std::cout << "value=" << "None" <<  std::endl;
 });
 ```
@@ -2519,7 +2519,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `threeDurations` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerThreeDurationsCallback([](std::chrono::duration<double> first, std::chrono::duration<double> second, std::optional<std::chrono::duration<double>> third) {
+client.registerThreeDurationsCallback([]( first,  second,  third) {
     std::cout << "first=" <<first << " | " << "second=" <<second << " | " << "third=" << "None" <<  std::endl;
 });
 ```
@@ -2608,7 +2608,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleBinary` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleBinaryCallback([](std::vector<uint8_t> value) {
+client.registerSingleBinaryCallback([]( value) {
     std::cout << "value=" <<value <<  std::endl;
 });
 ```
@@ -2697,7 +2697,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleOptionalBinary` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleOptionalBinaryCallback([](std::optional<std::vector<uint8_t>> value) {
+client.registerSingleOptionalBinaryCallback([]( value) {
     std::cout << "value=" << "None" <<  std::endl;
 });
 ```
@@ -2788,7 +2788,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `threeBinaries` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerThreeBinariesCallback([](std::vector<uint8_t> first, std::vector<uint8_t> second, std::optional<std::vector<uint8_t>> third) {
+client.registerThreeBinariesCallback([]( first,  second,  third) {
     std::cout << "first=" <<first << " | " << "second=" <<second << " | " << "third=" << "None" <<  std::endl;
 });
 ```
@@ -2877,7 +2877,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleArrayOfIntegers` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleArrayOfIntegersCallback([](std::vector<int> values) {
+client.registerSingleArrayOfIntegersCallback([]( values) {
     std::cout << "values=" <<values <<  std::endl;
 });
 ```
@@ -2966,7 +2966,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `singleOptionalArrayOfStrings` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerSingleOptionalArrayOfStringsCallback([](std::optional<std::vector<std::string>> values) {
+client.registerSingleOptionalArrayOfStringsCallback([]( values) {
     std::cout << "values=" << "None" <<  std::endl;
 });
 ```
@@ -3062,7 +3062,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `arrayOfEveryType` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerArrayOfEveryTypeCallback([](std::vector<int> first_of_integers, std::vector<double> second_of_floats, std::vector<std::string> third_of_strings, std::vector<Numbers> fourth_of_enums, std::vector<Entry> fifth_of_structs, std::vector<std::chrono::time_point<std::chrono::system_clock>> sixth_of_datetimes, std::vector<std::chrono::duration<double>> seventh_of_durations, std::vector<std::vector<uint8_t>> eighth_of_binaries) {
+client.registerArrayOfEveryTypeCallback([]( first_of_integers,  second_of_floats,  third_of_strings,  fourth_of_enums,  fifth_of_structs,  sixth_of_datetimes,  seventh_of_durations,  eighth_of_binaries) {
     std::cout << "first_of_integers=" <<first_of_integers << " | " << "second_of_floats=" <<second_of_floats << " | " << "third_of_strings=" <<third_of_strings << " | " << "fourth_of_enums=" <<fourth_of_enums << " | " << "fifth_of_structs=" <<fifth_of_structs << " | " << "sixth_of_datetimes=" <<sixth_of_datetimes << " | " << "seventh_of_durations=" <<seventh_of_durations << " | " << "eighth_of_binaries=" <<eighth_of_binaries <<  std::endl;
 });
 ```

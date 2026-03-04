@@ -29,7 +29,7 @@ struct {{method_name | UpperCamelCase}}RequestArguments {
     {%-if method.arg_list | length > 0 %}
     // Values...
     {%-for arg in method.arg_list %}
-    {{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}};
+    {{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}};
     {%-endfor%}
     {%endif%}
 };
@@ -40,7 +40,7 @@ struct {{method_name | UpperCamelCase}}ReturnValues {
     {%-if method.return_arg_list | length > 0 %}
     // Values...
     {%-for arg in method.return_arg_list %}
-    {{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}};
+    {{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}};
     {%-endfor%}
     {%endif%}
 };

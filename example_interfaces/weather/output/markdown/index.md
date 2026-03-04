@@ -602,7 +602,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `current_time` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerCurrentTimeCallback([](std::string current_time) {
+client.registerCurrentTimeCallback([]( current_time) {
     std::cout << "current_time=" <<current_time <<  std::endl;
 });
 ```

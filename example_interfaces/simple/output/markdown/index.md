@@ -412,7 +412,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `person_entered` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerPersonEnteredCallback([](Person person) {
+client.registerPersonEnteredCallback([]( person) {
     std::cout << "person=" <<person <<  std::endl;
 });
 ```

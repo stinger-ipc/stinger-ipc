@@ -555,7 +555,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `todayIs` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerTodayIsCallback([](int dayOfMonth, DayOfTheWeek dayOfWeek) {
+client.registerTodayIsCallback([]( dayOfMonth,  dayOfWeek) {
     std::cout << "dayOfMonth=" <<dayOfMonth << " | " << "dayOfWeek=" <<dayOfTheWeekStrings[static_cast<int>(dayOfWeek)] <<  std::endl;
 });
 ```
@@ -645,7 +645,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `randomWord` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerRandomWordCallback([](std::string word, std::chrono::time_point<std::chrono::system_clock> time) {
+client.registerRandomWordCallback([]( word,  time) {
     std::cout << "word=" <<word << " | " << "time=" <<time <<  std::endl;
 });
 ```

@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     {%-endfor%}
 
     {%-for method_name, method in stinger.methods.items() %}
-    server->register{{method_name | UpperCamelCase}}Handler([]({%for arg in method.arg_list%}{{arg.cpp_temp_type}} unused{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_cpp_class}}
+    server->register{{method_name | UpperCamelCase}}Handler([]({%for arg in method.arg_list%}{{arg.cpp.temp_type}} unused{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_cpp_class}}
     {
         std::cout << "Received call for {{method_name}}\n";
         {%-if method.return_value_type == 'multiple'%}

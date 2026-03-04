@@ -375,7 +375,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `anotherSignal` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerAnotherSignalCallback([](double one, bool two, std::string three) {
+client.registerAnotherSignalCallback([]( one,  two,  three) {
     std::cout << "one=" <<one << " | " << "two=" <<two << " | " << "three=" <<three <<  std::endl;
 });
 ```
@@ -464,7 +464,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `bark` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerBarkCallback([](std::string word) {
+client.registerBarkCallback([]( word) {
     std::cout << "word=" <<word <<  std::endl;
 });
 ```
@@ -553,7 +553,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `maybe_number` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerMaybeNumberCallback([](std::optional<int> number) {
+client.registerMaybeNumberCallback([]( number) {
     std::cout << "number=" << "None" <<  std::endl;
 });
 ```
@@ -642,7 +642,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `maybe_name` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerMaybeNameCallback([](std::optional<std::string> name) {
+client.registerMaybeNameCallback([]( name) {
     std::cout << "name=" << "None" <<  std::endl;
 });
 ```
@@ -731,7 +731,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `now` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.registerNowCallback([](std::chrono::time_point<std::chrono::system_clock> timestamp) {
+client.registerNowCallback([]( timestamp) {
     std::cout << "timestamp=" <<timestamp <<  std::endl;
 });
 ```

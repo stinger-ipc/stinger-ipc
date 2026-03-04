@@ -501,6 +501,24 @@ class CppSymbolsProvider(ISymbolsProvider):
             return CppInterfaceSymbols(model)
         elif model_class_name == "Property":
             return CppPropertySymbols(model)
+        elif model_class_name == "InterfaceEnum":
+            return CppEnumSymbols(model)
+        elif model_class_name == "InterfaceStruct":
+            return CppStructSymbols(model)
+        elif model_class_name == "ArgEnum":
+            return CppArgEnumSymbols(model)
+        elif model_class_name == "ArgPrimitive":
+            return CppArgPrimitiveSymbols(model)
+        elif model_class_name == "ArgStruct":
+            return CppArgStructSymbols(model)
+        elif model_class_name == "ArgDateTime":
+            return CppArgDateTimeSymbols(model)
+        elif model_class_name == "ArgDuration":
+            return CppArgDurationSymbols(model)
+        elif model_class_name == "ArgBinary":
+            return CppArgBinarySymbols(model)
+        elif model_class_name == "ArgArray":
+            return CppArgArraySymbols(model)
         return None
 
 class CppSymbols:
@@ -538,3 +556,164 @@ class CppPropertySymbols(CppSymbols):
     @property
     def property_struct_name(self) -> str:
         return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+
+
+class CppEnumSymbols(CppSymbols):
+
+    def __init__(self, enum):
+        super().__init__()
+        self._enum = enum
+
+    @property
+    def type(self) -> str:
+        return stringmanip.upper_camel_case(self._enum.name)
+
+
+class CppStructSymbols(CppSymbols):
+
+    def __init__(self, struct):
+        super().__init__()
+        self._struct = struct
+
+    @property
+    def type(self) -> str:
+        return stringmanip.upper_camel_case(self._struct.name)
+
+
+class CppArgSymbols(CppSymbols):
+    """Base C++ symbols for Arg objects."""
+
+    def __init__(self, arg):
+        super().__init__()
+        self._arg = arg
+
+    @property
+    def type(self) -> str:
+        return stringmanip.upper_camel_case(self._arg.name)
+
+    @property
+    def temp_type(self) -> str:
+        if self._arg.optional and "optional" not in self.type:
+            return f"std::optional<{self.type}>"
+        return self.type
+
+    @property
+    def func_param_type(self) -> str:
+        if self._arg.optional and "optional" not in self.type:
+            return f"std::optional<{self.type}>"
+        return self.type
+
+
+class CppArgEnumSymbols(CppArgSymbols):
+
+    @property
+    def type(self) -> str:
+        if self._arg.optional:
+            return f"std::optional<{self._arg._enum.cpp.type}>"
+        return self._arg._enum.cpp.type
+
+    @property
+    def temp_type(self) -> str:
+        return self.type
+
+    @property
+    def data_type(self) -> str:
+        return self._arg._enum.cpp.type
+
+    @property
+    def rapidjson_type(self) -> str:
+        return ArgPrimitiveType.to_cpp_rapidjson_type_str(ArgPrimitiveType.INTEGER)
+
+
+class CppArgPrimitiveSymbols(CppArgSymbols):
+
+    @property
+    def type(self) -> str:
+        return ArgPrimitiveType.to_cpp_type(self._arg._arg_type, optional=self._arg._optional)
+
+    @property
+    def temp_type(self) -> str:
+        if self._arg._arg_type == ArgPrimitiveType.STRING:
+            if self._arg.optional:
+                return "std::optional<std::string>"
+            return "std::string"
+        return self.type
+
+    @property
+    def rapidjson_type(self) -> str:
+        return ArgPrimitiveType.to_cpp_rapidjson_type_str(self._arg._arg_type)
+
+
+class CppArgStructSymbols(CppArgSymbols):
+
+    @property
+    def type(self) -> str:
+        return self._arg._interface_struct.cpp.type
+
+    @property
+    def rapidjson_type(self) -> str:
+        return "Object"
+
+
+class CppArgDateTimeSymbols(CppArgSymbols):
+
+    @property
+    def type(self) -> str:
+        if self._arg.optional:
+            return "std::optional<std::chrono::time_point<std::chrono::system_clock>>"
+        return "std::chrono::time_point<std::chrono::system_clock>"
+
+    @property
+    def temp_type(self) -> str:
+        return self.type
+
+    @property
+    def rapidjson_type(self) -> str:
+        return "String"
+
+
+class CppArgDurationSymbols(CppArgSymbols):
+
+    @property
+    def type(self) -> str:
+        if self._arg.optional:
+            return "std::optional<std::chrono::duration<double>>"
+        return "std::chrono::duration<double>"
+
+    @property
+    def temp_type(self) -> str:
+        return self.type
+
+    @property
+    def rapidjson_type(self) -> str:
+        return "String"
+
+
+class CppArgBinarySymbols(CppArgSymbols):
+
+    @property
+    def type(self) -> str:
+        if self._arg.optional:
+            return "std::optional<std::vector<uint8_t>>"
+        return "std::vector<uint8_t>"
+
+    @property
+    def temp_type(self) -> str:
+        return self.type
+
+    @property
+    def rapidjson_type(self) -> str:
+        return "String"
+
+
+class CppArgArraySymbols(CppArgSymbols):
+
+    @property
+    def type(self) -> str:
+        if self._arg.optional:
+            return f"std::optional<std::vector<{self._arg.element.cpp.temp_type}>>"
+        return f"std::vector<{self._arg.element.cpp.temp_type}>"
+
+    @property
+    def rapidjson_type(self) -> str:
+        return "Array"
