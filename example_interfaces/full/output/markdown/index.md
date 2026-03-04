@@ -242,14 +242,14 @@ let initial_property_values = FullInitialPropertyValues {
     favorite_number:42,
     favorite_number_version: 1,
     
-    favorite_foods:FavoriteFoodsProperty {
+    favorite_foods: {
             drink: "apples".to_string(),
             slices_of_pizza: 42,
             breakfast: Some("apples".to_string()),
     },
     favorite_foods_version: 1,
     
-    lunch_menu:LunchMenuProperty {
+    lunch_menu: {
             monday: Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)},
             tuesday: Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)},
     },
@@ -261,7 +261,7 @@ let initial_property_values = FullInitialPropertyValues {
     last_breakfast_time:chrono::Utc::now(),
     last_breakfast_time_version: 1,
     
-    last_birthdays:LastBirthdaysProperty {
+    last_birthdays: {
             mom: chrono::Utc::now(),
             dad: chrono::Utc::now(),
             sister: Some(chrono::Utc::now()),
@@ -318,14 +318,14 @@ let instance_info = DiscoveredInstance {
         favorite_number:42,
         favorite_number_version: 1,
         
-        favorite_foods:FavoriteFoodsProperty {
+        favorite_foods: {
                 drink: "apples".to_string(),
                 slices_of_pizza: 42,
                 breakfast: Some("apples".to_string()),
         },
         favorite_foods_version: 1,
         
-        lunch_menu:LunchMenuProperty {
+        lunch_menu: {
                 monday: Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)},
                 tuesday: Lunch {drink: true, sandwich: "apples".to_string(), crackers: 3.14, day: DayOfTheWeek::Saturday, order_number: Some(42), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(3536)},
         },
@@ -337,7 +337,7 @@ let instance_info = DiscoveredInstance {
         last_breakfast_time:chrono::Utc::now(),
         last_breakfast_time_version: 1,
         
-        last_birthdays:LastBirthdaysProperty {
+        last_birthdays: {
                 mom: chrono::Utc::now(),
                 dad: chrono::Utc::now(),
                 sister: Some(chrono::Utc::now()),
@@ -1011,7 +1011,7 @@ A server hold the "source of truth" for the value of `favorite_foods`.  An `Arc`
 let favorite_foods_handle = server.get_favorite_foods_handle();
 {
     let mut favorite_foods_guard = favorite_foods_handle.write().await;
-    let new_favorite_foods_value = FavoriteFoodsProperty {
+    let new_favorite_foods_value =  {
             drink: "foo".to_string(),
             slices_of_pizza: 2022,
             breakfast: Some("foo".to_string()),
@@ -1075,7 +1075,7 @@ A server hold the "source of truth" for the value of `lunch_menu`.  An `Arc` poi
 let lunch_menu_handle = server.get_lunch_menu_handle();
 {
     let mut lunch_menu_guard = lunch_menu_handle.write().await;
-    let new_lunch_menu_value = LunchMenuProperty {
+    let new_lunch_menu_value =  {
             monday: Lunch {drink: true, sandwich: "foo".to_string(), crackers: 1.0, day: DayOfTheWeek::Monday, order_number: Some(2022), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(967)},
             tuesday: Lunch {drink: true, sandwich: "foo".to_string(), crackers: 1.0, day: DayOfTheWeek::Monday, order_number: Some(2022), time_of_lunch: chrono::Utc::now(), duration_of_lunch: chrono::Duration::seconds(967)},
     };
@@ -1249,7 +1249,7 @@ A server hold the "source of truth" for the value of `last_birthdays`.  An `Arc`
 let last_birthdays_handle = server.get_last_birthdays_handle();
 {
     let mut last_birthdays_guard = last_birthdays_handle.write().await;
-    let new_last_birthdays_value = LastBirthdaysProperty {
+    let new_last_birthdays_value =  {
             mom: chrono::Utc::now(),
             dad: chrono::Utc::now(),
             sister: Some(chrono::Utc::now()),

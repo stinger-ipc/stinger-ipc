@@ -253,7 +253,7 @@ let service_id = String::from("rust-server-demo:1");
 
 let initial_property_values = WeatherInitialPropertyValues {
     
-    location:LocationProperty {
+    location: {
             latitude: 3.14,
             longitude: 3.14,
     },
@@ -262,20 +262,20 @@ let initial_property_values = WeatherInitialPropertyValues {
     current_temperature:3.14,
     current_temperature_version: 1,
     
-    current_condition:CurrentConditionProperty {
+    current_condition: {
             condition: WeatherCondition::Snowy,
             description: "apples".to_string(),
     },
     current_condition_version: 1,
     
-    daily_forecast:DailyForecastProperty {
+    daily_forecast: {
             monday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
             tuesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
             wednesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
     },
     daily_forecast_version: 1,
     
-    hourly_forecast:HourlyForecastProperty {
+    hourly_forecast: {
             hour_0: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
             hour_1: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
             hour_2: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
@@ -338,7 +338,7 @@ let instance_info = DiscoveredInstance {
     
     initial_property_values: WeatherInitialPropertyValues {
         
-        location:LocationProperty {
+        location: {
                 latitude: 3.14,
                 longitude: 3.14,
         },
@@ -347,20 +347,20 @@ let instance_info = DiscoveredInstance {
         current_temperature:3.14,
         current_temperature_version: 1,
         
-        current_condition:CurrentConditionProperty {
+        current_condition: {
                 condition: WeatherCondition::Snowy,
                 description: "apples".to_string(),
         },
         current_condition_version: 1,
         
-        daily_forecast:DailyForecastProperty {
+        daily_forecast: {
                 monday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
                 tuesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
                 wednesday: ForecastForDay {high_temperature: 3.14, low_temperature: 3.14, condition: WeatherCondition::Snowy, start_time: "apples".to_string(), end_time: "apples".to_string()},
         },
         daily_forecast_version: 1,
         
-        hourly_forecast:HourlyForecastProperty {
+        hourly_forecast: {
                 hour_0: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
                 hour_1: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
                 hour_2: ForecastForHour {temperature: 3.14, starttime: chrono::Utc::now(), condition: WeatherCondition::Snowy},
@@ -866,7 +866,7 @@ A server hold the "source of truth" for the value of `location`.  An `Arc` point
 let location_handle = server.get_location_handle();
 {
     let mut location_guard = location_handle.write().await;
-    let new_location_value = LocationProperty {
+    let new_location_value =  {
             latitude: 1.0,
             longitude: 1.0,
     };
@@ -991,7 +991,7 @@ A server hold the "source of truth" for the value of `current_condition`.  An `A
 let current_condition_handle = server.get_current_condition_handle();
 {
     let mut current_condition_guard = current_condition_handle.write().await;
-    let new_current_condition_value = CurrentConditionProperty {
+    let new_current_condition_value =  {
             condition: WeatherCondition::Sunny,
             description: "foo".to_string(),
     };
@@ -1058,7 +1058,7 @@ A server hold the "source of truth" for the value of `daily_forecast`.  An `Arc`
 let daily_forecast_handle = server.get_daily_forecast_handle();
 {
     let mut daily_forecast_guard = daily_forecast_handle.write().await;
-    let new_daily_forecast_value = DailyForecastProperty {
+    let new_daily_forecast_value =  {
             monday: ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: WeatherCondition::Sunny, start_time: "foo".to_string(), end_time: "foo".to_string()},
             tuesday: ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: WeatherCondition::Sunny, start_time: "foo".to_string(), end_time: "foo".to_string()},
             wednesday: ForecastForDay {high_temperature: 1.0, low_temperature: 1.0, condition: WeatherCondition::Sunny, start_time: "foo".to_string(), end_time: "foo".to_string()},
@@ -1126,7 +1126,7 @@ A server hold the "source of truth" for the value of `hourly_forecast`.  An `Arc
 let hourly_forecast_handle = server.get_hourly_forecast_handle();
 {
     let mut hourly_forecast_guard = hourly_forecast_handle.write().await;
-    let new_hourly_forecast_value = HourlyForecastProperty {
+    let new_hourly_forecast_value =  {
             hour_0: ForecastForHour {temperature: 1.0, starttime: chrono::Utc::now(), condition: WeatherCondition::Sunny},
             hour_1: ForecastForHour {temperature: 1.0, starttime: chrono::Utc::now(), condition: WeatherCondition::Sunny},
             hour_2: ForecastForHour {temperature: 1.0, starttime: chrono::Utc::now(), condition: WeatherCondition::Sunny},

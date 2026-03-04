@@ -67,9 +67,9 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
     {%-if prop.arg_list | length > 1%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust_type}}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust.type}}>>,
     {%-else%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust_type}}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust.type}}>>,
     {%endif-%}
     {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%-endfor%}
@@ -299,7 +299,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     {%endif-%}
     {%for sig_name, sig in stinger.signals.items()-%}
     /// Emits the {{sig_name}} signal with the given arguments.
-    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
+    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
             {{arg.name|snake_case}},
@@ -322,7 +322,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     }
 
     /// Emits the {{sig_name}} signal with the given arguments, but this is a fire-and-forget version.
-    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
+    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
             {{arg.name|snake_case}},
@@ -408,7 +408,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_{{prop_name}}_value(
             mut publisher: C, 
-            property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust_type}}{%else%}{{prop.arg_list[0].rust_type}}{%endif%}>>,  // Arc to the property value
+            property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust.type}}{%else%}{{prop.arg_list[0].rust.type}}{%endif%}>>,  // Arc to the property value
             version_pointer: Arc<AtomicU32>,
             msg: MqttMessage
     )
@@ -524,16 +524,16 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
 
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.write_request()
     }
 
     /// Sets the value{%if prop.arg_list|length > 1%}s{%endif%} of the {{prop_name}} property.
-    pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust_type}}) -> SentMessageFuture {
+    pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust.type}}) -> SentMessageFuture {
         let write_request_lock = self.get_{{prop_name | snake_case}}_handle();
         Box::pin(async move { 
             let mut write_request = write_request_lock.write().await;
@@ -710,7 +710,7 @@ pub trait {{stinger.name | UpperCamelCase }}MethodHandlers<C: Mqtt5PubSub>: Send
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode>;
+    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode>;
     
     {%endfor%}
 

@@ -66,7 +66,7 @@ struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase }}SignalChannels {
     {%for sig_name, sig in stinger.signals.items()-%}
-    {{sig_name|snake_case}}_sender: broadcast::Sender<{%if sig.arg_list | length == 1 %}{{sig.arg_list[0].rust_type}}{%elif sig.arg_list | length == 0 %}(){% else %}{{sig_name | UpperCamelCase}}SignalPayload{% endif %}>,
+    {{sig_name|snake_case}}_sender: broadcast::Sender<{%if sig.arg_list | length == 1 %}{{sig.arg_list[0].rust.type}}{%elif sig.arg_list | length == 0 %}(){% else %}{{sig_name | UpperCamelCase}}SignalPayload{% endif %}>,
     {%endfor%}
 }
 
@@ -75,9 +75,9 @@ struct {{stinger.name | UpperCamelCase }}SignalChannels {
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
     {%-if prop.arg_list | length > 1%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust_type}}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust.type}}>>,
     {%-else%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust_type}}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust.type}}>>,
     {%endif-%}
     pub {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%endfor%}
@@ -233,7 +233,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     {%for sig_name, sig in stinger.signals.items()-%}
     /// Get the RX receiver side of the broadcast channel for the {{sig_name}} signal.
     /// The signal payload, `{{sig_name | UpperCamelCase}}SignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_{{sig_name|snake_case}}_receiver(&self) -> broadcast::Receiver<{%if sig.arg_list|length == 0%}(){%elif sig.arg_list|length == 1%}{{sig.arg_list[0].rust_type}}{%else%}{{sig_name | UpperCamelCase}}SignalPayload{%endif%}> {
+    pub fn get_{{sig_name|snake_case}}_receiver(&self) -> broadcast::Receiver<{%if sig.arg_list|length == 0%}(){%elif sig.arg_list|length == 1%}{{sig.arg_list[0].rust.type}}{%else%}{{sig_name | UpperCamelCase}}SignalPayload{%endif%}> {
         self.signal_channels.{{sig_name | snake_case}}_sender.subscribe()
     }
     {%endfor%}
@@ -242,7 +242,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
     async fn start_{{method_name|snake_case}}(
             &mut self,
-            {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}, {%endfor%}
+            {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}, {%endfor%}
     ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
@@ -279,7 +279,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     /// and published to the `{{method.topic}}` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn {{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodReturnCode> {
+    pub async fn {{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.return_value_rust_type}}, MethodReturnCode> {
 
         let receiver = self.start_{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
 
@@ -309,14 +309,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     {%for prop_name, prop in stinger.properties.items()%}
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
     {%if not prop.read_only %}
     /// Sets the `{{prop_name}}` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_{{prop_name | snake_case}}(
             &mut self, 
-            value: {%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}
+            value: {%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}
     ) -> MethodReturnCode {
         let write_request_lock = self.get_{{prop_name | snake_case}}_handle();
         let mut writer = write_request_lock.write().await;
@@ -329,11 +329,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         }   
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{%else%}{{prop.arg_list[0].rust_type}}{% endif %}>> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{%else%}{{prop.arg_list[0].rust.type}}{% endif %}>> {
         self.properties.{{prop_name | snake_case}}.write_request().into()
     }
     {%else%}
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<ReadOnlyLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{%else%}{{prop.arg_list[0].rust_type}}{%endif%}>> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<ReadOnlyLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{%else%}{{prop.arg_list[0].rust.type}}{%endif%}>> {
         self.properties.{{prop_name | snake_case}}.read_only().into()
     }
     {%endif%}

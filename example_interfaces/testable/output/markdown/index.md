@@ -352,7 +352,7 @@ let initial_property_values = TestableInitialPropertyValues {
     read_write_optional_integer:Some(42),
     read_write_optional_integer_version: 1,
     
-    read_write_two_integers:ReadWriteTwoIntegersProperty {
+    read_write_two_integers: {
             first: 42,
             second: Some(42),
     },
@@ -367,7 +367,7 @@ let initial_property_values = TestableInitialPropertyValues {
     read_write_optional_string:Some("apples".to_string()),
     read_write_optional_string_version: 1,
     
-    read_write_two_strings:ReadWriteTwoStringsProperty {
+    read_write_two_strings: {
             first: "apples".to_string(),
             second: Some("apples".to_string()),
     },
@@ -379,7 +379,7 @@ let initial_property_values = TestableInitialPropertyValues {
     read_write_optional_struct:Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}),
     read_write_optional_struct_version: 1,
     
-    read_write_two_structs:ReadWriteTwoStructsProperty {
+    read_write_two_structs: {
             first: AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])},
             second: Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}),
     },
@@ -394,7 +394,7 @@ let initial_property_values = TestableInitialPropertyValues {
     read_write_optional_enum:Some(Numbers::One),
     read_write_optional_enum_version: 1,
     
-    read_write_two_enums:ReadWriteTwoEnumsProperty {
+    read_write_two_enums: {
             first: Numbers::One,
             second: Some(Numbers::One),
     },
@@ -406,7 +406,7 @@ let initial_property_values = TestableInitialPropertyValues {
     read_write_optional_datetime:Some(chrono::Utc::now()),
     read_write_optional_datetime_version: 1,
     
-    read_write_two_datetimes:ReadWriteTwoDatetimesProperty {
+    read_write_two_datetimes: {
             first: chrono::Utc::now(),
             second: Some(chrono::Utc::now()),
     },
@@ -418,7 +418,7 @@ let initial_property_values = TestableInitialPropertyValues {
     read_write_optional_duration:Some(chrono::Duration::seconds(3536)),
     read_write_optional_duration_version: 1,
     
-    read_write_two_durations:ReadWriteTwoDurationsProperty {
+    read_write_two_durations: {
             first: chrono::Duration::seconds(3536),
             second: Some(chrono::Duration::seconds(3536)),
     },
@@ -430,7 +430,7 @@ let initial_property_values = TestableInitialPropertyValues {
     read_write_optional_binary:Some(vec![101, 120, 97, 109, 112, 108, 101]),
     read_write_optional_binary_version: 1,
     
-    read_write_two_binaries:ReadWriteTwoBinariesProperty {
+    read_write_two_binaries: {
             first: vec![101, 120, 97, 109, 112, 108, 101],
             second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
     },
@@ -439,7 +439,7 @@ let initial_property_values = TestableInitialPropertyValues {
     read_write_list_of_strings:vec!["apples".to_string(), "foo".to_string()],
     read_write_list_of_strings_version: 1,
     
-    read_write_lists:ReadWriteListsProperty {
+    read_write_lists: {
             the_list: vec![Numbers::One, Numbers::One],
             optional_list: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]),
     },
@@ -500,7 +500,7 @@ let instance_info = DiscoveredInstance {
         read_write_optional_integer:Some(42),
         read_write_optional_integer_version: 1,
         
-        read_write_two_integers:ReadWriteTwoIntegersProperty {
+        read_write_two_integers: {
                 first: 42,
                 second: Some(42),
         },
@@ -515,7 +515,7 @@ let instance_info = DiscoveredInstance {
         read_write_optional_string:Some("apples".to_string()),
         read_write_optional_string_version: 1,
         
-        read_write_two_strings:ReadWriteTwoStringsProperty {
+        read_write_two_strings: {
                 first: "apples".to_string(),
                 second: Some("apples".to_string()),
         },
@@ -527,7 +527,7 @@ let instance_info = DiscoveredInstance {
         read_write_optional_struct:Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}),
         read_write_optional_struct_version: 1,
         
-        read_write_two_structs:ReadWriteTwoStructsProperty {
+        read_write_two_structs: {
                 first: AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])},
                 second: Some(AllTypes {the_bool: true, the_int: 42, the_number: 3.14, the_str: "apples".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 42, value: "apples".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(3536), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(42), optional_string: Some("apples".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 42, value: "apples".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(3536)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![42, 2022], optional_array_of_integers: Some(vec![42, 2022, 2022]), array_of_strings: vec!["apples".to_string(), "foo".to_string()], optional_array_of_strings: Some(vec!["apples".to_string(), "foo".to_string(), "foo".to_string()]), array_of_enums: vec![Numbers::One, Numbers::One], optional_array_of_enums: Some(vec![Numbers::One, Numbers::One, Numbers::One]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(3536), chrono::Duration::seconds(975), chrono::Duration::seconds(967)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 42, value: "apples".to_string()}, Entry {key: 2022, value: "foo".to_string()}, Entry {key: 2022, value: "foo".to_string()}])}),
         },
@@ -542,7 +542,7 @@ let instance_info = DiscoveredInstance {
         read_write_optional_enum:Some(Numbers::One),
         read_write_optional_enum_version: 1,
         
-        read_write_two_enums:ReadWriteTwoEnumsProperty {
+        read_write_two_enums: {
                 first: Numbers::One,
                 second: Some(Numbers::One),
         },
@@ -554,7 +554,7 @@ let instance_info = DiscoveredInstance {
         read_write_optional_datetime:Some(chrono::Utc::now()),
         read_write_optional_datetime_version: 1,
         
-        read_write_two_datetimes:ReadWriteTwoDatetimesProperty {
+        read_write_two_datetimes: {
                 first: chrono::Utc::now(),
                 second: Some(chrono::Utc::now()),
         },
@@ -566,7 +566,7 @@ let instance_info = DiscoveredInstance {
         read_write_optional_duration:Some(chrono::Duration::seconds(3536)),
         read_write_optional_duration_version: 1,
         
-        read_write_two_durations:ReadWriteTwoDurationsProperty {
+        read_write_two_durations: {
                 first: chrono::Duration::seconds(3536),
                 second: Some(chrono::Duration::seconds(3536)),
         },
@@ -578,7 +578,7 @@ let instance_info = DiscoveredInstance {
         read_write_optional_binary:Some(vec![101, 120, 97, 109, 112, 108, 101]),
         read_write_optional_binary_version: 1,
         
-        read_write_two_binaries:ReadWriteTwoBinariesProperty {
+        read_write_two_binaries: {
                 first: vec![101, 120, 97, 109, 112, 108, 101],
                 second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
         },
@@ -587,7 +587,7 @@ let instance_info = DiscoveredInstance {
         read_write_list_of_strings:vec!["apples".to_string(), "foo".to_string()],
         read_write_list_of_strings_version: 1,
         
-        read_write_lists:ReadWriteListsProperty {
+        read_write_lists: {
                 the_list: vec![Numbers::One, Numbers::One],
                 optional_list: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]),
         },
@@ -4839,7 +4839,7 @@ A server hold the "source of truth" for the value of `read_write_two_integers`. 
 let read_write_two_integers_handle = server.get_read_write_two_integers_handle();
 {
     let mut read_write_two_integers_guard = read_write_two_integers_handle.write().await;
-    let new_read_write_two_integers_value = ReadWriteTwoIntegersProperty {
+    let new_read_write_two_integers_value =  {
             first: 2022,
             second: Some(2022),
     };
@@ -5069,7 +5069,7 @@ A server hold the "source of truth" for the value of `read_write_two_strings`.  
 let read_write_two_strings_handle = server.get_read_write_two_strings_handle();
 {
     let mut read_write_two_strings_guard = read_write_two_strings_handle.write().await;
-    let new_read_write_two_strings_value = ReadWriteTwoStringsProperty {
+    let new_read_write_two_strings_value =  {
             first: "foo".to_string(),
             second: Some("foo".to_string()),
     };
@@ -5242,7 +5242,7 @@ A server hold the "source of truth" for the value of `read_write_two_structs`.  
 let read_write_two_structs_handle = server.get_read_write_two_structs_handle();
 {
     let mut read_write_two_structs_guard = read_write_two_structs_handle.write().await;
-    let new_read_write_two_structs_value = ReadWriteTwoStructsProperty {
+    let new_read_write_two_structs_value =  {
             first: AllTypes {the_bool: true, the_int: 2022, the_number: 1.0, the_str: "foo".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 2022, value: "foo".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(967), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(2022), optional_string: Some("foo".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 2022, value: "foo".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(967)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![2022, 1955], optional_array_of_integers: Some(vec![2022, 1955, 1955]), array_of_strings: vec!["foo".to_string(), "bar".to_string()], optional_array_of_strings: Some(vec!["foo".to_string(), "bar".to_string(), "Joe".to_string()]), array_of_enums: vec![Numbers::One, Numbers::Three], optional_array_of_enums: Some(vec![Numbers::One, Numbers::Three, Numbers::Three]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552), chrono::Duration::seconds(3250)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}, Entry {key: 1955, value: "Joe".to_string()}])},
             second: Some(AllTypes {the_bool: true, the_int: 2022, the_number: 1.0, the_str: "foo".to_string(), the_enum: Numbers::One, an_entry_object: Entry {key: 2022, value: "foo".to_string()}, date_and_time: chrono::Utc::now(), time_duration: chrono::Duration::seconds(967), data: vec![101, 120, 97, 109, 112, 108, 101], optional_integer: Some(2022), optional_string: Some("foo".to_string()), optional_enum: Some(Numbers::One), optional_entry_object: Some(Entry {key: 2022, value: "foo".to_string()}), optional_date_time: Some(chrono::Utc::now()), optional_duration: Some(chrono::Duration::seconds(967)), optional_binary: Some(vec![101, 120, 97, 109, 112, 108, 101]), array_of_integers: vec![2022, 1955], optional_array_of_integers: Some(vec![2022, 1955, 1955]), array_of_strings: vec!["foo".to_string(), "bar".to_string()], optional_array_of_strings: Some(vec!["foo".to_string(), "bar".to_string(), "Joe".to_string()]), array_of_enums: vec![Numbers::One, Numbers::Three], optional_array_of_enums: Some(vec![Numbers::One, Numbers::Three, Numbers::Three]), array_of_datetimes: vec![chrono::Utc::now(), chrono::Utc::now()], optional_array_of_datetimes: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]), array_of_durations: vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552)], optional_array_of_durations: Some(vec![chrono::Duration::seconds(967), chrono::Duration::seconds(2552), chrono::Duration::seconds(3250)]), array_of_binaries: vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]], optional_array_of_binaries: Some(vec![vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101], vec![101, 120, 97, 109, 112, 108, 101]]), array_of_entry_objects: vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}], optional_array_of_entry_objects: Some(vec![Entry {key: 2022, value: "foo".to_string()}, Entry {key: 1955, value: "bar".to_string()}, Entry {key: 1955, value: "Joe".to_string()}])}),
     };
@@ -5472,7 +5472,7 @@ A server hold the "source of truth" for the value of `read_write_two_enums`.  An
 let read_write_two_enums_handle = server.get_read_write_two_enums_handle();
 {
     let mut read_write_two_enums_guard = read_write_two_enums_handle.write().await;
-    let new_read_write_two_enums_value = ReadWriteTwoEnumsProperty {
+    let new_read_write_two_enums_value =  {
             first: Numbers::One,
             second: Some(Numbers::One),
     };
@@ -5645,7 +5645,7 @@ A server hold the "source of truth" for the value of `read_write_two_datetimes`.
 let read_write_two_datetimes_handle = server.get_read_write_two_datetimes_handle();
 {
     let mut read_write_two_datetimes_guard = read_write_two_datetimes_handle.write().await;
-    let new_read_write_two_datetimes_value = ReadWriteTwoDatetimesProperty {
+    let new_read_write_two_datetimes_value =  {
             first: chrono::Utc::now(),
             second: Some(chrono::Utc::now()),
     };
@@ -5818,7 +5818,7 @@ A server hold the "source of truth" for the value of `read_write_two_durations`.
 let read_write_two_durations_handle = server.get_read_write_two_durations_handle();
 {
     let mut read_write_two_durations_guard = read_write_two_durations_handle.write().await;
-    let new_read_write_two_durations_value = ReadWriteTwoDurationsProperty {
+    let new_read_write_two_durations_value =  {
             first: chrono::Duration::seconds(967),
             second: Some(chrono::Duration::seconds(967)),
     };
@@ -5991,7 +5991,7 @@ A server hold the "source of truth" for the value of `read_write_two_binaries`. 
 let read_write_two_binaries_handle = server.get_read_write_two_binaries_handle();
 {
     let mut read_write_two_binaries_guard = read_write_two_binaries_handle.write().await;
-    let new_read_write_two_binaries_value = ReadWriteTwoBinariesProperty {
+    let new_read_write_two_binaries_value =  {
             first: vec![101, 120, 97, 109, 112, 108, 101],
             second: Some(vec![101, 120, 97, 109, 112, 108, 101]),
     };
@@ -6108,7 +6108,7 @@ A server hold the "source of truth" for the value of `read_write_lists`.  An `Ar
 let read_write_lists_handle = server.get_read_write_lists_handle();
 {
     let mut read_write_lists_guard = read_write_lists_handle.write().await;
-    let new_read_write_lists_value = ReadWriteListsProperty {
+    let new_read_write_lists_value =  {
             the_list: vec![Numbers::One, Numbers::Three],
             optional_list: Some(vec![chrono::Utc::now(), chrono::Utc::now(), chrono::Utc::now()]),
     };
