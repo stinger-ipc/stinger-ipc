@@ -242,7 +242,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "refreshDailyForecast": {
             "name": "refresh_daily_forecast",
             "mqtt_topic": "{prefix}/weather/{service_id}/method/refresh_daily_forecast/request",
-            "response_topic": `client/${client_id}/weather/method/refresh_daily_forecast/response`,
+            "response_topic": "client/{client_id}/weather/method/refresh_daily_forecast/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -251,7 +251,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "refreshHourlyForecast": {
             "name": "refresh_hourly_forecast",
             "mqtt_topic": "{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request",
-            "response_topic": `client/${client_id}/weather/method/refresh_hourly_forecast/response`,
+            "response_topic": "client/{client_id}/weather/method/refresh_hourly_forecast/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -260,7 +260,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "refreshCurrentConditions": {
             "name": "refresh_current_conditions",
             "mqtt_topic": "{prefix}/weather/{service_id}/method/refresh_current_conditions/request",
-            "response_topic": `client/${client_id}/weather/method/refresh_current_conditions/response`,
+            "response_topic": "client/{client_id}/weather/method/refresh_current_conditions/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,

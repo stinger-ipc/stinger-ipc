@@ -54,7 +54,12 @@ class FullServerSetup:
         return initial_property_values
 
     def create_server(self, mock_connection) -> FullServer:
-        server = FullServer(mock_connection, "test_instance", self.initial_property_values)
+        server = FullServer(
+            mock_connection,
+            "x",
+            self.initial_property_values,
+            "x",
+        )
         return server
 
 
@@ -88,7 +93,7 @@ class TestFullServer:
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
         assert server is not None, "server failed to initialize"
-        assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
+        assert server.instance_id == "x", "Server instance_id does not match expected value"
 
 
 class TestFullServerProperties:
@@ -104,11 +109,11 @@ class TestFullServerProperties:
         mock_connection.clear_published_messages()
         server.publish_favorite_number_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b7784579df0>>".format("+"))
+        published_list = mock_connection.find_published("+/Full/+/property/favorite_number/value")
         assert len(published_list) == 1, f"No message was published for property 'favorite_number'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b7784579df0>>".format(server.instance_id)
+        expected_topic = "x/Full/x/property/favorite_number/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -137,7 +142,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b7784579df0>>".format(server.instance_id),
+            topic="x/Full/x/property/favorite_number/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -178,7 +183,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b7784579df0>>".format(server.instance_id),
+            topic="x/Full/x/property/favorite_number/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -215,7 +220,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b7784579df0>>".format(server.instance_id),
+            topic="x/Full/x/property/favorite_number/update",
             payload=b"adsfaf{this is not json}12|false",
             qos=1,
             retain=False,
@@ -254,7 +259,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b7784579df0>>".format(server.instance_id),
+            topic="x/Full/x/property/favorite_number/update",
             payload=b'{"wrong_field": 123, "another_wrong": false}',
             qos=1,
             retain=False,
@@ -288,11 +293,11 @@ class TestFullServerProperties:
         mock_connection.clear_published_messages()
         server.publish_favorite_foods_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457a3f0>>".format("+"))
+        published_list = mock_connection.find_published("+/Full/+/property/favorite_foods/value")
         assert len(published_list) == 1, f"No message was published for property 'favorite_foods'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457a3f0>>".format(server.instance_id)
+        expected_topic = "x/Full/x/property/favorite_foods/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -325,7 +330,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457a3f0>>".format(server.instance_id),
+            topic="x/Full/x/property/favorite_foods/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -370,7 +375,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457a3f0>>".format(server.instance_id),
+            topic="x/Full/x/property/favorite_foods/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -409,7 +414,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457a3f0>>".format(server.instance_id),
+            topic="x/Full/x/property/favorite_foods/update",
             payload=b"adsfaf{this is not json}12|false",
             qos=1,
             retain=False,
@@ -450,7 +455,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457a3f0>>".format(server.instance_id),
+            topic="x/Full/x/property/favorite_foods/update",
             payload=b'{"wrong_field": 123, "another_wrong": false}',
             qos=1,
             retain=False,
@@ -484,11 +489,11 @@ class TestFullServerProperties:
         mock_connection.clear_published_messages()
         server.publish_lunch_menu_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457a600>>".format("+"))
+        published_list = mock_connection.find_published("+/Full/+/property/lunch_menu/value")
         assert len(published_list) == 1, f"No message was published for property 'lunch_menu'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457a600>>".format(server.instance_id)
+        expected_topic = "x/Full/x/property/lunch_menu/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -519,7 +524,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457a600>>".format(server.instance_id),
+            topic="x/Full/x/property/lunch_menu/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -544,11 +549,11 @@ class TestFullServerProperties:
         mock_connection.clear_published_messages()
         server.publish_family_name_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457a9c0>>".format("+"))
+        published_list = mock_connection.find_published("+/Full/+/property/family_name/value")
         assert len(published_list) == 1, f"No message was published for property 'family_name'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457a9c0>>".format(server.instance_id)
+        expected_topic = "x/Full/x/property/family_name/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -577,7 +582,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457a9c0>>".format(server.instance_id),
+            topic="x/Full/x/property/family_name/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -618,7 +623,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457a9c0>>".format(server.instance_id),
+            topic="x/Full/x/property/family_name/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -655,7 +660,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457a9c0>>".format(server.instance_id),
+            topic="x/Full/x/property/family_name/update",
             payload=b"adsfaf{this is not json}12|false",
             qos=1,
             retain=False,
@@ -694,7 +699,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457a9c0>>".format(server.instance_id),
+            topic="x/Full/x/property/family_name/update",
             payload=b'{"wrong_field": 123, "another_wrong": false}',
             qos=1,
             retain=False,
@@ -728,11 +733,11 @@ class TestFullServerProperties:
         mock_connection.clear_published_messages()
         server.publish_last_breakfast_time_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457aa50>>".format("+"))
+        published_list = mock_connection.find_published("+/Full/+/property/last_breakfast_time/value")
         assert len(published_list) == 1, f"No message was published for property 'last_breakfast_time'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457aa50>>".format(server.instance_id)
+        expected_topic = "x/Full/x/property/last_breakfast_time/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -761,7 +766,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457aa50>>".format(server.instance_id),
+            topic="x/Full/x/property/last_breakfast_time/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -802,7 +807,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457aa50>>".format(server.instance_id),
+            topic="x/Full/x/property/last_breakfast_time/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -839,7 +844,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457aa50>>".format(server.instance_id),
+            topic="x/Full/x/property/last_breakfast_time/update",
             payload=b"adsfaf{this is not json}12|false",
             qos=1,
             retain=False,
@@ -878,7 +883,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457aa50>>".format(server.instance_id),
+            topic="x/Full/x/property/last_breakfast_time/update",
             payload=b'{"wrong_field": 123, "another_wrong": false}',
             qos=1,
             retain=False,
@@ -912,11 +917,11 @@ class TestFullServerProperties:
         mock_connection.clear_published_messages()
         server.publish_last_birthdays_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457acc0>>".format("+"))
+        published_list = mock_connection.find_published("+/Full/+/property/last_birthdays/value")
         assert len(published_list) == 1, f"No message was published for property 'last_birthdays'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7b778457acc0>>".format(server.instance_id)
+        expected_topic = "x/Full/x/property/last_birthdays/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -951,7 +956,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457acc0>>".format(server.instance_id),
+            topic="x/Full/x/property/last_birthdays/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -998,7 +1003,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457acc0>>".format(server.instance_id),
+            topic="x/Full/x/property/last_birthdays/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1038,7 +1043,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457acc0>>".format(server.instance_id),
+            topic="x/Full/x/property/last_birthdays/update",
             payload=b"adsfaf{this is not json}12|false",
             qos=1,
             retain=False,
@@ -1080,7 +1085,7 @@ class TestFullServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7b778457acc0>>".format(server.instance_id),
+            topic="x/Full/x/property/last_birthdays/update",
             payload=b'{"wrong_field": 123, "another_wrong": false}',
             qos=1,
             retain=False,
@@ -1115,11 +1120,11 @@ class TestFullServerSignals:
         server.emit_today_is(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7b7784578ad0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'today_is'"
+        published_list = mock_connection.find_published("+/Full/+/signal/todayIs")
+        assert len(published_list) == 1, "No message was published for signal 'today_is'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7b7784578ad0>>".format(server.instance_id)
+        expected_topic = "x/Full/x/signal/todayIs"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1137,11 +1142,11 @@ class TestFullServerSignals:
         server.emit_random_word(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7b778504d310>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'random_word'"
+        published_list = mock_connection.find_published("+/Full/+/signal/randomWord")
+        assert len(published_list) == 1, "No message was published for signal 'random_word'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7b778504d310>>".format(server.instance_id)
+        expected_topic = "x/Full/x/signal/randomWord"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1180,7 +1185,7 @@ class TestFullServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/Full/x/method/addNumbers/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1232,7 +1237,7 @@ class TestFullServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/Full/x/method/doSomething/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1279,7 +1284,7 @@ class TestFullServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/Full/x/method/what_time_is_it/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1331,7 +1336,7 @@ class TestFullServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/Full/x/method/hold_temperature/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,

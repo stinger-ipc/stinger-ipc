@@ -215,7 +215,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "addNumbers": {
             "name": "addNumbers",
             "mqtt_topic": "{prefix}/Full/{service_id}/method/addNumbers/request",
-            "response_topic": `client/${client_id}/Full/method/addNumbers/response`,
+            "response_topic": "client/{client_id}/Full/method/addNumbers/response",
             "pending_correlation_id": null,
             "args": {
                 "first": {
@@ -239,7 +239,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "doSomething": {
             "name": "doSomething",
             "mqtt_topic": "{prefix}/Full/{service_id}/method/doSomething/request",
-            "response_topic": `client/${client_id}/Full/method/doSomething/response`,
+            "response_topic": "client/{client_id}/Full/method/doSomething/response",
             "pending_correlation_id": null,
             "args": {
                 "task_to_do": {
@@ -253,7 +253,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "whatTimeIsIt": {
             "name": "what_time_is_it",
             "mqtt_topic": "{prefix}/Full/{service_id}/method/what_time_is_it/request",
-            "response_topic": `client/${client_id}/Full/method/what_time_is_it/response`,
+            "response_topic": "client/{client_id}/Full/method/what_time_is_it/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -262,7 +262,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         "holdTemperature": {
             "name": "hold_temperature",
             "mqtt_topic": "{prefix}/Full/{service_id}/method/hold_temperature/request",
-            "response_topic": `client/${client_id}/Full/method/hold_temperature/response`,
+            "response_topic": "client/{client_id}/Full/method/hold_temperature/response",
             "pending_correlation_id": null,
             "args": {
                 "temperature_celsius": {

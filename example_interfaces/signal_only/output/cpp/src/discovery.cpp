@@ -22,9 +22,6 @@ bool InstanceInfo::isComplete() const
         return false;
     }
 
-    if (!prefix.has_value()) {
-        return false;
-    }
     return true;
 }
 

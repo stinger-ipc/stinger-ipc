@@ -96,7 +96,12 @@ class WeatherServerSetup:
         self.daily_forecast_refresh_interval_modified_flag = False
 
     def create_server(self, mock_connection) -> WeatherServer:
-        server = WeatherServer(mock_connection, "test_instance", self.get_property_access())
+        server = WeatherServer(
+            mock_connection,
+            "x",
+            self.get_property_access(),
+            "x",
+        )
         return server
 
     def get_property_location(self):
@@ -182,7 +187,7 @@ class TestWeatherServer:
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
         assert server is not None, "server failed to initialize"
-        assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
+        assert server.instance_id == "x", "Server instance_id does not match expected value"
 
 
 class TestWeatherServerProperties:
@@ -196,11 +201,11 @@ class TestWeatherServerProperties:
         mock_connection.clear_published_messages()
         server.publish_location_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c927a1821e0>>".format("+"))
+        published_list = mock_connection.find_published("+/weather/+/property/location/value")
         assert len(published_list) == 1, f"No message was published for property 'location'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c927a1821e0>>".format(server.instance_id)
+        expected_topic = "x/weather/x/property/location/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -221,7 +226,7 @@ class TestWeatherServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c927a1821e0>>".format(server.instance_id),
+            topic="x/weather/x/property/location/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -252,11 +257,11 @@ class TestWeatherServerProperties:
         mock_connection.clear_published_messages()
         server.publish_current_temperature_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c927996a2d0>>".format("+"))
+        published_list = mock_connection.find_published("+/weather/+/property/current_temperature/value")
         assert len(published_list) == 1, f"No message was published for property 'current_temperature'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c927996a2d0>>".format(server.instance_id)
+        expected_topic = "x/weather/x/property/current_temperature/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -276,7 +281,7 @@ class TestWeatherServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c927996a2d0>>".format(server.instance_id),
+            topic="x/weather/x/property/current_temperature/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -300,11 +305,11 @@ class TestWeatherServerProperties:
         mock_connection.clear_published_messages()
         server.publish_current_condition_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278e539b0>>".format("+"))
+        published_list = mock_connection.find_published("+/weather/+/property/current_condition/value")
         assert len(published_list) == 1, f"No message was published for property 'current_condition'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278e539b0>>".format(server.instance_id)
+        expected_topic = "x/weather/x/property/current_condition/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -325,7 +330,7 @@ class TestWeatherServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c9278e539b0>>".format(server.instance_id),
+            topic="x/weather/x/property/current_condition/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -349,11 +354,11 @@ class TestWeatherServerProperties:
         mock_connection.clear_published_messages()
         server.publish_daily_forecast_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278e53f50>>".format("+"))
+        published_list = mock_connection.find_published("+/weather/+/property/daily_forecast/value")
         assert len(published_list) == 1, f"No message was published for property 'daily_forecast'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278e53f50>>".format(server.instance_id)
+        expected_topic = "x/weather/x/property/daily_forecast/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -375,7 +380,7 @@ class TestWeatherServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c9278e53f50>>".format(server.instance_id),
+            topic="x/weather/x/property/daily_forecast/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -399,11 +404,11 @@ class TestWeatherServerProperties:
         mock_connection.clear_published_messages()
         server.publish_hourly_forecast_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278e53b00>>".format("+"))
+        published_list = mock_connection.find_published("+/weather/+/property/hourly_forecast/value")
         assert len(published_list) == 1, f"No message was published for property 'hourly_forecast'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278e53b00>>".format(server.instance_id)
+        expected_topic = "x/weather/x/property/hourly_forecast/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -426,7 +431,7 @@ class TestWeatherServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c9278e53b00>>".format(server.instance_id),
+            topic="x/weather/x/property/hourly_forecast/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -450,11 +455,11 @@ class TestWeatherServerProperties:
         mock_connection.clear_published_messages()
         server.publish_current_condition_refresh_interval_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278e53950>>".format("+"))
+        published_list = mock_connection.find_published("+/weather/+/property/current_condition_refresh_interval/value")
         assert len(published_list) == 1, f"No message was published for property 'current_condition_refresh_interval'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278e53950>>".format(server.instance_id)
+        expected_topic = "x/weather/x/property/current_condition_refresh_interval/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -474,7 +479,7 @@ class TestWeatherServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c9278e53950>>".format(server.instance_id),
+            topic="x/weather/x/property/current_condition_refresh_interval/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -505,11 +510,11 @@ class TestWeatherServerProperties:
         mock_connection.clear_published_messages()
         server.publish_hourly_forecast_refresh_interval_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9279a21310>>".format("+"))
+        published_list = mock_connection.find_published("+/weather/+/property/hourly_forecast_refresh_interval/value")
         assert len(published_list) == 1, f"No message was published for property 'hourly_forecast_refresh_interval'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9279a21310>>".format(server.instance_id)
+        expected_topic = "x/weather/x/property/hourly_forecast_refresh_interval/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -529,7 +534,7 @@ class TestWeatherServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c9279a21310>>".format(server.instance_id),
+            topic="x/weather/x/property/hourly_forecast_refresh_interval/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -560,11 +565,11 @@ class TestWeatherServerProperties:
         mock_connection.clear_published_messages()
         server.publish_daily_forecast_refresh_interval_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278eac5f0>>".format("+"))
+        published_list = mock_connection.find_published("+/weather/+/property/daily_forecast_refresh_interval/value")
         assert len(published_list) == 1, f"No message was published for property 'daily_forecast_refresh_interval'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x7c9278eac5f0>>".format(server.instance_id)
+        expected_topic = "x/weather/x/property/daily_forecast_refresh_interval/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -584,7 +589,7 @@ class TestWeatherServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x7c9278eac5f0>>".format(server.instance_id),
+            topic="x/weather/x/property/daily_forecast_refresh_interval/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -617,11 +622,11 @@ class TestWeatherServerSignals:
         server.emit_current_time(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x7c9279835820>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'current_time'"
+        published_list = mock_connection.find_published("+/weather/+/signal/current_time")
+        assert len(published_list) == 1, "No message was published for signal 'current_time'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x7c9279835820>>".format(server.instance_id)
+        expected_topic = "x/weather/x/signal/current_time"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -652,7 +657,7 @@ class TestWeatherServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/weather/x/method/refresh_daily_forecast/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -699,7 +704,7 @@ class TestWeatherServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/weather/x/method/refresh_hourly_forecast/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -746,7 +751,7 @@ class TestWeatherServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/weather/x/method/refresh_current_conditions/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,

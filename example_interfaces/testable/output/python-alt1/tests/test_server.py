@@ -88,7 +88,7 @@ class TestableServerSetup:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -153,7 +153,7 @@ class TestableServerSetup:
                     optional_string="apples",
                     optional_enum=Numbers.ONE,
                     optional_entry_object=Entry(key=42, value="apples"),
-                    optional_date_time=datetime.now(UTC),
+                    optional_date_time=None,
                     optional_duration=None,
                     optional_binary=b"example binary data",
                     array_of_integers=[42, 2022],
@@ -320,7 +320,12 @@ class TestableServerSetup:
         self.read_write_lists_modified_flag = False
 
     def create_server(self, mock_connection) -> TestableServer:
-        server = TestableServer(mock_connection, "test_instance", self.get_property_access())
+        server = TestableServer(
+            mock_connection,
+            "x",
+            self.get_property_access(),
+            "x",
+        )
         return server
 
     def get_property_read_write_integer(self):
@@ -573,7 +578,7 @@ class TestTestableServer:
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
         assert server is not None, "server failed to initialize"
-        assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
+        assert server.instance_id == "x", "Server instance_id does not match expected value"
 
 
 class TestTestableServerProperties:
@@ -587,11 +592,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_integer_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2b64e0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_integer/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_integer'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2b64e0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_integer/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -611,7 +616,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2b64e0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_integer/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -642,11 +647,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_only_integer_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a13a0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_only_integer/value")
         assert len(published_list) == 1, f"No message was published for property 'read_only_integer'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a13a0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_only_integer/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -666,7 +671,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a13a0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_only_integer/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -690,11 +695,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_optional_integer_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1790>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_optional_integer/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_optional_integer'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1790>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_optional_integer/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -714,7 +719,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a1790>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_optional_integer/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -745,11 +750,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_two_integers_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1a90>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_two_integers/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_two_integers'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1a90>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_two_integers/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -770,7 +775,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a1a90>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_two_integers/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -801,11 +806,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_only_string_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1a60>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_only_string/value")
         assert len(published_list) == 1, f"No message was published for property 'read_only_string'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1a60>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_only_string/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -825,7 +830,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a1a60>>".format(server.instance_id),
+            topic="x/testable/x/property/read_only_string/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -849,11 +854,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_string_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1d90>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_string/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_string'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1d90>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_string/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -873,7 +878,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a1d90>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_string/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -904,11 +909,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_optional_string_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1fa0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_optional_string/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_optional_string'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1fa0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_optional_string/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -928,7 +933,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a1fa0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_optional_string/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -959,11 +964,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_two_strings_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2090>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_two_strings/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_two_strings'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2090>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_two_strings/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -984,7 +989,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2090>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_two_strings/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1015,11 +1020,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_struct_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a23c0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_struct/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_struct'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a23c0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_struct/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1070,7 +1075,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a23c0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_struct/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1101,11 +1106,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_optional_struct_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2570>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_optional_struct/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_optional_struct'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2570>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_optional_struct/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1156,7 +1161,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2570>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_optional_struct/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1187,11 +1192,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_two_structs_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2660>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_two_structs/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_two_structs'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2660>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_two_structs/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1219,7 +1224,7 @@ class TestTestableServerProperties:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -1274,7 +1279,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2660>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_two_structs/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1305,11 +1310,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_only_enum_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2b10>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_only_enum/value")
         assert len(published_list) == 1, f"No message was published for property 'read_only_enum'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2b10>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_only_enum/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1329,7 +1334,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2b10>>".format(server.instance_id),
+            topic="x/testable/x/property/read_only_enum/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1353,11 +1358,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_enum_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a11f0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_enum/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_enum'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a11f0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_enum/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1377,7 +1382,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a11f0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_enum/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1408,11 +1413,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_optional_enum_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2390>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_optional_enum/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_optional_enum'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2390>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_optional_enum/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1432,7 +1437,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2390>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_optional_enum/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1463,11 +1468,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_two_enums_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2ae0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_two_enums/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_two_enums'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2ae0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_two_enums/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1488,7 +1493,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2ae0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_two_enums/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1519,11 +1524,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_datetime_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2de0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_datetime/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_datetime'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2de0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_datetime/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1543,7 +1548,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2de0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_datetime/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1574,11 +1579,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_optional_datetime_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a28d0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_optional_datetime/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_optional_datetime'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a28d0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_optional_datetime/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1592,13 +1597,13 @@ class TestTestableServerProperties:
 
         # Create and simulate receiving a property update message
         prop_data = {
-            "value": datetime.now(UTC),
+            "value": None,
         }
         prop_obj = ReadWriteOptionalDatetimeProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a28d0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_optional_datetime/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1629,11 +1634,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_two_datetimes_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1dc0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_two_datetimes/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_two_datetimes'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a1dc0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_two_datetimes/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1648,13 +1653,13 @@ class TestTestableServerProperties:
         # Create and simulate receiving a property update message
         prop_data = {
             "first": datetime.now(UTC),
-            "second": None,
+            "second": datetime.now(UTC),
         }
         prop_obj = ReadWriteTwoDatetimesProperty(**prop_data)  # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a1dc0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_two_datetimes/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1685,11 +1690,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_duration_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a29f0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_duration/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_duration'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a29f0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_duration/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1709,7 +1714,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a29f0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_duration/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1740,11 +1745,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_optional_duration_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2cc0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_optional_duration/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_optional_duration'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2cc0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_optional_duration/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1764,7 +1769,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2cc0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_optional_duration/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1795,11 +1800,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_two_durations_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2c00>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_two_durations/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_two_durations'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2c00>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_two_durations/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1820,7 +1825,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2c00>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_two_durations/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1851,11 +1856,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_binary_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2d80>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_binary/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_binary'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a2d80>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_binary/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1875,7 +1880,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a2d80>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_binary/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1906,11 +1911,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_optional_binary_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a3140>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_optional_binary/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_optional_binary'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a3140>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_optional_binary/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1930,7 +1935,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a3140>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_optional_binary/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -1961,11 +1966,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_two_binaries_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a3740>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_two_binaries/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_two_binaries'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a3740>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_two_binaries/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -1986,7 +1991,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a3740>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_two_binaries/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -2017,11 +2022,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_list_of_strings_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a3890>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_list_of_strings/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_list_of_strings'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a3890>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_list_of_strings/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2041,7 +2046,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a3890>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_list_of_strings/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -2072,11 +2077,11 @@ class TestTestableServerProperties:
         mock_connection.clear_published_messages()
         server.publish_read_write_lists_value()
 
-        published_list = mock_connection.find_published("<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a31d0>>".format("+"))
+        published_list = mock_connection.find_published("+/testable/+/property/read_write_lists/value")
         assert len(published_list) == 1, f"No message was published for property 'read_write_lists'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Property.value_topic of <stingeripc.components.Property object at 0x77409c2a31d0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/property/read_write_lists/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2097,7 +2102,7 @@ class TestTestableServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="<bound method Property.update_topic of <stingeripc.components.Property object at 0x77409c2a31d0>>".format(server.instance_id),
+            topic="x/testable/x/property/read_write_lists/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -2128,11 +2133,11 @@ class TestTestableServerSignals:
         server.emit_empty(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2ad940>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'empty'"
+        published_list = mock_connection.find_published("+/testable/+/signal/empty")
+        assert len(published_list) == 1, "No message was published for signal 'empty'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2ad940>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/empty"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2149,11 +2154,11 @@ class TestTestableServerSignals:
         server.emit_single_int(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2ae4e0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_int'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleInt")
+        assert len(published_list) == 1, "No message was published for signal 'single_int'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2ae4e0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleInt"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2170,11 +2175,11 @@ class TestTestableServerSignals:
         server.emit_single_optional_int(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2ae390>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_optional_int'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleOptionalInt")
+        assert len(published_list) == 1, "No message was published for signal 'single_optional_int'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2ae390>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleOptionalInt"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2193,11 +2198,11 @@ class TestTestableServerSignals:
         server.emit_three_integers(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2aef00>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'three_integers'"
+        published_list = mock_connection.find_published("+/testable/+/signal/threeIntegers")
+        assert len(published_list) == 1, "No message was published for signal 'three_integers'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2aef00>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/threeIntegers"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2214,11 +2219,11 @@ class TestTestableServerSignals:
         server.emit_single_string(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2aeed0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_string'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleString")
+        assert len(published_list) == 1, "No message was published for signal 'single_string'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2aeed0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleString"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2235,11 +2240,11 @@ class TestTestableServerSignals:
         server.emit_single_optional_string(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af2f0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_optional_string'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleOptionalString")
+        assert len(published_list) == 1, "No message was published for signal 'single_optional_string'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af2f0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleOptionalString"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2258,11 +2263,11 @@ class TestTestableServerSignals:
         server.emit_three_strings(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af470>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'three_strings'"
+        published_list = mock_connection.find_published("+/testable/+/signal/threeStrings")
+        assert len(published_list) == 1, "No message was published for signal 'three_strings'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af470>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/threeStrings"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2279,11 +2284,11 @@ class TestTestableServerSignals:
         server.emit_single_enum(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af620>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_enum'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleEnum")
+        assert len(published_list) == 1, "No message was published for signal 'single_enum'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af620>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleEnum"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2300,11 +2305,11 @@ class TestTestableServerSignals:
         server.emit_single_optional_enum(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af890>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_optional_enum'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleOptionalEnum")
+        assert len(published_list) == 1, "No message was published for signal 'single_optional_enum'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af890>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleOptionalEnum"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2323,11 +2328,11 @@ class TestTestableServerSignals:
         server.emit_three_enums(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af6e0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'three_enums'"
+        published_list = mock_connection.find_published("+/testable/+/signal/threeEnums")
+        assert len(published_list) == 1, "No message was published for signal 'three_enums'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af6e0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/threeEnums"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2338,58 +2343,6 @@ class TestTestableServerSignals:
 
     def test_server_emit_single_struct(self, server, mock_connection):
         """Test that the server can emit the 'single_struct' signal."""
-        signal_data = {
-            "value": AllTypes(
-                the_bool=True,
-                the_int=42,
-                the_number=3.14,
-                the_str="apples",
-                the_enum=Numbers.ONE,
-                an_entry_object=Entry(key=42, value="apples"),
-                date_and_time=datetime.now(UTC),
-                time_duration=timedelta(seconds=3536),
-                data=b"example binary data",
-                optional_integer=42,
-                optional_string="apples",
-                optional_enum=Numbers.ONE,
-                optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
-                optional_duration=None,
-                optional_binary=b"example binary data",
-                array_of_integers=[42, 2022],
-                optional_array_of_integers=[42, 2022],
-                array_of_strings=["apples", "foo"],
-                optional_array_of_strings=["apples", "foo"],
-                array_of_enums=[Numbers.ONE, Numbers.ONE],
-                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
-                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
-                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
-                array_of_binaries=[b"example binary data", b"example binary data"],
-                optional_array_of_binaries=[b"example binary data", b"example binary data"],
-                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
-            ),
-        }  # type: Dict[str, Any]
-        server.emit_single_struct(**signal_data)
-
-        # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409db198b0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_struct'"
-
-        msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409db198b0>>".format(server.instance_id)
-        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
-
-        # Verify payload
-        expected_obj = SingleStructSignalPayload(**signal_data)  # type: ignore[arg-type]
-        expected_dict = to_jsonified_dict(expected_obj)
-        payload_dict = json.loads(msg.payload.decode("utf-8"))
-        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
-
-    def test_server_emit_single_optional_struct(self, server, mock_connection):
-        """Test that the server can emit the 'single_optional_struct' signal."""
         signal_data = {
             "value": AllTypes(
                 the_bool=True,
@@ -2424,14 +2377,66 @@ class TestTestableServerSignals:
                 optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
             ),
         }  # type: Dict[str, Any]
+        server.emit_single_struct(**signal_data)
+
+        # Verify that a message was published
+        published_list = mock_connection.find_published("+/testable/+/signal/singleStruct")
+        assert len(published_list) == 1, "No message was published for signal 'single_struct'.  Messages: {mock_connection.published_messages}"
+
+        msg = published_list[0]
+        expected_topic = "x/testable/x/signal/singleStruct"
+        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
+
+        # Verify payload
+        expected_obj = SingleStructSignalPayload(**signal_data)  # type: ignore[arg-type]
+        expected_dict = to_jsonified_dict(expected_obj)
+        payload_dict = json.loads(msg.payload.decode("utf-8"))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+
+    def test_server_emit_single_optional_struct(self, server, mock_connection):
+        """Test that the server can emit the 'single_optional_struct' signal."""
+        signal_data = {
+            "value": AllTypes(
+                the_bool=True,
+                the_int=42,
+                the_number=3.14,
+                the_str="apples",
+                the_enum=Numbers.ONE,
+                an_entry_object=Entry(key=42, value="apples"),
+                date_and_time=datetime.now(UTC),
+                time_duration=timedelta(seconds=3536),
+                data=b"example binary data",
+                optional_integer=42,
+                optional_string="apples",
+                optional_enum=Numbers.ONE,
+                optional_entry_object=Entry(key=42, value="apples"),
+                optional_date_time=datetime.now(UTC),
+                optional_duration=None,
+                optional_binary=b"example binary data",
+                array_of_integers=[42, 2022],
+                optional_array_of_integers=[42, 2022],
+                array_of_strings=["apples", "foo"],
+                optional_array_of_strings=["apples", "foo"],
+                array_of_enums=[Numbers.ONE, Numbers.ONE],
+                optional_array_of_enums=[Numbers.ONE, Numbers.ONE],
+                array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                optional_array_of_datetimes=[datetime.now(UTC), datetime.now(UTC)],
+                array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                optional_array_of_durations=[timedelta(seconds=3536), timedelta(seconds=975)],
+                array_of_binaries=[b"example binary data", b"example binary data"],
+                optional_array_of_binaries=[b"example binary data", b"example binary data"],
+                array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+                optional_array_of_entry_objects=[Entry(key=42, value="apples"), Entry(key=2022, value="foo")],
+            ),
+        }  # type: Dict[str, Any]
         server.emit_single_optional_struct(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afc20>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_optional_struct'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleOptionalStruct")
+        assert len(published_list) == 1, "No message was published for signal 'single_optional_struct'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afc20>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleOptionalStruct"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2457,7 +2462,7 @@ class TestTestableServerSignals:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -2543,11 +2548,11 @@ class TestTestableServerSignals:
         server.emit_three_structs(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af8f0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'three_structs'"
+        published_list = mock_connection.find_published("+/testable/+/signal/threeStructs")
+        assert len(published_list) == 1, "No message was published for signal 'three_structs'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af8f0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/threeStructs"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2564,11 +2569,11 @@ class TestTestableServerSignals:
         server.emit_single_date_time(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af920>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_date_time'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleDateTime")
+        assert len(published_list) == 1, "No message was published for signal 'single_date_time'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2af920>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleDateTime"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2585,11 +2590,11 @@ class TestTestableServerSignals:
         server.emit_single_optional_datetime(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afda0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_optional_datetime'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleOptionalDatetime")
+        assert len(published_list) == 1, "No message was published for signal 'single_optional_datetime'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afda0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleOptionalDatetime"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2608,11 +2613,11 @@ class TestTestableServerSignals:
         server.emit_three_date_times(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afc50>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'three_date_times'"
+        published_list = mock_connection.find_published("+/testable/+/signal/threeDateTimes")
+        assert len(published_list) == 1, "No message was published for signal 'three_date_times'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afc50>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/threeDateTimes"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2629,11 +2634,11 @@ class TestTestableServerSignals:
         server.emit_single_duration(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2aff50>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_duration'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleDuration")
+        assert len(published_list) == 1, "No message was published for signal 'single_duration'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2aff50>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleDuration"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2650,11 +2655,11 @@ class TestTestableServerSignals:
         server.emit_single_optional_duration(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afcb0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_optional_duration'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleOptionalDuration")
+        assert len(published_list) == 1, "No message was published for signal 'single_optional_duration'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afcb0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleOptionalDuration"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2673,11 +2678,11 @@ class TestTestableServerSignals:
         server.emit_three_durations(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409cc36f90>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'three_durations'"
+        published_list = mock_connection.find_published("+/testable/+/signal/threeDurations")
+        assert len(published_list) == 1, "No message was published for signal 'three_durations'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409cc36f90>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/threeDurations"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2694,11 +2699,11 @@ class TestTestableServerSignals:
         server.emit_single_binary(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afad0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_binary'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleBinary")
+        assert len(published_list) == 1, "No message was published for signal 'single_binary'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2afad0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleBinary"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2715,11 +2720,11 @@ class TestTestableServerSignals:
         server.emit_single_optional_binary(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b41a0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_optional_binary'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleOptionalBinary")
+        assert len(published_list) == 1, "No message was published for signal 'single_optional_binary'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b41a0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleOptionalBinary"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2738,11 +2743,11 @@ class TestTestableServerSignals:
         server.emit_three_binaries(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b4500>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'three_binaries'"
+        published_list = mock_connection.find_published("+/testable/+/signal/threeBinaries")
+        assert len(published_list) == 1, "No message was published for signal 'three_binaries'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b4500>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/threeBinaries"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2759,11 +2764,11 @@ class TestTestableServerSignals:
         server.emit_single_array_of_integers(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b42f0>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_array_of_integers'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleArrayOfIntegers")
+        assert len(published_list) == 1, "No message was published for signal 'single_array_of_integers'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b42f0>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleArrayOfIntegers"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2780,11 +2785,11 @@ class TestTestableServerSignals:
         server.emit_single_optional_array_of_strings(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b4260>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'single_optional_array_of_strings'"
+        published_list = mock_connection.find_published("+/testable/+/signal/singleOptionalArrayOfStrings")
+        assert len(published_list) == 1, "No message was published for signal 'single_optional_array_of_strings'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b4260>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/singleOptionalArrayOfStrings"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2808,11 +2813,11 @@ class TestTestableServerSignals:
         server.emit_array_of_every_type(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b4a10>>".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'array_of_every_type'"
+        published_list = mock_connection.find_published("+/testable/+/signal/arrayOfEveryType")
+        assert len(published_list) == 1, "No message was published for signal 'array_of_every_type'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "<bound method Signal.topic of <stingeripc.components.Signal object at 0x77409c2b4a10>>".format(server.instance_id)
+        expected_topic = "x/testable/x/signal/arrayOfEveryType"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -2843,7 +2848,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callWithNothing/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -2894,7 +2899,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOneInteger/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -2946,7 +2951,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOptionalInteger/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3002,7 +3007,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callThreeIntegers/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3053,7 +3058,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOneString/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3105,7 +3110,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOptionalString/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3161,7 +3166,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callThreeStrings/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3212,7 +3217,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOneEnum/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3264,7 +3269,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOptionalEnum/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3320,7 +3325,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callThreeEnums/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3433,7 +3438,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOneStruct/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3478,7 +3483,7 @@ class TestTestableServerMethods:
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -3547,7 +3552,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOptionalStruct/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3625,7 +3630,7 @@ class TestTestableServerMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -3657,7 +3662,7 @@ class TestTestableServerMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -3737,7 +3742,7 @@ class TestTestableServerMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -3793,7 +3798,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callThreeStructs/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3844,7 +3849,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOneDateTime/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3896,7 +3901,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOptionalDateTime/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -3952,7 +3957,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callThreeDateTimes/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -4003,7 +4008,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOneDuration/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -4055,7 +4060,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOptionalDuration/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -4111,7 +4116,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callThreeDurations/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -4162,7 +4167,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOneBinary/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -4214,7 +4219,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOptionalBinary/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -4270,7 +4275,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callThreeBinaries/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -4321,7 +4326,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOneListOfIntegers/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -4373,7 +4378,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callOptionalListOfFloats/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -4427,7 +4432,7 @@ class TestTestableServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="".format(server.instance_id),
+            topic="x/testable/x/method/callTwoLists/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
