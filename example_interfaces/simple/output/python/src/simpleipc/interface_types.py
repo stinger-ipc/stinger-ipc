@@ -8,6 +8,9 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 """
 
+
+
+
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta, UTC
 
@@ -16,13 +19,11 @@ import base64
 from enum import IntEnum
 from typing import Annotated
 
-
 def base64_decode_if_str(value: Union[str, bytes, None]) -> Optional[bytes]:
-    """If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
+    """ If the value is a string, decode it from base64 to bytes.  Otherwise return the bytes as-is."""
     if isinstance(value, str):
         return base64.b64decode(value)
     return value
-
 
 class SimpleInterfaceInfo(BaseModel):
     interface_name: str = Field(default="Simple")
@@ -33,13 +34,11 @@ class SimpleInterfaceInfo(BaseModel):
     timestamp: str
     prefix: str
 
-
 # There are 1 enum definitions
 class Gender(IntEnum):
-    """Interface enum `gender`.
+    """ Interface enum `gender`.
     _No description exists for this enumeration._
     """
-
     MALE = 1
     FEMALE = 2
     OTHER = 3
@@ -47,70 +46,56 @@ class Gender(IntEnum):
 
 # There are 1 struct definitions
 class Person(BaseModel):
-    """Interface struct `person`."""
+    """ Interface struct `person`. """
+    
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
+    name: Annotated[str, Field(description="The name of the person", )]
+    gender: Annotated[Gender, Field(description="The gender of the person.", )]
 
-    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
-    name: Annotated[
-        str,
-        Field(
-            description="The name of the person",
-        ),
-    ]
-    gender: Annotated[
-        Gender,
-        Field(
-            description="The gender of the person.",
-        ),
-    ]
+
 
 
 # There are 1 signal definitions
 class PersonEnteredSignalPayload(BaseModel):
-    """Interface signal `person_entered`."""
-
-    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
+    """ Interface signal `person_entered`. 
+    """
+    
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
     person: Annotated[Person, Field()]
+
+
 
 
 # There are 1 property definitions
 class SchoolProperty(BaseModel):
-    """Interface property `school` (multi-value struct)."""
+    """ Interface property `school` (multi-value struct).
+    """
+    
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
+    name: Annotated[str, Field(description="The name of the school where the person studies.", )]
 
-    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
-    name: Annotated[
-        str,
-        Field(
-            description="The name of the school where the person studies.",
-        ),
-    ]
+
 
 
 # There are 1 method definitions
 class TradeNumbersMethodRequest(BaseModel):
-    """Interface method `trade_numbers` request object.
+    """ Interface method `trade_numbers` request object. 
 
     A simple method which trades favorite numbers.
     """
+    
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
+    your_number: Annotated[int, Field(description="Your favorite number.", )]
 
-    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
-    your_number: Annotated[
-        int,
-        Field(
-            description="Your favorite number.",
-        ),
-    ]
 
 
 class TradeNumbersMethodResponse(BaseModel):
-    """Interface method `trade_numbers` response object.
+    """ Interface method `trade_numbers` response object. 
 
     A simple method which trades favorite numbers.
     """
+    
+    model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
+    my_number: Annotated[int, Field(description="My favorite number", )]
 
-    model_config = ConfigDict(populate_by_name=True, strict=True, extra="forbid")
-    my_number: Annotated[
-        int,
-        Field(
-            description="My favorite number",
-        ),
-    ]
+

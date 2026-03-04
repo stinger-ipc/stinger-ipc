@@ -581,6 +581,8 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
         return "[DateTime](#datetime)"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        random_state = random.getstate()
+        random.seed(seed)
         if lang == "python":
             if self.optional and random.choice([True, False, False, False]):
                 return "None"

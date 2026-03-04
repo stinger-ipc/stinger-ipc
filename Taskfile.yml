@@ -23,6 +23,7 @@ tasks:
     sources:
       - schemas/schema.yaml
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
+      - stingeripc/tools/cli.py
     cmds:
       - uv run stinger validate ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     vars:

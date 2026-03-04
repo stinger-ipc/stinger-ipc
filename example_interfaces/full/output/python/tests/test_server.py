@@ -47,7 +47,7 @@ class FullServerSetup:
             last_birthdays=LastBirthdaysProperty(
                 mom=datetime.now(UTC),
                 dad=datetime.now(UTC),
-                sister=datetime.now(UTC),
+                sister=None,
                 brothers_age=42,
             ),
         )
