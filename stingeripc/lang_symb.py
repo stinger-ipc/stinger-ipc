@@ -161,43 +161,43 @@ class PythonArgEnumSymbols(PythonArgSymbols):
 
     @property
     def type(self) -> str:
-        return self._arg._enum.python.type
+        return self._arg.enum.python.type
 
     @property
     def local_type(self) -> str:
-        return self._arg._enum.python.local_type
+        return self._arg.enum.python.local_type
 
     @property
     def class_name(self) -> str:
-        return self._arg._enum.python.type
+        return self._arg.enum.python.type
 
     @property
     def annotation(self) -> str:
         if self._arg.optional:
-            return f"Optional[{self._arg._enum.python.type}]"
-        return self._arg._enum.python.type
+            return f"Optional[{self._arg.enum.python.type}]"
+        return self._arg.enum.python.type
 
 
 class PythonArgPrimitiveSymbols(PythonArgSymbols):
 
     @property
     def type(self) -> str:
-        return ArgPrimitiveType.to_python_type(self._arg._arg_type)
+        return ArgPrimitiveType.to_python_type(self._arg.primitive_type)
 
     @property
     def annotation(self) -> str:
-        return ArgPrimitiveType.to_python_type(self._arg._arg_type, optional=self._arg._optional)
+        return ArgPrimitiveType.to_python_type(self._arg.primitive_type, optional=self._arg.optional)
 
 
 class PythonArgStructSymbols(PythonArgSymbols):
 
     @property
     def type(self) -> str:
-        return self._arg._interface_struct.python.local_type
+        return self._arg.interface_struct.python.local_type
 
     @property
     def local_type(self) -> str:
-        return self._arg._interface_struct.python.local_type
+        return self._arg.interface_struct.python.local_type
 
     @property
     def annotation(self) -> str:
@@ -403,21 +403,21 @@ class RustArgEnumSymbols(RustArgSymbols):
     @property
     def type(self) -> str:
         if self._arg.optional:
-            return f"Option<{self._arg._enum.rust.type}>"
-        return self._arg._enum.rust.type
+            return f"Option<{self._arg.enum.rust.type}>"
+        return self._arg.enum.rust.type
 
     @property
     def local_type(self) -> str:
         if self._arg.optional:
-            return f"Option<{self._arg._enum.rust.local_type}>"
-        return self._arg._enum.rust.local_type
+            return f"Option<{self._arg.enum.rust.local_type}>"
+        return self._arg.enum.rust.local_type
 
 
 class RustArgPrimitiveSymbols(RustArgSymbols):
 
     @property
     def type(self) -> str:
-        return ArgPrimitiveType.to_rust_type(self._arg._arg_type, optional=self._arg._optional)
+        return ArgPrimitiveType.to_rust_type(self._arg.primitive_type, optional=self._arg.optional)
 
 
 class RustArgStructSymbols(RustArgSymbols):
@@ -425,18 +425,18 @@ class RustArgStructSymbols(RustArgSymbols):
     @property
     def type(self) -> str:
         if self._arg.optional:
-            return f"Option<{self._arg._interface_struct.rust.type}>"
-        return self._arg._interface_struct.rust.type
+            return f"Option<{self._arg.interface_struct.rust.type}>"
+        return self._arg.interface_struct.rust.type
 
     @property
     def local_type(self) -> str:
         if self._arg.optional:
-            return f"Option<{self._arg._interface_struct.rust.local_type}>"
-        return self._arg._interface_struct.rust.local_type
+            return f"Option<{self._arg.interface_struct.rust.local_type}>"
+        return self._arg.interface_struct.rust.local_type
 
     @property
     def temp_type(self) -> str:
-        return self._arg._interface_struct.rust.local_type
+        return self._arg.interface_struct.rust.local_type
 
 
 class RustArgDateTimeSymbols(RustArgSymbols):
@@ -609,8 +609,8 @@ class CppArgEnumSymbols(CppArgSymbols):
     @property
     def type(self) -> str:
         if self._arg.optional:
-            return f"std::optional<{self._arg._enum.cpp.type}>"
-        return self._arg._enum.cpp.type
+            return f"std::optional<{self._arg.enum.cpp.type}>"
+        return self._arg.enum.cpp.type
 
     @property
     def temp_type(self) -> str:
@@ -618,7 +618,7 @@ class CppArgEnumSymbols(CppArgSymbols):
 
     @property
     def data_type(self) -> str:
-        return self._arg._enum.cpp.type
+        return self._arg.enum.cpp.type
 
     @property
     def rapidjson_type(self) -> str:
@@ -629,11 +629,11 @@ class CppArgPrimitiveSymbols(CppArgSymbols):
 
     @property
     def type(self) -> str:
-        return ArgPrimitiveType.to_cpp_type(self._arg._arg_type, optional=self._arg._optional)
+        return ArgPrimitiveType.to_cpp_type(self._arg.primitive_type, optional=self._arg.optional)
 
     @property
     def temp_type(self) -> str:
-        if self._arg._arg_type == ArgPrimitiveType.STRING:
+        if self._arg.primitive_type == ArgPrimitiveType.STRING:
             if self._arg.optional:
                 return "std::optional<std::string>"
             return "std::string"
@@ -641,14 +641,14 @@ class CppArgPrimitiveSymbols(CppArgSymbols):
 
     @property
     def rapidjson_type(self) -> str:
-        return ArgPrimitiveType.to_cpp_rapidjson_type_str(self._arg._arg_type)
+        return ArgPrimitiveType.to_cpp_rapidjson_type_str(self._arg.primitive_type)
 
 
 class CppArgStructSymbols(CppArgSymbols):
 
     @property
     def type(self) -> str:
-        return self._arg._interface_struct.cpp.type
+        return self._arg.interface_struct.cpp.type
 
     @property
     def rapidjson_type(self) -> str:
