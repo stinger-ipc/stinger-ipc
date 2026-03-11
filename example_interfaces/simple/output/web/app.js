@@ -68,7 +68,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "person_entered",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "simple/{}/signal/personEntered"
+            "mqtt_topic": "{prefix}/Simple/{service_id}/signal/person_entered"
         }
     };
 
@@ -79,17 +79,21 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "name": {  }
              },
-            "mqtt_topic": "simple/{}/property/school/value",
-            "update_topic": "simple/{}/property/school/setValue",
+            "mqtt_topic": "{prefix}/Simple/{service_id}/property/school/value",
+            "update_topic": "{prefix}/Simple/{service_id}/property/school/update",
             "property_version": -1
         }
     };
 
+    var interface_name = "Simple";
+    var client_id = clientId;
+    // TODO: support all the topic params
+
     $scope.methods = {
         "tradeNumbers": {
             "name": "trade_numbers",
-            "mqtt_topic": "simple/{}/method/tradeNumbers",
-            "response_topic": "client/"+clientId+"/tradeNumbers/methodResponse",
+            "mqtt_topic": "{prefix}/Simple/{service_id}/method/trade_numbers/request",
+            "response_topic": "client/{client_id}/Simple/method/trade_numbers/response",
             "pending_correlation_id": null,
             "args": {
                 "your_number": {
@@ -226,7 +230,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["personEntered"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("simple/{}/signal/personEntered");
+        var resolvedTopic = resolveTopic("{prefix}/Simple/{service_id}/signal/person_entered");
         client.subscribe(resolvedTopic, person_entered_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

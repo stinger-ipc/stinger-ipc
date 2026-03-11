@@ -4,6 +4,11 @@
 {% import "partials/deserialize.jinja2"  as deser %}
 {% import "partials/serialize.jinja2" as ser %}
 
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
+
 {%for signal_name, signal in stinger.signals.items()%}
 // --- (De-)Serialization for {{signal_name}} signal payload ---
 {{signal_name | UpperCamelCase}}Payload {{signal_name | UpperCamelCase}}Payload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -22,3 +27,7 @@ void {{signal_name | UpperCamelCase}}Payload::AddToRapidJsonObject(rapidjson::Va
 }
 {% endfor %}
 
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

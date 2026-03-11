@@ -39,7 +39,7 @@ def initial_property_values():
         last_birthdays=LastBirthdaysProperty(
             mom=datetime.now(UTC),
             dad=datetime.now(UTC),
-            sister=None,
+            sister=datetime.now(UTC),
             brothers_age=42,
         ),
     )
@@ -56,13 +56,19 @@ def mock_connection():
 @pytest.fixture
 def client(mock_connection, initial_property_values):
     """Fixture providing a Full client with mocked connection."""
-    mock_discovery = DiscoveredInstance(
-        instance_id="test_instance",
+    mock_discovered_instance = DiscoveredInstance(
+        instance_id="x",
         initial_property_values=initial_property_values,
+        info=FullInterfaceInfo(
+            instance="x",
+            connection_topic="x/Full/x/interface",
+            timestamp="2024-01-01T00:00:00Z",
+            prefix="x",
+        ),
     )
     client = FullClient(
         connection=mock_connection,
-        instance_info=mock_discovery,
+        instance_info=mock_discovered_instance,
     )
     return client
 
@@ -73,7 +79,7 @@ class TestClient:
     def test_client_initializes(self, client):
         """Test that client initializes successfully."""
         assert client is not None, "Client failed to initialize"
-        assert client.service_id == "test_instance", "Client service_id does not match expected value"
+        assert client.service_id == "x", "Client service_id does not match expected value"
 
 
 class TestClientProperties:
@@ -117,7 +123,8 @@ class TestClientMethods:
         client.add_numbers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'add_numbers' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/addNumbers"), f"Incorrect topic for 'add_numbers' method call: {message.topic}"
+        expected_topic = "x/Full/x/method/addNumbers/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'add_numbers' method call: {message.topic}"
 
     def test_do_something_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -126,14 +133,16 @@ class TestClientMethods:
         client.do_something(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'do_something' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/doSomething"), f"Incorrect topic for 'do_something' method call: {message.topic}"
+        expected_topic = "x/Full/x/method/doSomething/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'do_something' method call: {message.topic}"
 
     def test_what_time_is_it_method_call_sends_request(self, mock_connection, client):
         kwargs = {}  # type: Dict[str, Any]
         client.what_time_is_it(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'what_time_is_it' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/whatTimeIsIt"), f"Incorrect topic for 'what_time_is_it' method call: {message.topic}"
+        expected_topic = "x/Full/x/method/what_time_is_it/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'what_time_is_it' method call: {message.topic}"
 
     def test_hold_temperature_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -142,4 +151,5 @@ class TestClientMethods:
         client.hold_temperature(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'hold_temperature' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/holdTemperature"), f"Incorrect topic for 'hold_temperature' method call: {message.topic}"
+        expected_topic = "x/Full/x/method/hold_temperature/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'hold_temperature' method call: {message.topic}"

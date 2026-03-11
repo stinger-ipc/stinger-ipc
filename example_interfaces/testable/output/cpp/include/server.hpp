@@ -20,23 +20,27 @@ TODO: Get license text from stinger file
 #include <chrono>
 #include <thread>
 #include <atomic>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 
 #include "property_structs.hpp"
 
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include "enums.hpp"
 
 #include "method_payloads.hpp"
 
-class TestableServer
-{
+namespace stinger {
+
+namespace gen {
+namespace testable {
+
+class TestableServer {
 public:
     static constexpr const char NAME[] = "testable";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
-    TestableServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    TestableServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix);
 
     virtual ~TestableServer();
 
@@ -531,112 +535,111 @@ public:
     void republishReadWriteListsProperty() const;
 
 private:
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
     std::string _instanceId;
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const MqttProperties& mqttProps
-    );
 
-    void _callCallWithNothingHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    std::string _prefixTopicParam;
+
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
+    void _receiveMessage(const stinger::mqtt::Message& msg);
+
+    void _callCallWithNothingHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<void()> _callWithNothingHandler;
     int _callWithNothingMethodSubscriptionId;
 
-    void _callCallOneIntegerHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOneIntegerHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<int(int)> _callOneIntegerHandler;
     int _callOneIntegerMethodSubscriptionId;
 
-    void _callCallOptionalIntegerHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOptionalIntegerHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::optional<int>(std::optional<int>)> _callOptionalIntegerHandler;
     int _callOptionalIntegerMethodSubscriptionId;
 
-    void _callCallThreeIntegersHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallThreeIntegersHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<CallThreeIntegersReturnValues(int, int, std::optional<int>)> _callThreeIntegersHandler;
     int _callThreeIntegersMethodSubscriptionId;
 
-    void _callCallOneStringHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOneStringHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::string(std::string)> _callOneStringHandler;
     int _callOneStringMethodSubscriptionId;
 
-    void _callCallOptionalStringHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOptionalStringHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::optional<std::string>(std::optional<std::string>)> _callOptionalStringHandler;
     int _callOptionalStringMethodSubscriptionId;
 
-    void _callCallThreeStringsHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallThreeStringsHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<CallThreeStringsReturnValues(std::string, std::optional<std::string>, std::string)> _callThreeStringsHandler;
     int _callThreeStringsMethodSubscriptionId;
 
-    void _callCallOneEnumHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOneEnumHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<Numbers(Numbers)> _callOneEnumHandler;
     int _callOneEnumMethodSubscriptionId;
 
-    void _callCallOptionalEnumHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOptionalEnumHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::optional<Numbers>(std::optional<Numbers>)> _callOptionalEnumHandler;
     int _callOptionalEnumMethodSubscriptionId;
 
-    void _callCallThreeEnumsHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallThreeEnumsHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<CallThreeEnumsReturnValues(Numbers, Numbers, std::optional<Numbers>)> _callThreeEnumsHandler;
     int _callThreeEnumsMethodSubscriptionId;
 
-    void _callCallOneStructHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOneStructHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<AllTypes(AllTypes)> _callOneStructHandler;
     int _callOneStructMethodSubscriptionId;
 
-    void _callCallOptionalStructHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOptionalStructHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::optional<AllTypes>(std::optional<AllTypes>)> _callOptionalStructHandler;
     int _callOptionalStructMethodSubscriptionId;
 
-    void _callCallThreeStructsHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallThreeStructsHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<CallThreeStructsReturnValues(std::optional<AllTypes>, AllTypes, AllTypes)> _callThreeStructsHandler;
     int _callThreeStructsMethodSubscriptionId;
 
-    void _callCallOneDateTimeHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOneDateTimeHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::chrono::time_point<std::chrono::system_clock>(std::chrono::time_point<std::chrono::system_clock>)> _callOneDateTimeHandler;
     int _callOneDateTimeMethodSubscriptionId;
 
-    void _callCallOptionalDateTimeHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOptionalDateTimeHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::optional<std::chrono::time_point<std::chrono::system_clock>>(std::optional<std::chrono::time_point<std::chrono::system_clock>>)> _callOptionalDateTimeHandler;
     int _callOptionalDateTimeMethodSubscriptionId;
 
-    void _callCallThreeDateTimesHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallThreeDateTimesHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<CallThreeDateTimesReturnValues(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>)> _callThreeDateTimesHandler;
     int _callThreeDateTimesMethodSubscriptionId;
 
-    void _callCallOneDurationHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOneDurationHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::chrono::duration<double>(std::chrono::duration<double>)> _callOneDurationHandler;
     int _callOneDurationMethodSubscriptionId;
 
-    void _callCallOptionalDurationHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOptionalDurationHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::optional<std::chrono::duration<double>>(std::optional<std::chrono::duration<double>>)> _callOptionalDurationHandler;
     int _callOptionalDurationMethodSubscriptionId;
 
-    void _callCallThreeDurationsHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallThreeDurationsHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<CallThreeDurationsReturnValues(std::chrono::duration<double>, std::chrono::duration<double>, std::optional<std::chrono::duration<double>>)> _callThreeDurationsHandler;
     int _callThreeDurationsMethodSubscriptionId;
 
-    void _callCallOneBinaryHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOneBinaryHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::vector<uint8_t>(std::vector<uint8_t>)> _callOneBinaryHandler;
     int _callOneBinaryMethodSubscriptionId;
 
-    void _callCallOptionalBinaryHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOptionalBinaryHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::optional<std::vector<uint8_t>>(std::optional<std::vector<uint8_t>>)> _callOptionalBinaryHandler;
     int _callOptionalBinaryMethodSubscriptionId;
 
-    void _callCallThreeBinariesHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallThreeBinariesHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<CallThreeBinariesReturnValues(std::vector<uint8_t>, std::vector<uint8_t>, std::optional<std::vector<uint8_t>>)> _callThreeBinariesHandler;
     int _callThreeBinariesMethodSubscriptionId;
 
-    void _callCallOneListOfIntegersHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOneListOfIntegersHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::vector<int>(std::vector<int>)> _callOneListOfIntegersHandler;
     int _callOneListOfIntegersMethodSubscriptionId;
 
-    void _callCallOptionalListOfFloatsHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallOptionalListOfFloatsHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::optional<std::vector<double>>(std::optional<std::vector<double>>)> _callOptionalListOfFloatsHandler;
     int _callOptionalListOfFloatsMethodSubscriptionId;
 
-    void _callCallTwoListsHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callCallTwoListsHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<CallTwoListsReturnValues(std::vector<Numbers>, std::optional<std::vector<std::string>>)> _callTwoListsHandler;
     int _callTwoListsMethodSubscriptionId;
 
@@ -657,7 +660,7 @@ private:
     int _readWriteIntegerPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_integer` property.
-    void _receiveReadWriteIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteIntegerPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_integer` property.
     std::vector<std::function<void(int)>> _readWriteIntegerPropertyCallbacks;
@@ -678,7 +681,7 @@ private:
     int _readOnlyIntegerPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_only_integer` property.
-    void _receiveReadOnlyIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadOnlyIntegerPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_only_integer` property.
     std::vector<std::function<void(int)>> _readOnlyIntegerPropertyCallbacks;
@@ -699,7 +702,7 @@ private:
     int _readWriteOptionalIntegerPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_integer` property.
-    void _receiveReadWriteOptionalIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalIntegerPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_integer` property.
     std::vector<std::function<void(std::optional<int>)>> _readWriteOptionalIntegerPropertyCallbacks;
@@ -720,7 +723,7 @@ private:
     int _readWriteTwoIntegersPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_integers` property.
-    void _receiveReadWriteTwoIntegersPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoIntegersPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_integers` property.
     std::vector<std::function<void(int, std::optional<int>)>> _readWriteTwoIntegersPropertyCallbacks;
@@ -741,7 +744,7 @@ private:
     int _readOnlyStringPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_only_string` property.
-    void _receiveReadOnlyStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadOnlyStringPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_only_string` property.
     std::vector<std::function<void(std::string)>> _readOnlyStringPropertyCallbacks;
@@ -762,7 +765,7 @@ private:
     int _readWriteStringPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_string` property.
-    void _receiveReadWriteStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteStringPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_string` property.
     std::vector<std::function<void(std::string)>> _readWriteStringPropertyCallbacks;
@@ -783,7 +786,7 @@ private:
     int _readWriteOptionalStringPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_string` property.
-    void _receiveReadWriteOptionalStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalStringPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_string` property.
     std::vector<std::function<void(std::optional<std::string>)>> _readWriteOptionalStringPropertyCallbacks;
@@ -804,7 +807,7 @@ private:
     int _readWriteTwoStringsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_strings` property.
-    void _receiveReadWriteTwoStringsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoStringsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_strings` property.
     std::vector<std::function<void(std::string, std::optional<std::string>)>> _readWriteTwoStringsPropertyCallbacks;
@@ -825,7 +828,7 @@ private:
     int _readWriteStructPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_struct` property.
-    void _receiveReadWriteStructPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteStructPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_struct` property.
     std::vector<std::function<void(AllTypes)>> _readWriteStructPropertyCallbacks;
@@ -846,7 +849,7 @@ private:
     int _readWriteOptionalStructPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_struct` property.
-    void _receiveReadWriteOptionalStructPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalStructPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_struct` property.
     std::vector<std::function<void(std::optional<AllTypes>)>> _readWriteOptionalStructPropertyCallbacks;
@@ -867,7 +870,7 @@ private:
     int _readWriteTwoStructsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_structs` property.
-    void _receiveReadWriteTwoStructsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoStructsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_structs` property.
     std::vector<std::function<void(AllTypes, std::optional<AllTypes>)>> _readWriteTwoStructsPropertyCallbacks;
@@ -888,7 +891,7 @@ private:
     int _readOnlyEnumPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_only_enum` property.
-    void _receiveReadOnlyEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadOnlyEnumPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_only_enum` property.
     std::vector<std::function<void(Numbers)>> _readOnlyEnumPropertyCallbacks;
@@ -909,7 +912,7 @@ private:
     int _readWriteEnumPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_enum` property.
-    void _receiveReadWriteEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteEnumPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_enum` property.
     std::vector<std::function<void(Numbers)>> _readWriteEnumPropertyCallbacks;
@@ -930,7 +933,7 @@ private:
     int _readWriteOptionalEnumPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_enum` property.
-    void _receiveReadWriteOptionalEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalEnumPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_enum` property.
     std::vector<std::function<void(std::optional<Numbers>)>> _readWriteOptionalEnumPropertyCallbacks;
@@ -951,7 +954,7 @@ private:
     int _readWriteTwoEnumsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_enums` property.
-    void _receiveReadWriteTwoEnumsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoEnumsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_enums` property.
     std::vector<std::function<void(Numbers, std::optional<Numbers>)>> _readWriteTwoEnumsPropertyCallbacks;
@@ -972,7 +975,7 @@ private:
     int _readWriteDatetimePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_datetime` property.
-    void _receiveReadWriteDatetimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteDatetimePropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_datetime` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _readWriteDatetimePropertyCallbacks;
@@ -993,7 +996,7 @@ private:
     int _readWriteOptionalDatetimePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_datetime` property.
-    void _receiveReadWriteOptionalDatetimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalDatetimePropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_datetime` property.
     std::vector<std::function<void(std::optional<std::chrono::time_point<std::chrono::system_clock>>)>> _readWriteOptionalDatetimePropertyCallbacks;
@@ -1014,7 +1017,7 @@ private:
     int _readWriteTwoDatetimesPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_datetimes` property.
-    void _receiveReadWriteTwoDatetimesPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoDatetimesPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_datetimes` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>)>> _readWriteTwoDatetimesPropertyCallbacks;
@@ -1035,7 +1038,7 @@ private:
     int _readWriteDurationPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_duration` property.
-    void _receiveReadWriteDurationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteDurationPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_duration` property.
     std::vector<std::function<void(std::chrono::duration<double>)>> _readWriteDurationPropertyCallbacks;
@@ -1056,7 +1059,7 @@ private:
     int _readWriteOptionalDurationPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_duration` property.
-    void _receiveReadWriteOptionalDurationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalDurationPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_duration` property.
     std::vector<std::function<void(std::optional<std::chrono::duration<double>>)>> _readWriteOptionalDurationPropertyCallbacks;
@@ -1077,7 +1080,7 @@ private:
     int _readWriteTwoDurationsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_durations` property.
-    void _receiveReadWriteTwoDurationsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoDurationsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_durations` property.
     std::vector<std::function<void(std::chrono::duration<double>, std::optional<std::chrono::duration<double>>)>> _readWriteTwoDurationsPropertyCallbacks;
@@ -1098,7 +1101,7 @@ private:
     int _readWriteBinaryPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_binary` property.
-    void _receiveReadWriteBinaryPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteBinaryPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_binary` property.
     std::vector<std::function<void(std::vector<uint8_t>)>> _readWriteBinaryPropertyCallbacks;
@@ -1119,7 +1122,7 @@ private:
     int _readWriteOptionalBinaryPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_binary` property.
-    void _receiveReadWriteOptionalBinaryPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalBinaryPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_binary` property.
     std::vector<std::function<void(std::optional<std::vector<uint8_t>>)>> _readWriteOptionalBinaryPropertyCallbacks;
@@ -1140,7 +1143,7 @@ private:
     int _readWriteTwoBinariesPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_binaries` property.
-    void _receiveReadWriteTwoBinariesPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoBinariesPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_binaries` property.
     std::vector<std::function<void(std::vector<uint8_t>, std::optional<std::vector<uint8_t>>)>> _readWriteTwoBinariesPropertyCallbacks;
@@ -1161,7 +1164,7 @@ private:
     int _readWriteListOfStringsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_list_of_strings` property.
-    void _receiveReadWriteListOfStringsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteListOfStringsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_list_of_strings` property.
     std::vector<std::function<void(std::vector<std::string>)>> _readWriteListOfStringsPropertyCallbacks;
@@ -1182,7 +1185,7 @@ private:
     int _readWriteListsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_lists` property.
-    void _receiveReadWriteListsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteListsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_lists` property.
     std::vector<std::function<void(std::vector<Numbers>, std::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>>)>> _readWriteListsPropertyCallbacks;
@@ -1199,3 +1202,9 @@ private:
     // Method that runs in the advertisement thread
     void _advertisementThreadLoop();
 };
+
+} // namespace testable
+
+} // namespace gen
+
+} // namespace stinger

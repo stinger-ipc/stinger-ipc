@@ -1,6 +1,11 @@
 
 #include "signal_payloads.hpp"
 
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
 // --- (De-)Serialization for current_time signal payload ---
 CurrentTimePayload CurrentTimePayload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
@@ -8,12 +13,10 @@ CurrentTimePayload CurrentTimePayload::FromRapidJsonObject(const rapidjson::Valu
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("current_time");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             currentTimePayload.currentTime = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'current_time' argument doesn't have required value/type");
         }
     }
@@ -29,3 +32,9 @@ void CurrentTimePayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjso
         parent.AddMember("current_time", tempStringValue, allocator);
     }
 }
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

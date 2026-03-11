@@ -4,19 +4,22 @@
 #include <thread>
 #include <atomic>
 
-#include "broker.hpp"
 #include "server.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
+#include <stinger/mqtt/brokerconnection.hpp>
+#include <stinger/error/return_codes.hpp>
+
+using namespace stinger::gen::{{stinger.name|snake_case}};
 
 int main(int argc, char** argv) {
 
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "cpp-server-demo");
+    auto conn = std::make_shared<stinger::mqtt::BrokerConnection>("localhost", 1883, "cpp-server-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg) {
         std::cout << "[" << level << "] " << msg << std::endl;
     });
 
-    auto server = std::make_shared<{{stinger.cpp.server_class_name}}>(conn, "cpp-server-demo:1");
+    auto server = std::make_shared<{{stinger.cpp.server_class_name}}>(conn, "cpp-server-demo:1"{% for topic_param in config.topics.params %}, "example_{{topic_param}}"{% endfor %});
 
     {%for prop_name, prop in stinger.properties.items()%}
     std::cout << "Setting initial value for property '{{prop_name}}'.\n";
@@ -63,6 +66,8 @@ int main(int argc, char** argv) {
                 {%-endfor%}
             }
             catch (...) { }
+
+            std::cout << "Periodic update iteration " << loopCount << " complete. Sleeping for {{60 - stinger.signals | length}} ...\n";
 
             // Sleep in 1-second increments so we can stop quickly
             for (int i = 0; i < {{ 60 - stinger.signals | length }} && keepRunning; ++i)

@@ -13,6 +13,7 @@ class ModelSymbols:
     
     def __init__(self, model):
         self._model = model
+    
 class RustSymbolsProvider(ISymbolsProvider):
 
     def for_model(self, model_class_name:str, model) -> object|None:
@@ -30,13 +31,8 @@ class PythonSymbolsProvider(ISymbolsProvider):
             return PythonStructSymbols(model)
         elif model_class_name == "Method":
             return PythonMethodSymbols(model)
-        return None
-
-class CppSymbolsProvider(ISymbolsProvider):
-
-    def for_model(self, model_class_name:str, model) -> object|None:
-        if model_class_name == "StingerSpec":
-            return CppInterfaceSymbols(model)
+        elif model_class_name == "Property":
+            return PythonPropertySymbols(model)
         return None
 
 class PythonSymbols:
@@ -96,6 +92,30 @@ class PythonMethodSymbols(PythonSymbols):
     def return_value_class(self):
         return f"{self.type_definition_module}.{self.return_value_local_class}"
 
+class PythonPropertySymbols(PythonSymbols):
+
+    def __init__(self, prop):
+        super().__init__()
+        self._prop = prop
+
+    @property
+    def getter_value_annotation(self) -> str:
+        if len(self._prop._arg_list) == 1:
+            return self._prop._arg_list[0].python_annotation
+        else:
+            return self.model_class_name
+
+    @property
+    def setter_value_annotation(self) -> str:
+        if len(self._prop._arg_list) == 1:
+            return f"Union[{self._prop._arg_list[0].python_annotation}, {self.model_class_name}]"
+        else:
+            return self.model_class_name
+
+    @property
+    def model_class_name(self) -> str:
+        return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+
 class RustSymbols:
     def __init__(self):
         pass
@@ -121,6 +141,15 @@ class RustInterfaceSymbols(RustSymbols):
     def server_struct_name(self) -> str:
         """ Name of the struct for the interface server."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Server"
+
+class CppSymbolsProvider(ISymbolsProvider):
+
+    def for_model(self, model_class_name:str, model) -> object|None:
+        if model_class_name == "StingerSpec":
+            return CppInterfaceSymbols(model)
+        elif model_class_name == "Property":
+            return CppPropertySymbols(model)
+        return None
 
 class CppSymbols:
     def __init__(self):
@@ -148,3 +177,12 @@ class CppInterfaceSymbols(CppSymbols):
     def property_struct_header_file(self) -> str:
         return "property_structs.hpp"
 
+class CppPropertySymbols(CppSymbols):
+
+    def __init__(self, prop):
+        super().__init__()
+        self._prop = prop
+
+    @property
+    def property_struct_name(self) -> str:
+        return f"{stringmanip.upper_camel_case(self._prop.name)}Property"

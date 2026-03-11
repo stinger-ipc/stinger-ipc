@@ -10,6 +10,11 @@ from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Labe
 from textual.containers import Horizontal, VerticalScroll, Vertical  # typing: ignore
 from fullipc.interface_types import *
 from fullipc.client import FullClient
+import logging
+
+# Configure logging
+logger = logging.getLogger("TUI-Client")
+logger.setLevel(logging.DEBUG)
 
 
 class PropertyEditModal(ModalScreen[bool]):
@@ -294,6 +299,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
     def _call_method(self) -> None:
         """Call the method with collected inputs."""
         assert self.result_widget is not None, "result_widget must be initialized"
+        logger.debug("Calling method '%s' with params: %s", self.method_name, self.params)
         try:
             # Collect inputs
             kwargs = {}
@@ -437,6 +443,7 @@ class ClientScreen(Screen):
             with VerticalScroll(id="middle_pane"):
                 yield Static("Properties", classes="pane_title")
                 # Properties will be added dynamically
+
             with VerticalScroll(id="right_pane"):
                 yield Static("Signals", classes="pane_title")
                 yield RichLog(id="signals_log", highlight=True, markup=True)
@@ -444,6 +451,8 @@ class ClientScreen(Screen):
 
     def on_mount(self) -> None:
         """Set up signal handlers when screen mounts."""
+        logger.debug("Mounting client screen")
+
         # Get the client from the app
         self.client = self.app.full_client
 
@@ -453,12 +462,14 @@ class ClientScreen(Screen):
 
         # Add method buttons
         self._add_method_buttons()
-
         # Register all signal handlers
         self._register_signal_handlers()
 
         # Register all property handlers
         self._register_property_handlers()
+
+    def on_show(self):
+        logger.debug("Showing client screen")
 
     def _add_method_buttons(self) -> None:
         """Add buttons for all call_* methods."""
@@ -519,7 +530,9 @@ class ClientScreen(Screen):
 
         # Register all signal handlers
         assert self.client is not None, "Client must be initialized"
+        logger.debug("Registering TUI handler for signal '%s'", "today_is")
         self.client.receive_today_is(make_handler("today_is"))
+        logger.debug("Registering TUI handler for signal '%s'", "random_word")
         self.client.receive_random_word(make_handler("random_word"))
 
     def _register_property_handlers(self) -> None:

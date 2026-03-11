@@ -13,21 +13,24 @@ TODO: Get license text from stinger file
 #include <cstddef>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
+#include <optional>
 #include <rapidjson/document.h>
 #include "enums.hpp"
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
 
-struct Entry
-{
+namespace stinger {
+
+namespace gen {
+namespace testable {
+
+struct Entry {
     static Entry FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     int key;
     std::string value;
 };
 
-struct AllTypes
-{
+struct AllTypes {
     static AllTypes FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     bool theBool;
@@ -61,3 +64,9 @@ struct AllTypes
     std::vector<Entry> arrayOfEntryObjects;
     std::optional<std::vector<Entry>> optionalArrayOfEntryObjects;
 };
+
+} // namespace testable
+
+} // namespace gen
+
+} // namespace stinger

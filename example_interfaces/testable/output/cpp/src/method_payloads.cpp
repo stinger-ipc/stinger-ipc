@@ -2,7 +2,12 @@
 #include "method_payloads.hpp"
 
 #include <rapidjson/document.h>
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace testable {
 
 // --- (De-)Serialization for callWithNothing method request arguments ---
 CallWithNothingRequestArguments CallWithNothingRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -35,12 +40,10 @@ CallOneIntegerRequestArguments CallOneIntegerRequestArguments::FromRapidJsonObje
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callOneIntegerArgs.input1 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
@@ -60,12 +63,10 @@ CallOneIntegerReturnValues CallOneIntegerReturnValues::FromRapidJsonObject(const
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callOneIntegerRc.output1 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
@@ -85,12 +86,10 @@ CallOptionalIntegerRequestArguments CallOptionalIntegerRequestArguments::FromRap
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callOptionalIntegerArgs.input1 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             callOptionalIntegerArgs.input1 = std::nullopt;
         }
     }
@@ -111,12 +110,10 @@ CallOptionalIntegerReturnValues CallOptionalIntegerReturnValues::FromRapidJsonOb
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callOptionalIntegerRc.output1 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             callOptionalIntegerRc.output1 = std::nullopt;
         }
     }
@@ -137,34 +134,28 @@ CallThreeIntegersRequestArguments CallThreeIntegersRequestArguments::FromRapidJs
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeIntegersArgs.input1 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeIntegersArgs.input2 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeIntegersArgs.input3 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             callThreeIntegersArgs.input3 = std::nullopt;
         }
     }
@@ -189,34 +180,28 @@ CallThreeIntegersReturnValues CallThreeIntegersReturnValues::FromRapidJsonObject
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeIntegersRc.output1 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeIntegersRc.output2 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeIntegersRc.output3 = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             callThreeIntegersRc.output3 = std::nullopt;
         }
     }
@@ -241,12 +226,10 @@ CallOneStringRequestArguments CallOneStringRequestArguments::FromRapidJsonObject
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callOneStringArgs.input1 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
@@ -270,12 +253,10 @@ CallOneStringReturnValues CallOneStringReturnValues::FromRapidJsonObject(const r
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callOneStringRc.output1 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
@@ -299,12 +280,10 @@ CallOptionalStringRequestArguments CallOptionalStringRequestArguments::FromRapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callOptionalStringArgs.input1 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             callOptionalStringArgs.input1 = std::nullopt;
         }
     }
@@ -314,8 +293,7 @@ CallOptionalStringRequestArguments CallOptionalStringRequestArguments::FromRapid
 
 void CallOptionalStringRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    if (input1)
-    {
+    if (input1) {
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(input1->c_str(), input1->size(), allocator);
         parent.AddMember("input1", tempStringValue, allocator);
@@ -329,12 +307,10 @@ CallOptionalStringReturnValues CallOptionalStringReturnValues::FromRapidJsonObje
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callOptionalStringRc.output1 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             callOptionalStringRc.output1 = std::nullopt;
         }
     }
@@ -344,8 +320,7 @@ CallOptionalStringReturnValues CallOptionalStringReturnValues::FromRapidJsonObje
 
 void CallOptionalStringReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    if (output1)
-    {
+    if (output1) {
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(output1->c_str(), output1->size(), allocator);
         parent.AddMember("output1", tempStringValue, allocator);
@@ -359,34 +334,28 @@ CallThreeStringsRequestArguments CallThreeStringsRequestArguments::FromRapidJson
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callThreeStringsArgs.input1 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callThreeStringsArgs.input2 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             callThreeStringsArgs.input2 = std::nullopt;
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callThreeStringsArgs.input3 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input3' argument doesn't have required value/type");
         }
     }
@@ -402,8 +371,7 @@ void CallThreeStringsRequestArguments::AddToRapidJsonObject(rapidjson::Value& pa
         parent.AddMember("input1", tempStringValue, allocator);
     }
 
-    if (input2)
-    {
+    if (input2) {
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(input2->c_str(), input2->size(), allocator);
         parent.AddMember("input2", tempStringValue, allocator);
@@ -423,34 +391,28 @@ CallThreeStringsReturnValues CallThreeStringsReturnValues::FromRapidJsonObject(c
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callThreeStringsRc.output1 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callThreeStringsRc.output2 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             callThreeStringsRc.output2 = std::nullopt;
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             callThreeStringsRc.output3 = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output3' argument doesn't have required value/type");
         }
     }
@@ -466,8 +428,7 @@ void CallThreeStringsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent
         parent.AddMember("output1", tempStringValue, allocator);
     }
 
-    if (output2)
-    {
+    if (output2) {
         rapidjson::Value tempStringValue;
         tempStringValue.SetString(output2->c_str(), output2->size(), allocator);
         parent.AddMember("output2", tempStringValue, allocator);
@@ -487,12 +448,10 @@ CallOneEnumRequestArguments CallOneEnumRequestArguments::FromRapidJsonObject(con
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callOneEnumArgs.input1 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
@@ -512,12 +471,10 @@ CallOneEnumReturnValues CallOneEnumReturnValues::FromRapidJsonObject(const rapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callOneEnumRc.output1 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
@@ -537,12 +494,10 @@ CallOptionalEnumRequestArguments CallOptionalEnumRequestArguments::FromRapidJson
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callOptionalEnumArgs.input1 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             callOptionalEnumArgs.input1 = std::nullopt;
         }
     }
@@ -562,12 +517,10 @@ CallOptionalEnumReturnValues CallOptionalEnumReturnValues::FromRapidJsonObject(c
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callOptionalEnumRc.output1 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             callOptionalEnumRc.output1 = std::nullopt;
         }
     }
@@ -587,34 +540,28 @@ CallThreeEnumsRequestArguments CallThreeEnumsRequestArguments::FromRapidJsonObje
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeEnumsArgs.input1 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeEnumsArgs.input2 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeEnumsArgs.input3 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             callThreeEnumsArgs.input3 = std::nullopt;
         }
     }
@@ -638,34 +585,28 @@ CallThreeEnumsReturnValues CallThreeEnumsReturnValues::FromRapidJsonObject(const
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeEnumsRc.output1 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeEnumsRc.output2 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             callThreeEnumsRc.output3 = static_cast<Numbers>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             callThreeEnumsRc.output3 = std::nullopt;
         }
     }
@@ -689,12 +630,10 @@ CallOneStructRequestArguments CallOneStructRequestArguments::FromRapidJsonObject
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callOneStructArgs.input1 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
@@ -721,12 +660,10 @@ CallOneStructReturnValues CallOneStructReturnValues::FromRapidJsonObject(const r
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callOneStructRc.output1 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
@@ -753,12 +690,10 @@ CallOptionalStructRequestArguments CallOptionalStructRequestArguments::FromRapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callOptionalStructArgs.input1 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             callOptionalStructArgs.input1 = std::nullopt;
         }
     }
@@ -770,13 +705,10 @@ void CallOptionalStructRequestArguments::AddToRapidJsonObject(rapidjson::Value& 
 {
     { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
-        if (input1)
-        {
+        if (input1) {
             tempStructValue.SetObject();
             input1->AddToRapidJsonObject(tempStructValue, allocator);
-        }
-        else
-        {
+        } else {
             tempStructValue.SetNull();
         }
         parent.AddMember("input1", tempStructValue, allocator);
@@ -790,12 +722,10 @@ CallOptionalStructReturnValues CallOptionalStructReturnValues::FromRapidJsonObje
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callOptionalStructRc.output1 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             callOptionalStructRc.output1 = std::nullopt;
         }
     }
@@ -807,13 +737,10 @@ void CallOptionalStructReturnValues::AddToRapidJsonObject(rapidjson::Value& pare
 {
     { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
-        if (output1)
-        {
+        if (output1) {
             tempStructValue.SetObject();
             output1->AddToRapidJsonObject(tempStructValue, allocator);
-        }
-        else
-        {
+        } else {
             tempStructValue.SetNull();
         }
         parent.AddMember("output1", tempStructValue, allocator);
@@ -827,34 +754,28 @@ CallThreeStructsRequestArguments CallThreeStructsRequestArguments::FromRapidJson
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callThreeStructsArgs.input1 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             callThreeStructsArgs.input1 = std::nullopt;
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callThreeStructsArgs.input2 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callThreeStructsArgs.input3 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input3' argument doesn't have required value/type");
         }
     }
@@ -866,13 +787,10 @@ void CallThreeStructsRequestArguments::AddToRapidJsonObject(rapidjson::Value& pa
 {
     { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
-        if (input1)
-        {
+        if (input1) {
             tempStructValue.SetObject();
             input1->AddToRapidJsonObject(tempStructValue, allocator);
-        }
-        else
-        {
+        } else {
             tempStructValue.SetNull();
         }
         parent.AddMember("input1", tempStructValue, allocator);
@@ -904,34 +822,28 @@ CallThreeStructsReturnValues CallThreeStructsReturnValues::FromRapidJsonObject(c
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callThreeStructsRc.output1 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             callThreeStructsRc.output1 = std::nullopt;
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callThreeStructsRc.output2 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsObject())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsObject()) {
             callThreeStructsRc.output3 = AllTypes::FromRapidJsonObject(itr->value);
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output3' argument doesn't have required value/type");
         }
     }
@@ -943,13 +855,10 @@ void CallThreeStructsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent
 {
     { // Restrict Scope for struct serialization
         rapidjson::Value tempStructValue;
-        if (output1)
-        {
+        if (output1) {
             tempStructValue.SetObject();
             output1->AddToRapidJsonObject(tempStructValue, allocator);
-        }
-        else
-        {
+        } else {
             tempStructValue.SetNull();
         }
         parent.AddMember("output1", tempStructValue, allocator);
@@ -981,13 +890,11 @@ CallOneDateTimeRequestArguments CallOneDateTimeRequestArguments::FromRapidJsonOb
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput1IsoString = itr->value.GetString();
-            callOneDateTimeArgs.input1 = parseIsoTimestamp(tempInput1IsoString);
-        }
-        else
-        {
+            callOneDateTimeArgs.input1 = stinger::utils::parseIsoTimestamp(tempInput1IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
@@ -999,7 +906,7 @@ void CallOneDateTimeRequestArguments::AddToRapidJsonObject(rapidjson::Value& par
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput1StringValue;
-        std::string input1IsoString = timePointToIsoString(input1);
+        std::string input1IsoString = stinger::utils::timePointToIsoString(input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
@@ -1012,13 +919,11 @@ CallOneDateTimeReturnValues CallOneDateTimeReturnValues::FromRapidJsonObject(con
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput1IsoString = itr->value.GetString();
-            callOneDateTimeRc.output1 = parseIsoTimestamp(tempOutput1IsoString);
-        }
-        else
-        {
+            callOneDateTimeRc.output1 = stinger::utils::parseIsoTimestamp(tempOutput1IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
@@ -1030,7 +935,7 @@ void CallOneDateTimeReturnValues::AddToRapidJsonObject(rapidjson::Value& parent,
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput1StringValue;
-        std::string output1IsoString = timePointToIsoString(output1);
+        std::string output1IsoString = stinger::utils::timePointToIsoString(output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
@@ -1043,13 +948,11 @@ CallOptionalDateTimeRequestArguments CallOptionalDateTimeRequestArguments::FromR
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput1IsoString = itr->value.GetString();
-            callOptionalDateTimeArgs.input1 = parseIsoTimestamp(tempInput1IsoString);
-        }
-        else
-        {
+            callOptionalDateTimeArgs.input1 = stinger::utils::parseIsoTimestamp(tempInput1IsoString);
+
+        } else {
             callOptionalDateTimeArgs.input1 = std::nullopt;
         }
     }
@@ -1061,7 +964,7 @@ void CallOptionalDateTimeRequestArguments::AddToRapidJsonObject(rapidjson::Value
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput1StringValue;
-        std::string input1IsoString = timePointToIsoString(*input1);
+        std::string input1IsoString = stinger::utils::timePointToIsoString(*input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
@@ -1074,13 +977,11 @@ CallOptionalDateTimeReturnValues CallOptionalDateTimeReturnValues::FromRapidJson
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput1IsoString = itr->value.GetString();
-            callOptionalDateTimeRc.output1 = parseIsoTimestamp(tempOutput1IsoString);
-        }
-        else
-        {
+            callOptionalDateTimeRc.output1 = stinger::utils::parseIsoTimestamp(tempOutput1IsoString);
+
+        } else {
             callOptionalDateTimeRc.output1 = std::nullopt;
         }
     }
@@ -1092,7 +993,7 @@ void CallOptionalDateTimeReturnValues::AddToRapidJsonObject(rapidjson::Value& pa
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput1StringValue;
-        std::string output1IsoString = timePointToIsoString(*output1);
+        std::string output1IsoString = stinger::utils::timePointToIsoString(*output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
@@ -1105,37 +1006,31 @@ CallThreeDateTimesRequestArguments CallThreeDateTimesRequestArguments::FromRapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput1IsoString = itr->value.GetString();
-            callThreeDateTimesArgs.input1 = parseIsoTimestamp(tempInput1IsoString);
-        }
-        else
-        {
+            callThreeDateTimesArgs.input1 = stinger::utils::parseIsoTimestamp(tempInput1IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput2IsoString = itr->value.GetString();
-            callThreeDateTimesArgs.input2 = parseIsoTimestamp(tempInput2IsoString);
-        }
-        else
-        {
+            callThreeDateTimesArgs.input2 = stinger::utils::parseIsoTimestamp(tempInput2IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput3IsoString = itr->value.GetString();
-            callThreeDateTimesArgs.input3 = parseIsoTimestamp(tempInput3IsoString);
-        }
-        else
-        {
+            callThreeDateTimesArgs.input3 = stinger::utils::parseIsoTimestamp(tempInput3IsoString);
+
+        } else {
             callThreeDateTimesArgs.input3 = std::nullopt;
         }
     }
@@ -1147,21 +1042,21 @@ void CallThreeDateTimesRequestArguments::AddToRapidJsonObject(rapidjson::Value& 
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput1StringValue;
-        std::string input1IsoString = timePointToIsoString(input1);
+        std::string input1IsoString = stinger::utils::timePointToIsoString(input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput2StringValue;
-        std::string input2IsoString = timePointToIsoString(input2);
+        std::string input2IsoString = stinger::utils::timePointToIsoString(input2);
         tempInput2StringValue.SetString(input2IsoString.c_str(), input2IsoString.size(), allocator);
         parent.AddMember("input2", tempInput2StringValue, allocator);
     }
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempInput3StringValue;
-        std::string input3IsoString = timePointToIsoString(*input3);
+        std::string input3IsoString = stinger::utils::timePointToIsoString(*input3);
         tempInput3StringValue.SetString(input3IsoString.c_str(), input3IsoString.size(), allocator);
         parent.AddMember("input3", tempInput3StringValue, allocator);
     }
@@ -1174,37 +1069,31 @@ CallThreeDateTimesReturnValues CallThreeDateTimesReturnValues::FromRapidJsonObje
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput1IsoString = itr->value.GetString();
-            callThreeDateTimesRc.output1 = parseIsoTimestamp(tempOutput1IsoString);
-        }
-        else
-        {
+            callThreeDateTimesRc.output1 = stinger::utils::parseIsoTimestamp(tempOutput1IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput2IsoString = itr->value.GetString();
-            callThreeDateTimesRc.output2 = parseIsoTimestamp(tempOutput2IsoString);
-        }
-        else
-        {
+            callThreeDateTimesRc.output2 = stinger::utils::parseIsoTimestamp(tempOutput2IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput3IsoString = itr->value.GetString();
-            callThreeDateTimesRc.output3 = parseIsoTimestamp(tempOutput3IsoString);
-        }
-        else
-        {
+            callThreeDateTimesRc.output3 = stinger::utils::parseIsoTimestamp(tempOutput3IsoString);
+
+        } else {
             callThreeDateTimesRc.output3 = std::nullopt;
         }
     }
@@ -1216,21 +1105,21 @@ void CallThreeDateTimesReturnValues::AddToRapidJsonObject(rapidjson::Value& pare
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput1StringValue;
-        std::string output1IsoString = timePointToIsoString(output1);
+        std::string output1IsoString = stinger::utils::timePointToIsoString(output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput2StringValue;
-        std::string output2IsoString = timePointToIsoString(output2);
+        std::string output2IsoString = stinger::utils::timePointToIsoString(output2);
         tempOutput2StringValue.SetString(output2IsoString.c_str(), output2IsoString.size(), allocator);
         parent.AddMember("output2", tempOutput2StringValue, allocator);
     }
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempOutput3StringValue;
-        std::string output3IsoString = timePointToIsoString(*output3);
+        std::string output3IsoString = stinger::utils::timePointToIsoString(*output3);
         tempOutput3StringValue.SetString(output3IsoString.c_str(), output3IsoString.size(), allocator);
         parent.AddMember("output3", tempOutput3StringValue, allocator);
     }
@@ -1243,13 +1132,11 @@ CallOneDurationRequestArguments CallOneDurationRequestArguments::FromRapidJsonOb
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput1IsoString = itr->value.GetString();
-            callOneDurationArgs.input1 = parseIsoDuration(tempInput1IsoString);
-        }
-        else
-        {
+            callOneDurationArgs.input1 = stinger::utils::parseIsoDuration(tempInput1IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
@@ -1261,7 +1148,7 @@ void CallOneDurationRequestArguments::AddToRapidJsonObject(rapidjson::Value& par
 {
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput1StringValue;
-        std::string input1IsoString = durationToIsoString(input1);
+        std::string input1IsoString = stinger::utils::durationToIsoString(input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
@@ -1274,13 +1161,11 @@ CallOneDurationReturnValues CallOneDurationReturnValues::FromRapidJsonObject(con
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput1IsoString = itr->value.GetString();
-            callOneDurationRc.output1 = parseIsoDuration(tempOutput1IsoString);
-        }
-        else
-        {
+            callOneDurationRc.output1 = stinger::utils::parseIsoDuration(tempOutput1IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
@@ -1292,7 +1177,7 @@ void CallOneDurationReturnValues::AddToRapidJsonObject(rapidjson::Value& parent,
 {
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput1StringValue;
-        std::string output1IsoString = durationToIsoString(output1);
+        std::string output1IsoString = stinger::utils::durationToIsoString(output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
@@ -1305,13 +1190,11 @@ CallOptionalDurationRequestArguments CallOptionalDurationRequestArguments::FromR
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput1IsoString = itr->value.GetString();
-            callOptionalDurationArgs.input1 = parseIsoDuration(tempInput1IsoString);
-        }
-        else
-        {
+            callOptionalDurationArgs.input1 = stinger::utils::parseIsoDuration(tempInput1IsoString);
+
+        } else {
             callOptionalDurationArgs.input1 = std::nullopt;
         }
     }
@@ -1323,7 +1206,7 @@ void CallOptionalDurationRequestArguments::AddToRapidJsonObject(rapidjson::Value
 {
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput1StringValue;
-        std::string input1IsoString = durationToIsoString(*input1);
+        std::string input1IsoString = stinger::utils::durationToIsoString(*input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
@@ -1336,13 +1219,11 @@ CallOptionalDurationReturnValues CallOptionalDurationReturnValues::FromRapidJson
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput1IsoString = itr->value.GetString();
-            callOptionalDurationRc.output1 = parseIsoDuration(tempOutput1IsoString);
-        }
-        else
-        {
+            callOptionalDurationRc.output1 = stinger::utils::parseIsoDuration(tempOutput1IsoString);
+
+        } else {
             callOptionalDurationRc.output1 = std::nullopt;
         }
     }
@@ -1354,7 +1235,7 @@ void CallOptionalDurationReturnValues::AddToRapidJsonObject(rapidjson::Value& pa
 {
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput1StringValue;
-        std::string output1IsoString = durationToIsoString(*output1);
+        std::string output1IsoString = stinger::utils::durationToIsoString(*output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
@@ -1367,37 +1248,31 @@ CallThreeDurationsRequestArguments CallThreeDurationsRequestArguments::FromRapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput1IsoString = itr->value.GetString();
-            callThreeDurationsArgs.input1 = parseIsoDuration(tempInput1IsoString);
-        }
-        else
-        {
+            callThreeDurationsArgs.input1 = stinger::utils::parseIsoDuration(tempInput1IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput2IsoString = itr->value.GetString();
-            callThreeDurationsArgs.input2 = parseIsoDuration(tempInput2IsoString);
-        }
-        else
-        {
+            callThreeDurationsArgs.input2 = stinger::utils::parseIsoDuration(tempInput2IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput3IsoString = itr->value.GetString();
-            callThreeDurationsArgs.input3 = parseIsoDuration(tempInput3IsoString);
-        }
-        else
-        {
+            callThreeDurationsArgs.input3 = stinger::utils::parseIsoDuration(tempInput3IsoString);
+
+        } else {
             callThreeDurationsArgs.input3 = std::nullopt;
         }
     }
@@ -1409,21 +1284,21 @@ void CallThreeDurationsRequestArguments::AddToRapidJsonObject(rapidjson::Value& 
 {
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput1StringValue;
-        std::string input1IsoString = durationToIsoString(input1);
+        std::string input1IsoString = stinger::utils::durationToIsoString(input1);
         tempInput1StringValue.SetString(input1IsoString.c_str(), input1IsoString.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput2StringValue;
-        std::string input2IsoString = durationToIsoString(input2);
+        std::string input2IsoString = stinger::utils::durationToIsoString(input2);
         tempInput2StringValue.SetString(input2IsoString.c_str(), input2IsoString.size(), allocator);
         parent.AddMember("input2", tempInput2StringValue, allocator);
     }
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempInput3StringValue;
-        std::string input3IsoString = durationToIsoString(*input3);
+        std::string input3IsoString = stinger::utils::durationToIsoString(*input3);
         tempInput3StringValue.SetString(input3IsoString.c_str(), input3IsoString.size(), allocator);
         parent.AddMember("input3", tempInput3StringValue, allocator);
     }
@@ -1436,37 +1311,31 @@ CallThreeDurationsReturnValues CallThreeDurationsReturnValues::FromRapidJsonObje
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput1IsoString = itr->value.GetString();
-            callThreeDurationsRc.output1 = parseIsoDuration(tempOutput1IsoString);
-        }
-        else
-        {
+            callThreeDurationsRc.output1 = stinger::utils::parseIsoDuration(tempOutput1IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput2IsoString = itr->value.GetString();
-            callThreeDurationsRc.output2 = parseIsoDuration(tempOutput2IsoString);
-        }
-        else
-        {
+            callThreeDurationsRc.output2 = stinger::utils::parseIsoDuration(tempOutput2IsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput3IsoString = itr->value.GetString();
-            callThreeDurationsRc.output3 = parseIsoDuration(tempOutput3IsoString);
-        }
-        else
-        {
+            callThreeDurationsRc.output3 = stinger::utils::parseIsoDuration(tempOutput3IsoString);
+
+        } else {
             callThreeDurationsRc.output3 = std::nullopt;
         }
     }
@@ -1478,21 +1347,21 @@ void CallThreeDurationsReturnValues::AddToRapidJsonObject(rapidjson::Value& pare
 {
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput1StringValue;
-        std::string output1IsoString = durationToIsoString(output1);
+        std::string output1IsoString = stinger::utils::durationToIsoString(output1);
         tempOutput1StringValue.SetString(output1IsoString.c_str(), output1IsoString.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput2StringValue;
-        std::string output2IsoString = durationToIsoString(output2);
+        std::string output2IsoString = stinger::utils::durationToIsoString(output2);
         tempOutput2StringValue.SetString(output2IsoString.c_str(), output2IsoString.size(), allocator);
         parent.AddMember("output2", tempOutput2StringValue, allocator);
     }
 
     { // Restrict Scope for duration ISO string conversion
         rapidjson::Value tempOutput3StringValue;
-        std::string output3IsoString = durationToIsoString(*output3);
+        std::string output3IsoString = stinger::utils::durationToIsoString(*output3);
         tempOutput3StringValue.SetString(output3IsoString.c_str(), output3IsoString.size(), allocator);
         parent.AddMember("output3", tempOutput3StringValue, allocator);
     }
@@ -1505,13 +1374,11 @@ CallOneBinaryRequestArguments CallOneBinaryRequestArguments::FromRapidJsonObject
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput1B64String = itr->value.GetString();
-            callOneBinaryArgs.input1 = base64Decode(tempInput1B64String);
-        }
-        else
-        {
+            callOneBinaryArgs.input1 = stinger::utils::base64Decode(tempInput1B64String);
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
@@ -1523,7 +1390,7 @@ void CallOneBinaryRequestArguments::AddToRapidJsonObject(rapidjson::Value& paren
 {
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput1StringValue;
-        std::string input1B64String = base64Encode(input1);
+        std::string input1B64String = stinger::utils::base64Encode(input1);
         tempInput1StringValue.SetString(input1B64String.c_str(), input1B64String.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
@@ -1536,13 +1403,11 @@ CallOneBinaryReturnValues CallOneBinaryReturnValues::FromRapidJsonObject(const r
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput1B64String = itr->value.GetString();
-            callOneBinaryRc.output1 = base64Decode(tempOutput1B64String);
-        }
-        else
-        {
+            callOneBinaryRc.output1 = stinger::utils::base64Decode(tempOutput1B64String);
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
@@ -1554,7 +1419,7 @@ void CallOneBinaryReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, r
 {
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput1StringValue;
-        std::string output1B64String = base64Encode(output1);
+        std::string output1B64String = stinger::utils::base64Encode(output1);
         tempOutput1StringValue.SetString(output1B64String.c_str(), output1B64String.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
@@ -1567,13 +1432,11 @@ CallOptionalBinaryRequestArguments CallOptionalBinaryRequestArguments::FromRapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput1B64String = itr->value.GetString();
-            callOptionalBinaryArgs.input1 = base64Decode(tempInput1B64String);
-        }
-        else
-        {
+            callOptionalBinaryArgs.input1 = stinger::utils::base64Decode(tempInput1B64String);
+
+        } else {
             callOptionalBinaryArgs.input1 = std::nullopt;
         }
     }
@@ -1585,7 +1448,7 @@ void CallOptionalBinaryRequestArguments::AddToRapidJsonObject(rapidjson::Value& 
 {
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput1StringValue;
-        std::string input1B64String = base64Encode(*input1);
+        std::string input1B64String = stinger::utils::base64Encode(*input1);
         tempInput1StringValue.SetString(input1B64String.c_str(), input1B64String.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
@@ -1598,13 +1461,11 @@ CallOptionalBinaryReturnValues CallOptionalBinaryReturnValues::FromRapidJsonObje
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput1B64String = itr->value.GetString();
-            callOptionalBinaryRc.output1 = base64Decode(tempOutput1B64String);
-        }
-        else
-        {
+            callOptionalBinaryRc.output1 = stinger::utils::base64Decode(tempOutput1B64String);
+
+        } else {
             callOptionalBinaryRc.output1 = std::nullopt;
         }
     }
@@ -1616,7 +1477,7 @@ void CallOptionalBinaryReturnValues::AddToRapidJsonObject(rapidjson::Value& pare
 {
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput1StringValue;
-        std::string output1B64String = base64Encode(*output1);
+        std::string output1B64String = stinger::utils::base64Encode(*output1);
         tempOutput1StringValue.SetString(output1B64String.c_str(), output1B64String.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
@@ -1629,37 +1490,31 @@ CallThreeBinariesRequestArguments CallThreeBinariesRequestArguments::FromRapidJs
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput1B64String = itr->value.GetString();
-            callThreeBinariesArgs.input1 = base64Decode(tempInput1B64String);
-        }
-        else
-        {
+            callThreeBinariesArgs.input1 = stinger::utils::base64Decode(tempInput1B64String);
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput2B64String = itr->value.GetString();
-            callThreeBinariesArgs.input2 = base64Decode(tempInput2B64String);
-        }
-        else
-        {
+            callThreeBinariesArgs.input2 = stinger::utils::base64Decode(tempInput2B64String);
+
+        } else {
             throw std::runtime_error("Received payload for the 'input2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempInput3B64String = itr->value.GetString();
-            callThreeBinariesArgs.input3 = base64Decode(tempInput3B64String);
-        }
-        else
-        {
+            callThreeBinariesArgs.input3 = stinger::utils::base64Decode(tempInput3B64String);
+
+        } else {
             callThreeBinariesArgs.input3 = std::nullopt;
         }
     }
@@ -1671,21 +1526,21 @@ void CallThreeBinariesRequestArguments::AddToRapidJsonObject(rapidjson::Value& p
 {
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput1StringValue;
-        std::string input1B64String = base64Encode(input1);
+        std::string input1B64String = stinger::utils::base64Encode(input1);
         tempInput1StringValue.SetString(input1B64String.c_str(), input1B64String.size(), allocator);
         parent.AddMember("input1", tempInput1StringValue, allocator);
     }
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput2StringValue;
-        std::string input2B64String = base64Encode(input2);
+        std::string input2B64String = stinger::utils::base64Encode(input2);
         tempInput2StringValue.SetString(input2B64String.c_str(), input2B64String.size(), allocator);
         parent.AddMember("input2", tempInput2StringValue, allocator);
     }
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempInput3StringValue;
-        std::string input3B64String = base64Encode(*input3);
+        std::string input3B64String = stinger::utils::base64Encode(*input3);
         tempInput3StringValue.SetString(input3B64String.c_str(), input3B64String.size(), allocator);
         parent.AddMember("input3", tempInput3StringValue, allocator);
     }
@@ -1698,37 +1553,31 @@ CallThreeBinariesReturnValues CallThreeBinariesReturnValues::FromRapidJsonObject
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput1B64String = itr->value.GetString();
-            callThreeBinariesRc.output1 = base64Decode(tempOutput1B64String);
-        }
-        else
-        {
+            callThreeBinariesRc.output1 = stinger::utils::base64Decode(tempOutput1B64String);
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput2B64String = itr->value.GetString();
-            callThreeBinariesRc.output2 = base64Decode(tempOutput2B64String);
-        }
-        else
-        {
+            callThreeBinariesRc.output2 = stinger::utils::base64Decode(tempOutput2B64String);
+
+        } else {
             throw std::runtime_error("Received payload for the 'output2' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output3");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempOutput3B64String = itr->value.GetString();
-            callThreeBinariesRc.output3 = base64Decode(tempOutput3B64String);
-        }
-        else
-        {
+            callThreeBinariesRc.output3 = stinger::utils::base64Decode(tempOutput3B64String);
+
+        } else {
             callThreeBinariesRc.output3 = std::nullopt;
         }
     }
@@ -1740,21 +1589,21 @@ void CallThreeBinariesReturnValues::AddToRapidJsonObject(rapidjson::Value& paren
 {
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput1StringValue;
-        std::string output1B64String = base64Encode(output1);
+        std::string output1B64String = stinger::utils::base64Encode(output1);
         tempOutput1StringValue.SetString(output1B64String.c_str(), output1B64String.size(), allocator);
         parent.AddMember("output1", tempOutput1StringValue, allocator);
     }
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput2StringValue;
-        std::string output2B64String = base64Encode(output2);
+        std::string output2B64String = stinger::utils::base64Encode(output2);
         tempOutput2StringValue.SetString(output2B64String.c_str(), output2B64String.size(), allocator);
         parent.AddMember("output2", tempOutput2StringValue, allocator);
     }
 
     { // Restrict Scope for binary base64 encoding
         rapidjson::Value tempOutput3StringValue;
-        std::string output3B64String = base64Encode(*output3);
+        std::string output3B64String = stinger::utils::base64Encode(*output3);
         tempOutput3StringValue.SetString(output3B64String.c_str(), output3B64String.size(), allocator);
         parent.AddMember("output3", tempOutput3StringValue, allocator);
     }
@@ -1767,22 +1616,18 @@ CallOneListOfIntegersRequestArguments CallOneListOfIntegersRequestArguments::Fro
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<int> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsInt())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsInt()) {
                         tempArray.push_back(item.GetInt());
                     }
                 }
                 callOneListOfIntegersArgs.input1 = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
@@ -1795,8 +1640,7 @@ void CallOneListOfIntegersRequestArguments::AddToRapidJsonObject(rapidjson::Valu
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: input1)
-        {
+        for (const auto& item: input1) {
             tempArrayValue.PushBack(item, allocator);
         }
         parent.AddMember("input1", tempArrayValue, allocator);
@@ -1810,22 +1654,18 @@ CallOneListOfIntegersReturnValues CallOneListOfIntegersReturnValues::FromRapidJs
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<int> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsInt())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsInt()) {
                         tempArray.push_back(item.GetInt());
                     }
                 }
                 callOneListOfIntegersRc.output1 = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
@@ -1838,8 +1678,7 @@ void CallOneListOfIntegersReturnValues::AddToRapidJsonObject(rapidjson::Value& p
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: output1)
-        {
+        for (const auto& item: output1) {
             tempArrayValue.PushBack(item, allocator);
         }
         parent.AddMember("output1", tempArrayValue, allocator);
@@ -1853,22 +1692,18 @@ CallOptionalListOfFloatsRequestArguments CallOptionalListOfFloatsRequestArgument
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<double> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsDouble())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsDouble()) {
                         tempArray.push_back(item.GetDouble());
                     }
                 }
                 callOptionalListOfFloatsArgs.input1 = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             callOptionalListOfFloatsArgs.input1 = std::nullopt;
         }
     }
@@ -1881,8 +1716,7 @@ void CallOptionalListOfFloatsRequestArguments::AddToRapidJsonObject(rapidjson::V
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: *input1)
-        {
+        for (const auto& item: *input1) {
             tempArrayValue.PushBack(item, allocator);
         }
         parent.AddMember("input1", tempArrayValue, allocator);
@@ -1896,22 +1730,18 @@ CallOptionalListOfFloatsReturnValues CallOptionalListOfFloatsReturnValues::FromR
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<double> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsDouble())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsDouble()) {
                         tempArray.push_back(item.GetDouble());
                     }
                 }
                 callOptionalListOfFloatsRc.output1 = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             callOptionalListOfFloatsRc.output1 = std::nullopt;
         }
     }
@@ -1924,8 +1754,7 @@ void CallOptionalListOfFloatsReturnValues::AddToRapidJsonObject(rapidjson::Value
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: *output1)
-        {
+        for (const auto& item: *output1) {
             tempArrayValue.PushBack(item, allocator);
         }
         parent.AddMember("output1", tempArrayValue, allocator);
@@ -1939,43 +1768,35 @@ CallTwoListsRequestArguments CallTwoListsRequestArguments::FromRapidJsonObject(c
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<Numbers> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsInt())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsInt()) {
                         tempArray.push_back(static_cast<Numbers>(item.GetInt()));
                     }
                 }
                 callTwoListsArgs.input1 = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'input1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("input2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<std::string> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsString())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsString()) {
                         tempArray.push_back(item.GetString());
                     }
                 }
                 callTwoListsArgs.input2 = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             callTwoListsArgs.input2 = std::nullopt;
         }
     }
@@ -1988,8 +1809,7 @@ void CallTwoListsRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: input1)
-        {
+        for (const auto& item: input1) {
             tempArrayValue.PushBack(static_cast<int>(item), allocator);
         }
         parent.AddMember("input1", tempArrayValue, allocator);
@@ -1998,8 +1818,7 @@ void CallTwoListsRequestArguments::AddToRapidJsonObject(rapidjson::Value& parent
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: *input2)
-        {
+        for (const auto& item: *input2) {
             rapidjson::Value tempInput2StringValue;
             tempInput2StringValue.SetString(item.c_str(), item.size(), allocator);
             tempArrayValue.PushBack(tempInput2StringValue, allocator);
@@ -2015,43 +1834,35 @@ CallTwoListsReturnValues CallTwoListsReturnValues::FromRapidJsonObject(const rap
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output1");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<Numbers> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsInt())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsInt()) {
                         tempArray.push_back(static_cast<Numbers>(item.GetInt()));
                     }
                 }
                 callTwoListsRc.output1 = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'output1' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("output2");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsArray())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsArray()) {
             {
                 std::vector<std::string> tempArray;
-                for (const auto& item: itr->value.GetArray())
-                {
-                    if (item.IsString())
-                    {
+                for (const auto& item: itr->value.GetArray()) {
+                    if (item.IsString()) {
                         tempArray.push_back(item.GetString());
                     }
                 }
                 callTwoListsRc.output2 = std::move(tempArray);
             }
-        }
-        else
-        {
+
+        } else {
             callTwoListsRc.output2 = std::nullopt;
         }
     }
@@ -2064,8 +1875,7 @@ void CallTwoListsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, ra
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: output1)
-        {
+        for (const auto& item: output1) {
             tempArrayValue.PushBack(static_cast<int>(item), allocator);
         }
         parent.AddMember("output1", tempArrayValue, allocator);
@@ -2074,8 +1884,7 @@ void CallTwoListsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, ra
     { // Restrict Scope for array serialization
         rapidjson::Value tempArrayValue;
         tempArrayValue.SetArray();
-        for (const auto& item: *output2)
-        {
+        for (const auto& item: *output2) {
             rapidjson::Value tempOutput2StringValue;
             tempOutput2StringValue.SetString(item.c_str(), item.size(), allocator);
             tempArrayValue.PushBack(tempOutput2StringValue, allocator);
@@ -2083,3 +1892,9 @@ void CallTwoListsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, ra
         parent.AddMember("output2", tempArrayValue, allocator);
     }
 }
+
+} // namespace testable
+
+} // namespace gen
+
+} // namespace stinger

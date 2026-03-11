@@ -48,15 +48,23 @@ def mock_connection():
 @pytest.fixture
 def client(mock_connection{%if stinger.properties | length > 0 %}, initial_property_values{%endif%}):
     """Fixture providing a {{stinger.name}} client with mocked connection."""
-    mock_discovery = DiscoveredInstance(
-        instance_id="test_instance",
+    mock_discovered_instance = DiscoveredInstance(
+        instance_id="x",
         {%if stinger.properties | length > 0 -%}
         initial_property_values=initial_property_values,
-        {%endif%}{# any properties #}   
+        {%endif%}{# any properties #}
+        info={{stinger.name|UpperCamelCase}}InterfaceInfo(
+            instance="x",
+            connection_topic="{{stinger.interface_info_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            timestamp="2024-01-01T00:00:00Z",
+            {%-for topic_param in config.topics.params %}
+            {{topic_param|snake_case}}="x",
+            {%-endfor%}
+        ),
     )
     client = {{stinger.name | UpperCamelCase}}Client(
         connection=mock_connection,
-        instance_info=mock_discovery,
+        instance_info=mock_discovered_instance,
     )
     return client
 
@@ -67,7 +75,7 @@ class TestClient:
     def test_client_initializes(self, client):
         """Test that client initializes successfully."""
         assert client is not None, "Client failed to initialize"
-        assert client.service_id == "test_instance", "Client service_id does not match expected value"
+        assert client.service_id == "x", "Client service_id does not match expected value"
 
 {%if stinger.properties | length > 0 %}
 class TestClientProperties:
@@ -95,6 +103,7 @@ class TestClientMethods:
         client.{{method_name|snake_case}}(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for '{{method_name|snake_case}}' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/{{method_name|lowerCamelCase}}"), f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
+        expected_topic = "{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        assert message.topic == expected_topic, f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
     {%endfor%}
 {%endif%}

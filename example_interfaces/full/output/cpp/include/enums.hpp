@@ -13,12 +13,16 @@ TODO: Get license text from stinger file
 #include <map>
 #include <string>
 
+namespace stinger {
+
+namespace gen {
+namespace full {
+
 /** 
  * @enum DayOfTheWeek
  * @brief The days of the week.
  */
-enum class DayOfTheWeek
-{
+enum class DayOfTheWeek {
     SUNDAY = 1, // First day of the week.
     MONDAY = 2,
     TUESDAY = 3,
@@ -47,8 +51,7 @@ static const std::map<int, std::string> dayOfTheWeekStrings = {
  * @enum MultiplesOfTen
  * @brief Enumeration of multiples of ten.
  */
-enum class MultiplesOfTen
-{
+enum class MultiplesOfTen {
     TEN = 10, // First multiple of ten.
     TWENTY = 20, // Second multiple of ten.
     THIRTY = 30,
@@ -66,3 +69,9 @@ static const std::map<int, std::string> multiplesOfTenStrings = {
 
     { 50, "Fifty" }
 };
+
+} // namespace full
+
+} // namespace gen
+
+} // namespace stinger

@@ -14,12 +14,16 @@ TODO: Get license text from stinger file
 #include "enums.hpp"
 #include "structs.hpp"
 
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
 /**
  * Weather will be retrieved for the provided location.
  * 
  */
-struct LocationProperty
-{
+struct LocationProperty {
     static LocationProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     double latitude;
@@ -32,8 +36,7 @@ struct LocationProperty
  * adjusted based on the latest conditions at the nearest weather station.
  * 
  */
-struct CurrentTemperatureProperty
-{
+struct CurrentTemperatureProperty {
     static CurrentTemperatureProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     double temperatureF;
@@ -44,8 +47,7 @@ struct CurrentTemperatureProperty
  * updated about once per hour.
  * 
  */
-struct CurrentConditionProperty
-{
+struct CurrentConditionProperty {
     static CurrentConditionProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     WeatherCondition condition;
@@ -59,8 +61,7 @@ struct CurrentConditionProperty
  * will have a value for each day of the week.
  * 
  */
-struct DailyForecastProperty
-{
+struct DailyForecastProperty {
     static DailyForecastProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     ForecastForDay monday; ///< This is the forecast for Monday.
@@ -74,8 +75,7 @@ struct DailyForecastProperty
  * hour.
  * 
  */
-struct HourlyForecastProperty
-{
+struct HourlyForecastProperty {
     static HourlyForecastProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     ForecastForHour hour0; ///< This is the forecast for the current hour.
@@ -89,8 +89,7 @@ struct HourlyForecastProperty
  * station are retrieved.
  * 
  */
-struct CurrentConditionRefreshIntervalProperty
-{
+struct CurrentConditionRefreshIntervalProperty {
     static CurrentConditionRefreshIntervalProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     int seconds;
@@ -100,8 +99,7 @@ struct CurrentConditionRefreshIntervalProperty
  * This is the maximum interval, in seconds, that the hourly forecast data is retrieved.
  * 
  */
-struct HourlyForecastRefreshIntervalProperty
-{
+struct HourlyForecastRefreshIntervalProperty {
     static HourlyForecastRefreshIntervalProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     int seconds; ///< Interval duration in seconds.
@@ -111,9 +109,14 @@ struct HourlyForecastRefreshIntervalProperty
  * This is the maximum interval, in seconds, that the daily forecast data is retrieved.
  * 
  */
-struct DailyForecastRefreshIntervalProperty
-{
+struct DailyForecastRefreshIntervalProperty {
     static DailyForecastRefreshIntervalProperty FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     int seconds;
 };
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

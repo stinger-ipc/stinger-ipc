@@ -5,38 +5,39 @@
 #include <syslog.h>
 #include <chrono>
 #include <thread>
-#include "utils.hpp"
-#include "broker.hpp"
 #include "client.hpp"
 #include "structs.hpp"
 #include "discovery.hpp"
 #include "enums.hpp"
-#include "interface_exceptions.hpp"
+#include <stinger/error/return_codes.hpp>
+#include <stinger/mqtt/brokerconnection.hpp>
+
+using namespace stinger::gen::{{stinger.name|snake_case}};
 
 int main(int argc, char** argv)
 {
     // Create a connection to the broker
-    auto conn = std::make_shared<MqttBrokerConnection>("localhost", 1883, "{{stinger.name|snake_case|replace('_', '-')}}-client-demo");
+    auto conn = std::make_shared<stinger::mqtt::BrokerConnection>("localhost", 1883, "{{stinger.name|snake_case|replace('_', '-')}}-client-demo");
     conn->SetLogLevel(LOG_DEBUG);
     conn->SetLogFunction([](int level, const char* msg) {
         std::cout << "[" << level << "] " << msg << std::endl;
     });
 
     // Discover a service ID for a {{stinger.name}} service.
-    std::string serviceId;
+    InstanceInfo serviceInfo;
     { // restrict scope
         {{stinger.name|UpperCamelCase}}Discovery discovery(conn);
-        auto serviceIdFut = discovery.GetSingleton();
-        auto serviceIdFutStatus = serviceIdFut.wait_for(std::chrono::seconds(15));
-        if (serviceIdFutStatus == std::future_status::timeout) {
+        auto serviceInfoFut = discovery.GetSingleton();
+        auto serviceInfoFutStatus = serviceInfoFut.wait_for(std::chrono::seconds(15));
+        if (serviceInfoFutStatus == std::future_status::timeout) {
             std::cerr << "Failed to discover service instance within timeout." << std::endl;
             return 1;
         }
-        serviceId = serviceIdFut.get();
+        serviceInfo = serviceInfoFut.get();
     }
 
     // Create the client object.
-    {{stinger.cpp.client_class_name}} client(conn, serviceId);
+    {{stinger.cpp.client_class_name}} client(conn, serviceInfo);
 
     // Register callbacks for signals.
     {%-for sig_name, sig in stinger.signals.items() %}
@@ -47,10 +48,10 @@ int main(int argc, char** argv)
         {%if arg.optional%}
         std::string {{arg.name|lowerCamelCase}}Str = "None";
         if ({{arg.name|lowerCamelCase}}) {
-            std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString(*{{arg.name|lowerCamelCase}});
+            std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::timePointToIsoString(*{{arg.name|lowerCamelCase}});
         }
         {%else-%}
-        std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString({{arg.name|lowerCamelCase}});
+        std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::timePointToIsoString({{arg.name|lowerCamelCase}});
         {%endif%}{# end optional datetime -#}
         {%elif arg.arg_type.name.lower() == 'binary'%}
         std::string {{arg.name|lowerCamelCase}}Str = "[Binary Data]";
@@ -58,10 +59,10 @@ int main(int argc, char** argv)
         {%if arg.optional%}
         std::string {{arg.name|lowerCamelCase}}Str = "None";
         if ({{arg.name|lowerCamelCase}}) {
-            std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString(*{{arg.name|lowerCamelCase}});
+            std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::durationToIsoString(*{{arg.name|lowerCamelCase}});
         }
         {%else-%}
-        std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString({{arg.name|lowerCamelCase}});
+        std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::durationToIsoString({{arg.name|lowerCamelCase}});
         {%-endif%}{# end optional duration #}
         {%-endif%}{# end datetime/binary/duration #}
         {%-endfor%}{# end loop through arg list#}
@@ -90,19 +91,19 @@ int main(int argc, char** argv)
         {%if arg.optional%}
         std::string {{arg.name|lowerCamelCase}}Str = "None";
         if ({{arg.name|lowerCamelCase}}) {
-            std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString(*{{arg.name|lowerCamelCase}});
+            std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::timePointToIsoString(*{{arg.name|lowerCamelCase}});
         }
         {%else%} {# not optional #}
-        std::string {{arg.name|lowerCamelCase}}Str = timePointToIsoString({{arg.name|lowerCamelCase}});
+        std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::timePointToIsoString({{arg.name|lowerCamelCase}});
         {%endif%} {# optionality #}
         {%elif arg.arg_type.name.lower() == 'duration'%}
         {%if arg.optional%}
         std::string {{arg.name|lowerCamelCase}}Str = "None";
         if ({{arg.name|lowerCamelCase}}) {
-            std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString(*{{arg.name|lowerCamelCase}});
+            std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::durationToIsoString(*{{arg.name|lowerCamelCase}});
         }
         {%else%}
-        std::string {{arg.name|lowerCamelCase}}Str = durationToIsoString({{arg.name|lowerCamelCase}});
+        std::string {{arg.name|lowerCamelCase}}Str = stinger::utils::durationToIsoString({{arg.name|lowerCamelCase}});
         {%endif%}
         {%endif%}{%endfor-%}
         std::cout << "Received update for {{prop_name}} property: " << {# #}
@@ -152,7 +153,7 @@ int main(int argc, char** argv)
             {
                 returnValue = {{method_name|camelCase}}ResultFuture.get();
                 success = true;
-            } catch (const StingerMethodException& ex)
+            } catch (const stinger::error::StingerMethodException& ex)
             {
                 std::cout << "{{method_name|CONST_CASE}} Exception: " << ex.what() << std::endl;
             }
@@ -166,9 +167,9 @@ int main(int argc, char** argv)
                 {
                     std::cout {%-endif-%}<<
                     {%-if arg.arg_type.name.lower() == "datetime"%}
-                    timePointToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
+                    stinger::utils::timePointToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
                     {%-elif arg.arg_type.name.lower() == "duration"%}
-                    durationToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
+                    stinger::utils::durationToIsoString({%if arg.optional%}*{%endif%}{{var_name}})
                     {%-elif arg.arg_type.name.lower() == "enum"%}
                     {{arg.enum.name | camelCase }}Strings.at(static_cast<int>({%if arg.optional%}*{%endif%}{{var_name}}))
                     {%-elif arg.arg_type.name.lower() == "struct"%}

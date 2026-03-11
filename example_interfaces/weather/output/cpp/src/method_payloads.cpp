@@ -2,7 +2,12 @@
 #include "method_payloads.hpp"
 
 #include <rapidjson/document.h>
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace weather {
 
 // --- (De-)Serialization for refresh_daily_forecast method request arguments ---
 RefreshDailyForecastRequestArguments RefreshDailyForecastRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -75,3 +80,9 @@ RefreshCurrentConditionsReturnValues RefreshCurrentConditionsReturnValues::FromR
 void RefreshCurrentConditionsReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
 }
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

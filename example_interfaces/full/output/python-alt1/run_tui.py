@@ -1,12 +1,35 @@
 #!/usr/bin/env python3
 """Launch the FullIPC TUI."""
 
+import argparse
 import logging
 from fullipc.tui.app import FullIPCApp
 
 
 def main():
     """Run the TUI application."""
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="FullIPC TUI Application")
+    parser.add_argument(
+        "--cafile",
+        help="Path to CA certificate file for TLS certificate validation",
+    )
+    parser.add_argument(
+        "--capath",
+        help="Path to directory containing CA certificates for TLS",
+    )
+    parser.add_argument(
+        "--cert",
+        help="Path to client certificate file for TLS client authentication",
+    )
+    parser.add_argument(
+        "--insecure",
+        action="store_true",
+        help="Disable TLS certificate verification (not recommended for production)",
+    )
+    args = parser.parse_args()
+
     # Remove all existing handlers and configure logging to file
     root_logger = logging.getLogger()
     for handler in root_logger.handlers[:]:
@@ -21,6 +44,13 @@ def main():
     logging.debug("Starting FullIPC TUI application.")
 
     app = FullIPCApp()
+    # Store TLS configuration in the app
+    app.tls_config = {
+        "cafile": args.cafile,
+        "capath": args.capath,
+        "cert": args.cert,
+        "insecure": args.insecure,
+    }
     app.run()
 
 

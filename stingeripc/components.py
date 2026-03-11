@@ -4,18 +4,17 @@ from enum import Enum
 import random
 from abc import abstractmethod
 from typing import Any, Optional, Mapping
-from .topic import (
-    SignalTopicCreator,
-    InterfaceTopicCreator,
-    MethodTopicCreator,
-    PropertyTopicCreator,
-)
+
+from stingeripc.config import StingerConfig, TopicConfig
+
+from . import topic_util
 from .lang_symb import *
 from .args import ArgType, ArgPrimitiveType
-from .exceptions import InvalidStingerStructure
+from .exceptions import InvalidStingerStructure, InvalidConfiguration
 from jacobsjinjatoo import stringmanip
 from copy import copy
 from stevedore import ExtensionManager
+from pydantic import BaseModel
 
 YamlArg = Mapping[str, str | bool]
 YamlArgList = list[YamlArg]
@@ -244,7 +243,8 @@ class Arg:
         raise RuntimeError(f"unknown arg type: {arg_spec['type']}")
 
     @abstractmethod
-    def get_random_example_value(self, lang="python", seed: int = 0): ...
+    def get_random_example_value(self, lang="python", seed: int = 0):
+        pass
 
 
 class ArgEnum(Arg, LanguageSymbolMixin):
@@ -326,6 +326,10 @@ class ArgEnum(Arg, LanguageSymbolMixin):
                 retval = f"{self._enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)}"
         elif lang == "json":
             retval = str(random.randint(1, len(self._enum.items)))
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            retval = getattr(self, lang).get_random_example_value(seed=seed)
+        else:
+            raise RuntimeError(f"Unknown language for enum random example value: {lang}")
         random.setstate(random_state)
         return retval
 
@@ -522,6 +526,8 @@ class ArgStruct(Arg, LanguageSymbolMixin):
             )
         elif lang == "json":
             return "{" + ", ".join([f'"{k}": {v}' for k, v in example_list.items()]) + "}"
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            return getattr(self, lang).get_random_example_value(seed=seed)
         return None
 
     def __str__(self) -> str:
@@ -588,6 +594,8 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
             return "std::chrono::system_clock::now()"
         elif lang == "json":
             return '"1990-07-08T16:20:00Z"'
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            return getattr(self, lang).get_random_example_value(seed=seed)
         return None
 
     def __str__(self) -> str:
@@ -653,6 +661,8 @@ class ArgDuration(Arg, LanguageSymbolMixin):
                 retval = f"chrono::Duration::seconds({random.randint(1, 3600)})"
         elif lang in ["c++", "cpp"]:
             retval = f"std::chrono::duration<double>({random.randint(1, 3600)})"
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            retval = getattr(self, lang).get_random_example_value(seed=seed)
         random.setstate(random_state)
         return retval
 
@@ -713,6 +723,8 @@ class ArgBinary(Arg, LanguageSymbolMixin):
             return 'vec![101, 120, 97, 109, 112, 108, 101]'  # "example" in ASCII bytes
         elif lang in ["c++", "cpp"]:
             return 'std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            return getattr(self, lang).get_random_example_value(seed=seed)
         return None
 
     def __str__(self) -> str:
@@ -775,7 +787,9 @@ class ArgArray(Arg, LanguageSymbolMixin):
                 return f"Some(vec![{example_value}, {example_value2}, {example_value3}])"
             return f"vec![{example_value}, {example_value2}]"
         elif lang in ["c++", "cpp"]:
-            return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value2}}}"
+            return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"
+        elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
+            return getattr(self, lang).get_random_example_value(seed=seed)
         return None
 
     def __str__(self) -> str:
@@ -787,9 +801,11 @@ class ArgArray(Arg, LanguageSymbolMixin):
 
 class InterfaceComponent:
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, root: StingerSpec):
         self._name = name
         self._documentation: Optional[str] = None
+        self._config = root._config
+        self._root = root
 
     @property
     def name(self) -> str:
@@ -812,10 +828,9 @@ class InterfaceComponent:
 
 
 class Signal(InterfaceComponent, LanguageSymbolMixin):
-    def __init__(self, topic_creator: SignalTopicCreator, name: str):
-        InterfaceComponent.__init__(self, name)
+    def __init__(self, name: str, root: StingerSpec):
+        InterfaceComponent.__init__(self, name, root)
         LanguageSymbolMixin.__init__(self)
-        self._topic_creator = topic_creator
         self._arg_list: list[Arg] = []
 
     def add_arg(self, arg: Arg) -> Signal:
@@ -828,20 +843,20 @@ class Signal(InterfaceComponent, LanguageSymbolMixin):
     def arg_list(self) -> list[Arg]:
         return self._arg_list
 
-    @property
-    def topic(self) -> str:
-        return self._topic_creator.signal_topic(self.name)
+    def topic(self, **kwargs) -> str:
+        template_topic = self._config.topics.signals
+        template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, signal_name=self.name, **kwargs)
+        return template_topic
 
     @classmethod
     def new_signal_from_stinger(
         cls,
-        topic_creator: SignalTopicCreator,
         name: str,
         signal_spec: dict[str, str],
-        stinger_spec: Optional[StingerSpec] = None,
+        stinger_spec: StingerSpec,
     ) -> "Signal":
         """Alternative constructor from a Stinger signal structure."""
-        signal = cls(topic_creator, name)
+        signal = cls(name, stinger_spec)
         if "payload" not in signal_spec:
             raise InvalidStingerStructure("Signal specification must have 'payload'")
         if not isinstance(signal_spec["payload"], list):
@@ -862,10 +877,9 @@ class Signal(InterfaceComponent, LanguageSymbolMixin):
 
 class Method(InterfaceComponent, LanguageSymbolMixin):
 
-    def __init__(self, topic_creator: MethodTopicCreator, name: str):
-        InterfaceComponent.__init__(self, name)
+    def __init__(self, name: str, root: StingerSpec):
+        InterfaceComponent.__init__(self, name, root)
         LanguageSymbolMixin.__init__(self)
-        self._topic_creator = topic_creator
         self._arg_list: list[Arg] = []
         self._return_value: Arg | list[Arg] | None = None
         self._return_arg_list: list[Arg] = []
@@ -893,6 +907,16 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
                 )
             self._return_value = [self._return_value, value]
         return self
+
+    def request_topic(self, **kwargs) -> str:
+        template_topic = self._config.topics.method_requests
+        template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, method_name=self.name, **kwargs)
+        return template_topic
+
+    def response_topic(self, **kwargs) -> str:
+        template_topic = self._config.topics.method_responses
+        template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, method_name=self.name, **kwargs)
+        return template_topic
 
     @property
     def arg_list(self) -> list[Arg]:
@@ -999,9 +1023,9 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
                 return f"{self.return_value_python_type}({s})"
             else:
                 raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
-        if lang == "c++" or lang == "cpp":
+        if lang in ["c++", "cpp", "qt"]:
             if self._return_value is None:
-                return "null"
+                return "nullptr"
             elif isinstance(self._return_value, Arg):
                 return self._return_value.get_random_example_value(lang, seed)
             elif isinstance(self._return_value, list):
@@ -1013,23 +1037,15 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
                 )
         raise RuntimeError(f"No random example for return value for {lang}")
 
-    @property
-    def topic(self) -> str:
-        return self._topic_creator.method_topic(self.name)
-
-    def response_topic(self, iface_name, client_id) -> str:
-        return self._topic_creator.method_response_topic(self.name, iface_name, client_id)
-
     @classmethod
     def new_method_from_stinger(
         cls,
-        topic_creator: MethodTopicCreator,
         name: str,
         method_spec: dict[str, str],
-        stinger_spec: Optional[StingerSpec] = None,
+        stinger_spec: StingerSpec,
     ) -> "Method":
         """Alternative constructor from a Stinger method structure."""
-        method = cls(topic_creator, name)
+        method = cls(name, stinger_spec)
         if "arguments" not in method_spec:
             raise InvalidStingerStructure(
                 f"Method '{name}' specification must have 'arguments'"
@@ -1063,10 +1079,9 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
 
 class Property(InterfaceComponent, LanguageSymbolMixin):
 
-    def __init__(self, topic_creator: PropertyTopicCreator, name: str):
-        InterfaceComponent.__init__(self, name)
+    def __init__(self, name: str, root: StingerSpec):
+        InterfaceComponent.__init__(self, name, root)
         LanguageSymbolMixin.__init__(self)
-        self._topic_creator = topic_creator
         self._arg_list: list[Arg] = []
         self._read_only = False
 
@@ -1075,6 +1090,21 @@ class Property(InterfaceComponent, LanguageSymbolMixin):
             raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
         self._arg_list.append(arg)
         return self
+
+    def value_topic(self, **kwargs) -> str:
+        template_topic = self._config.topics.property_values
+        template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
+        return template_topic
+
+    def update_topic(self, **kwargs) -> str:
+        template_topic = self._config.topics.property_updates
+        template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
+        return template_topic
+
+    def response_topic(self, **kwargs) -> str:
+        template_topic = self._config.topics.property_update_responses
+        template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
+        return template_topic
 
     @property
     def python_local_type(self) -> str:
@@ -1113,30 +1143,18 @@ class Property(InterfaceComponent, LanguageSymbolMixin):
         return self._arg_list
 
     @property
-    def value_topic(self) -> str:
-        return self._topic_creator.property_value_topic(self.name)
-
-    @property
-    def update_topic(self) -> str:
-        return self._topic_creator.property_update_topic(self.name)
-
-    def response_topic(self, iface_name, client_id) -> str:
-        return self._topic_creator.property_response_topic(self.name, iface_name, client_id)
-
-    @property
     def read_only(self) -> bool:
         return self._read_only
 
     @classmethod
     def new_method_from_stinger(
         cls,
-        topic_creator: PropertyTopicCreator,
         name: str,
         prop_spec: YamlIfaceProperty,
-        stinger_spec: Optional[StingerSpec] = None,
+        stinger_spec: StingerSpec,
     ) -> "Property":
         """Alternative constructor from a Stinger method structure."""
-        prop_obj = cls(topic_creator, name)
+        prop_obj = cls(name, stinger_spec)
         if "values" not in prop_spec:
             raise InvalidStingerStructure("Property specification must have 'values'")
         if not isinstance(prop_spec["values"], list):
@@ -1340,9 +1358,9 @@ class InterfaceStruct(LanguageSymbolMixin):
 
 class StingerSpec(LanguageSymbolMixin):
 
-    def __init__(self, topic_creator: InterfaceTopicCreator, interface: dict[str, Any]):
+    def __init__(self, interface: dict[str, Any], config: StingerConfig):
         LanguageSymbolMixin.__init__(self)
-        self._topic_creator = topic_creator
+        self._config = config
         try:
             self._name: str = interface["name"]
             self._version: str = interface["version"]
@@ -1353,6 +1371,14 @@ class StingerSpec(LanguageSymbolMixin):
         except TypeError:
             raise InvalidStingerStructure(
                 f"Interface didn't appear to have a correct type"
+            )
+
+        assert isinstance(config, StingerConfig), f"Config must be a StingerConfig object. Got {type(config)}"
+        assert isinstance(config.topics, TopicConfig), f"Config must have a TopicConfig object in its 'topics' property. Got {type(config.topics)}"
+
+        if not topic_util.is_valid_topic_template(self._config.topics.interface_discovery, self._config.topics.params):
+            raise InvalidConfiguration(
+                f"Interface discovery topic template '{self._config.topics.interface_discovery}' is not valid. "
             )
 
         self._summary = interface.get("summary")
@@ -1386,9 +1412,10 @@ class StingerSpec(LanguageSymbolMixin):
             15: "Service Unavailable",
         }
 
-    @property
     def interface_info_topic(self) -> str:
-        return self._topic_creator.interface_info_topic()
+        topic_template = self._config.topics.interface_discovery
+        topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name)
+        return topic_template
 
     @property
     def summary(self) -> str:
@@ -1426,13 +1453,6 @@ class StingerSpec(LanguageSymbolMixin):
         assert interface_struct is not None
         self.structs[interface_struct.name] = interface_struct
 
-    @property
-    def interface_info(self) -> tuple[str, dict[str, str]]:
-        # Return the topic and the minimal info mapping used by AsyncAPI generation
-        topic = self.interface_info_topic
-        info = {"version": self.version, "title": self.title}
-        return (topic, info)
-
     def uses_enums(self) -> bool:
         return bool(self.enums)
 
@@ -1449,19 +1469,48 @@ class StingerSpec(LanguageSymbolMixin):
     def version(self):
         return self._version
 
-    def all_methods_response_topic(self, client_id: str) -> str:
-        for method in self.methods.values():
-            return method.response_topic(self._name, client_id)
-        raise RuntimeError("No methods defined in stinger spec")
+    @property
+    def signal_qos(self) -> int:
+        return 2
 
-    def all_properties_response_topic(self, client_id: str) -> str:
-        for prop in self.properties.values():
-            return prop.response_topic(self._name, client_id)
-        raise RuntimeError("No properties defined in stinger spec")
+    @property
+    def method_request_qos(self) -> int:
+        return 2
+
+    def all_methods_response_topic(self) -> str:
+        topic_template = self._config.topics.method_responses
+        topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, method_name="+")
+        return topic_template
+
+    @property
+    def method_response_qos(self) -> int:
+        return 1
+
+    @property
+    def property_value_qos(self) -> int:
+        return 1
+    
+    @property
+    def property_update_qos(self) -> int:
+        return 1
+
+    def all_properties_response_topic(self) -> str:
+        topic_template = self._config.topics.property_update_responses
+        topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, property_name="+")
+        return topic_template
+
+    @property
+    def property_response_qos(self) -> int:
+        return 1
+
+    def all_properties_value_topic(self) -> str:
+        topic_template = self._config.topics.property_values
+        topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, property_name="+")
+        return topic_template
 
     @classmethod
     def new_spec_from_stinger(
-        cls, topic_creator, stinger: dict[str, Any]
+        cls, stinger: dict[str, Any], config: StingerConfig
     ) -> StingerSpec:
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
@@ -1472,7 +1521,7 @@ class StingerSpec(LanguageSymbolMixin):
                 f"Unsupported stinger spec version {stinger['stingeripc']['version']}"
             )
 
-        stinger_spec = StingerSpec(topic_creator, stinger["interface"])
+        stinger_spec = StingerSpec(stinger["interface"], config)
 
         # Enums must come before other components because other components may use enum values.
         try:
@@ -1507,7 +1556,6 @@ class StingerSpec(LanguageSymbolMixin):
             if "signals" in stinger:
                 for signal_name, signal_spec in stinger["signals"].items():
                     signal = Signal.new_signal_from_stinger(
-                        topic_creator.signal_topic_creator(),
                         signal_name,
                         signal_spec,
                         stinger_spec,
@@ -1525,7 +1573,6 @@ class StingerSpec(LanguageSymbolMixin):
             if "methods" in stinger:
                 for method_name, method_spec in stinger["methods"].items():
                     method = Method.new_method_from_stinger(
-                        topic_creator.method_topic_creator(),
                         method_name,
                         method_spec,
                         stinger_spec,
@@ -1543,7 +1590,6 @@ class StingerSpec(LanguageSymbolMixin):
             if "properties" in stinger:
                 for prop_name, prop_spec in stinger["properties"].items():
                     prop = Property.new_method_from_stinger(
-                        topic_creator.property_topic_creator(),
                         prop_name,
                         prop_spec,
                         stinger_spec,

@@ -39,13 +39,19 @@ def mock_connection():
 @pytest.fixture
 def client(mock_connection, initial_property_values):
     """Fixture providing a Simple client with mocked connection."""
-    mock_discovery = DiscoveredInstance(
-        instance_id="test_instance",
+    mock_discovered_instance = DiscoveredInstance(
+        instance_id="x",
         initial_property_values=initial_property_values,
+        info=SimpleInterfaceInfo(
+            instance="x",
+            connection_topic="x/Simple/x/interface",
+            timestamp="2024-01-01T00:00:00Z",
+            prefix="x",
+        ),
     )
     client = SimpleClient(
         connection=mock_connection,
-        instance_info=mock_discovery,
+        instance_info=mock_discovered_instance,
     )
     return client
 
@@ -56,7 +62,7 @@ class TestClient:
     def test_client_initializes(self, client):
         """Test that client initializes successfully."""
         assert client is not None, "Client failed to initialize"
-        assert client.service_id == "test_instance", "Client service_id does not match expected value"
+        assert client.service_id == "x", "Client service_id does not match expected value"
 
 
 class TestClientProperties:
@@ -78,4 +84,5 @@ class TestClientMethods:
         client.trade_numbers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'trade_numbers' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/tradeNumbers"), f"Incorrect topic for 'trade_numbers' method call: {message.topic}"
+        expected_topic = "x/Simple/x/method/trade_numbers/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'trade_numbers' method call: {message.topic}"

@@ -52,7 +52,7 @@ def initial_property_values():
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -84,7 +84,7 @@ def initial_property_values():
             optional_string="apples",
             optional_enum=Numbers.ONE,
             optional_entry_object=Entry(key=42, value="apples"),
-            optional_date_time=datetime.now(UTC),
+            optional_date_time=None,
             optional_duration=None,
             optional_binary=b"example binary data",
             array_of_integers=[42, 2022],
@@ -117,7 +117,7 @@ def initial_property_values():
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -149,7 +149,7 @@ def initial_property_values():
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -212,13 +212,19 @@ def mock_connection():
 @pytest.fixture
 def client(mock_connection, initial_property_values):
     """Fixture providing a testable client with mocked connection."""
-    mock_discovery = DiscoveredInstance(
-        instance_id="test_instance",
+    mock_discovered_instance = DiscoveredInstance(
+        instance_id="x",
         initial_property_values=initial_property_values,
+        info=TestableInterfaceInfo(
+            instance="x",
+            connection_topic="x/testable/x/interface",
+            timestamp="2024-01-01T00:00:00Z",
+            prefix="x",
+        ),
     )
     client = TestableClient(
         connection=mock_connection,
-        instance_info=mock_discovery,
+        instance_info=mock_discovered_instance,
     )
     return client
 
@@ -229,7 +235,7 @@ class TestClient:
     def test_client_initializes(self, client):
         """Test that client initializes successfully."""
         assert client is not None, "Client failed to initialize"
-        assert client.service_id == "test_instance", "Client service_id does not match expected value"
+        assert client.service_id == "x", "Client service_id does not match expected value"
 
 
 class TestClientProperties:
@@ -342,7 +348,8 @@ class TestClientMethods:
         client.call_with_nothing(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_with_nothing' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callWithNothing"), f"Incorrect topic for 'call_with_nothing' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callWithNothing/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_with_nothing' method call: {message.topic}"
 
     def test_call_one_integer_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -351,7 +358,8 @@ class TestClientMethods:
         client.call_one_integer(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_integer' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneInteger"), f"Incorrect topic for 'call_one_integer' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOneInteger/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_one_integer' method call: {message.topic}"
 
     def test_call_optional_integer_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -360,7 +368,8 @@ class TestClientMethods:
         client.call_optional_integer(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_integer' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalInteger"), f"Incorrect topic for 'call_optional_integer' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOptionalInteger/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_optional_integer' method call: {message.topic}"
 
     def test_call_three_integers_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -371,7 +380,8 @@ class TestClientMethods:
         client.call_three_integers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_integers' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeIntegers"), f"Incorrect topic for 'call_three_integers' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callThreeIntegers/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_three_integers' method call: {message.topic}"
 
     def test_call_one_string_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -380,7 +390,8 @@ class TestClientMethods:
         client.call_one_string(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_string' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneString"), f"Incorrect topic for 'call_one_string' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOneString/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_one_string' method call: {message.topic}"
 
     def test_call_optional_string_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -389,7 +400,8 @@ class TestClientMethods:
         client.call_optional_string(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_string' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalString"), f"Incorrect topic for 'call_optional_string' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOptionalString/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_optional_string' method call: {message.topic}"
 
     def test_call_three_strings_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -400,7 +412,8 @@ class TestClientMethods:
         client.call_three_strings(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_strings' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeStrings"), f"Incorrect topic for 'call_three_strings' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callThreeStrings/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_three_strings' method call: {message.topic}"
 
     def test_call_one_enum_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -409,7 +422,8 @@ class TestClientMethods:
         client.call_one_enum(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_enum' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneEnum"), f"Incorrect topic for 'call_one_enum' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOneEnum/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_one_enum' method call: {message.topic}"
 
     def test_call_optional_enum_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -418,7 +432,8 @@ class TestClientMethods:
         client.call_optional_enum(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_enum' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalEnum"), f"Incorrect topic for 'call_optional_enum' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOptionalEnum/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_optional_enum' method call: {message.topic}"
 
     def test_call_three_enums_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -429,7 +444,8 @@ class TestClientMethods:
         client.call_three_enums(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_enums' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeEnums"), f"Incorrect topic for 'call_three_enums' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callThreeEnums/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_three_enums' method call: {message.topic}"
 
     def test_call_one_struct_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -447,7 +463,7 @@ class TestClientMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -469,7 +485,8 @@ class TestClientMethods:
         client.call_one_struct(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_struct' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneStruct"), f"Incorrect topic for 'call_one_struct' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOneStruct/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_one_struct' method call: {message.topic}"
 
     def test_call_optional_struct_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -487,7 +504,7 @@ class TestClientMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -509,7 +526,8 @@ class TestClientMethods:
         client.call_optional_struct(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_struct' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalStruct"), f"Incorrect topic for 'call_optional_struct' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOptionalStruct/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_optional_struct' method call: {message.topic}"
 
     def test_call_three_structs_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -559,7 +577,7 @@ class TestClientMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -613,7 +631,8 @@ class TestClientMethods:
         client.call_three_structs(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_structs' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeStructs"), f"Incorrect topic for 'call_three_structs' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callThreeStructs/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_three_structs' method call: {message.topic}"
 
     def test_call_one_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -622,7 +641,8 @@ class TestClientMethods:
         client.call_one_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_date_time' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneDateTime"), f"Incorrect topic for 'call_one_date_time' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOneDateTime/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_one_date_time' method call: {message.topic}"
 
     def test_call_optional_date_time_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -631,18 +651,20 @@ class TestClientMethods:
         client.call_optional_date_time(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_date_time' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalDateTime"), f"Incorrect topic for 'call_optional_date_time' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOptionalDateTime/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_optional_date_time' method call: {message.topic}"
 
     def test_call_three_date_times_method_call_sends_request(self, mock_connection, client):
         kwargs = {
             "input1": datetime.now(UTC),
             "input2": datetime.now(UTC),
-            "input3": datetime.now(UTC),
+            "input3": None,
         }  # type: Dict[str, Any]
         client.call_three_date_times(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_date_times' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeDateTimes"), f"Incorrect topic for 'call_three_date_times' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callThreeDateTimes/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_three_date_times' method call: {message.topic}"
 
     def test_call_one_duration_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -651,7 +673,8 @@ class TestClientMethods:
         client.call_one_duration(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_duration' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneDuration"), f"Incorrect topic for 'call_one_duration' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOneDuration/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_one_duration' method call: {message.topic}"
 
     def test_call_optional_duration_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -660,7 +683,8 @@ class TestClientMethods:
         client.call_optional_duration(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_duration' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalDuration"), f"Incorrect topic for 'call_optional_duration' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOptionalDuration/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_optional_duration' method call: {message.topic}"
 
     def test_call_three_durations_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -671,7 +695,8 @@ class TestClientMethods:
         client.call_three_durations(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_durations' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeDurations"), f"Incorrect topic for 'call_three_durations' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callThreeDurations/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_three_durations' method call: {message.topic}"
 
     def test_call_one_binary_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -680,7 +705,8 @@ class TestClientMethods:
         client.call_one_binary(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_binary' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneBinary"), f"Incorrect topic for 'call_one_binary' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOneBinary/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_one_binary' method call: {message.topic}"
 
     def test_call_optional_binary_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -689,7 +715,8 @@ class TestClientMethods:
         client.call_optional_binary(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_binary' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalBinary"), f"Incorrect topic for 'call_optional_binary' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOptionalBinary/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_optional_binary' method call: {message.topic}"
 
     def test_call_three_binaries_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -700,7 +727,8 @@ class TestClientMethods:
         client.call_three_binaries(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_three_binaries' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callThreeBinaries"), f"Incorrect topic for 'call_three_binaries' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callThreeBinaries/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_three_binaries' method call: {message.topic}"
 
     def test_call_one_list_of_integers_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -709,7 +737,8 @@ class TestClientMethods:
         client.call_one_list_of_integers(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_one_list_of_integers' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOneListOfIntegers"), f"Incorrect topic for 'call_one_list_of_integers' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOneListOfIntegers/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_one_list_of_integers' method call: {message.topic}"
 
     def test_call_optional_list_of_floats_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -718,7 +747,8 @@ class TestClientMethods:
         client.call_optional_list_of_floats(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_optional_list_of_floats' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callOptionalListOfFloats"), f"Incorrect topic for 'call_optional_list_of_floats' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callOptionalListOfFloats/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_optional_list_of_floats' method call: {message.topic}"
 
     def test_call_two_lists_method_call_sends_request(self, mock_connection, client):
         kwargs = {
@@ -728,4 +758,5 @@ class TestClientMethods:
         client.call_two_lists(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'call_two_lists' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/callTwoLists"), f"Incorrect topic for 'call_two_lists' method call: {message.topic}"
+        expected_topic = "x/testable/x/method/callTwoLists/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'call_two_lists' method call: {message.topic}"

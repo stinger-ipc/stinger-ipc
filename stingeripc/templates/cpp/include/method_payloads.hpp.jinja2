@@ -13,10 +13,13 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include "structs.hpp"
 
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
 
 {%for method_name, method in stinger.methods.items()%}
 
@@ -42,3 +45,8 @@ struct {{method_name | UpperCamelCase}}ReturnValues {
     {%endif%}
 };
 {%-endfor%}
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

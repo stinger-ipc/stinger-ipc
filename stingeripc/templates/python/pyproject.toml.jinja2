@@ -9,7 +9,7 @@ dependencies = [
     "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
     "pyqttier>=0.2.5",
-    "stinger-python-utils>=0.1.5",
+    "stinger-python-utils>=0.1.8",
     {%if config.python.python37%}"typing-extensions>=4.0.0",{%endif%}
 ]
 
@@ -18,6 +18,8 @@ dependencies = [
 dev = [
     "pytest>=8.4.0",
     "mypy>=1.19.1",
+    "mypy-gitlab-code-quality==1.3.0",
+    "pytest-gitlab-code-quality==0.3.0",
 ]
 {%endif%}
 
@@ -32,7 +34,7 @@ build-backend = "setuptools.build_meta"
 
 {%if not config.python.python37%}
 [project.scripts]
-{{stinger.name|hyphen_case}}-tui = "{{stinger.name|snake_case}}ipc.tui.app:main"
+{{stinger.name|hyphen_case}}-tui = "{{stinger.name|loweronly}}ipc.tui.app:main"
 {%endif%}
 
 [tool.setuptools.package-data]
@@ -47,3 +49,6 @@ module = [
     "textual.*",
 ]
 ignore_missing_imports = true
+
+[project.entry-points."stinger_python_utils.mcp_plugins"]
+{{stinger.name|snake_case}} = "{{stinger.name|loweronly}}ipc.mcp:{{stinger.name|UpperCamelCase}}MCPPlugin"

@@ -8,7 +8,6 @@ from signalonlyipc.client import SignalOnlyClient, SignalOnlyClientBuilder, Sign
 from signalonlyipc.interface_types import *
 import threading
 
-
 if __name__ == "__main__":
 
     transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)

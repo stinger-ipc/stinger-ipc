@@ -12,42 +12,46 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
-struct RefreshDailyForecastRequestArguments
-{
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
+struct RefreshDailyForecastRequestArguments {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static RefreshDailyForecastRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
 };
 
-struct RefreshDailyForecastReturnValues
-{
+struct RefreshDailyForecastReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static RefreshDailyForecastReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
 };
 
-struct RefreshHourlyForecastRequestArguments
-{
+struct RefreshHourlyForecastRequestArguments {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static RefreshHourlyForecastRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
 };
 
-struct RefreshHourlyForecastReturnValues
-{
+struct RefreshHourlyForecastReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static RefreshHourlyForecastReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
 };
 
-struct RefreshCurrentConditionsRequestArguments
-{
+struct RefreshCurrentConditionsRequestArguments {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static RefreshCurrentConditionsRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
 };
 
-struct RefreshCurrentConditionsReturnValues
-{
+struct RefreshCurrentConditionsReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static RefreshCurrentConditionsReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
 };
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

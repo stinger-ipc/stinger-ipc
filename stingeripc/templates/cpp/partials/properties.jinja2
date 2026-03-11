@@ -39,7 +39,7 @@ mutable std::mutex _{{prop_name | lowerCamelCase}}PropertyMutex;
 int _{{prop_name | lowerCamelCase}}PropertySubscriptionId;
 
 // Method for parsing a JSON payload that updates the `{{prop_name}}` property.
-void _receive{{prop_name | UpperCamelCase}}PropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+void _receive{{prop_name | UpperCamelCase}}PropertyUpdate(const stinger::mqtt::Message& msg);
 
 // Callbacks registered for changes to the `{{prop_name}}` property.
 std::vector<std::function<void({{ar.declarationParams(prop.arg_list)}})>> _{{prop_name | lowerCamelCase}}PropertyCallbacks;

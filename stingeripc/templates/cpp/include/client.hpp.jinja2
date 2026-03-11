@@ -19,15 +19,20 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include "utils.hpp"
-#include "ibrokerconnection.hpp"
+#include <stinger/mqtt/properties.hpp>
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/error/return_codes.hpp>
 #include "{{stinger.cpp.enum_header_file}}"
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
-
-{%macro prop_value_type(prop) -%}{%if prop.arg_list|length > 1%}struct {%endif%}{{prop.name | UpperCamelCase}}Property{%endmacro%}
+#include "discovery.hpp"
 
 {%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
+
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
 
 class {{stinger.cpp.client_class_name}} {
 
@@ -38,7 +43,7 @@ public:
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
     // Constructor taking a connection object.
-    {{stinger.cpp.client_class_name}}(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    {{stinger.cpp.client_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo);
 
     virtual ~{{stinger.cpp.client_class_name}}();
     {%if stinger.signals|length > 0 -%}
@@ -65,18 +70,16 @@ public:
     {%endif%}
 private:
     // Pointer to the broker connection.
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
 
     // Service Instance ID that this client is connected to.
     std::string _instanceId;
+    InstanceInfo _instanceInfo;
 
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
-    void _receiveMessage(
-            const std::string& topic, 
-            const std::string& payload, 
-            const MqttProperties& mqttProps);
+    void _receiveMessage(const stinger::mqtt::Message& msg);
     {%if stinger.signals|length > 0 %}
     // ------------------ SIGNALS --------------------
     {%for sig_name, sig in stinger.signals.items()%}
@@ -93,16 +96,22 @@ private:
 
     {%-for method_name, method in stinger.methods.items()%}
     // Holds promises for pending `{{method_name}}` method calls.
-    std::map<std::string, std::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+    std::map<std::vector<std::byte>, std::promise<{{method.return_value_cpp_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
     int _{{method_name | lowerCamelCase}}MethodSubscriptionId = -1;
     // This is called internally to process responses to `{{method_name}}` method calls.
-    void _handle{{method_name|UpperCamelCase}}Response(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handle{{method_name|UpperCamelCase}}Response(const stinger::mqtt::Message& msg);
     {%endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------
+    int _anyPropertyUpdateResponseSubscriptionId = -1;
     {%for prop_name, prop in stinger.properties.items()%}
     {{pr.private_declarations(prop_name, prop, true) | indent(4)}}
     {%endfor%}
     {%endif%}
 };
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

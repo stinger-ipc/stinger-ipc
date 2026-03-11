@@ -26,7 +26,7 @@ repeated {{arg.pb.item_type}} {{arg.name}} = {{index}};
 enum {{i_enum.pb.message_name}} { {%- if not i_enum.has_value(0) %}
     {{i_enum_name | CONST_CASE}}_UNSPECIFIED = 0; {%endif%}
     {%-for item in i_enum.items %}
-    {{item.name | CONST_CASE}} = {{item.integer}};
+    {{i_enum_name | CONST_CASE}}_{{item.name | CONST_CASE}} = {{item.integer}};
     {%-endfor%}
 }
 {%endfor%}

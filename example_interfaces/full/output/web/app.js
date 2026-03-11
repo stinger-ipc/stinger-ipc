@@ -88,7 +88,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "todayIs",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "full/{}/signal/todayIs"
+            "mqtt_topic": "{prefix}/Full/{service_id}/signal/todayIs"
         },
     
         "randomWord": {
@@ -96,7 +96,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "randomWord",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "full/{}/signal/randomWord"
+            "mqtt_topic": "{prefix}/Full/{service_id}/signal/randomWord"
         }
     };
 
@@ -107,8 +107,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "number": {  }
              },
-            "mqtt_topic": "full/{}/property/favoriteNumber/value",
-            "update_topic": "full/{}/property/favoriteNumber/setValue",
+            "mqtt_topic": "{prefix}/Full/{service_id}/property/favorite_number/value",
+            "update_topic": "{prefix}/Full/{service_id}/property/favorite_number/update",
             "property_version": -1
         },
     
@@ -122,8 +122,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "breakfast": {  }
              },
-            "mqtt_topic": "full/{}/property/favoriteFoods/value",
-            "update_topic": "full/{}/property/favoriteFoods/setValue",
+            "mqtt_topic": "{prefix}/Full/{service_id}/property/favorite_foods/value",
+            "update_topic": "{prefix}/Full/{service_id}/property/favorite_foods/update",
             "property_version": -1
         },
     
@@ -163,7 +163,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "duration_of_lunch": ""
                  }
              },
-            "mqtt_topic": "full/{}/property/lunchMenu/value",
+            "mqtt_topic": "{prefix}/Full/{service_id}/property/lunch_menu/value",
             "property_version": -1
         },
     
@@ -173,8 +173,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "family_name": {  }
              },
-            "mqtt_topic": "full/{}/property/familyName/value",
-            "update_topic": "full/{}/property/familyName/setValue",
+            "mqtt_topic": "{prefix}/Full/{service_id}/property/family_name/value",
+            "update_topic": "{prefix}/Full/{service_id}/property/family_name/update",
             "property_version": -1
         },
     
@@ -184,8 +184,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "timestamp": {  }
              },
-            "mqtt_topic": "full/{}/property/lastBreakfastTime/value",
-            "update_topic": "full/{}/property/lastBreakfastTime/setValue",
+            "mqtt_topic": "{prefix}/Full/{service_id}/property/last_breakfast_time/value",
+            "update_topic": "{prefix}/Full/{service_id}/property/last_breakfast_time/update",
             "property_version": -1
         },
     
@@ -201,17 +201,21 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "brothers_age": {  }
              },
-            "mqtt_topic": "full/{}/property/lastBirthdays/value",
-            "update_topic": "full/{}/property/lastBirthdays/setValue",
+            "mqtt_topic": "{prefix}/Full/{service_id}/property/last_birthdays/value",
+            "update_topic": "{prefix}/Full/{service_id}/property/last_birthdays/update",
             "property_version": -1
         }
     };
 
+    var interface_name = "Full";
+    var client_id = clientId;
+    // TODO: support all the topic params
+
     $scope.methods = {
         "addNumbers": {
             "name": "addNumbers",
-            "mqtt_topic": "full/{}/method/addNumbers",
-            "response_topic": "client/"+clientId+"/addNumbers/methodResponse",
+            "mqtt_topic": "{prefix}/Full/{service_id}/method/addNumbers/request",
+            "response_topic": "client/{client_id}/Full/method/addNumbers/response",
             "pending_correlation_id": null,
             "args": {
                 "first": {
@@ -234,8 +238,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "doSomething": {
             "name": "doSomething",
-            "mqtt_topic": "full/{}/method/doSomething",
-            "response_topic": "client/"+clientId+"/doSomething/methodResponse",
+            "mqtt_topic": "{prefix}/Full/{service_id}/method/doSomething/request",
+            "response_topic": "client/{client_id}/Full/method/doSomething/response",
             "pending_correlation_id": null,
             "args": {
                 "task_to_do": {
@@ -248,8 +252,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "whatTimeIsIt": {
             "name": "what_time_is_it",
-            "mqtt_topic": "full/{}/method/whatTimeIsIt",
-            "response_topic": "client/"+clientId+"/whatTimeIsIt/methodResponse",
+            "mqtt_topic": "{prefix}/Full/{service_id}/method/what_time_is_it/request",
+            "response_topic": "client/{client_id}/Full/method/what_time_is_it/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -257,8 +261,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "holdTemperature": {
             "name": "hold_temperature",
-            "mqtt_topic": "full/{}/method/holdTemperature",
-            "response_topic": "client/"+clientId+"/holdTemperature/methodResponse",
+            "mqtt_topic": "{prefix}/Full/{service_id}/method/hold_temperature/request",
+            "response_topic": "client/{client_id}/Full/method/hold_temperature/response",
             "pending_correlation_id": null,
             "args": {
                 "temperature_celsius": {
@@ -395,7 +399,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["todayIs"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("full/{}/signal/todayIs");
+        var resolvedTopic = resolveTopic("{prefix}/Full/{service_id}/signal/todayIs");
         client.subscribe(resolvedTopic, today_is_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;
@@ -408,7 +412,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["randomWord"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("full/{}/signal/randomWord");
+        var resolvedTopic = resolveTopic("{prefix}/Full/{service_id}/signal/randomWord");
         client.subscribe(resolvedTopic, random_word_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

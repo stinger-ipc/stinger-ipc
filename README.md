@@ -142,6 +142,10 @@ gRPC is probably a better solution for handling RPC and connections from remote 
 But gRPC, as most typically deployed, provide some challenges for use inside an embedded Linux system.  gRPC typically wants secured HTTP/2 connections, which are just overkill for communications within a single device.  Additionally, the protobuf code generation is just more complicated.  
 
 
+## Plugin System
+
+The user can specify templates that override or add to the built-in templates.  Those templates can come from a directory (use the `--template-path` command line flag) or from another package (use the `template-pkg` command line flag).  When those templates need a way to extend the model system, it can add additional symbols by implementing the "stinger_symbols" entry point (see the `pyproject.toml` file for built-in examples on how to do this).
+
 ## Design goals
 
  * Low learning curve.

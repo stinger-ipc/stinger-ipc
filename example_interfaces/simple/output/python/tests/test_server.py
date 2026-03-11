@@ -37,7 +37,12 @@ class SimpleServerSetup:
         return initial_property_values
 
     def create_server(self, mock_connection) -> SimpleServer:
-        server = SimpleServer(mock_connection, "test_instance", self.initial_property_values)
+        server = SimpleServer(
+            mock_connection,
+            "x",
+            self.initial_property_values,
+            "x",
+        )
         return server
 
 
@@ -71,7 +76,7 @@ class TestSimpleServer:
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
         assert server is not None, "server failed to initialize"
-        assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
+        assert server.instance_id == "x", "Server instance_id does not match expected value"
 
 
 class TestSimpleServerProperties:
@@ -87,11 +92,11 @@ class TestSimpleServerProperties:
         mock_connection.clear_published_messages()
         server.publish_school_value()
 
-        published_list = mock_connection.find_published("simple/{}/property/school/value".format("+"))
+        published_list = mock_connection.find_published("+/Simple/+/property/school/value")
         assert len(published_list) == 1, f"No message was published for property 'school'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "simple/{}/property/school/value".format(server.instance_id)
+        expected_topic = "x/Simple/x/property/school/value"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -120,7 +125,7 @@ class TestSimpleServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
-            topic="simple/{}/property/school/setValue".format(server.instance_id),
+            topic="x/Simple/x/property/school/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -161,7 +166,7 @@ class TestSimpleServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="simple/{}/property/school/setValue".format(server.instance_id),
+            topic="x/Simple/x/property/school/update",
             payload=prop_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
@@ -198,7 +203,7 @@ class TestSimpleServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="simple/{}/property/school/setValue".format(server.instance_id),
+            topic="x/Simple/x/property/school/update",
             payload=b"adsfaf{this is not json}12|false",
             qos=1,
             retain=False,
@@ -237,7 +242,7 @@ class TestSimpleServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="simple/{}/property/school/setValue".format(server.instance_id),
+            topic="x/Simple/x/property/school/update",
             payload=b'{"wrong_field": 123, "another_wrong": false}',
             qos=1,
             retain=False,
@@ -271,11 +276,11 @@ class TestSimpleServerSignals:
         server.emit_person_entered(**signal_data)
 
         # Verify that a message was published
-        published_list = mock_connection.find_published("simple/{}/signal/personEntered".format("+"))
-        assert len(published_list) == 1, "No message was published for signal 'person_entered'"
+        published_list = mock_connection.find_published("+/Simple/+/signal/person_entered")
+        assert len(published_list) == 1, "No message was published for signal 'person_entered'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "simple/{}/signal/personEntered".format(server.instance_id)
+        expected_topic = "x/Simple/x/signal/person_entered"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
 
         # Verify payload
@@ -310,7 +315,7 @@ class TestSimpleServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="simple/{}/method/tradeNumbers".format(server.instance_id),
+            topic="x/Simple/x/method/trade_numbers/request",
             payload=method_obj.model_dump_json(by_alias=True).encode("utf-8"),
             qos=1,
             retain=False,
