@@ -132,7 +132,7 @@ class {{stinger.python.client_class_name}}:
                 "{{prop_spec.update_topic()}}".format(**self._topic_template_kwargs), # type: ignore[str-format]
                 property_obj, 
                 str(self._property_{{prop_name|snake_case}}_version), 
-                self._property_response_topic,
+                "{{prop_spec.response_topic()}}".format(**self._topic_template_kwargs), # type: ignore[str-format]
                 str(uuid4())
             )
             self._conn.publish(req_msg)
