@@ -2,6 +2,10 @@
 {% import "partials/serialize.jinja2" as ser %}
 #include "structs.hpp"
 
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
 
 {%for istruct_name, istruct in stinger.structs.items() %}
 {{istruct_name | UpperCamelCase }} {{istruct_name | UpperCamelCase }}::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -19,3 +23,8 @@ void {{istruct_name | UpperCamelCase }}::AddToRapidJsonObject(rapidjson::Value& 
     {%- endfor %}
 }
 {%endfor%}
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

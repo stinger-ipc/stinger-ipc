@@ -37,7 +37,12 @@ async fn main() {
     let _ = connection.start().await.unwrap();
 
     // Create the server object.
-    let mut server = SignalOnlyServer::new(connection, "rust-server-demo:1".to_string()).await;
+    let mut server = SignalOnlyServer::new(
+        connection,
+        "rust-server-demo:1".to_string(),
+        "example".to_string(),
+    )
+    .await;
 
     // Start the server connection loop in a separate task.
     let mut looping_server = server.clone();

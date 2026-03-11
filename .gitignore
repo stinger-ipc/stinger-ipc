@@ -13,6 +13,8 @@ Cargo.lock
 
 # C++ Generated Code
 example_interfaces/*/output/cpp/build/*
+example_interfaces/*/output/cpp/install/*
+example_interfaces/*/output/cpp/Testing/**
 
 # Python generated code
 example_interfaces/*/output/python*/__pycache__/
@@ -32,3 +34,5 @@ build/
 .mypy_cache/
 .task/
 .venv/
+
+pytest-warnings.json

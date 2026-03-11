@@ -26,7 +26,7 @@ def generate(
     template_pkg: Annotated[Optional[list[str]], typer.Option("--template-pkg", help="Python package(s) containing templates")] = None,
     template_path: Annotated[Optional[list[Path]], typer.Option("--template-path", help="Filesystem path(s) to template directories")] = None,
     consumer: Annotated[Optional[str], typer.Option("--consumer", help="Consumer name/identifier")] = None,
-    config: Annotated[Optional[Path], typer.Option("--config", help="TOML configuration file", exists=True, file_okay=True, dir_okay=False, readable=True)] = None,
+    config: Annotated[list[Path], typer.Option("--config", help="TOML configuration file(s) - later files override earlier ones", exists=True, file_okay=True, dir_okay=False, readable=True)] = [],
 ):
     """Generate code for a Stinger interface.
 
@@ -48,11 +48,7 @@ def generate(
         if lang not in ("rust", "python", "markdown", "cpp", "web", "protobuf"):
             raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf")
 
-        if lang in ["markdown", "rust", "html", "protobuf", "python", "web"]:
-            generic_generator.main(input_file, output_dir, lang, template_pkg, template_path, consumer, config)
-        elif lang == "cpp":
-            cpp_generator.main(input_file, output_dir)
-        
+        generic_generator.main(input_file, output_dir, lang, template_pkg, template_path, consumer, config)       
         print(f"Generation for '{lang}' completed.")
     
     # Use generic generator if template-pkg or template-path is provided

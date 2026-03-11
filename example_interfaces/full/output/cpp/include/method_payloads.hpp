@@ -12,12 +12,15 @@ TODO: Get license text from stinger file
 #include <string>
 #include <chrono>
 #include <vector>
-#include "utils.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 
-struct AddNumbersRequestArguments
-{
+namespace stinger {
+
+namespace gen {
+namespace full {
+
+struct AddNumbersRequestArguments {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static AddNumbersRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
@@ -26,24 +29,21 @@ struct AddNumbersRequestArguments
     std::optional<int> third;
 };
 
-struct AddNumbersReturnValues
-{
+struct AddNumbersReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static AddNumbersReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     int sum;
 };
 
-struct DoSomethingRequestArguments
-{
+struct DoSomethingRequestArguments {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static DoSomethingRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::string taskToDo;
 };
 
-struct DoSomethingReturnValues
-{
+struct DoSomethingReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static DoSomethingReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
@@ -51,32 +51,34 @@ struct DoSomethingReturnValues
     int identifier;
 };
 
-struct WhatTimeIsItRequestArguments
-{
+struct WhatTimeIsItRequestArguments {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static WhatTimeIsItRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
 };
 
-struct WhatTimeIsItReturnValues
-{
+struct WhatTimeIsItReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static WhatTimeIsItReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     std::chrono::time_point<std::chrono::system_clock> timestamp;
 };
 
-struct HoldTemperatureRequestArguments
-{
+struct HoldTemperatureRequestArguments {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static HoldTemperatureRequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     double temperatureCelsius;
 };
 
-struct HoldTemperatureReturnValues
-{
+struct HoldTemperatureReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static HoldTemperatureReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Values...
     bool success;
 };
+
+} // namespace full
+
+} // namespace gen
+
+} // namespace stinger

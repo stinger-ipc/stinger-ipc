@@ -12,3 +12,14 @@ TODO: Get license text from stinger file
 
 #include <map>
 #include <string>
+
+namespace stinger {
+
+namespace gen {
+namespace signal_only {
+
+} // namespace signal_only
+
+} // namespace gen
+
+} // namespace stinger

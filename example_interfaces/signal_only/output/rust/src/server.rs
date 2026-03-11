@@ -15,6 +15,8 @@ TODO: Get license text from stinger file
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
 use bytes::Bytes;
+use std::collections::HashMap;
+use strfmt::strfmt;
 use tokio::sync::oneshot;
 
 use std::sync::{Arc, Mutex};
@@ -55,13 +57,13 @@ pub struct SignalOnlyServer<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
-
+    topic_param_prefix: String,
     #[cfg(feature = "metrics")]
     metrics: Arc<AsyncMutex<SignalOnlyServerMetrics>>,
 }
 
 impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
-    pub async fn new(mut connection: C, instance_id: String) -> Self {
+    pub async fn new(mut connection: C, instance_id: String, prefix: String) -> Self {
         #[cfg(feature = "metrics")]
         let mut metrics = SignalOnlyServerMetrics::default();
 
@@ -70,6 +72,7 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
 
             client_id: connection.get_client_id(),
             instance_id,
+            topic_param_prefix: prefix,
             #[cfg(feature = "metrics")]
             metrics: Arc::new(AsyncMutex::new(metrics)),
         }
@@ -121,7 +124,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         three: String,
     ) -> SentMessageFuture {
         let data = AnotherSignalSignalPayload { one, two, three };
-        let topic = format!("signalOnly/{}/signal/anotherSignal", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "anotherSignal".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/anotherSignal",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -136,7 +150,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         three: String,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = AnotherSignalSignalPayload { one, two, three };
-        let topic = format!("signalOnly/{}/signal/anotherSignal", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "anotherSignal".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/anotherSignal",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -144,7 +169,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
     /// Emits the bark signal with the given arguments.
     pub async fn emit_bark(&mut self, word: String) -> SentMessageFuture {
         let data = BarkSignalPayload { word };
-        let topic = format!("signalOnly/{}/signal/bark", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "bark".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/bark",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -157,7 +193,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         word: String,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = BarkSignalPayload { word };
-        let topic = format!("signalOnly/{}/signal/bark", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "bark".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/bark",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -165,7 +212,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
     /// Emits the maybe_number signal with the given arguments.
     pub async fn emit_maybe_number(&mut self, number: Option<i32>) -> SentMessageFuture {
         let data = MaybeNumberSignalPayload { number };
-        let topic = format!("signalOnly/{}/signal/maybeNumber", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "maybe_number".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/maybe_number",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -178,7 +236,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         number: Option<i32>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = MaybeNumberSignalPayload { number };
-        let topic = format!("signalOnly/{}/signal/maybeNumber", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "maybe_number".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/maybe_number",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -186,7 +255,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
     /// Emits the maybe_name signal with the given arguments.
     pub async fn emit_maybe_name(&mut self, name: Option<String>) -> SentMessageFuture {
         let data = MaybeNameSignalPayload { name };
-        let topic = format!("signalOnly/{}/signal/maybeName", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "maybe_name".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/maybe_name",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -199,7 +279,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         name: Option<String>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = MaybeNameSignalPayload { name };
-        let topic = format!("signalOnly/{}/signal/maybeName", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "maybe_name".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/maybe_name",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -210,7 +301,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         timestamp: chrono::DateTime<chrono::Utc>,
     ) -> SentMessageFuture {
         let data = NowSignalPayload { timestamp };
-        let topic = format!("signalOnly/{}/signal/now", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "now".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/now",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
@@ -223,7 +325,18 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
         timestamp: chrono::DateTime<chrono::Utc>,
     ) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError> {
         let data = NowSignalPayload { timestamp };
-        let topic = format!("signalOnly/{}/signal/now", self.instance_id);
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("signal_name".to_string(), "now".to_string()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+        let topic = strfmt(
+            "{prefix}/SignalOnly/{service_id}/signal/now",
+            &topic_param_map,
+        )
+        .unwrap();
         let msg = message::signal(&topic, &data).unwrap();
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
@@ -237,6 +350,13 @@ impl<C: Mqtt5PubSub + Clone + Send> SignalOnlyServer<C> {
     where
         C: 'static,
     {
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "SignalOnly".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("client_id".to_string(), self.client_id.clone()),
+            ("prefix".to_string(), self.topic_param_prefix.clone()),
+        ]);
+
         warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())
     }

@@ -13,6 +13,11 @@ TODO: Get license text from stinger file
 #include <map>
 #include <string>
 
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
+
 {%for ie_name, ie in stinger.enums.items() %}
 /** 
  * @enum {{ie_name | UpperCamelCase }}{%if ie.documentation %}
@@ -27,3 +32,8 @@ static const std::map<int, std::string> {{ie_name | camelCase }}Strings = { {%-f
     { {{-item.integer}}, "{{item.name}}"}{%if not loop.last%}, {%endif%}
 {%endfor-%} };
 {%endfor%}
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

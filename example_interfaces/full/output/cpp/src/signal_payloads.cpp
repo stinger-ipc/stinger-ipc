@@ -1,6 +1,11 @@
 
 #include "signal_payloads.hpp"
 
+namespace stinger {
+
+namespace gen {
+namespace full {
+
 // --- (De-)Serialization for todayIs signal payload ---
 TodayIsPayload TodayIsPayload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
@@ -8,23 +13,19 @@ TodayIsPayload TodayIsPayload::FromRapidJsonObject(const rapidjson::Value& jsonO
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("dayOfMonth");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             todayIsPayload.dayOfMonth = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'dayOfMonth' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("dayOfWeek");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             todayIsPayload.dayOfWeek = static_cast<DayOfTheWeek>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'dayOfWeek' argument doesn't have required value/type");
         }
     }
@@ -46,24 +47,20 @@ RandomWordPayload RandomWordPayload::FromRapidJsonObject(const rapidjson::Value&
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("word");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             randomWordPayload.word = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'word' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("time");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempTimeIsoString = itr->value.GetString();
-            randomWordPayload.time = parseIsoTimestamp(tempTimeIsoString);
-        }
-        else
-        {
+            randomWordPayload.time = stinger::utils::parseIsoTimestamp(tempTimeIsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'time' argument doesn't have required value/type");
         }
     }
@@ -81,8 +78,14 @@ void RandomWordPayload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson
 
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimeStringValue;
-        std::string timeIsoString = timePointToIsoString(time);
+        std::string timeIsoString = stinger::utils::timePointToIsoString(time);
         tempTimeStringValue.SetString(timeIsoString.c_str(), timeIsoString.size(), allocator);
         parent.AddMember("time", tempTimeStringValue, allocator);
     }
 }
+
+} // namespace full
+
+} // namespace gen
+
+} // namespace stinger

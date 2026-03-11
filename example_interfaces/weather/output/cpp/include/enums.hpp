@@ -13,13 +13,17 @@ TODO: Get license text from stinger file
 #include <map>
 #include <string>
 
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
 /** 
  * @enum WeatherCondition
  * @brief This enum contains the possible weather conditions that can be reported.
 
  */
-enum class WeatherCondition
-{
+enum class WeatherCondition {
     RAINY = 1,
     SUNNY = 2,
     PARTLY_CLOUDY = 3,
@@ -43,3 +47,9 @@ static const std::map<int, std::string> weatherConditionStrings = {
 
     { 7, "snowy" }
 };
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

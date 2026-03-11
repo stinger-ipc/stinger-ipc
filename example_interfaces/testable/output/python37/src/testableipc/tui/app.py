@@ -43,7 +43,6 @@ class TestableIPCApp(App):
         # Import screens here to avoid circular imports
         from testableipc.tui.connection import ConnectionScreen
         from testableipc.tui.discovery import DiscoveryScreen
-        from testableipc.tui.client import ClientScreen
         from testableipc.tui.logs import LogsScreen, install_log_handler
 
         # Install log capture handler
@@ -52,7 +51,6 @@ class TestableIPCApp(App):
         # Install screens
         self.install_screen(ConnectionScreen(), name="connection")
         self.install_screen(DiscoveryScreen(), name="discovery")
-        self.install_screen(ClientScreen(), name="client")
         self.install_screen(LogsScreen(), name="logs")
 
         # Start with connection screen

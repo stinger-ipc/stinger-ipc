@@ -76,7 +76,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "current_time",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "weather/{}/signal/currentTime"
+            "mqtt_topic": "{prefix}/weather/{service_id}/signal/current_time"
         }
     };
 
@@ -89,8 +89,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "longitude": {  }
              },
-            "mqtt_topic": "weather/{}/property/location/value",
-            "update_topic": "weather/{}/property/location/setValue",
+            "mqtt_topic": "{prefix}/weather/{service_id}/property/location/value",
+            "update_topic": "{prefix}/weather/{service_id}/property/location/update",
             "property_version": -1
         },
     
@@ -100,7 +100,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "temperature_f": {  }
              },
-            "mqtt_topic": "weather/{}/property/currentTemperature/value",
+            "mqtt_topic": "{prefix}/weather/{service_id}/property/current_temperature/value",
             "property_version": -1
         },
     
@@ -112,7 +112,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             
                 "description": {  }
              },
-            "mqtt_topic": "weather/{}/property/currentCondition/value",
+            "mqtt_topic": "{prefix}/weather/{service_id}/property/current_condition/value",
             "property_version": -1
         },
     
@@ -156,7 +156,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "end_time": ""
                  }
              },
-            "mqtt_topic": "weather/{}/property/dailyForecast/value",
+            "mqtt_topic": "{prefix}/weather/{service_id}/property/daily_forecast/value",
             "property_version": -1
         },
     
@@ -196,7 +196,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "condition": ""
                  }
              },
-            "mqtt_topic": "weather/{}/property/hourlyForecast/value",
+            "mqtt_topic": "{prefix}/weather/{service_id}/property/hourly_forecast/value",
             "property_version": -1
         },
     
@@ -206,8 +206,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "seconds": {  }
              },
-            "mqtt_topic": "weather/{}/property/currentConditionRefreshInterval/value",
-            "update_topic": "weather/{}/property/currentConditionRefreshInterval/setValue",
+            "mqtt_topic": "{prefix}/weather/{service_id}/property/current_condition_refresh_interval/value",
+            "update_topic": "{prefix}/weather/{service_id}/property/current_condition_refresh_interval/update",
             "property_version": -1
         },
     
@@ -217,8 +217,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "seconds": {  }
              },
-            "mqtt_topic": "weather/{}/property/hourlyForecastRefreshInterval/value",
-            "update_topic": "weather/{}/property/hourlyForecastRefreshInterval/setValue",
+            "mqtt_topic": "{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/value",
+            "update_topic": "{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/update",
             "property_version": -1
         },
     
@@ -228,17 +228,21 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "received": { 
                 "seconds": {  }
              },
-            "mqtt_topic": "weather/{}/property/dailyForecastRefreshInterval/value",
-            "update_topic": "weather/{}/property/dailyForecastRefreshInterval/setValue",
+            "mqtt_topic": "{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value",
+            "update_topic": "{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/update",
             "property_version": -1
         }
     };
 
+    var interface_name = "weather";
+    var client_id = clientId;
+    // TODO: support all the topic params
+
     $scope.methods = {
         "refreshDailyForecast": {
             "name": "refresh_daily_forecast",
-            "mqtt_topic": "weather/{}/method/refreshDailyForecast",
-            "response_topic": "client/"+clientId+"/refreshDailyForecast/methodResponse",
+            "mqtt_topic": "{prefix}/weather/{service_id}/method/refresh_daily_forecast/request",
+            "response_topic": "client/{client_id}/weather/method/refresh_daily_forecast/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -246,8 +250,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "refreshHourlyForecast": {
             "name": "refresh_hourly_forecast",
-            "mqtt_topic": "weather/{}/method/refreshHourlyForecast",
-            "response_topic": "client/"+clientId+"/refreshHourlyForecast/methodResponse",
+            "mqtt_topic": "{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request",
+            "response_topic": "client/{client_id}/weather/method/refresh_hourly_forecast/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -255,8 +259,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         },
         "refreshCurrentConditions": {
             "name": "refresh_current_conditions",
-            "mqtt_topic": "weather/{}/method/refreshCurrentConditions",
-            "response_topic": "client/"+clientId+"/refreshCurrentConditions/methodResponse",
+            "mqtt_topic": "{prefix}/weather/{service_id}/method/refresh_current_conditions/request",
+            "response_topic": "client/{client_id}/weather/method/refresh_current_conditions/response",
             "pending_correlation_id": null,
             "args": {},
             "received": null,
@@ -388,7 +392,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["currentTime"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("weather/{}/signal/currentTime");
+        var resolvedTopic = resolveTopic("{prefix}/weather/{service_id}/signal/current_time");
         client.subscribe(resolvedTopic, current_time_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

@@ -12,4 +12,5 @@ pub struct InterfaceInfo {
     pub connection_topic: String,
     #[builder(default = "Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true)")]
     pub timestamp: String,
+    pub prefix: String,
 }

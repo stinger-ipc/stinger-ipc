@@ -18,16 +18,22 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include "utils.hpp"
-#include "ibrokerconnection.hpp"
+#include <stinger/mqtt/properties.hpp>
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/error/return_codes.hpp>
 #include "enums.hpp"
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
+#include "discovery.hpp"
 
 #include "property_structs.hpp"
 
-class SimpleClient
-{
+namespace stinger {
+
+namespace gen {
+namespace simple {
+
+class SimpleClient {
 public:
     // This is the name of the API.
     static constexpr const char NAME[] = "Simple";
@@ -35,7 +41,7 @@ public:
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
     // Constructor taking a connection object.
-    SimpleClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    SimpleClient(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo);
 
     virtual ~SimpleClient();
     // ------------------ SIGNALS --------------------
@@ -67,19 +73,16 @@ public:
 
 private:
     // Pointer to the broker connection.
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
 
     // Service Instance ID that this client is connected to.
     std::string _instanceId;
+    InstanceInfo _instanceInfo;
 
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const MqttProperties& mqttProps
-    );
+    void _receiveMessage(const stinger::mqtt::Message& msg);
 
     // ------------------ SIGNALS --------------------
 
@@ -92,12 +95,13 @@ private:
 
     // ------------------- METHODS --------------------
     // Holds promises for pending `trade_numbers` method calls.
-    std::map<std::string, std::promise<int>> _pendingTradeNumbersMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<int>> _pendingTradeNumbersMethodCalls;
     int _tradeNumbersMethodSubscriptionId = -1;
     // This is called internally to process responses to `trade_numbers` method calls.
-    void _handleTradeNumbersResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleTradeNumbersResponse(const stinger::mqtt::Message& msg);
 
     // ---------------- PROPERTIES ------------------
+    int _anyPropertyUpdateResponseSubscriptionId = -1;
 
     // ---school Property---
 
@@ -114,9 +118,15 @@ private:
     int _schoolPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `school` property.
-    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveSchoolPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `school` property.
     std::vector<std::function<void(std::string)>> _schoolPropertyCallbacks;
     std::mutex _schoolPropertyCallbacksMutex;
 };
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

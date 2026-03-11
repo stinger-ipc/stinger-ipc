@@ -2,7 +2,12 @@
 #include "method_payloads.hpp"
 
 #include <rapidjson/document.h>
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace simple {
 
 // --- (De-)Serialization for trade_numbers method request arguments ---
 TradeNumbersRequestArguments TradeNumbersRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -11,12 +16,10 @@ TradeNumbersRequestArguments TradeNumbersRequestArguments::FromRapidJsonObject(c
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("your_number");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             tradeNumbersArgs.yourNumber = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'your_number' argument doesn't have required value/type");
         }
     }
@@ -36,12 +39,10 @@ TradeNumbersReturnValues TradeNumbersReturnValues::FromRapidJsonObject(const rap
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("my_number");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             tradeNumbersRc.myNumber = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'my_number' argument doesn't have required value/type");
         }
     }
@@ -53,3 +54,9 @@ void TradeNumbersReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, ra
 {
     parent.AddMember("my_number", myNumber, allocator);
 }
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

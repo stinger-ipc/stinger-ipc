@@ -20,23 +20,27 @@ TODO: Get license text from stinger file
 #include <chrono>
 #include <thread>
 #include <atomic>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 
 #include "property_structs.hpp"
 
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include "enums.hpp"
 
 #include "method_payloads.hpp"
 
-class SimpleServer
-{
+namespace stinger {
+
+namespace gen {
+namespace simple {
+
+class SimpleServer {
 public:
     static constexpr const char NAME[] = "Simple";
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
-    SimpleServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    SimpleServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix);
 
     virtual ~SimpleServer();
 
@@ -60,16 +64,15 @@ public:
     void republishSchoolProperty() const;
 
 private:
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
     std::string _instanceId;
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const MqttProperties& mqttProps
-    );
 
-    void _callTradeNumbersHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    std::string _prefixTopicParam;
+
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
+    void _receiveMessage(const stinger::mqtt::Message& msg);
+
+    void _callTradeNumbersHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<int(int)> _tradeNumbersHandler;
     int _tradeNumbersMethodSubscriptionId;
 
@@ -90,7 +93,7 @@ private:
     int _schoolPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `school` property.
-    void _receiveSchoolPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveSchoolPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `school` property.
     std::vector<std::function<void(std::string)>> _schoolPropertyCallbacks;
@@ -107,3 +110,9 @@ private:
     // Method that runs in the advertisement thread
     void _advertisementThreadLoop();
 };
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger

@@ -18,16 +18,22 @@ TODO: Get license text from stinger file
 #include <mutex>
 #include <chrono>
 #include <rapidjson/document.h>
-#include "utils.hpp"
-#include "ibrokerconnection.hpp"
+#include <stinger/mqtt/properties.hpp>
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/error/return_codes.hpp>
 #include "enums.hpp"
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
+#include "discovery.hpp"
 
 #include "property_structs.hpp"
 
-class TestableClient
-{
+namespace stinger {
+
+namespace gen {
+namespace testable {
+
+class TestableClient {
 public:
     // This is the name of the API.
     static constexpr const char NAME[] = "testable";
@@ -35,7 +41,7 @@ public:
     static constexpr const char INTERFACE_VERSION[] = "0.0.1";
 
     // Constructor taking a connection object.
-    TestableClient(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    TestableClient(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo);
 
     virtual ~TestableClient();
     // ------------------ SIGNALS --------------------
@@ -578,19 +584,16 @@ public:
 
 private:
     // Pointer to the broker connection.
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
 
     // Service Instance ID that this client is connected to.
     std::string _instanceId;
+    InstanceInfo _instanceInfo;
 
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
 
     // Internal method for receiving messages from the broker.
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const MqttProperties& mqttProps
-    );
+    void _receiveMessage(const stinger::mqtt::Message& msg);
 
     // ------------------ SIGNALS --------------------
 
@@ -771,156 +774,157 @@ private:
 
     // ------------------- METHODS --------------------
     // Holds promises for pending `callWithNothing` method calls.
-    std::map<std::string, std::promise<void>> _pendingCallWithNothingMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<void>> _pendingCallWithNothingMethodCalls;
     int _callWithNothingMethodSubscriptionId = -1;
     // This is called internally to process responses to `callWithNothing` method calls.
-    void _handleCallWithNothingResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallWithNothingResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOneInteger` method calls.
-    std::map<std::string, std::promise<int>> _pendingCallOneIntegerMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<int>> _pendingCallOneIntegerMethodCalls;
     int _callOneIntegerMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneInteger` method calls.
-    void _handleCallOneIntegerResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOneIntegerResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOptionalInteger` method calls.
-    std::map<std::string, std::promise<std::optional<int>>> _pendingCallOptionalIntegerMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::optional<int>>> _pendingCallOptionalIntegerMethodCalls;
     int _callOptionalIntegerMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalInteger` method calls.
-    void _handleCallOptionalIntegerResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOptionalIntegerResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callThreeIntegers` method calls.
-    std::map<std::string, std::promise<CallThreeIntegersReturnValues>> _pendingCallThreeIntegersMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<CallThreeIntegersReturnValues>> _pendingCallThreeIntegersMethodCalls;
     int _callThreeIntegersMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeIntegers` method calls.
-    void _handleCallThreeIntegersResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallThreeIntegersResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOneString` method calls.
-    std::map<std::string, std::promise<std::string>> _pendingCallOneStringMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::string>> _pendingCallOneStringMethodCalls;
     int _callOneStringMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneString` method calls.
-    void _handleCallOneStringResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOneStringResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOptionalString` method calls.
-    std::map<std::string, std::promise<std::optional<std::string>>> _pendingCallOptionalStringMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::optional<std::string>>> _pendingCallOptionalStringMethodCalls;
     int _callOptionalStringMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalString` method calls.
-    void _handleCallOptionalStringResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOptionalStringResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callThreeStrings` method calls.
-    std::map<std::string, std::promise<CallThreeStringsReturnValues>> _pendingCallThreeStringsMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<CallThreeStringsReturnValues>> _pendingCallThreeStringsMethodCalls;
     int _callThreeStringsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeStrings` method calls.
-    void _handleCallThreeStringsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallThreeStringsResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOneEnum` method calls.
-    std::map<std::string, std::promise<Numbers>> _pendingCallOneEnumMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<Numbers>> _pendingCallOneEnumMethodCalls;
     int _callOneEnumMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneEnum` method calls.
-    void _handleCallOneEnumResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOneEnumResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOptionalEnum` method calls.
-    std::map<std::string, std::promise<std::optional<Numbers>>> _pendingCallOptionalEnumMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::optional<Numbers>>> _pendingCallOptionalEnumMethodCalls;
     int _callOptionalEnumMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalEnum` method calls.
-    void _handleCallOptionalEnumResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOptionalEnumResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callThreeEnums` method calls.
-    std::map<std::string, std::promise<CallThreeEnumsReturnValues>> _pendingCallThreeEnumsMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<CallThreeEnumsReturnValues>> _pendingCallThreeEnumsMethodCalls;
     int _callThreeEnumsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeEnums` method calls.
-    void _handleCallThreeEnumsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallThreeEnumsResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOneStruct` method calls.
-    std::map<std::string, std::promise<AllTypes>> _pendingCallOneStructMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<AllTypes>> _pendingCallOneStructMethodCalls;
     int _callOneStructMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneStruct` method calls.
-    void _handleCallOneStructResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOneStructResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOptionalStruct` method calls.
-    std::map<std::string, std::promise<std::optional<AllTypes>>> _pendingCallOptionalStructMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::optional<AllTypes>>> _pendingCallOptionalStructMethodCalls;
     int _callOptionalStructMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalStruct` method calls.
-    void _handleCallOptionalStructResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOptionalStructResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callThreeStructs` method calls.
-    std::map<std::string, std::promise<CallThreeStructsReturnValues>> _pendingCallThreeStructsMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<CallThreeStructsReturnValues>> _pendingCallThreeStructsMethodCalls;
     int _callThreeStructsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeStructs` method calls.
-    void _handleCallThreeStructsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallThreeStructsResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOneDateTime` method calls.
-    std::map<std::string, std::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingCallOneDateTimeMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::chrono::time_point<std::chrono::system_clock>>> _pendingCallOneDateTimeMethodCalls;
     int _callOneDateTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneDateTime` method calls.
-    void _handleCallOneDateTimeResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOneDateTimeResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOptionalDateTime` method calls.
-    std::map<std::string, std::promise<std::optional<std::chrono::time_point<std::chrono::system_clock>>>> _pendingCallOptionalDateTimeMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::optional<std::chrono::time_point<std::chrono::system_clock>>>> _pendingCallOptionalDateTimeMethodCalls;
     int _callOptionalDateTimeMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalDateTime` method calls.
-    void _handleCallOptionalDateTimeResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOptionalDateTimeResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callThreeDateTimes` method calls.
-    std::map<std::string, std::promise<CallThreeDateTimesReturnValues>> _pendingCallThreeDateTimesMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<CallThreeDateTimesReturnValues>> _pendingCallThreeDateTimesMethodCalls;
     int _callThreeDateTimesMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeDateTimes` method calls.
-    void _handleCallThreeDateTimesResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallThreeDateTimesResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOneDuration` method calls.
-    std::map<std::string, std::promise<std::chrono::duration<double>>> _pendingCallOneDurationMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::chrono::duration<double>>> _pendingCallOneDurationMethodCalls;
     int _callOneDurationMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneDuration` method calls.
-    void _handleCallOneDurationResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOneDurationResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOptionalDuration` method calls.
-    std::map<std::string, std::promise<std::optional<std::chrono::duration<double>>>> _pendingCallOptionalDurationMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::optional<std::chrono::duration<double>>>> _pendingCallOptionalDurationMethodCalls;
     int _callOptionalDurationMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalDuration` method calls.
-    void _handleCallOptionalDurationResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOptionalDurationResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callThreeDurations` method calls.
-    std::map<std::string, std::promise<CallThreeDurationsReturnValues>> _pendingCallThreeDurationsMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<CallThreeDurationsReturnValues>> _pendingCallThreeDurationsMethodCalls;
     int _callThreeDurationsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeDurations` method calls.
-    void _handleCallThreeDurationsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallThreeDurationsResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOneBinary` method calls.
-    std::map<std::string, std::promise<std::vector<uint8_t>>> _pendingCallOneBinaryMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::vector<uint8_t>>> _pendingCallOneBinaryMethodCalls;
     int _callOneBinaryMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneBinary` method calls.
-    void _handleCallOneBinaryResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOneBinaryResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOptionalBinary` method calls.
-    std::map<std::string, std::promise<std::optional<std::vector<uint8_t>>>> _pendingCallOptionalBinaryMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::optional<std::vector<uint8_t>>>> _pendingCallOptionalBinaryMethodCalls;
     int _callOptionalBinaryMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalBinary` method calls.
-    void _handleCallOptionalBinaryResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOptionalBinaryResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callThreeBinaries` method calls.
-    std::map<std::string, std::promise<CallThreeBinariesReturnValues>> _pendingCallThreeBinariesMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<CallThreeBinariesReturnValues>> _pendingCallThreeBinariesMethodCalls;
     int _callThreeBinariesMethodSubscriptionId = -1;
     // This is called internally to process responses to `callThreeBinaries` method calls.
-    void _handleCallThreeBinariesResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallThreeBinariesResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOneListOfIntegers` method calls.
-    std::map<std::string, std::promise<std::vector<int>>> _pendingCallOneListOfIntegersMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::vector<int>>> _pendingCallOneListOfIntegersMethodCalls;
     int _callOneListOfIntegersMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOneListOfIntegers` method calls.
-    void _handleCallOneListOfIntegersResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOneListOfIntegersResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callOptionalListOfFloats` method calls.
-    std::map<std::string, std::promise<std::optional<std::vector<double>>>> _pendingCallOptionalListOfFloatsMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<std::optional<std::vector<double>>>> _pendingCallOptionalListOfFloatsMethodCalls;
     int _callOptionalListOfFloatsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callOptionalListOfFloats` method calls.
-    void _handleCallOptionalListOfFloatsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallOptionalListOfFloatsResponse(const stinger::mqtt::Message& msg);
 
     // Holds promises for pending `callTwoLists` method calls.
-    std::map<std::string, std::promise<CallTwoListsReturnValues>> _pendingCallTwoListsMethodCalls;
+    std::map<std::vector<std::byte>, std::promise<CallTwoListsReturnValues>> _pendingCallTwoListsMethodCalls;
     int _callTwoListsMethodSubscriptionId = -1;
     // This is called internally to process responses to `callTwoLists` method calls.
-    void _handleCallTwoListsResponse(const std::string& topic, const std::string& payload, const MqttProperties& mqttProps);
+    void _handleCallTwoListsResponse(const stinger::mqtt::Message& msg);
 
     // ---------------- PROPERTIES ------------------
+    int _anyPropertyUpdateResponseSubscriptionId = -1;
 
     // ---read_write_integer Property---
 
@@ -937,7 +941,7 @@ private:
     int _readWriteIntegerPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_integer` property.
-    void _receiveReadWriteIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteIntegerPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_integer` property.
     std::vector<std::function<void(int)>> _readWriteIntegerPropertyCallbacks;
@@ -958,7 +962,7 @@ private:
     int _readOnlyIntegerPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_only_integer` property.
-    void _receiveReadOnlyIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadOnlyIntegerPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_only_integer` property.
     std::vector<std::function<void(int)>> _readOnlyIntegerPropertyCallbacks;
@@ -979,7 +983,7 @@ private:
     int _readWriteOptionalIntegerPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_integer` property.
-    void _receiveReadWriteOptionalIntegerPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalIntegerPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_integer` property.
     std::vector<std::function<void(std::optional<int>)>> _readWriteOptionalIntegerPropertyCallbacks;
@@ -1000,7 +1004,7 @@ private:
     int _readWriteTwoIntegersPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_integers` property.
-    void _receiveReadWriteTwoIntegersPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoIntegersPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_integers` property.
     std::vector<std::function<void(int, std::optional<int>)>> _readWriteTwoIntegersPropertyCallbacks;
@@ -1021,7 +1025,7 @@ private:
     int _readOnlyStringPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_only_string` property.
-    void _receiveReadOnlyStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadOnlyStringPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_only_string` property.
     std::vector<std::function<void(std::string)>> _readOnlyStringPropertyCallbacks;
@@ -1042,7 +1046,7 @@ private:
     int _readWriteStringPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_string` property.
-    void _receiveReadWriteStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteStringPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_string` property.
     std::vector<std::function<void(std::string)>> _readWriteStringPropertyCallbacks;
@@ -1063,7 +1067,7 @@ private:
     int _readWriteOptionalStringPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_string` property.
-    void _receiveReadWriteOptionalStringPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalStringPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_string` property.
     std::vector<std::function<void(std::optional<std::string>)>> _readWriteOptionalStringPropertyCallbacks;
@@ -1084,7 +1088,7 @@ private:
     int _readWriteTwoStringsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_strings` property.
-    void _receiveReadWriteTwoStringsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoStringsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_strings` property.
     std::vector<std::function<void(std::string, std::optional<std::string>)>> _readWriteTwoStringsPropertyCallbacks;
@@ -1105,7 +1109,7 @@ private:
     int _readWriteStructPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_struct` property.
-    void _receiveReadWriteStructPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteStructPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_struct` property.
     std::vector<std::function<void(AllTypes)>> _readWriteStructPropertyCallbacks;
@@ -1126,7 +1130,7 @@ private:
     int _readWriteOptionalStructPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_struct` property.
-    void _receiveReadWriteOptionalStructPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalStructPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_struct` property.
     std::vector<std::function<void(std::optional<AllTypes>)>> _readWriteOptionalStructPropertyCallbacks;
@@ -1147,7 +1151,7 @@ private:
     int _readWriteTwoStructsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_structs` property.
-    void _receiveReadWriteTwoStructsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoStructsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_structs` property.
     std::vector<std::function<void(AllTypes, std::optional<AllTypes>)>> _readWriteTwoStructsPropertyCallbacks;
@@ -1168,7 +1172,7 @@ private:
     int _readOnlyEnumPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_only_enum` property.
-    void _receiveReadOnlyEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadOnlyEnumPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_only_enum` property.
     std::vector<std::function<void(Numbers)>> _readOnlyEnumPropertyCallbacks;
@@ -1189,7 +1193,7 @@ private:
     int _readWriteEnumPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_enum` property.
-    void _receiveReadWriteEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteEnumPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_enum` property.
     std::vector<std::function<void(Numbers)>> _readWriteEnumPropertyCallbacks;
@@ -1210,7 +1214,7 @@ private:
     int _readWriteOptionalEnumPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_enum` property.
-    void _receiveReadWriteOptionalEnumPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalEnumPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_enum` property.
     std::vector<std::function<void(std::optional<Numbers>)>> _readWriteOptionalEnumPropertyCallbacks;
@@ -1231,7 +1235,7 @@ private:
     int _readWriteTwoEnumsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_enums` property.
-    void _receiveReadWriteTwoEnumsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoEnumsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_enums` property.
     std::vector<std::function<void(Numbers, std::optional<Numbers>)>> _readWriteTwoEnumsPropertyCallbacks;
@@ -1252,7 +1256,7 @@ private:
     int _readWriteDatetimePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_datetime` property.
-    void _receiveReadWriteDatetimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteDatetimePropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_datetime` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _readWriteDatetimePropertyCallbacks;
@@ -1273,7 +1277,7 @@ private:
     int _readWriteOptionalDatetimePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_datetime` property.
-    void _receiveReadWriteOptionalDatetimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalDatetimePropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_datetime` property.
     std::vector<std::function<void(std::optional<std::chrono::time_point<std::chrono::system_clock>>)>> _readWriteOptionalDatetimePropertyCallbacks;
@@ -1294,7 +1298,7 @@ private:
     int _readWriteTwoDatetimesPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_datetimes` property.
-    void _receiveReadWriteTwoDatetimesPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoDatetimesPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_datetimes` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>)>> _readWriteTwoDatetimesPropertyCallbacks;
@@ -1315,7 +1319,7 @@ private:
     int _readWriteDurationPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_duration` property.
-    void _receiveReadWriteDurationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteDurationPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_duration` property.
     std::vector<std::function<void(std::chrono::duration<double>)>> _readWriteDurationPropertyCallbacks;
@@ -1336,7 +1340,7 @@ private:
     int _readWriteOptionalDurationPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_duration` property.
-    void _receiveReadWriteOptionalDurationPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalDurationPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_duration` property.
     std::vector<std::function<void(std::optional<std::chrono::duration<double>>)>> _readWriteOptionalDurationPropertyCallbacks;
@@ -1357,7 +1361,7 @@ private:
     int _readWriteTwoDurationsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_durations` property.
-    void _receiveReadWriteTwoDurationsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoDurationsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_durations` property.
     std::vector<std::function<void(std::chrono::duration<double>, std::optional<std::chrono::duration<double>>)>> _readWriteTwoDurationsPropertyCallbacks;
@@ -1378,7 +1382,7 @@ private:
     int _readWriteBinaryPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_binary` property.
-    void _receiveReadWriteBinaryPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteBinaryPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_binary` property.
     std::vector<std::function<void(std::vector<uint8_t>)>> _readWriteBinaryPropertyCallbacks;
@@ -1399,7 +1403,7 @@ private:
     int _readWriteOptionalBinaryPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_optional_binary` property.
-    void _receiveReadWriteOptionalBinaryPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteOptionalBinaryPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_optional_binary` property.
     std::vector<std::function<void(std::optional<std::vector<uint8_t>>)>> _readWriteOptionalBinaryPropertyCallbacks;
@@ -1420,7 +1424,7 @@ private:
     int _readWriteTwoBinariesPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_two_binaries` property.
-    void _receiveReadWriteTwoBinariesPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteTwoBinariesPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_two_binaries` property.
     std::vector<std::function<void(std::vector<uint8_t>, std::optional<std::vector<uint8_t>>)>> _readWriteTwoBinariesPropertyCallbacks;
@@ -1441,7 +1445,7 @@ private:
     int _readWriteListOfStringsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_list_of_strings` property.
-    void _receiveReadWriteListOfStringsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteListOfStringsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_list_of_strings` property.
     std::vector<std::function<void(std::vector<std::string>)>> _readWriteListOfStringsPropertyCallbacks;
@@ -1462,9 +1466,15 @@ private:
     int _readWriteListsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `read_write_lists` property.
-    void _receiveReadWriteListsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveReadWriteListsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `read_write_lists` property.
     std::vector<std::function<void(std::vector<Numbers>, std::optional<std::vector<std::chrono::time_point<std::chrono::system_clock>>>)>> _readWriteListsPropertyCallbacks;
     std::mutex _readWriteListsPropertyCallbacksMutex;
 };
+
+} // namespace testable
+
+} // namespace gen
+
+} // namespace stinger

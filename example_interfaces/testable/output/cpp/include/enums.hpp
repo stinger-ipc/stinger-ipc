@@ -13,11 +13,15 @@ TODO: Get license text from stinger file
 #include <map>
 #include <string>
 
+namespace stinger {
+
+namespace gen {
+namespace testable {
+
 /** 
  * @enum Numbers
  */
-enum class Numbers
-{
+enum class Numbers {
     ONE = 1, // The number one
     TWO = 2,
     THREE = 3 // Value two has no description.
@@ -29,3 +33,9 @@ static const std::map<int, std::string> numbersStrings = {
 
     { 3, "three" }
 };
+
+} // namespace testable
+
+} // namespace gen
+
+} // namespace stinger

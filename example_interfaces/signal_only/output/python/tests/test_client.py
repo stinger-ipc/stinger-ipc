@@ -1,6 +1,7 @@
 """
 Tests for SignalOnly client.
 """
+
 import pytest
 import sys
 from pathlib import Path
@@ -12,11 +13,11 @@ from pyqttier.mock import MockConnection
 import json
 from typing import Dict, Any
 
+
 def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
     """Convert a Pydantic model to a JSON-serializable dict."""
     json_str = model.model_dump_json(by_alias=True)
     return json.loads(json_str)
-
 
 
 @pytest.fixture
@@ -29,13 +30,18 @@ def mock_connection():
 @pytest.fixture
 def client(mock_connection):
     """Fixture providing a SignalOnly client with mocked connection."""
-    mock_discovery = DiscoveredInstance(
-        instance_id="test_instance",
-           
+    mock_discovered_instance = DiscoveredInstance(
+        instance_id="x",
+        info=SignalOnlyInterfaceInfo(
+            instance="x",
+            connection_topic="x/SignalOnly/x/interface",
+            timestamp="2024-01-01T00:00:00Z",
+            prefix="x",
+        ),
     )
     client = SignalOnlyClient(
         connection=mock_connection,
-        instance_info=mock_discovery,
+        instance_info=mock_discovered_instance,
     )
     return client
 
@@ -46,6 +52,4 @@ class TestClient:
     def test_client_initializes(self, client):
         """Test that client initializes successfully."""
         assert client is not None, "Client failed to initialize"
-        assert client.service_id == "test_instance", "Client service_id does not match expected value"
-
-
+        assert client.service_id == "x", "Client service_id does not match expected value"

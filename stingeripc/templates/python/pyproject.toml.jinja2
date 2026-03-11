@@ -9,7 +9,7 @@ dependencies = [
     "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
     "pyqttier>=0.2.5",
-    "stinger-python-utils>=0.1.7",
+    "stinger-python-utils>=0.1.8",
     {%if config.python.python37%}"typing-extensions>=4.0.0",{%endif%}
 ]
 
@@ -49,3 +49,6 @@ module = [
     "textual.*",
 ]
 ignore_missing_imports = true
+
+[project.entry-points."stinger_python_utils.mcp_plugins"]
+{{stinger.name|snake_case}} = "{{stinger.name|loweronly}}ipc.mcp:{{stinger.name|UpperCamelCase}}MCPPlugin"

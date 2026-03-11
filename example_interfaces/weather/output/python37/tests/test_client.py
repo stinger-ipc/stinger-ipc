@@ -63,13 +63,19 @@ def mock_connection():
 @pytest.fixture
 def client(mock_connection, initial_property_values):
     """Fixture providing a weather client with mocked connection."""
-    mock_discovery = DiscoveredInstance(
-        instance_id="test_instance",
+    mock_discovered_instance = DiscoveredInstance(
+        instance_id="x",
         initial_property_values=initial_property_values,
+        info=WeatherInterfaceInfo(
+            instance="x",
+            connection_topic="x/weather/x/interface",
+            timestamp="2024-01-01T00:00:00Z",
+            prefix="x",
+        ),
     )
     client = WeatherClient(
         connection=mock_connection,
-        instance_info=mock_discovery,
+        instance_info=mock_discovered_instance,
     )
     return client
 
@@ -80,7 +86,7 @@ class TestClient:
     def test_client_initializes(self, client):
         """Test that client initializes successfully."""
         assert client is not None, "Client failed to initialize"
-        assert client.service_id == "test_instance", "Client service_id does not match expected value"
+        assert client.service_id == "x", "Client service_id does not match expected value"
 
 
 class TestClientProperties:
@@ -130,18 +136,21 @@ class TestClientMethods:
         client.refresh_daily_forecast(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_daily_forecast' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/refreshDailyForecast"), f"Incorrect topic for 'refresh_daily_forecast' method call: {message.topic}"
+        expected_topic = "x/weather/x/method/refresh_daily_forecast/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'refresh_daily_forecast' method call: {message.topic}"
 
     def test_refresh_hourly_forecast_method_call_sends_request(self, mock_connection, client):
         kwargs = {}  # type: Dict[str, Any]
         client.refresh_hourly_forecast(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_hourly_forecast' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/refreshHourlyForecast"), f"Incorrect topic for 'refresh_hourly_forecast' method call: {message.topic}"
+        expected_topic = "x/weather/x/method/refresh_hourly_forecast/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'refresh_hourly_forecast' method call: {message.topic}"
 
     def test_refresh_current_conditions_method_call_sends_request(self, mock_connection, client):
         kwargs = {}  # type: Dict[str, Any]
         client.refresh_current_conditions(**kwargs)
         assert len(mock_connection.published_messages) == 1, "No message was published for 'refresh_current_conditions' method call"
         message = mock_connection.published_messages[0]
-        assert message.topic.endswith("/method/refreshCurrentConditions"), f"Incorrect topic for 'refresh_current_conditions' method call: {message.topic}"
+        expected_topic = "x/weather/x/method/refresh_current_conditions/request"
+        assert message.topic == expected_topic, f"Incorrect topic for 'refresh_current_conditions' method call: {message.topic}"

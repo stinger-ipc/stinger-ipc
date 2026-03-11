@@ -82,6 +82,7 @@ class DiscoveryScreen(Screen):
         """Initialize the discovery screen."""
         super().__init__()
         self.discoverer = None
+        self.instance_extra_params: dict[str, dict] = {}  # Store extra_params for each instance
 
     def compose(self) -> ComposeResult:
         """Compose the discovery screen widgets."""
@@ -127,8 +128,12 @@ class DiscoveryScreen(Screen):
 
     def _on_service_discovered(self, instance: DiscoveredInstance) -> None:
         """Callback when a new service is discovered."""
+        logger.debug("Discovered new instance: %s", instance.instance_id)
         # Use call_from_thread to safely update from MQTT callback thread
-        self.app.call_from_thread(self._add_instance, instance.instance_id)
+        extra_params = {
+            "prefix": instance.info.prefix,
+        }
+        self.app.call_from_thread(self._add_instance, instance.instance_id, extra_params)
 
     def _add_incomplete_interface(self, instance_id: str) -> None:
         """Add an incomplete interface (called on main thread)."""
@@ -138,7 +143,7 @@ class DiscoveryScreen(Screen):
             new_incomplete.add(instance_id)
             self.incomplete_interfaces = new_incomplete
 
-    def _add_instance(self, instance_id: str) -> None:
+    def _add_instance(self, instance_id: str, extra_params: dict) -> None:
         """Add an instance to the discovered set (called on main thread)."""
         # Remove from incomplete if present
         if instance_id in self.incomplete_interfaces:
@@ -149,6 +154,7 @@ class DiscoveryScreen(Screen):
         # Add to fully discovered
         new_instances = self.discovered_instances.copy()
         new_instances.add(instance_id)
+        self.instance_extra_params[instance_id] = extra_params
         self.discovered_instances = new_instances
 
     def watch_discovered_instances(self, old_instances: Set[str], new_instances: Set[str]) -> None:
@@ -164,12 +170,20 @@ class DiscoveryScreen(Screen):
         grid = self.query_one("#instances_grid", Grid)
         grid.remove_children()
 
-        if not self.discovered_instances and not self.incomplete_interfaces:
-            grid.mount(Static("No instances discovered yet...", classes="no_servers"))
+        if not self.discovered_instances:
+            grid.mount(Static("No SignalOnly instances discovered yet...", classes="no_servers"))
         else:
             # Show fully discovered instances first (clickable)
             for instance_id in sorted(self.discovered_instances):
-                btn = Button(instance_id, classes="instance_box")
+                # Build button label with instance_id and extra_params
+                label_parts = [instance_id]
+                if instance_id in self.instance_extra_params:
+                    extra = self.instance_extra_params[instance_id]
+                    for key, value in extra.items():
+                        label_parts.append(f"{key}: {value}")
+
+                label = "\n".join(label_parts)
+                btn = Button(label, classes="instance_box")
                 btn.instance_id = instance_id  # Store instance_id on the button
                 grid.mount(btn)
 
@@ -198,5 +212,7 @@ class DiscoveryScreen(Screen):
             # Store the client in the app for the Client screen to use
             self.app.signal_only_client = client
 
-            # Navigate to the client screen
-            self.app.push_screen("client")
+            # Create a fresh ClientScreen instance and navigate to it
+            from signalonlyipc.tui.client import ClientScreen
+
+            self.app.push_screen(ClientScreen())

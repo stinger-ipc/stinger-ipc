@@ -15,11 +15,16 @@ TODO: Get license text from stinger file
 #include "{{stinger.cpp.enum_header_file}}"
 #include "structs.hpp"
 
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
+
 {%for prop_name, prop in stinger.properties.items()%}
 {%-if prop.documentation %}/**
 {{prop.documentation |commentblock(' * ')}}
  */{%endif%}
-struct {{prop.name | UpperCamelCase}}Property {
+struct {{prop.cpp.property_struct_name}} {
     static {{prop.name | UpperCamelCase}}Property FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
 {%-for arg in prop.arg_list %}
@@ -31,3 +36,8 @@ struct {{prop.name | UpperCamelCase}}Property {
 {%endfor-%}{# end for arg #}
 };
 {%endfor%}{# end for each property #}
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

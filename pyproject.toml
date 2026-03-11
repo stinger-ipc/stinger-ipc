@@ -1,6 +1,6 @@
 [project]
 name = "stinger-ipc"
-version = "0.6.24"
+version = "0.7.0"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -10,7 +10,7 @@ classifiers = [
 ]
 dependencies = [
     "go-task-bin>=3.46.2",
-    "jacobs-jinja-too>=0.2.10",
+    "jacobs-jinja-too>=0.2.12",
     "jsonschema-rs>=0.34.0",
     "packaging>=25.0",
     "pydantic>=2.11.7",

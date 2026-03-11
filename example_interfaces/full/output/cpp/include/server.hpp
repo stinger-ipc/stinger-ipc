@@ -20,23 +20,27 @@ TODO: Get license text from stinger file
 #include <chrono>
 #include <thread>
 #include <atomic>
-#include "utils.hpp"
 #include <rapidjson/document.h>
 
 #include "property_structs.hpp"
 
-#include "ibrokerconnection.hpp"
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/mqtt/properties.hpp>
 #include "enums.hpp"
 
 #include "method_payloads.hpp"
 
-class FullServer
-{
+namespace stinger {
+
+namespace gen {
+namespace full {
+
+class FullServer {
 public:
     static constexpr const char NAME[] = "Full";
     static constexpr const char INTERFACE_VERSION[] = "0.0.2";
 
-    FullServer(std::shared_ptr<IBrokerConnection> broker, const std::string& instanceId);
+    FullServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix);
 
     virtual ~FullServer();
 
@@ -143,28 +147,27 @@ public:
     void republishLastBirthdaysProperty() const;
 
 private:
-    std::shared_ptr<IBrokerConnection> _broker;
+    std::shared_ptr<stinger::utils::IConnection> _broker;
     std::string _instanceId;
-    CallbackHandleType _brokerMessageCallbackHandle = 0;
-    void _receiveMessage(
-            const std::string& topic,
-            const std::string& payload,
-            const MqttProperties& mqttProps
-    );
 
-    void _callAddNumbersHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    std::string _prefixTopicParam;
+
+    stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
+    void _receiveMessage(const stinger::mqtt::Message& msg);
+
+    void _callAddNumbersHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<int(int, int, std::optional<int>)> _addNumbersHandler;
     int _addNumbersMethodSubscriptionId;
 
-    void _callDoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callDoSomethingHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<DoSomethingReturnValues(std::string)> _doSomethingHandler;
     int _doSomethingMethodSubscriptionId;
 
-    void _callWhatTimeIsItHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callWhatTimeIsItHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<std::chrono::time_point<std::chrono::system_clock>()> _whatTimeIsItHandler;
     int _whatTimeIsItMethodSubscriptionId;
 
-    void _callHoldTemperatureHandler(const std::string& topic, const rapidjson::Document& doc, std::optional<std::string> clientId, std::optional<std::string> correlationId) const;
+    void _callHoldTemperatureHandler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<bool(double)> _holdTemperatureHandler;
     int _holdTemperatureMethodSubscriptionId;
 
@@ -185,7 +188,7 @@ private:
     int _favoriteNumberPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `favorite_number` property.
-    void _receiveFavoriteNumberPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveFavoriteNumberPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `favorite_number` property.
     std::vector<std::function<void(int)>> _favoriteNumberPropertyCallbacks;
@@ -206,7 +209,7 @@ private:
     int _favoriteFoodsPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `favorite_foods` property.
-    void _receiveFavoriteFoodsPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveFavoriteFoodsPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `favorite_foods` property.
     std::vector<std::function<void(std::string, int, std::optional<std::string>)>> _favoriteFoodsPropertyCallbacks;
@@ -227,7 +230,7 @@ private:
     int _lunchMenuPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `lunch_menu` property.
-    void _receiveLunchMenuPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveLunchMenuPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `lunch_menu` property.
     std::vector<std::function<void(Lunch, Lunch)>> _lunchMenuPropertyCallbacks;
@@ -248,7 +251,7 @@ private:
     int _familyNamePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `family_name` property.
-    void _receiveFamilyNamePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveFamilyNamePropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `family_name` property.
     std::vector<std::function<void(std::string)>> _familyNamePropertyCallbacks;
@@ -269,7 +272,7 @@ private:
     int _lastBreakfastTimePropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `last_breakfast_time` property.
-    void _receiveLastBreakfastTimePropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveLastBreakfastTimePropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `last_breakfast_time` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>)>> _lastBreakfastTimePropertyCallbacks;
@@ -290,7 +293,7 @@ private:
     int _lastBirthdaysPropertySubscriptionId;
 
     // Method for parsing a JSON payload that updates the `last_birthdays` property.
-    void _receiveLastBirthdaysPropertyUpdate(const std::string& topic, const std::string& payload, std::optional<int> optPropertyVersion);
+    void _receiveLastBirthdaysPropertyUpdate(const stinger::mqtt::Message& msg);
 
     // Callbacks registered for changes to the `last_birthdays` property.
     std::vector<std::function<void(std::chrono::time_point<std::chrono::system_clock>, std::chrono::time_point<std::chrono::system_clock>, std::optional<std::chrono::time_point<std::chrono::system_clock>>, std::optional<int>)>> _lastBirthdaysPropertyCallbacks;
@@ -307,3 +310,9 @@ private:
     // Method that runs in the advertisement thread
     void _advertisementThreadLoop();
 };
+
+} // namespace full
+
+} // namespace gen
+
+} // namespace stinger

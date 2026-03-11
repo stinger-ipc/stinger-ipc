@@ -79,10 +79,13 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
     def create_server(self, mock_connection) -> {{stinger.python.server_class_name}}:
         server = {{stinger.python.server_class_name}}(
             mock_connection, 
-            "test_instance", 
+            "x", 
             {%if stinger.properties|length > 0%}
-            {%-if config.properties.stinger_owned_values %}self.initial_property_values{%else%}self.get_property_access(){%endif%}
+            {%-if config.properties.stinger_owned_values %}self.initial_property_values{%else%}self.get_property_access(){%endif%},
             {%-endif%}
+            {%for topic_param in config.topics.params %}
+            "x",
+            {%endfor%}
         )
         return server
 
@@ -129,7 +132,7 @@ class Test{{stinger.name|UpperCamelCase}}Server:
     def test_server_initializes(self, server):
         """Test that client initializes successfully."""
         assert server is not None, "server failed to initialize"
-        assert server.instance_id == "test_instance", "Server instance_id does not match expected value"
+        assert server.instance_id == "x", "Server instance_id does not match expected value"
 
 {%if stinger.properties | length > 0 %}
 
@@ -156,11 +159,11 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         mock_connection.clear_published_messages()
         server.publish_{{prop_name|snake_case}}_value()
 
-        published_list = mock_connection.find_published("{{prop.value_topic}}".format('+'))
+        published_list = mock_connection.find_published("{{prop.value_topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
         assert len(published_list) == 1, f"No message was published for property '{{prop_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
 
         msg = published_list[0]
-        expected_topic = "{{prop.value_topic}}".format(server.instance_id)
+        expected_topic = "{{prop.value_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
         
         # Verify payload
@@ -187,7 +190,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
-            topic="{{prop.update_topic}}".format(server.instance_id),
+            topic="{{prop.update_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
             payload=prop_obj.model_dump_json(by_alias=True).encode('utf-8'),
             qos=1,
             retain=False,
@@ -238,7 +241,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
-            topic="{{prop.update_topic}}".format(server.instance_id),
+            topic="{{prop.update_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
             payload=prop_obj.model_dump_json(by_alias=True).encode('utf-8'),
             qos=1,
             retain=False,
@@ -287,7 +290,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="{{prop.update_topic}}".format(server.instance_id),
+            topic="{{prop.update_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
             payload=prop_obj.model_dump_json(by_alias=True).encode('utf-8'),
             qos=1,
             retain=False,
@@ -324,7 +327,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="{{prop.update_topic}}".format(server.instance_id),
+            topic="{{prop.update_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
             payload=b"adsfaf{this is not json}12|false",
             qos=1,
             retain=False,
@@ -361,7 +364,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
-            topic="{{prop.update_topic}}".format(server.instance_id),
+            topic="{{prop.update_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
             payload=b"{\"wrong_field\": 123, \"another_wrong\": false}",
             qos=1,
             retain=False,
@@ -400,11 +403,11 @@ class Test{{stinger.name|UpperCamelCase}}ServerSignals:
         server.emit_{{signal_name|snake_case}}(**signal_data)
         
         # Verify that a message was published
-        published_list = mock_connection.find_published("{{signal.topic}}".format('+'))
-        assert len(published_list) == 1, "No message was published for signal '{{signal_name|snake_case}}'"
+        published_list = mock_connection.find_published("{{signal.topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
+        assert len(published_list) == 1, "No message was published for signal '{{signal_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
         
         msg = published_list[0]
-        expected_topic = "{{signal.topic}}".format(server.instance_id)
+        expected_topic = "{{signal.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
         
         # Verify payload
@@ -444,7 +447,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
-            topic="{{method.topic}}".format(server.instance_id),
+            topic="{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
             payload=method_obj.model_dump_json(by_alias=True).encode('utf-8'),
             qos=1,
             retain=False,

@@ -2,7 +2,12 @@
 #include "method_payloads.hpp"
 
 #include <rapidjson/document.h>
-#include "conversions.hpp"
+#include <stinger/utils/conversions.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace full {
 
 // --- (De-)Serialization for addNumbers method request arguments ---
 AddNumbersRequestArguments AddNumbersRequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -11,34 +16,28 @@ AddNumbersRequestArguments AddNumbersRequestArguments::FromRapidJsonObject(const
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("first");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             addNumbersArgs.first = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'first' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("second");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             addNumbersArgs.second = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'second' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("third");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             addNumbersArgs.third = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             addNumbersArgs.third = std::nullopt;
         }
     }
@@ -63,12 +62,10 @@ AddNumbersReturnValues AddNumbersReturnValues::FromRapidJsonObject(const rapidjs
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("sum");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             addNumbersRc.sum = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'sum' argument doesn't have required value/type");
         }
     }
@@ -88,12 +85,10 @@ DoSomethingRequestArguments DoSomethingRequestArguments::FromRapidJsonObject(con
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("task_to_do");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             doSomethingArgs.taskToDo = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'task_to_do' argument doesn't have required value/type");
         }
     }
@@ -117,23 +112,19 @@ DoSomethingReturnValues DoSomethingReturnValues::FromRapidJsonObject(const rapid
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("label");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             doSomethingRc.label = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'label' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("identifier");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             doSomethingRc.identifier = itr->value.GetInt();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'identifier' argument doesn't have required value/type");
         }
     }
@@ -171,13 +162,11 @@ WhatTimeIsItReturnValues WhatTimeIsItReturnValues::FromRapidJsonObject(const rap
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("timestamp");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             auto tempTimestampIsoString = itr->value.GetString();
-            whatTimeIsItRc.timestamp = parseIsoTimestamp(tempTimestampIsoString);
-        }
-        else
-        {
+            whatTimeIsItRc.timestamp = stinger::utils::parseIsoTimestamp(tempTimestampIsoString);
+
+        } else {
             throw std::runtime_error("Received payload for the 'timestamp' argument doesn't have required value/type");
         }
     }
@@ -189,7 +178,7 @@ void WhatTimeIsItReturnValues::AddToRapidJsonObject(rapidjson::Value& parent, ra
 {
     { // Restrict Scope for datetime ISO string conversion
         rapidjson::Value tempTimestampStringValue;
-        std::string timestampIsoString = timePointToIsoString(timestamp);
+        std::string timestampIsoString = stinger::utils::timePointToIsoString(timestamp);
         tempTimestampStringValue.SetString(timestampIsoString.c_str(), timestampIsoString.size(), allocator);
         parent.AddMember("timestamp", tempTimestampStringValue, allocator);
     }
@@ -202,12 +191,10 @@ HoldTemperatureRequestArguments HoldTemperatureRequestArguments::FromRapidJsonOb
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("temperature_celsius");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsDouble()) {
             holdTemperatureArgs.temperatureCelsius = itr->value.GetDouble();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'temperature_celsius' argument doesn't have required value/type");
         }
     }
@@ -227,12 +214,10 @@ HoldTemperatureReturnValues HoldTemperatureReturnValues::FromRapidJsonObject(con
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("success");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsBool())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsBool()) {
             holdTemperatureRc.success = itr->value.GetBool();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'success' argument doesn't have required value/type");
         }
     }
@@ -244,3 +229,9 @@ void HoldTemperatureReturnValues::AddToRapidJsonObject(rapidjson::Value& parent,
 {
     parent.AddMember("success", success, allocator);
 }
+
+} // namespace full
+
+} // namespace gen
+
+} // namespace stinger

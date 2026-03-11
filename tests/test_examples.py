@@ -32,12 +32,12 @@ class TestParamOnlyValidatesAgainstSchema(unittest.TestCase, SchemaValidation):
 
     def setUp(self):
         self.directory = "signal_only"
-        self.stinger_name = "signal_only.stingeripc"
+        self.stinger_name = "signal_only.stinger.yaml"
 
 
 class TestEnumOnlyValidatesAgainstSchema(unittest.TestCase, SchemaValidation):
 
     def setUp(self):
-        self.directory = "enum_only"
-        self.stinger_name = "enum_only.stingeripc"
+        self.directory = "full"
+        self.stinger_name = "full.stinger.yaml"
 

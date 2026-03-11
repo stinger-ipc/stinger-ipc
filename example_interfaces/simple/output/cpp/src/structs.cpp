@@ -2,29 +2,30 @@
 
 #include "structs.hpp"
 
+namespace stinger {
+
+namespace gen {
+namespace simple {
+
 Person Person::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     Person person;
 
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("name");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsString())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsString()) {
             person.name = itr->value.GetString();
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'name' argument doesn't have required value/type");
         }
     }
     { // Scoping
         rapidjson::Value::ConstMemberIterator itr = jsonObj.FindMember("gender");
-        if (itr != jsonObj.MemberEnd() && itr->value.IsInt())
-        {
+        if (itr != jsonObj.MemberEnd() && itr->value.IsInt()) {
             person.gender = static_cast<Gender>(itr->value.GetInt());
-        }
-        else
-        {
+
+        } else {
             throw std::runtime_error("Received payload for the 'gender' argument doesn't have required value/type");
         }
     }
@@ -42,3 +43,9 @@ void Person::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document:
 
     parent.AddMember("gender", static_cast<int>(gender), allocator);
 }
+
+} // namespace simple
+
+} // namespace gen
+
+} // namespace stinger
