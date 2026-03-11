@@ -92,7 +92,7 @@ class TestableServerSetup:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=datetime.now(UTC),
+                optional_date_time=None,
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -1781,7 +1781,7 @@ class TestTestableServerProperties:
                 optional_string="example",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2020, value="example"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=timedelta(seconds=2332),
                 optional_binary=b"example binary data",
                 array_of_integers=[2020, 42],
@@ -5287,7 +5287,7 @@ class TestTestableServerSignals:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -6455,7 +6455,7 @@ class TestTestableServerMethods:
                 optional_string="apples",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=42, value="apples"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=None,
                 optional_binary=b"example binary data",
                 array_of_integers=[42, 2022],
@@ -6599,7 +6599,7 @@ class TestTestableServerMethods:
                 optional_string="foo",
                 optional_enum=Numbers.ONE,
                 optional_entry_object=Entry(key=2022, value="foo"),
-                optional_date_time=None,
+                optional_date_time=datetime.now(UTC),
                 optional_duration=timedelta(seconds=2428),
                 optional_binary=b"example binary data",
                 array_of_integers=[2022, 2022],
@@ -6705,7 +6705,7 @@ class TestTestableServerMethods:
 
     def test_server_handle_call_optional_date_time_method(self, server, mock_connection):
         """Test that the server can handle the 'call_optional_date_time' method."""
-        handler_callback_data = datetime.now(UTC)
+        handler_callback_data = None
         received_args = None  # type: Optional[Dict[str, Any]]
 
         def handler(input1) -> Optional[datetime]:

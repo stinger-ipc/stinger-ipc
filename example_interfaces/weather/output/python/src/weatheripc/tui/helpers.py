@@ -1,6 +1,6 @@
+
 from importlib.metadata import metadata, PackageNotFoundError
 from typing import Tuple
-
 
 def get_package_version() -> Tuple[str, str]:
     try:

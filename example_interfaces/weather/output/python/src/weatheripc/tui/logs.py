@@ -14,13 +14,18 @@ class LogCapture(logging.Handler):
 
     def __init__(self, max_records: int = 1000):
         """Initialize the log capture handler.
-
+        
         Args:
             max_records: Maximum number of log records to keep in memory
         """
         super().__init__()
         self.records: Deque[logging.LogRecord] = deque(maxlen=max_records)
-        self.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S"))
+        self.setFormatter(
+            logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                datefmt="%H:%M:%S"
+            )
+        )
 
     def emit(self, record: logging.LogRecord) -> None:
         """Capture a log record."""
@@ -85,11 +90,11 @@ class LogsScreen(Screen):
         """Refresh the log display with all captured logs."""
         rich_log = self.query_one(RichLog)
         rich_log.clear()
-
+        
         log_handler = get_log_handler()
         for record in log_handler.records:
             formatted = log_handler.format(record)
-
+            
             # Color code by level
             if record.levelno >= logging.ERROR:
                 rich_log.write(f"[bold red]{formatted}[/]")
