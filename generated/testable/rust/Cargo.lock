@@ -57,9 +57,9 @@ checksum = "46c5e41b57b8bba42a04676d81cb89e9ee8e859a1a66f80a5a72e1cb76b34d43"
 
 [[package]]
 name = "bytes"
-version = "1.10.1"
+version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
+checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
 
 [[package]]
 name = "cc"
@@ -424,9 +424,9 @@ dependencies = [
 
 [[package]]
 name = "mqttier"
-version = "0.7.1"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "436f29624d1c570702ace673512fc0714e1188f0357e3eeaacf83e0ad5d8a2da"
+checksum = "c0f487143a6a41543a7c0afe259480f5839f9b675a8990cd317c88ee721e3d40"
 dependencies = [
  "async-trait",
  "bytes",
@@ -819,30 +819,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "testable_ipc"
-version = "0.0.1"
-dependencies = [
- "async-trait",
- "base64",
- "bytes",
- "chrono",
- "derive_builder",
- "futures",
- "iso8601-duration",
- "mqttier",
- "num-derive",
- "num-traits",
- "serde",
- "serde_json",
- "stinger-mqtt-trait",
- "stinger-rwlock-watch",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -898,6 +874,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "strfmt"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29fdc163db75f7b5ffa3daf0c5a7136fb0d4b2f35523cd1769da05e034159feb"
+
+[[package]]
 name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -918,6 +900,31 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "testable_ipc"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "base64",
+ "bytes",
+ "chrono",
+ "derive_builder",
+ "futures",
+ "iso8601-duration",
+ "mqttier",
+ "num-derive",
+ "num-traits",
+ "serde",
+ "serde_json",
+ "stinger-mqtt-trait",
+ "stinger-rwlock-watch",
+ "strfmt",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
