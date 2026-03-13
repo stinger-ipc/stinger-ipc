@@ -5,7 +5,8 @@ dist
 stinger_ipc.egg-info
 PGK-INFO
 
-
+# All generated code
+generated/
 
 .vscode/
 build/

@@ -43,9 +43,16 @@ jobs:
           token: ${{ secrets.GENERATED_CODE_PAT }}
           path: example-generated-code
 
+      - name: Switch to matching branch
+        working-directory: example-generated-code
+        run: |
+          git fetch origin ${{ github.ref_name }} || true
+          git checkout -B ${{ github.ref_name }} origin/${{ github.ref_name }} 2>/dev/null || git checkout -B ${{ github.ref_name }}
+
       - name: Sync generated files
         run: |
-          rsync -av --delete generated/ example-generated-code/
+          mkdir -p example-generated-code/generated
+          rsync -av --delete generated/ example-generated-code/generated/
 
       - name: Commit and push generated code
         working-directory: example-generated-code
@@ -57,5 +64,5 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "chore: update generated code from stinger-ipc@${{ github.sha }}"
-            git push
+            git push origin ${{ github.ref_name }}
           fi
