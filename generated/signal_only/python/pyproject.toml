@@ -1,0 +1,54 @@
+[project]
+name = "signal-only-ipc"
+version = "0.0.1"
+description = "SignalOnly"
+
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=2.11.7",
+    "paho-mqtt>=2.1.0",
+    "isodate>=0.7.2",
+    "pyqttier>=0.2.5",
+    "stinger-python-utils>=0.1.8",
+    
+]
+
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+    "mypy>=1.19.1",
+    "mypy-gitlab-code-quality==1.3.0",
+    "pytest-gitlab-code-quality==0.3.0",
+]
+
+
+
+[project.optional-dependencies]
+tui = ["textual"]
+
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project.scripts]
+signal-only-tui = "signalonlyipc.tui.app:main"
+
+
+[tool.setuptools.package-data]
+packages = ["signal_onlyipc"]
+
+[stinger-ipc]
+generator_version = "0.7.0"
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = [
+    "textual.*",
+]
+ignore_missing_imports = true
+
+[project.entry-points."stinger_python_utils.mcp_plugins"]
+signal_only = "signalonlyipc.mcp:SignalOnlyMCPPlugin"

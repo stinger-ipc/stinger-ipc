@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package signal_only;
+
+
+
+
+
+
+
+message AnotherSignalSignal {
+    float one = 1;
+    bool two = 2;
+    string three = 3;
+}
+
+message BarkSignal {
+    string word = 1;
+}
+
+message MaybeNumberSignal {
+    optional int32 number = 1;
+}
+
+message MaybeNameSignal {
+    optional string name = 1;
+}
+
+message NowSignal {
+    string timestamp = 1;  // ISO 8601 format
+}
+
+
+
+

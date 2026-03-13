@@ -1,0 +1,48 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the weather interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+
+#pragma once
+#include <string>
+#include <cstddef>
+#include <chrono>
+#include <vector>
+#include <optional>
+#include <rapidjson/document.h>
+#include "enums.hpp"
+#include <stinger/utils/conversions.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
+struct ForecastForHour {
+    static ForecastForHour FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    double temperature;
+    std::chrono::time_point<std::chrono::system_clock> starttime;
+    WeatherCondition condition;
+};
+
+struct ForecastForDay {
+    static ForecastForDay FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    double highTemperature;
+    double lowTemperature;
+    WeatherCondition condition;
+    std::string startTime;
+    std::string endTime;
+};
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

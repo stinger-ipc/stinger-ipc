@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package full;
+
+
+
+
+enum DayOfTheWeek {
+    DAY_OF_THE_WEEK_UNSPECIFIED = 0; 
+    DAY_OF_THE_WEEK_SUNDAY = 1;
+    DAY_OF_THE_WEEK_MONDAY = 2;
+    DAY_OF_THE_WEEK_TUESDAY = 3;
+    DAY_OF_THE_WEEK_WEDNESDAY = 4;
+    DAY_OF_THE_WEEK_THURSDAY = 5;
+    DAY_OF_THE_WEEK_FRIDAY = 6;
+    DAY_OF_THE_WEEK_SATURDAY = 7;
+}
+
+enum MultiplesOfTen {
+    MULTIPLES_OF_TEN_UNSPECIFIED = 0; 
+    MULTIPLES_OF_TEN_TEN = 10;
+    MULTIPLES_OF_TEN_TWENTY = 20;
+    MULTIPLES_OF_TEN_THIRTY = 30;
+    MULTIPLES_OF_TEN_FORTY = 40;
+    MULTIPLES_OF_TEN_FIFTY = 50;
+}
+
+
+message Lunch {
+    bool drink = 1;
+    string sandwich = 2;
+    float crackers = 3;
+    DayOfTheWeek day = 4;
+    optional int32 order_number = 5;
+    string time_of_lunch = 6;  // ISO 8601 format
+    string duration_of_lunch = 7;  // ISO 8601 duration format
+}
+
+
+
+message TodayIsSignal {
+    int32 dayOfMonth = 1;
+    DayOfTheWeek dayOfWeek = 2;
+}
+
+message RandomWordSignal {
+    string word = 1;
+    string time = 2;  // ISO 8601 format
+}
+
+
+
+message FavoriteNumberProperty {
+    int32 number = 1;
+}
+
+message FavoriteFoodsProperty {
+    string drink = 1;
+    int32 slices_of_pizza = 2;
+    optional string breakfast = 3;
+}
+
+message LunchMenuProperty {
+    Lunch monday = 1;
+    Lunch tuesday = 2;
+}
+
+message FamilyNameProperty {
+    string family_name = 1;
+}
+
+message LastBreakfastTimeProperty {
+    string timestamp = 1;  // ISO 8601 format
+}
+
+message LastBirthdaysProperty {
+    string mom = 1;  // ISO 8601 format
+    string dad = 2;  // ISO 8601 format
+    optional string sister = 3;  // ISO 8601 format
+    optional int32 brothers_age = 4;
+}
+
+
+
+message AddNumbersRequest {
+    int32 first = 1;
+    int32 second = 2;
+    optional int32 third = 3;
+}
+
+message AddNumbersResponse {
+    int32 sum = 1;
+}
+
+message DoSomethingRequest {
+    string task_to_do = 1;
+}
+
+message DoSomethingResponse {
+    string label = 1;
+    int32 identifier = 2;
+}
+
+message WhatTimeIsItRequest {
+}
+
+message WhatTimeIsItResponse {
+    string timestamp = 1;  // ISO 8601 format
+}
+
+message HoldTemperatureRequest {
+    float temperature_celsius = 1;
+}
+
+message HoldTemperatureResponse {
+    bool success = 1;
+}

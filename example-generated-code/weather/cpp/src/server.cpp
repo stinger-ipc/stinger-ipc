@@ -1,0 +1,1088 @@
+
+#include <vector>
+#include <iostream>
+#include <syslog.h>
+
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/error/en.h>
+#include <rapidjson/document.h>
+#include "structs.hpp"
+#include "server.hpp"
+#include "method_payloads.hpp"
+#include "enums.hpp"
+#include <stinger/utils/iconnection.hpp>
+#include <stinger/utils/format.hpp>
+#include <stinger/error/return_codes.hpp>
+
+namespace stinger {
+
+namespace gen {
+namespace weather {
+
+constexpr const char WeatherServer::NAME[];
+constexpr const char WeatherServer::INTERFACE_VERSION[];
+
+WeatherServer::WeatherServer(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, const std::string& prefix):
+    _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false), _prefixTopicParam(prefix)
+
+{
+    _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
+                                                                       const stinger::mqtt::Message& msg
+                                                               )
+                                                               {
+                                                                   _receiveMessage(msg);
+                                                               });
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    _refreshDailyForecastMethodSubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_daily_forecast/request", topicArgs), 2);
+    _refreshHourlyForecastMethodSubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request", topicArgs), 2);
+    _refreshCurrentConditionsMethodSubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_current_conditions/request", topicArgs), 2);
+
+    _locationPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/location/update", topicArgs), 1);
+    _currentTemperaturePropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/current_temperature/update", topicArgs), 1);
+    _currentConditionPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition/update", topicArgs), 1);
+    _dailyForecastPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast/update", topicArgs), 1);
+    _hourlyForecastPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast/update", topicArgs), 1);
+    _currentConditionRefreshIntervalPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition_refresh_interval/update", topicArgs), 1);
+    _hourlyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/update", topicArgs), 1);
+    _dailyForecastRefreshIntervalPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/update", topicArgs), 1);
+
+    // Start the service advertisement thread
+    _advertisementThreadRunning = true;
+    _advertisementThread = std::thread(&WeatherServer::_advertisementThreadLoop, this);
+}
+
+WeatherServer::~WeatherServer()
+{
+    // Unregister the message callback from the broker.
+    if (_broker && _brokerMessageCallbackHandle != 0) {
+        _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
+        _brokerMessageCallbackHandle = 0;
+    }
+
+    // Stop the advertisement thread
+    _advertisementThreadRunning = false;
+    if (_advertisementThread.joinable()) {
+        _advertisementThread.join();
+    }
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    std::string topic = stinger::utils::format("{prefix}/weather/{service_id}/interface", topicArgs);
+    auto msg = stinger::mqtt::Message::ServiceOffline(topic);
+    _broker->Publish(msg);
+
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_daily_forecast/request", topicArgs));
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_hourly_forecast/request", topicArgs));
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/method/refresh_current_conditions/request", topicArgs));
+
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/location/update", topicArgs));
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/current_temperature/update", topicArgs));
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition/update", topicArgs));
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast/update", topicArgs));
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast/update", topicArgs));
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition_refresh_interval/update", topicArgs));
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/update", topicArgs));
+    _broker->Unsubscribe(stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/update", topicArgs));
+}
+
+void WeatherServer::_receiveMessage(const stinger::mqtt::Message& msg)
+{
+    const int noSubId = -1;
+    int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);
+
+    if (subscriptionId == _refreshDailyForecastMethodSubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as refresh_daily_forecast method request.", msg.topic.c_str());
+        rapidjson::Document doc;
+        try {
+            if (_refreshDailyForecastHandler) {
+                rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+                if (!ok) {
+                    //Log("Could not JSON parse  signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject()) {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                _callRefreshDailyForecastHandler(msg.topic, doc, msg.properties.correlationData, msg.properties.responseTopic);
+            }
+        } catch (const std::exception&) {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+
+    else if (subscriptionId == _refreshHourlyForecastMethodSubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as refresh_hourly_forecast method request.", msg.topic.c_str());
+        rapidjson::Document doc;
+        try {
+            if (_refreshHourlyForecastHandler) {
+                rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+                if (!ok) {
+                    //Log("Could not JSON parse  signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject()) {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                _callRefreshHourlyForecastHandler(msg.topic, doc, msg.properties.correlationData, msg.properties.responseTopic);
+            }
+        } catch (const std::exception&) {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+
+    else if (subscriptionId == _refreshCurrentConditionsMethodSubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as refresh_current_conditions method request.", msg.topic.c_str());
+        rapidjson::Document doc;
+        try {
+            if (_refreshCurrentConditionsHandler) {
+                rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+                if (!ok) {
+                    //Log("Could not JSON parse  signal payload.");
+                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+                }
+
+                if (!doc.IsObject()) {
+                    throw std::runtime_error("Received payload is not an object");
+                }
+
+                _callRefreshCurrentConditionsHandler(msg.topic, doc, msg.properties.correlationData, msg.properties.responseTopic);
+            }
+        } catch (const std::exception&) {
+            // We couldn't find an integer out of the string in the topic name,
+            // so we are dropping the message completely.
+            // TODO: Log this failure
+        }
+    }
+
+    if (subscriptionId == _locationPropertySubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as location property update.", msg.topic.c_str());
+        _receiveLocationPropertyUpdate(msg);
+    }
+
+    else if (subscriptionId == _currentTemperaturePropertySubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as current_temperature property update.", msg.topic.c_str());
+        _receiveCurrentTemperaturePropertyUpdate(msg);
+    }
+
+    else if (subscriptionId == _currentConditionPropertySubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as current_condition property update.", msg.topic.c_str());
+        _receiveCurrentConditionPropertyUpdate(msg);
+    }
+
+    else if (subscriptionId == _dailyForecastPropertySubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as daily_forecast property update.", msg.topic.c_str());
+        _receiveDailyForecastPropertyUpdate(msg);
+    }
+
+    else if (subscriptionId == _hourlyForecastPropertySubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as hourly_forecast property update.", msg.topic.c_str());
+        _receiveHourlyForecastPropertyUpdate(msg);
+    }
+
+    else if (subscriptionId == _currentConditionRefreshIntervalPropertySubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as current_condition_refresh_interval property update.", msg.topic.c_str());
+        _receiveCurrentConditionRefreshIntervalPropertyUpdate(msg);
+    }
+
+    else if (subscriptionId == _hourlyForecastRefreshIntervalPropertySubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as hourly_forecast_refresh_interval property update.", msg.topic.c_str());
+        _receiveHourlyForecastRefreshIntervalPropertyUpdate(msg);
+    }
+
+    else if (subscriptionId == _dailyForecastRefreshIntervalPropertySubscriptionId) {
+        _broker->Log(LOG_INFO, "Message to `%s` matched as daily_forecast_refresh_interval property update.", msg.topic.c_str());
+        _receiveDailyForecastRefreshIntervalPropertyUpdate(msg);
+    }
+}
+
+std::future<bool> WeatherServer::emitCurrentTimeSignal(std::string currentTime)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+
+    { // restrict scope
+        rapidjson::Value tempStringValue;
+        tempStringValue.SetString(currentTime.c_str(), currentTime.size(), doc.GetAllocator());
+        doc.AddMember("current_time", tempStringValue, doc.GetAllocator());
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["signal_name"] = "current_time";
+    topicArgs["prefix"] = _prefixTopicParam;
+    auto topic = stinger::utils::format("{prefix}/weather/{service_id}/signal/current_time", topicArgs);
+    auto msg = stinger::mqtt::Message::Signal(topic, buf.GetString());
+    return _broker->Publish(msg);
+}
+
+void WeatherServer::registerRefreshDailyForecastHandler(std::function<void()> func)
+{
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
+    _refreshDailyForecastHandler = func;
+}
+
+void WeatherServer::registerRefreshHourlyForecastHandler(std::function<void()> func)
+{
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
+    _refreshHourlyForecastHandler = func;
+}
+
+void WeatherServer::registerRefreshCurrentConditionsHandler(std::function<void()> func)
+{
+    _broker->Log(LOG_DEBUG, "Application registered a function to handle  method requests.");
+    _refreshCurrentConditionsHandler = func;
+}
+
+void WeatherServer::_callRefreshDailyForecastHandler(
+        const std::string& topic,
+        const rapidjson::Document& doc,
+        const std::optional<std::vector<std::byte>>& optCorrelationData,
+        const std::optional<std::string>& optResponseTopic
+) const
+{
+    _broker->Log(LOG_INFO, "Handling call to refresh_daily_forecast");
+    if (!_refreshDailyForecastHandler) {
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
+
+    // Method doesn't have any return values.
+    _refreshDailyForecastHandler();
+    auto returnValues = RefreshDailyForecastReturnValues();
+
+    if (optResponseTopic) {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+
+        auto msg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, buf.GetString(), optCorrelationData, stinger::error::MethodReturnCode::SUCCESS);
+        _broker->Publish(msg);
+    }
+}
+
+void WeatherServer::_callRefreshHourlyForecastHandler(
+        const std::string& topic,
+        const rapidjson::Document& doc,
+        const std::optional<std::vector<std::byte>>& optCorrelationData,
+        const std::optional<std::string>& optResponseTopic
+) const
+{
+    _broker->Log(LOG_INFO, "Handling call to refresh_hourly_forecast");
+    if (!_refreshHourlyForecastHandler) {
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
+
+    // Method doesn't have any return values.
+    _refreshHourlyForecastHandler();
+    auto returnValues = RefreshHourlyForecastReturnValues();
+
+    if (optResponseTopic) {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+
+        auto msg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, buf.GetString(), optCorrelationData, stinger::error::MethodReturnCode::SUCCESS);
+        _broker->Publish(msg);
+    }
+}
+
+void WeatherServer::_callRefreshCurrentConditionsHandler(
+        const std::string& topic,
+        const rapidjson::Document& doc,
+        const std::optional<std::vector<std::byte>>& optCorrelationData,
+        const std::optional<std::string>& optResponseTopic
+) const
+{
+    _broker->Log(LOG_INFO, "Handling call to refresh_current_conditions");
+    if (!_refreshCurrentConditionsHandler) {
+        // TODO: publish an error response because we don't have a method handler.
+        return;
+    }
+
+    // Method doesn't have any return values.
+    _refreshCurrentConditionsHandler();
+    auto returnValues = RefreshCurrentConditionsReturnValues();
+
+    if (optResponseTopic) {
+        rapidjson::Document responseJson;
+        responseJson.SetObject();
+
+        returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        responseJson.Accept(writer);
+
+        auto msg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, buf.GetString(), optCorrelationData, stinger::error::MethodReturnCode::SUCCESS);
+        _broker->Publish(msg);
+    }
+}
+
+std::optional<LocationProperty> WeatherServer::getLocationProperty()
+{
+    std::lock_guard<std::mutex> lock(_locationPropertyMutex);
+    if (_locationProperty) {
+        return *_locationProperty;
+    }
+    return std::nullopt;
+}
+
+void WeatherServer::registerLocationPropertyCallback(const std::function<void(double latitude, double longitude)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_locationPropertyCallbacksMutex);
+    _locationPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateLocationProperty(double latitude, double longitude)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_locationPropertyMutex);
+        _locationProperty = LocationProperty{ latitude, longitude };
+        _lastLocationPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_locationPropertyCallbacksMutex);
+        for (const auto& cb: _locationPropertyCallbacks) {
+            cb(latitude, longitude);
+        }
+    }
+    republishLocationProperty();
+}
+
+void WeatherServer::republishLocationProperty() const
+{
+    std::lock_guard<std::mutex> lock(_locationPropertyMutex);
+    rapidjson::Document doc;
+    if (_locationProperty) {
+        doc.SetObject();
+        _locationProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    } else {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["property_name"] = "location";
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    auto topic = stinger::utils::format("{prefix}/weather/{service_id}/property/location/value", topicArgs);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _lastLocationPropertyVersion);
+    _broker->Publish(msg);
+}
+
+void WeatherServer::_receiveLocationPropertyUpdate(const stinger::mqtt::Message& msg)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+    if (!ok) {
+        //Log("Could not JSON parse location property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull()) {
+        throw std::runtime_error("Received location payload is not an object or null");
+    }
+
+    // TODO: Check _lastLocationPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 2 values into struct.
+    LocationProperty tempValue = LocationProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_locationPropertyMutex);
+        _locationProperty = tempValue;
+        _lastLocationPropertyVersion++;
+    }
+    republishLocationProperty();
+}
+
+std::optional<double> WeatherServer::getCurrentTemperatureProperty()
+{
+    std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
+    if (_currentTemperatureProperty) {
+        return _currentTemperatureProperty->temperatureF;
+    }
+    return std::nullopt;
+}
+
+void WeatherServer::registerCurrentTemperaturePropertyCallback(const std::function<void(double temperatureF)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_currentTemperaturePropertyCallbacksMutex);
+    _currentTemperaturePropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateCurrentTemperatureProperty(double temperatureF)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
+        _currentTemperatureProperty = CurrentTemperatureProperty{ temperatureF };
+        _lastCurrentTemperaturePropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentTemperaturePropertyCallbacksMutex);
+        for (const auto& cb: _currentTemperaturePropertyCallbacks) {
+            cb(temperatureF);
+        }
+    }
+    republishCurrentTemperatureProperty();
+}
+
+void WeatherServer::republishCurrentTemperatureProperty() const
+{
+    std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
+    rapidjson::Document doc;
+    if (_currentTemperatureProperty) {
+        doc.SetObject();
+        _currentTemperatureProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    } else {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["property_name"] = "current_temperature";
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    auto topic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_temperature/value", topicArgs);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _lastCurrentTemperaturePropertyVersion);
+    _broker->Publish(msg);
+}
+
+void WeatherServer::_receiveCurrentTemperaturePropertyUpdate(const stinger::mqtt::Message& msg)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+    if (!ok) {
+        //Log("Could not JSON parse current_temperature property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull()) {
+        throw std::runtime_error("Received current_temperature payload is not an object or null");
+    }
+
+    // TODO: Check _lastCurrentTemperaturePropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 1 values into struct.
+    CurrentTemperatureProperty tempValue = CurrentTemperatureProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentTemperaturePropertyMutex);
+        _currentTemperatureProperty = tempValue;
+        _lastCurrentTemperaturePropertyVersion++;
+    }
+    republishCurrentTemperatureProperty();
+}
+
+std::optional<CurrentConditionProperty> WeatherServer::getCurrentConditionProperty()
+{
+    std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
+    if (_currentConditionProperty) {
+        return *_currentConditionProperty;
+    }
+    return std::nullopt;
+}
+
+void WeatherServer::registerCurrentConditionPropertyCallback(const std::function<void(WeatherCondition condition, std::string description)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_currentConditionPropertyCallbacksMutex);
+    _currentConditionPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateCurrentConditionProperty(WeatherCondition condition, std::string description)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
+        _currentConditionProperty = CurrentConditionProperty{ condition, description };
+        _lastCurrentConditionPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentConditionPropertyCallbacksMutex);
+        for (const auto& cb: _currentConditionPropertyCallbacks) {
+            cb(condition, description);
+        }
+    }
+    republishCurrentConditionProperty();
+}
+
+void WeatherServer::republishCurrentConditionProperty() const
+{
+    std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
+    rapidjson::Document doc;
+    if (_currentConditionProperty) {
+        doc.SetObject();
+        _currentConditionProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    } else {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["property_name"] = "current_condition";
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    auto topic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition/value", topicArgs);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _lastCurrentConditionPropertyVersion);
+    _broker->Publish(msg);
+}
+
+void WeatherServer::_receiveCurrentConditionPropertyUpdate(const stinger::mqtt::Message& msg)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+    if (!ok) {
+        //Log("Could not JSON parse current_condition property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull()) {
+        throw std::runtime_error("Received current_condition payload is not an object or null");
+    }
+
+    // TODO: Check _lastCurrentConditionPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 2 values into struct.
+    CurrentConditionProperty tempValue = CurrentConditionProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentConditionPropertyMutex);
+        _currentConditionProperty = tempValue;
+        _lastCurrentConditionPropertyVersion++;
+    }
+    republishCurrentConditionProperty();
+}
+
+std::optional<DailyForecastProperty> WeatherServer::getDailyForecastProperty()
+{
+    std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
+    if (_dailyForecastProperty) {
+        return *_dailyForecastProperty;
+    }
+    return std::nullopt;
+}
+
+void WeatherServer::registerDailyForecastPropertyCallback(const std::function<void(ForecastForDay monday, ForecastForDay tuesday, ForecastForDay wednesday)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_dailyForecastPropertyCallbacksMutex);
+    _dailyForecastPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateDailyForecastProperty(ForecastForDay monday, ForecastForDay tuesday, ForecastForDay wednesday)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
+        _dailyForecastProperty = DailyForecastProperty{ monday, tuesday, wednesday };
+        _lastDailyForecastPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_dailyForecastPropertyCallbacksMutex);
+        for (const auto& cb: _dailyForecastPropertyCallbacks) {
+            cb(monday, tuesday, wednesday);
+        }
+    }
+    republishDailyForecastProperty();
+}
+
+void WeatherServer::republishDailyForecastProperty() const
+{
+    std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
+    rapidjson::Document doc;
+    if (_dailyForecastProperty) {
+        doc.SetObject();
+        _dailyForecastProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    } else {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["property_name"] = "daily_forecast";
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    auto topic = stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast/value", topicArgs);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _lastDailyForecastPropertyVersion);
+    _broker->Publish(msg);
+}
+
+void WeatherServer::_receiveDailyForecastPropertyUpdate(const stinger::mqtt::Message& msg)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+    if (!ok) {
+        //Log("Could not JSON parse daily_forecast property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull()) {
+        throw std::runtime_error("Received daily_forecast payload is not an object or null");
+    }
+
+    // TODO: Check _lastDailyForecastPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 3 values into struct.
+    DailyForecastProperty tempValue = DailyForecastProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_dailyForecastPropertyMutex);
+        _dailyForecastProperty = tempValue;
+        _lastDailyForecastPropertyVersion++;
+    }
+    republishDailyForecastProperty();
+}
+
+std::optional<HourlyForecastProperty> WeatherServer::getHourlyForecastProperty()
+{
+    std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
+    if (_hourlyForecastProperty) {
+        return *_hourlyForecastProperty;
+    }
+    return std::nullopt;
+}
+
+void WeatherServer::registerHourlyForecastPropertyCallback(const std::function<void(ForecastForHour hour0, ForecastForHour hour1, ForecastForHour hour2, ForecastForHour hour3)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_hourlyForecastPropertyCallbacksMutex);
+    _hourlyForecastPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateHourlyForecastProperty(ForecastForHour hour0, ForecastForHour hour1, ForecastForHour hour2, ForecastForHour hour3)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
+        _hourlyForecastProperty = HourlyForecastProperty{ hour0, hour1, hour2, hour3 };
+        _lastHourlyForecastPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_hourlyForecastPropertyCallbacksMutex);
+        for (const auto& cb: _hourlyForecastPropertyCallbacks) {
+            cb(hour0, hour1, hour2, hour3);
+        }
+    }
+    republishHourlyForecastProperty();
+}
+
+void WeatherServer::republishHourlyForecastProperty() const
+{
+    std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
+    rapidjson::Document doc;
+    if (_hourlyForecastProperty) {
+        doc.SetObject();
+        _hourlyForecastProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    } else {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["property_name"] = "hourly_forecast";
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    auto topic = stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast/value", topicArgs);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _lastHourlyForecastPropertyVersion);
+    _broker->Publish(msg);
+}
+
+void WeatherServer::_receiveHourlyForecastPropertyUpdate(const stinger::mqtt::Message& msg)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+    if (!ok) {
+        //Log("Could not JSON parse hourly_forecast property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull()) {
+        throw std::runtime_error("Received hourly_forecast payload is not an object or null");
+    }
+
+    // TODO: Check _lastHourlyForecastPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 4 values into struct.
+    HourlyForecastProperty tempValue = HourlyForecastProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_hourlyForecastPropertyMutex);
+        _hourlyForecastProperty = tempValue;
+        _lastHourlyForecastPropertyVersion++;
+    }
+    republishHourlyForecastProperty();
+}
+
+std::optional<int> WeatherServer::getCurrentConditionRefreshIntervalProperty()
+{
+    std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
+    if (_currentConditionRefreshIntervalProperty) {
+        return _currentConditionRefreshIntervalProperty->seconds;
+    }
+    return std::nullopt;
+}
+
+void WeatherServer::registerCurrentConditionRefreshIntervalPropertyCallback(const std::function<void(int seconds)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyCallbacksMutex);
+    _currentConditionRefreshIntervalPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateCurrentConditionRefreshIntervalProperty(int seconds)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
+        _currentConditionRefreshIntervalProperty = CurrentConditionRefreshIntervalProperty{ seconds };
+        _lastCurrentConditionRefreshIntervalPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyCallbacksMutex);
+        for (const auto& cb: _currentConditionRefreshIntervalPropertyCallbacks) {
+            cb(seconds);
+        }
+    }
+    republishCurrentConditionRefreshIntervalProperty();
+}
+
+void WeatherServer::republishCurrentConditionRefreshIntervalProperty() const
+{
+    std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
+    rapidjson::Document doc;
+    if (_currentConditionRefreshIntervalProperty) {
+        doc.SetObject();
+        _currentConditionRefreshIntervalProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    } else {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["property_name"] = "current_condition_refresh_interval";
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    auto topic = stinger::utils::format("{prefix}/weather/{service_id}/property/current_condition_refresh_interval/value", topicArgs);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _lastCurrentConditionRefreshIntervalPropertyVersion);
+    _broker->Publish(msg);
+}
+
+void WeatherServer::_receiveCurrentConditionRefreshIntervalPropertyUpdate(const stinger::mqtt::Message& msg)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+    if (!ok) {
+        //Log("Could not JSON parse current_condition_refresh_interval property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull()) {
+        throw std::runtime_error("Received current_condition_refresh_interval payload is not an object or null");
+    }
+
+    // TODO: Check _lastCurrentConditionRefreshIntervalPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 1 values into struct.
+    CurrentConditionRefreshIntervalProperty tempValue = CurrentConditionRefreshIntervalProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_currentConditionRefreshIntervalPropertyMutex);
+        _currentConditionRefreshIntervalProperty = tempValue;
+        _lastCurrentConditionRefreshIntervalPropertyVersion++;
+    }
+    republishCurrentConditionRefreshIntervalProperty();
+}
+
+std::optional<int> WeatherServer::getHourlyForecastRefreshIntervalProperty()
+{
+    std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
+    if (_hourlyForecastRefreshIntervalProperty) {
+        return _hourlyForecastRefreshIntervalProperty->seconds;
+    }
+    return std::nullopt;
+}
+
+void WeatherServer::registerHourlyForecastRefreshIntervalPropertyCallback(const std::function<void(int seconds)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyCallbacksMutex);
+    _hourlyForecastRefreshIntervalPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateHourlyForecastRefreshIntervalProperty(int seconds)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
+        _hourlyForecastRefreshIntervalProperty = HourlyForecastRefreshIntervalProperty{ seconds };
+        _lastHourlyForecastRefreshIntervalPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyCallbacksMutex);
+        for (const auto& cb: _hourlyForecastRefreshIntervalPropertyCallbacks) {
+            cb(seconds);
+        }
+    }
+    republishHourlyForecastRefreshIntervalProperty();
+}
+
+void WeatherServer::republishHourlyForecastRefreshIntervalProperty() const
+{
+    std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
+    rapidjson::Document doc;
+    if (_hourlyForecastRefreshIntervalProperty) {
+        doc.SetObject();
+        _hourlyForecastRefreshIntervalProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    } else {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["property_name"] = "hourly_forecast_refresh_interval";
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    auto topic = stinger::utils::format("{prefix}/weather/{service_id}/property/hourly_forecast_refresh_interval/value", topicArgs);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _lastHourlyForecastRefreshIntervalPropertyVersion);
+    _broker->Publish(msg);
+}
+
+void WeatherServer::_receiveHourlyForecastRefreshIntervalPropertyUpdate(const stinger::mqtt::Message& msg)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+    if (!ok) {
+        //Log("Could not JSON parse hourly_forecast_refresh_interval property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull()) {
+        throw std::runtime_error("Received hourly_forecast_refresh_interval payload is not an object or null");
+    }
+
+    // TODO: Check _lastHourlyForecastRefreshIntervalPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 1 values into struct.
+    HourlyForecastRefreshIntervalProperty tempValue = HourlyForecastRefreshIntervalProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_hourlyForecastRefreshIntervalPropertyMutex);
+        _hourlyForecastRefreshIntervalProperty = tempValue;
+        _lastHourlyForecastRefreshIntervalPropertyVersion++;
+    }
+    republishHourlyForecastRefreshIntervalProperty();
+}
+
+std::optional<int> WeatherServer::getDailyForecastRefreshIntervalProperty()
+{
+    std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
+    if (_dailyForecastRefreshIntervalProperty) {
+        return _dailyForecastRefreshIntervalProperty->seconds;
+    }
+    return std::nullopt;
+}
+
+void WeatherServer::registerDailyForecastRefreshIntervalPropertyCallback(const std::function<void(int seconds)>& cb)
+{
+    std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyCallbacksMutex);
+    _dailyForecastRefreshIntervalPropertyCallbacks.push_back(cb);
+}
+
+void WeatherServer::updateDailyForecastRefreshIntervalProperty(int seconds)
+{
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
+        _dailyForecastRefreshIntervalProperty = DailyForecastRefreshIntervalProperty{ seconds };
+        _lastDailyForecastRefreshIntervalPropertyVersion++;
+    }
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyCallbacksMutex);
+        for (const auto& cb: _dailyForecastRefreshIntervalPropertyCallbacks) {
+            cb(seconds);
+        }
+    }
+    republishDailyForecastRefreshIntervalProperty();
+}
+
+void WeatherServer::republishDailyForecastRefreshIntervalProperty() const
+{
+    std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
+    rapidjson::Document doc;
+    if (_dailyForecastRefreshIntervalProperty) {
+        doc.SetObject();
+        _dailyForecastRefreshIntervalProperty->AddToRapidJsonObject(doc, doc.GetAllocator());
+    } else {
+        doc.SetNull();
+    }
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicArgs;
+    topicArgs["service_id"] = _instanceId;
+    topicArgs["interface_name"] = NAME;
+    topicArgs["client_id"] = _broker->GetClientId();
+    topicArgs["property_name"] = "daily_forecast_refresh_interval";
+    topicArgs["prefix"] = _prefixTopicParam;
+
+    auto topic = stinger::utils::format("{prefix}/weather/{service_id}/property/daily_forecast_refresh_interval/value", topicArgs);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _lastDailyForecastRefreshIntervalPropertyVersion);
+    _broker->Publish(msg);
+}
+
+void WeatherServer::_receiveDailyForecastRefreshIntervalPropertyUpdate(const stinger::mqtt::Message& msg)
+{
+    rapidjson::Document doc;
+    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
+    if (!ok) {
+        //Log("Could not JSON parse daily_forecast_refresh_interval property update payload.");
+        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+    }
+
+    if (!doc.IsObject() && !doc.IsNull()) {
+        throw std::runtime_error("Received daily_forecast_refresh_interval payload is not an object or null");
+    }
+
+    // TODO: Check _lastDailyForecastRefreshIntervalPropertyVersion against optPropertyVersion and
+    // reject the update if it's older than what we have.
+
+    // Deserialize 1 values into struct.
+    DailyForecastRefreshIntervalProperty tempValue = DailyForecastRefreshIntervalProperty::FromRapidJsonObject(doc);
+
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_dailyForecastRefreshIntervalPropertyMutex);
+        _dailyForecastRefreshIntervalProperty = tempValue;
+        _lastDailyForecastRefreshIntervalPropertyVersion++;
+    }
+    republishDailyForecastRefreshIntervalProperty();
+}
+
+void WeatherServer::_advertisementThreadLoop()
+{
+    while (_advertisementThreadRunning) {
+        // Get current timestamp
+        auto now = std::chrono::system_clock::now();
+        std::string timestamp = stinger::utils::timePointToIsoString(now);
+
+        // Build JSON message
+        rapidjson::Document doc;
+        doc.SetObject();
+        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+
+        doc.AddMember("interface_name", rapidjson::Value("weather", allocator), allocator);
+        doc.AddMember("instance", rapidjson::Value(_instanceId.c_str(), allocator), allocator);
+        doc.AddMember("title", rapidjson::Value("NWS weather forecast", allocator), allocator);
+        doc.AddMember("version", rapidjson::Value("0.1.2", allocator), allocator);
+        doc.AddMember("connection_topic", rapidjson::Value(_broker->GetOnlineTopic().c_str(), allocator), allocator);
+        doc.AddMember("timestamp", rapidjson::Value(timestamp.c_str(), allocator), allocator);
+
+        doc.AddMember("prefix", rapidjson::Value(_prefixTopicParam.c_str(), allocator), allocator);
+
+        // Convert to JSON string
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        doc.Accept(writer);
+
+        std::map<std::string, std::string> topicArgs;
+        topicArgs["service_id"] = _instanceId;
+        topicArgs["interface_name"] = NAME;
+        topicArgs["client_id"] = _broker->GetClientId();
+        topicArgs["prefix"] = _prefixTopicParam;
+
+        // Publish to "{prefix}/weather/{service_id}/interface"
+        std::string topic = stinger::utils::format("{prefix}/weather/{service_id}/interface", topicArgs);
+        auto msg = stinger::mqtt::Message::ServiceOnline(topic, buf.GetString(), 120);
+        _broker->Publish(msg);
+
+        _broker->Log(LOG_INFO, "Published service advertisement to %s", topic.c_str());
+
+        // Wait for 120 seconds or until thread should stop
+        // Use smaller sleep intervals to allow quick shutdown
+        for (int i = 0; i < 120 && _advertisementThreadRunning; ++i) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    }
+}
+
+} // namespace weather
+
+} // namespace gen
+
+} // namespace stinger

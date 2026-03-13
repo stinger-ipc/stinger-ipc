@@ -1,0 +1,518 @@
+syntax = "proto3";
+
+package testable;
+
+
+
+
+enum Numbers {
+    NUMBERS_UNSPECIFIED = 0; 
+    NUMBERS_ONE = 1;
+    NUMBERS_TWO = 2;
+    NUMBERS_THREE = 3;
+}
+
+
+message Entry {
+    int32 key = 1;
+    string value = 2;
+}
+
+message AllTypes {
+    bool the_bool = 1;
+    int32 the_int = 2;
+    float the_number = 3;
+    string the_str = 4;
+    Numbers the_enum = 5;
+    Entry an_entry_object = 6;
+    string date_and_time = 7;  // ISO 8601 format
+    string time_duration = 8;  // ISO 8601 duration format
+    string data = 9;  // base64 encoded binary
+    optional int32 OptionalInteger = 10;
+    optional string OptionalString = 11;
+    optional Numbers OptionalEnum = 12;
+    optional Entry optionalEntryObject = 13;
+    optional string OptionalDateTime = 14;  // ISO 8601 format
+    optional string OptionalDuration = 15;  // ISO 8601 duration format
+    optional string OptionalBinary = 16;  // base64 encoded binary
+    repeated int32 array_of_integers = 17;
+    repeated int32 optional_array_of_integers = 18;
+    repeated string array_of_strings = 19;
+    repeated string optional_array_of_strings = 20;
+    repeated Numbers array_of_enums = 21;
+    repeated Numbers optional_array_of_enums = 22;
+    repeated string array_of_datetimes = 23;
+    repeated string optional_array_of_datetimes = 24;
+    repeated string array_of_durations = 25;
+    repeated string optional_array_of_durations = 26;
+    repeated string array_of_binaries = 27;
+    repeated string optional_array_of_binaries = 28;
+    repeated Entry array_of_entry_objects = 29;
+    repeated Entry optional_array_of_entry_objects = 30;
+}
+
+
+
+message EmptySignal {
+}
+
+message SingleIntSignal {
+    int32 value = 1;
+}
+
+message SingleOptionalIntSignal {
+    optional int32 value = 1;
+}
+
+message ThreeIntegersSignal {
+    int32 first = 1;
+    int32 second = 2;
+    optional int32 third = 3;
+}
+
+message SingleStringSignal {
+    string value = 1;
+}
+
+message SingleOptionalStringSignal {
+    optional string value = 1;
+}
+
+message ThreeStringsSignal {
+    string first = 1;
+    string second = 2;
+    optional string third = 3;
+}
+
+message SingleEnumSignal {
+    Numbers value = 1;
+}
+
+message SingleOptionalEnumSignal {
+    optional Numbers value = 1;
+}
+
+message ThreeEnumsSignal {
+    Numbers first = 1;
+    Numbers second = 2;
+    optional Numbers third = 3;
+}
+
+message SingleStructSignal {
+    AllTypes value = 1;
+}
+
+message SingleOptionalStructSignal {
+    optional AllTypes value = 1;
+}
+
+message ThreeStructsSignal {
+    AllTypes first = 1;
+    AllTypes second = 2;
+    optional AllTypes third = 3;
+}
+
+message SingleDateTimeSignal {
+    string value = 1;  // ISO 8601 format
+}
+
+message SingleOptionalDatetimeSignal {
+    optional string value = 1;  // ISO 8601 format
+}
+
+message ThreeDateTimesSignal {
+    string first = 1;  // ISO 8601 format
+    string second = 2;  // ISO 8601 format
+    optional string third = 3;  // ISO 8601 format
+}
+
+message SingleDurationSignal {
+    string value = 1;  // ISO 8601 duration format
+}
+
+message SingleOptionalDurationSignal {
+    optional string value = 1;  // ISO 8601 duration format
+}
+
+message ThreeDurationsSignal {
+    string first = 1;  // ISO 8601 duration format
+    string second = 2;  // ISO 8601 duration format
+    optional string third = 3;  // ISO 8601 duration format
+}
+
+message SingleBinarySignal {
+    string value = 1;  // base64 encoded binary
+}
+
+message SingleOptionalBinarySignal {
+    optional string value = 1;  // base64 encoded binary
+}
+
+message ThreeBinariesSignal {
+    string first = 1;  // base64 encoded binary
+    string second = 2;  // base64 encoded binary
+    optional string third = 3;  // base64 encoded binary
+}
+
+message SingleArrayOfIntegersSignal {
+    repeated int32 values = 1;
+}
+
+message SingleOptionalArrayOfStringsSignal {
+    repeated string values = 1;
+}
+
+message ArrayOfEveryTypeSignal {
+    repeated int32 first_of_integers = 1;
+    repeated float second_of_floats = 2;
+    repeated string third_of_strings = 3;
+    repeated Numbers fourth_of_enums = 4;
+    repeated Entry fifth_of_structs = 5;
+    repeated string sixth_of_datetimes = 6;
+    repeated string seventh_of_durations = 7;
+    repeated string eighth_of_binaries = 8;
+}
+
+
+
+message ReadWriteIntegerProperty {
+    int32 value = 1;
+}
+
+message ReadOnlyIntegerProperty {
+    int32 value = 1;
+}
+
+message ReadWriteOptionalIntegerProperty {
+    optional int32 value = 1;
+}
+
+message ReadWriteTwoIntegersProperty {
+    int32 first = 1;
+    optional int32 second = 2;
+}
+
+message ReadOnlyStringProperty {
+    string value = 1;
+}
+
+message ReadWriteStringProperty {
+    string value = 1;
+}
+
+message ReadWriteOptionalStringProperty {
+    optional string value = 1;
+}
+
+message ReadWriteTwoStringsProperty {
+    string first = 1;
+    optional string second = 2;
+}
+
+message ReadWriteStructProperty {
+    AllTypes value = 1;
+}
+
+message ReadWriteOptionalStructProperty {
+    optional AllTypes value = 1;
+}
+
+message ReadWriteTwoStructsProperty {
+    AllTypes first = 1;
+    optional AllTypes second = 2;
+}
+
+message ReadOnlyEnumProperty {
+    Numbers value = 1;
+}
+
+message ReadWriteEnumProperty {
+    Numbers value = 1;
+}
+
+message ReadWriteOptionalEnumProperty {
+    optional Numbers value = 1;
+}
+
+message ReadWriteTwoEnumsProperty {
+    Numbers first = 1;
+    optional Numbers second = 2;
+}
+
+message ReadWriteDatetimeProperty {
+    string value = 1;  // ISO 8601 format
+}
+
+message ReadWriteOptionalDatetimeProperty {
+    optional string value = 1;  // ISO 8601 format
+}
+
+message ReadWriteTwoDatetimesProperty {
+    string first = 1;  // ISO 8601 format
+    optional string second = 2;  // ISO 8601 format
+}
+
+message ReadWriteDurationProperty {
+    string value = 1;  // ISO 8601 duration format
+}
+
+message ReadWriteOptionalDurationProperty {
+    optional string value = 1;  // ISO 8601 duration format
+}
+
+message ReadWriteTwoDurationsProperty {
+    string first = 1;  // ISO 8601 duration format
+    optional string second = 2;  // ISO 8601 duration format
+}
+
+message ReadWriteBinaryProperty {
+    string value = 1;  // base64 encoded binary
+}
+
+message ReadWriteOptionalBinaryProperty {
+    optional string value = 1;  // base64 encoded binary
+}
+
+message ReadWriteTwoBinariesProperty {
+    string first = 1;  // base64 encoded binary
+    optional string second = 2;  // base64 encoded binary
+}
+
+message ReadWriteListOfStringsProperty {
+    repeated string value = 1;
+}
+
+message ReadWriteListsProperty {
+    repeated Numbers the_list = 1;
+    repeated string optionalList = 2;
+}
+
+
+
+message CallWithNothingRequest {
+}
+
+message CallWithNothingResponse {
+}
+
+message CallOneIntegerRequest {
+    int32 input1 = 1;
+}
+
+message CallOneIntegerResponse {
+    int32 output1 = 1;
+}
+
+message CallOptionalIntegerRequest {
+    optional int32 input1 = 1;
+}
+
+message CallOptionalIntegerResponse {
+    optional int32 output1 = 1;
+}
+
+message CallThreeIntegersRequest {
+    int32 input1 = 1;
+    int32 input2 = 2;
+    optional int32 input3 = 3;
+}
+
+message CallThreeIntegersResponse {
+    int32 output1 = 1;
+    int32 output2 = 2;
+    optional int32 output3 = 3;
+}
+
+message CallOneStringRequest {
+    string input1 = 1;
+}
+
+message CallOneStringResponse {
+    string output1 = 1;
+}
+
+message CallOptionalStringRequest {
+    optional string input1 = 1;
+}
+
+message CallOptionalStringResponse {
+    optional string output1 = 1;
+}
+
+message CallThreeStringsRequest {
+    string input1 = 1;
+    optional string input2 = 2;
+    string input3 = 3;
+}
+
+message CallThreeStringsResponse {
+    string output1 = 1;
+    optional string output2 = 2;
+    string output3 = 3;
+}
+
+message CallOneEnumRequest {
+    Numbers input1 = 1;
+}
+
+message CallOneEnumResponse {
+    Numbers output1 = 1;
+}
+
+message CallOptionalEnumRequest {
+    optional Numbers input1 = 1;
+}
+
+message CallOptionalEnumResponse {
+    optional Numbers output1 = 1;
+}
+
+message CallThreeEnumsRequest {
+    Numbers input1 = 1;
+    Numbers input2 = 2;
+    optional Numbers input3 = 3;
+}
+
+message CallThreeEnumsResponse {
+    Numbers output1 = 1;
+    Numbers output2 = 2;
+    optional Numbers output3 = 3;
+}
+
+message CallOneStructRequest {
+    AllTypes input1 = 1;
+}
+
+message CallOneStructResponse {
+    AllTypes output1 = 1;
+}
+
+message CallOptionalStructRequest {
+    optional AllTypes input1 = 1;
+}
+
+message CallOptionalStructResponse {
+    optional AllTypes output1 = 1;
+}
+
+message CallThreeStructsRequest {
+    optional AllTypes input1 = 1;
+    AllTypes input2 = 2;
+    AllTypes input3 = 3;
+}
+
+message CallThreeStructsResponse {
+    optional AllTypes output1 = 1;
+    AllTypes output2 = 2;
+    AllTypes output3 = 3;
+}
+
+message CallOneDateTimeRequest {
+    string input1 = 1;  // ISO 8601 format
+}
+
+message CallOneDateTimeResponse {
+    string output1 = 1;  // ISO 8601 format
+}
+
+message CallOptionalDateTimeRequest {
+    optional string input1 = 1;  // ISO 8601 format
+}
+
+message CallOptionalDateTimeResponse {
+    optional string output1 = 1;  // ISO 8601 format
+}
+
+message CallThreeDateTimesRequest {
+    string input1 = 1;  // ISO 8601 format
+    string input2 = 2;  // ISO 8601 format
+    optional string input3 = 3;  // ISO 8601 format
+}
+
+message CallThreeDateTimesResponse {
+    string output1 = 1;  // ISO 8601 format
+    string output2 = 2;  // ISO 8601 format
+    optional string output3 = 3;  // ISO 8601 format
+}
+
+message CallOneDurationRequest {
+    string input1 = 1;  // ISO 8601 duration format
+}
+
+message CallOneDurationResponse {
+    string output1 = 1;  // ISO 8601 duration format
+}
+
+message CallOptionalDurationRequest {
+    optional string input1 = 1;  // ISO 8601 duration format
+}
+
+message CallOptionalDurationResponse {
+    optional string output1 = 1;  // ISO 8601 duration format
+}
+
+message CallThreeDurationsRequest {
+    string input1 = 1;  // ISO 8601 duration format
+    string input2 = 2;  // ISO 8601 duration format
+    optional string input3 = 3;  // ISO 8601 duration format
+}
+
+message CallThreeDurationsResponse {
+    string output1 = 1;  // ISO 8601 duration format
+    string output2 = 2;  // ISO 8601 duration format
+    optional string output3 = 3;  // ISO 8601 duration format
+}
+
+message CallOneBinaryRequest {
+    string input1 = 1;  // base64 encoded binary
+}
+
+message CallOneBinaryResponse {
+    string output1 = 1;  // base64 encoded binary
+}
+
+message CallOptionalBinaryRequest {
+    optional string input1 = 1;  // base64 encoded binary
+}
+
+message CallOptionalBinaryResponse {
+    optional string output1 = 1;  // base64 encoded binary
+}
+
+message CallThreeBinariesRequest {
+    string input1 = 1;  // base64 encoded binary
+    string input2 = 2;  // base64 encoded binary
+    optional string input3 = 3;  // base64 encoded binary
+}
+
+message CallThreeBinariesResponse {
+    string output1 = 1;  // base64 encoded binary
+    string output2 = 2;  // base64 encoded binary
+    optional string output3 = 3;  // base64 encoded binary
+}
+
+message CallOneListOfIntegersRequest {
+    repeated int32 input1 = 1;
+}
+
+message CallOneListOfIntegersResponse {
+    repeated int32 output1 = 1;
+}
+
+message CallOptionalListOfFloatsRequest {
+    repeated float input1 = 1;
+}
+
+message CallOptionalListOfFloatsResponse {
+    repeated float output1 = 1;
+}
+
+message CallTwoListsRequest {
+    repeated Numbers input1 = 1;
+    repeated string input2 = 2;
+}
+
+message CallTwoListsResponse {
+    repeated Numbers output1 = 1;
+    repeated string output2 = 2;
+}
