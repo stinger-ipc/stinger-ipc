@@ -258,7 +258,8 @@ class {{stinger.python.client_class_name}}:
         self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
 
         self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
-        req_msg = MessageCreator.request_message("{{method.request_topic()}}".format(**self._topic_template_kwargs), payload, self._all_methods_response_topic, correlation_id) # type: ignore[str-format]
+        response_topic = "{{method.response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
+        req_msg = MessageCreator.request_message("{{method.request_topic()}}".format(**self._topic_template_kwargs), payload, response_topic, correlation_id) # type: ignore[str-format]
         self._conn.publish(req_msg)
         return fut
 

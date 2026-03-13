@@ -44,11 +44,11 @@ tasks:
       - stingeripc/templates/python/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
-      - example_interfaces/{{.IFACE}}/output/python/**
+      - generated/{{.IFACE}}/python/**
     cmds:
-      - mkdir -p ./example_interfaces/{{.IFACE}}/output/python/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/python/
-      - uv run black ./example_interfaces/{{.IFACE}}/output/python/
+      - mkdir -p ./generated/{{.IFACE}}/python/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml generated/{{.IFACE}}/python/
+      - uv run black ./generated/{{.IFACE}}/python/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -63,11 +63,11 @@ tasks:
       - stingeripc/templates/python/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
-      - example_interfaces/{{.IFACE}}/output/python37/**
+      - generated/{{.IFACE}}/python37/**
     cmds:
-      - mkdir -p ./example_interfaces/{{.IFACE}}/output/python37/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/python37/
-      - uv run black ./example_interfaces/{{.IFACE}}/output/python37/
+      - mkdir -p ./generated/{{.IFACE}}/python37/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml generated/{{.IFACE}}/python37/
+      - uv run black ./generated/{{.IFACE}}/python37/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -82,11 +82,11 @@ tasks:
       - stingeripc/templates/python/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
-      - example_interfaces/{{.IFACE}}/output/python-alt1/**
+      - generated/{{.IFACE}}/python-alt1/**
     cmds:
-      - mkdir -p ./example_interfaces/{{.IFACE}}/output/python-alt1/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/app-owned-props.toml --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/python-alt1/
-      - uv run black ./example_interfaces/{{.IFACE}}/output/python-alt1/
+      - mkdir -p ./generated/{{.IFACE}}/python-alt1/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/app-owned-props.toml --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml generated/{{.IFACE}}/python-alt1/
+      - uv run black ./generated/{{.IFACE}}/python-alt1/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -102,12 +102,12 @@ tasks:
 
   python:unittest:*:
     desc: Run Python unit tests for an interface
-    dir: example_interfaces/{{.IFACE}}/output/python/
+    dir: example_interfaces/{{.IFACE}}/python/
     deps:
       - task: python:generate:{{index .MATCH 0}}
     sources:
-      - example_interfaces/{{.IFACE}}/output/python/tests/**
-      - example_interfaces/{{.IFACE}}/output/python/src/**
+      - example_interfaces/{{.IFACE}}/python/tests/**
+      - example_interfaces/{{.IFACE}}/python/src/**
     cmds:
       - uv run pytest -vv
     vars:
@@ -115,12 +115,12 @@ tasks:
 
   python-alt1:unittest:*:
     desc: Run Python unit tests for an interface generated with alternative settings
-    dir: example_interfaces/{{.IFACE}}/output/python-alt1/
+    dir: example_interfaces/{{.IFACE}}/python-alt1/
     deps:
       - task: python-alt1:generate:{{index .MATCH 0}}
     sources:
-      - example_interfaces/{{.IFACE}}/output/python-alt1/tests/*.py
-      - example_interfaces/{{.IFACE}}/output/python-alt1/src/*.py
+      - generated/{{.IFACE}}/python-alt1/tests/*.py
+      - example_interfaces/{{.IFACE}}/python-alt1/src/*.py
     cmds:
       - uv run pytest -vv
     vars:
@@ -136,7 +136,7 @@ tasks:
 
   python:mypy:*:
     desc: Run mypy type checking for an interface
-    dir: example_interfaces/{{.IFACE}}/output/python/
+    dir: example_interfaces/{{.IFACE}}/python/
     deps:
       - task: python:generate:{{index .MATCH 0}}
     sources:
@@ -149,7 +149,7 @@ tasks:
     
   python-alt1:mypy:*:
     desc: Run mypy type checking for an interface generated with alternative settings
-    dir: example_interfaces/{{.IFACE}}/output/python-alt1/
+    dir: example_interfaces/{{.IFACE}}/python-alt1/
     deps:
       - task: python-alt1:generate:{{index .MATCH 0}}
     sources:
@@ -186,13 +186,13 @@ tasks:
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
       - clang-format-config.yaml
     generates:
-      - example_interfaces/{{.IFACE}}/output/cpp/examples/**
-      - example_interfaces/{{.IFACE}}/output/cpp/include/**
-      - example_interfaces/{{.IFACE}}/output/cpp/src/**
-      - example_interfaces/{{.IFACE}}/output/cpp/cmake/**
+      - generated/{{.IFACE}}/cpp/examples/**
+      - generated/{{.IFACE}}/cpp/include/**
+      - generated/{{.IFACE}}/cpp/src/**
+      - generated/{{.IFACE}}/cpp/cmake/**
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language cpp --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/cpp/
-      - clang-format --style=file:clang-format-config.yaml ./example_interfaces/{{.IFACE}}/output/cpp/include/*.hpp ./example_interfaces/{{.IFACE}}/output/cpp/src/*.cpp ./example_interfaces/{{.IFACE}}/output/cpp/examples/*.cpp -i
+      - uv run stinger generate {{.CLI_ARGS}} --language cpp --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml generated/{{.IFACE}}/cpp/
+      - clang-format --style=file:clang-format-config.yaml ./generated/{{.IFACE}}/cpp/include/*.hpp ./generated/{{.IFACE}}/cpp/src/*.cpp ./generated/{{.IFACE}}/cpp/examples/*.cpp -i
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -207,10 +207,10 @@ tasks:
     deps:
       - task: cpp:generate:{{index .MATCH 0}}
     sources:
-      - example_interfaces/{{.IFACE}}/output/cpp/**
+      - generated/{{.IFACE}}/cpp/**
     cmds:
-      - mkdir -p ./example_interfaces/{{.IFACE}}/output/cpp/build
-      - cd ./example_interfaces/{{.IFACE}}/output/cpp/build && cmake .. && make -j {{.THREADS}}
+      - mkdir -p ./generated/{{.IFACE}}/cpp/build
+      - cd ./generated/{{.IFACE}}/cpp/build && cmake .. && make -j {{.THREADS}}
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -228,10 +228,10 @@ tasks:
       - stingeripc/templates/rust/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
-      - example_interfaces/{{.IFACE}}/output/rust/**
+      - generated/{{.IFACE}}/rust/**
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language rust --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/rust/
-      - cd ./example_interfaces/{{.IFACE}}/output/rust/ && cargo fmt
+      - uv run stinger generate {{.CLI_ARGS}} --language rust --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml generated/{{.IFACE}}/rust/
+      - cd ./generated/{{.IFACE}}/rust/ && cargo fmt
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -243,7 +243,7 @@ tasks:
 
   rust:check:*:
     desc: Check Rust code for an interface
-    dir: example_interfaces/{{.IFACE}}/output/rust/
+    dir: generated/{{.IFACE}}/rust/
     deps:
       - task: rust:generate:{{index .MATCH 0}}
     sources:
@@ -268,9 +268,9 @@ tasks:
       - stingeripc/templates/markdown/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
-      - example_interfaces/{{.IFACE}}/output/markdown/*
+      - example_interfaces/{{.IFACE}}/markdown/*
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language markdown --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/markdown/
+      - uv run stinger generate {{.CLI_ARGS}} --language markdown --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/markdown/
     vars:
       IFACE: '{{index .MATCH 0}}'
   
@@ -287,9 +287,9 @@ tasks:
       - stingeripc/templates/web/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
-      - example_interfaces/{{.IFACE}}/output/web/**
+      - generated/{{.IFACE}}/web/**
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language web --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/web/
+      - uv run stinger generate {{.CLI_ARGS}} --language web --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml generated/{{.IFACE}}/web/
     vars:
       IFACE: '{{index .MATCH 0}}'
   
@@ -310,10 +310,10 @@ tasks:
       - stingeripc/templates/protobuf/**
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
-      - example_interfaces/{{.IFACE}}/output/protobuf/**
+      - generated/{{.IFACE}}/protobuf/**
     cmds:
-      - mkdir -p ./example_interfaces/{{.IFACE}}/output/protobuf/
-      - uv run stinger generate {{.CLI_ARGS}} --language protobuf ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml example_interfaces/{{.IFACE}}/output/protobuf/
+      - mkdir -p ./generated/{{.IFACE}}/protobuf/
+      - uv run stinger generate {{.CLI_ARGS}} --language protobuf ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml generated/{{.IFACE}}/protobuf/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -328,9 +328,9 @@ tasks:
     deps:
       - task: protobuf:generate:{{index .MATCH 0}}
     sources:
-      - example_interfaces/{{.IFACE}}/output/protobuf/**
+      - generated/{{.IFACE}}/protobuf/**
     cmds:
-      - uvx --from=protoc-wrapper@30.2 protoc --proto_path=./example_interfaces/{{.IFACE}}/output/protobuf/ --descriptor_set_out=/dev/null ./example_interfaces/{{.IFACE}}/output/protobuf/*.proto
+      - uvx --from=protoc-wrapper@30.2 protoc --proto_path=./generated/{{.IFACE}}/protobuf/ --descriptor_set_out=/dev/null ./generated/{{.IFACE}}/protobuf/*.proto
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -353,4 +353,4 @@ tasks:
   clean:
     desc: Clean all generated files
     cmds:
-      - rm -rf ./example_interfaces/*/output/*
+      - rm -rf ./generated/*
