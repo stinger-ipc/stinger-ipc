@@ -454,21 +454,22 @@ class StingerToAsyncApi:
         return self
 
     def _add_interface_info(self):
-        topic, info = self._stinger.interface_info
-        self._asyncapi.add_to_info("version", info["version"])
-        self._asyncapi.add_to_info("title", info["title"])
+        topic = self._stinger.interface_info_topic()
+        self._asyncapi.add_to_info("version", self._stinger.version)
+        self._asyncapi.add_to_info("title", self._stinger.title)
         ch = Channel(topic, "interfaceInfo", Direction.SERVER_PUBLISHES)
         ch.set_mqtt(qos=1, retain=True)
         self._asyncapi.add_channel(ch)
         msg = Message("interfaceInfo")
         schema = ObjectSchema()
+        info = {"version": self._stinger.version, "title": self._stinger.title}
         for k, v in info.items():
             schema.add_const_value_property(k, ArgPrimitiveType.STRING, v)
         msg.set_schema(schema.to_schema())
         self._asyncapi.add_message(msg)
 
     def _add_servers(self):
-        info_topic, _ = self._stinger.interface_info
+        info_topic = self._stinger.interface_info_topic()
         if hasattr(self._stinger, 'brokers'):
             for broker_name, broker_spec in self._stinger.brokers.items():
                 svr = Server(broker_name)
@@ -482,7 +483,7 @@ class StingerToAsyncApi:
 
     def _add_signals(self):
         for sig_name, sig_spec in self._stinger.signals.items():
-            ch = Channel(sig_spec.topic, sig_name, Direction.SERVER_PUBLISHES)
+            ch = Channel(sig_spec.topic(), sig_name, Direction.SERVER_PUBLISHES)
             ch.add_operation_trait({"$ref": "#/components/operationTraits/signal"})
             self._asyncapi.add_channel(ch)
             msg = Message(sig_name)
@@ -501,7 +502,7 @@ class StingerToAsyncApi:
     def _add_methods(self):
         for method_name, method_spec in self._stinger.methods.items():
             call_ch = Channel(
-                method_spec.topic, method_name, Direction.SERVER_SUBSCRIBES
+                method_spec.request_topic(), method_name, Direction.SERVER_SUBSCRIBES
             )
             call_ch.add_operation_trait(
                 {"$ref": "#/components/operationTraits/methodCall"}
@@ -523,7 +524,7 @@ class StingerToAsyncApi:
             self._asyncapi.add_message(call_msg)
 
             resp_ch = Channel(
-                method_spec.response_topic(self._stinger.name, "{client_id}"),
+                method_spec.response_topic(client_id="{client_id}"),
                 f"{method_name}Response",
                 Direction.SERVER_PUBLISHES,
             )
