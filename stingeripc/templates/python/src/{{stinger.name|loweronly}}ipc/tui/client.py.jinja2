@@ -237,14 +237,17 @@ class MethodCallModal(ModalScreen[Optional[str]]):
         """Compose the modal screen."""
         with Vertical(id="modal_container"):
             yield Static(f"Call: {self.method_name}", id="modal_title")
-            
+            {% if stinger.methods | length > 0 %}
             with VerticalScroll(id="inputs_container"):
+                """ Vertical Scroll container for method inputs """
                 {% for method_name, method_obj in stinger.methods.items() %}
+                {% if method_obj.arg_list | length > 0 %}
                 if self.method_name == "{{method_name|snake_case}}":
+                    """ Generate input fields for each argument of the method """
                     {%-for arg in method_obj.arg_list%}
                     {% if arg.arg_type.name == 'STRUCT' or arg.arg_type.name == 'ARRAY' %}
                     yield Label(f"{{arg.name}} (JSON {% if arg.arg_type.name == 'STRUCT' %}Object{% else %}Array{% endif %}){%if arg.optional%} [Optional]{%endif%}", classes="input_label")
-                    yield TextArea.code_editor(language="json", placeholder=f"{% if arg.arg_type.name == 'STRUCT' %} {  } {% else %} [  ] {% endif %}", id=f"input_{{arg.name|snake_case}}")
+                    yield TextArea.code_editor(language="json", placeholder=f"{% if arg.arg_type.name == 'STRUCT' %} object {% else %} [  ] {% endif %}", id=f"input_{{arg.name|snake_case}}")
                     {% elif arg.arg_type.name == 'PRIMITIVE'%}
                     yield Label(f"{{arg.name}} ({{arg.arg_type.name}}){%if arg.optional%} [Optional]{%endif%}", classes="input_label")
                     {%-if arg.type.name == 'BOOLEAN'%}
@@ -266,7 +269,9 @@ class MethodCallModal(ModalScreen[Optional[str]]):
                     yield Select(options=options, id=f"input_{{arg.name|snake_case}}")
                     {% endif %}{# arg type switch#}
                     {%endfor-%} {# for each arg #}
+                {% endif %} {# if there are any arguments for the method #}
                 {% endfor %} {# for each method #}
+            {% endif %} {# if there are any methods #}
             
             with Horizontal(id="button_container"):
                 yield Button("Call Method", variant="primary", id="call_button")
@@ -288,71 +293,76 @@ class MethodCallModal(ModalScreen[Optional[str]]):
         logger.debug("Calling method '%s' with params: %s", self.method_name, self.params)
         try:
             # Collect inputs
-            kwargs = {}
+            kwargs = {} # type: Dict[str, Any]
+            
             {% for method_name, method_obj in stinger.methods.items() %}
+            {% if method_obj.arg_list | length > 0 %}
             if self.method_name == "{{method_name|snake_case}}":
                 {%-for arg in method_obj.arg_list%}
                 {% if arg.arg_type.name == 'STRUCT' %}
-                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
-                {{arg.name|snake_case}}_widget_text_value = {{arg.name|snake_case}}_input_widget.value.strip()
-                if not {{arg.name|snake_case}}_widget_text_value and not arg.optional:
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value = {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value.strip()
+                {% if not arg.optional %}
+                if not {{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value:
                     self.result_widget.update(f"[red]Error: Missing required parameter {{arg.name}}[/red]")
                     return
+                {% endif %} {# non-optional check #}
                 try:
-                    value = {{arg.python_type}}.model_validate_json({{arg.name|snake_case}}_widget_text_value)
+                    {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.python_type}}.model_validate_json({{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value)
                 except Exception as e:
                     self.result_widget.update(f"[red]Error parsing JSON for parameter {{arg.name}}: {e}[/red]")
                     return
                 else:
-                    kwargs["{{arg.name|snake_case}}"] = value
+                    kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% elif arg.arg_type.name == 'ARRAY' %}
                 type_adapter = TypeAdapter({{arg.python_type}})
 
                 try:
-                    {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
-                    {{arg.name|snake_case}}_widget_text_value = {{arg.name|snake_case}}_input_widget.value.strip()
-                    values = type_adapter.validate_json({{arg.name|snake_case}}_widget_text_value)
+                    {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
+                    {{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value = {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value.strip()
+                    {{method_name|snake_case}}_{{arg.name|snake_case}}_values = type_adapter.validate_json({{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value)
                 except Exception as e:
                     self.result_widget.update(f"[red]Error parsing JSON for parameter {{arg.name}}: {e}[/red]")
                     return
                 else:
-                    kwargs["{{arg.name|snake_case}}"] = values
+                    kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_values
                 {% elif arg.arg_type.name == 'PRIMITIVE'%}
                 {%-if arg.type.name == 'BOOLEAN'%}
-                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Select)
-                {{arg.name|snake_case}}_value = {{arg.name|snake_case}}_input_widget.value in [True, "true", "True", "1", "yes", "y"]
-                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Select)
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value in [True, "true", "True", "1", "yes", "y"]
+                kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {%elif arg.type.name == 'INTEGER'%}
-                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
-                {{arg.name|snake_case}}_value = int({{arg.name|snake_case}}_input_widget.value)
-                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = int({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {%elif arg.type.name == 'FLOAT'%}
-                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
-                {{arg.name|snake_case}}_value = float({{arg.name|snake_case}}_input_widget.value)
-                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = float({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {%elif arg.type.name == 'STRING'%}
-                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
-                {{arg.name|snake_case}}_value = str({{arg.name|snake_case}}_input_widget.value)
-                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = str({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% endif %}{# primitive value #}
                 {% elif arg.arg_type.name == 'DATETIME'%}
-                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
-                {{arg.name|snake_case}}_value = datetime.fromisoformat({{arg.name|snake_case}}_input_widget.value)
-                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = datetime.fromisoformat({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% elif arg.arg_type.name == 'DURATION'%}
-                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
-                {{arg.name|snake_case}}_value = isodate.parse_duration({{arg.name|snake_case}}_input_widget.value)
-                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = isodate.parse_duration({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% elif arg.arg_type.name == 'BINARY'%}
-                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
-                {{arg.name|snake_case}}_value = {{arg.name|snake_case}}_input_widget.value.encode('utf-8')
-                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value.encode('utf-8')
+                kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                  {% elif arg.arg_type.name == 'ENUM'%}
-                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Select)
-                {{arg.name|snake_case}}_value = {{arg.enum.python_type}}(int({{arg.name|snake_case}}_input_widget.value))
-                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Select)
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.enum.python_type}}(int({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value))
+                kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% endif %}{# arg type switch#}
                 {%endfor-%} {# for each arg #}
+            {%endif%} {# if there are any arguments for the method #}
             {%endfor%}{# end for each method #}
 
 
