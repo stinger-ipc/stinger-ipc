@@ -270,6 +270,17 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
             .expect("notification channel closed")
     }
 
+    /// Returns a receiver that is notified each time a new `{{stinger.name|UpperCamelCase}}` service
+    /// instance is fully discovered.
+    ///
+    /// Application code can call this method to obtain a [`{{stinger.name|UpperCamelCase}}DiscoveryReceiver`]
+    /// and then `await` messages from it. Each received [`DiscoveredService`] contains the
+    /// [`InterfaceInfo`] of the newly discovered instance{% if stinger.properties|length > 0 %} along with its initial property
+    /// values{% endif %}. The caller is free to inspect the result and discard any instances that do
+    /// not match the desired criteria (e.g. wrong `instance` name or unexpected topic structure).
+    ///
+    /// Multiple receivers can be created by calling this method more than once; each receiver
+    /// will independently receive every discovery notification.
     pub fn subscribe(&self) -> {{stinger.name|UpperCamelCase}}DiscoveryReceiver {
         self.notification_tx.subscribe()
     }
