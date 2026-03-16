@@ -6,10 +6,11 @@ import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult # typing: ignore
 from textual.screen import Screen, ModalScreen # typing: ignore
-from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label, Select # typing: ignore
+from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Label, Select, TextArea # typing: ignore
 from textual.containers import Horizontal, VerticalScroll, Vertical # typing: ignore
 from {{stinger.name|loweronly}}ipc.interface_types import *
 from {{stinger.name|loweronly}}ipc.client import {{stinger.name|UpperCamelCase}}Client
+from pydantic import TypeAdapter
 import logging
 
 # Configure logging
@@ -91,6 +92,12 @@ class PropertyEditModal(ModalScreen[bool]):
                     for member in {{prop.arg_list[0].enum.python_type}}
                 ]
                 yield Select(options=enum_options, value=self.current_value.value if self.current_value is not None else None, id="property_input")
+                {%elif prop.arg_list[0].arg_type.name == 'PRIMITIVE' and prop.arg_list[0].type.name == 'BOOLEAN'%}
+                boolean_enum_options = [
+                    ("True", True),
+                    ("False", False)
+                ]
+                yield Select(options=boolean_enum_options, value=bool(self.current_value), id="property_input")
                 {%else%}{# not single enum arg #}
                 yield Input(placeholder=f"Enter new value", value=str(self.current_value) if self.current_value is not None else "", id="property_input")
                 {%endif%}{# single arg type cases #}
@@ -108,7 +115,7 @@ class PropertyEditModal(ModalScreen[bool]):
     
 {%macro from_input_string(arg, value)%}
 {%-if arg.arg_type.name == 'PRIMITIVE'%}
-{%-if arg.type.name == 'BOOLEAN'%}{{value}}.lower() in ('true', '1', 'yes', 'y')
+{%-if arg.type.name == 'BOOLEAN'%}{{value}} in (True, 1, 'True', 'true', '1', 'yes', 'y')
 {%-elif arg.type.name == 'INTEGER'%}int({{value}})
 {%-elif arg.type.name == 'FLOAT'%}float({{value}})
 {%-elif arg.type.name == 'STRING'%}str({{value}})
@@ -129,7 +136,7 @@ class PropertyEditModal(ModalScreen[bool]):
                 {%for prop_name, prop in stinger.properties_rw.items()-%}
                 {%-if not loop.first%}el{%endif%}if self.property_name == '{{prop_name|snake_case}}':
                     {%-if prop.arg_list|length == 1%}
-                    input_widget = self.query_one("#property_input", Input)
+                    input_widget = self.query_one("#property_input")
                     new_{{prop_name|snake_case}}_value = {{from_input_string(prop.arg_list[0], "input_widget.value")}}
                     {%else%}
                     {%-for arg in prop.arg_list%}
@@ -193,6 +200,11 @@ class MethodCallModal(ModalScreen[Optional[str]]):
         margin-bottom: 1;
     }
     
+    TextArea {
+        height: 3;
+        width: 100%;
+    }
+
     #button_container {
         layout: horizontal;
         height: auto;
@@ -227,12 +239,34 @@ class MethodCallModal(ModalScreen[Optional[str]]):
             yield Static(f"Call: {self.method_name}", id="modal_title")
             
             with VerticalScroll(id="inputs_container"):
-                if self.params:
-                    for param_name, param_type in self.params.items():
-                        yield Label(f"{param_name} ({param_type.__name__ if hasattr(param_type, '__name__') else str(param_type)}):", classes="input_label")
-                        yield Input(placeholder=f"Enter {param_name}", id=f"input_{param_name}")
-                else:
-                    yield Static("No parameters required")
+                {% for method_name, method_obj in stinger.methods.items() %}
+                if self.method_name == "{{method_name|snake_case}}":
+                    {%-for arg in method_obj.arg_list%}
+                    {% if arg.arg_type.name == 'STRUCT' or arg.arg_type.name == 'ARRAY' %}
+                    yield Label(f"{{arg.name}} (JSON {% if arg.arg_type.name == 'STRUCT' %}Object{% else %}Array{% endif %}){%if arg.optional%} [Optional]{%endif%}", classes="input_label")
+                    yield TextArea.code_editor(language="json", placeholder=f"{% if arg.arg_type.name == 'STRUCT' %} {  } {% else %} [  ] {% endif %}", id=f"input_{{arg.name|snake_case}}")
+                    {% elif arg.arg_type.name == 'PRIMITIVE'%}
+                    yield Label(f"{{arg.name}} ({{arg.arg_type.name}}){%if arg.optional%} [Optional]{%endif%}", classes="input_label")
+                    {%-if arg.type.name == 'BOOLEAN'%}
+                    yield Select(options=[("True", "true"), ("False", "false")], id=f"input_{{arg.name|snake_case}}")
+                    {%else%} {# not a boolean primitive #}
+                    yield Input(
+                        {%-if arg.type.name == 'INTEGER'%}type="integer"{%elif arg.type.name == 'FLOAT'%}type="number"{%else%}type="text"{%endif%},
+                        id=f"input_{{arg.name|snake_case}}"
+                    )
+                    {% endif %}{# boolean or primitive value #}
+                    {% elif arg.arg_type.name == 'DATETIME' or arg.arg_type.name == 'DURATION' or arg.arg_type.name == 'BINARY'%}
+                    yield Label(f"{{arg.name}} ({{arg.arg_type.name}}){%if arg.optional%} [Optional]{%endif%}", classes="input_label")
+                    yield Input(id=f"input_{{arg.name|snake_case}}")
+                    {% elif arg.arg_type.name == 'ENUM'%}
+                    yield Label(f"{{arg.name}} ({{arg.arg_type.name}}){%if arg.optional%} [Optional]{%endif%}", classes="input_label")
+                    options = [{%for item in arg.enum.items %}
+                        ("{{item.name}}", {{item.integer}}),
+                    {%endfor%}]
+                    yield Select(options=options, id=f"input_{{arg.name|snake_case}}")
+                    {% endif %}{# arg type switch#}
+                    {%endfor-%} {# for each arg #}
+                {% endfor %} {# for each method #}
             
             with Horizontal(id="button_container"):
                 yield Button("Call Method", variant="primary", id="call_button")
@@ -255,19 +289,73 @@ class MethodCallModal(ModalScreen[Optional[str]]):
         try:
             # Collect inputs
             kwargs = {}
-            for param_name, param_type in self.params.items():
-                input_widget = self.query_one(f"#input_{param_name}", Input)
-                value_str = input_widget.value
-                
-                # Simple parsing - for demo, handle basic types
-                if value_str:
-                    kwargs[param_name] = self._parse_value(value_str, param_type)
-                elif "Optional" not in str(param_type):
-                    self.result_widget.update("[red]Error: Missing required parameter[/red]")
+            {% for method_name, method_obj in stinger.methods.items() %}
+            if self.method_name == "{{method_name|snake_case}}":
+                {%-for arg in method_obj.arg_list%}
+                {% if arg.arg_type.name == 'STRUCT' %}
+                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
+                {{arg.name|snake_case}}_widget_text_value = {{arg.name|snake_case}}_input_widget.value.strip()
+                if not {{arg.name|snake_case}}_widget_text_value and not arg.optional:
+                    self.result_widget.update(f"[red]Error: Missing required parameter {{arg.name}}[/red]")
+                    return
+                try:
+                    value = {{arg.python_type}}.model_validate_json({{arg.name|snake_case}}_widget_text_value)
+                except Exception as e:
+                    self.result_widget.update(f"[red]Error parsing JSON for parameter {{arg.name}}: {e}[/red]")
                     return
                 else:
-                    kwargs[param_name] = None
-            
+                    kwargs["{{arg.name|snake_case}}"] = value
+                {% elif arg.arg_type.name == 'ARRAY' %}
+                type_adapter = TypeAdapter({{arg.python_type}})
+
+                try:
+                    {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
+                    {{arg.name|snake_case}}_widget_text_value = {{arg.name|snake_case}}_input_widget.value.strip()
+                    values = type_adapter.validate_json({{arg.name|snake_case}}_widget_text_value)
+                except Exception as e:
+                    self.result_widget.update(f"[red]Error parsing JSON for parameter {{arg.name}}: {e}[/red]")
+                    return
+                else:
+                    kwargs["{{arg.name|snake_case}}"] = values
+                {% elif arg.arg_type.name == 'PRIMITIVE'%}
+                {%-if arg.type.name == 'BOOLEAN'%}
+                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Select)
+                {{arg.name|snake_case}}_value = {{arg.name|snake_case}}_input_widget.value in [True, "true", "True", "1", "yes", "y"]
+                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {%elif arg.type.name == 'INTEGER'%}
+                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{arg.name|snake_case}}_value = int({{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {%elif arg.type.name == 'FLOAT'%}
+                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{arg.name|snake_case}}_value = float({{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {%elif arg.type.name == 'STRING'%}
+                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{arg.name|snake_case}}_value = str({{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {% endif %}{# primitive value #}
+                {% elif arg.arg_type.name == 'DATETIME'%}
+                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{arg.name|snake_case}}_value = datetime.fromisoformat({{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {% elif arg.arg_type.name == 'DURATION'%}
+                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{arg.name|snake_case}}_value = isodate.parse_duration({{arg.name|snake_case}}_input_widget.value)
+                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {% elif arg.arg_type.name == 'BINARY'%}
+                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Input)
+                {{arg.name|snake_case}}_value = {{arg.name|snake_case}}_input_widget.value.encode('utf-8')
+                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                 {% elif arg.arg_type.name == 'ENUM'%}
+                {{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Select)
+                {{arg.name|snake_case}}_value = {{arg.enum.python_type}}(int({{arg.name|snake_case}}_input_widget.value))
+                kwargs["{{arg.name|snake_case}}"] = {{arg.name|snake_case}}_value
+                {% endif %}{# arg type switch#}
+                {%endfor-%} {# for each arg #}
+            {%endfor%}{# end for each method #}
+
+
             # Call the method
             self.result_widget.update("[yellow]Calling method...[/yellow]")
             method = getattr(self.client, self.method_name)
@@ -284,22 +372,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
                 
         except Exception as e:
             self.result_widget.update(f"[red]Error preparing call: {e}[/red]")
-    
-    def _parse_value(self, value_str: str, param_type: type) -> Any:
-        """Parse a string value to the appropriate type."""
-        type_str = str(param_type)
-        
-        if "int" in type_str.lower():
-            return int(value_str)
-        elif "float" in type_str.lower() or "number" in type_str.lower():
-            return float(value_str)
-        elif "str" in type_str.lower():
-            return value_str
-        elif "bool" in type_str.lower():
-            return value_str.lower() in ("true", "1", "yes")
-        else:
-            # For complex types, return the string for now
-            return value_str
+            logger.exception(f"Error preparing method call {self.method_name}", exc_info=e)
 
 
 class ClientScreen(Screen):
