@@ -1,5 +1,6 @@
 """MQTT Connection screen for configuring broker connection."""
 
+import os
 import ssl
 from textual.app import ComposeResult  # typing: ignore
 from textual.screen import Screen  # typing: ignore
@@ -60,10 +61,10 @@ class ConnectionScreen(Screen):
             yield Static("MQTT Broker Connection", id="title")
             with Vertical(classes="input_group"):
                 yield Static("IP Address:", classes="label")
-                yield Input(placeholder="localhost", value="localhost", id="ip_address")
+                yield Input(placeholder="localhost", value=os.environ.get("MQTT_HOSTNAME", "localhost"), id="ip_address")
             with Vertical(classes="input_group"):
                 yield Static("Port:", classes="label")
-                yield Input(placeholder="1883", value="1883", id="port")
+                yield Input(placeholder="1883", value=os.environ.get("MQTT_PORT", "1883"), id="port")
             with Vertical(classes="input_group"):
                 yield Static("Username (optional):", classes="label")
                 yield Input(placeholder="", id="username")
@@ -84,9 +85,9 @@ class ConnectionScreen(Screen):
             password_input = self.query_one("#password", Input)
             tls_checkbox = self.query_one("#use_tls", Checkbox)
 
-            ip_address = ip_input.value or "localhost"
+            ip_address = ip_input.value or os.environ.get("MQTT_HOSTNAME", "localhost")
             try:
-                port = int(port_input.value or "1883")
+                port = int(port_input.value or os.environ.get("MQTT_PORT", "1883"))
             except ValueError:
                 port = 1883
 

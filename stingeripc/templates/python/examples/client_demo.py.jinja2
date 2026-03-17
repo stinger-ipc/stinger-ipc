@@ -1,3 +1,4 @@
+import os
 import signal
 from time import sleep
 import concurrent.futures as futures
@@ -38,7 +39,7 @@ def request_loop(client: {{stinger.python.client_class_name}}):
 
 if __name__ == '__main__':
 
-    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    transport = MqttTransport(MqttTransportType.TCP, os.environ.get("MQTT_HOSTNAME", "localhost"), int(os.environ.get("MQTT_PORT", 1883)))
     conn = Mqtt5Connection(transport)
 
     client_builder = {{stinger.python.client_class_name}}Builder()

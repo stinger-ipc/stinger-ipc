@@ -42,8 +42,18 @@ def get_log_handler() -> LogCapture:
 
 
 def install_log_handler() -> None:
-    """Install the log capture handler to the root logger."""
+    """Install the log capture handler to the root logger.
+
+    Removes any existing stream handlers to prevent log output from
+    bleeding over the TUI screen.
+    """
     root_logger = logging.getLogger()
+    # Remove handlers that write to stdout/stderr so they don't overwrite the TUI
+    for handler in root_logger.handlers[:]:
+        if isinstance(handler, logging.StreamHandler) and not isinstance(
+            handler, logging.FileHandler
+        ):
+            root_logger.removeHandler(handler)
     if _log_handler not in root_logger.handlers:
         root_logger.addHandler(_log_handler)
 
