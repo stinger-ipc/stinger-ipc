@@ -49,6 +49,17 @@ if __name__ == '__main__':
     This shows an example on how to run the code.  Ideally, your app should do something similar, but use the methods in
     a more meaningful way.
     """
+
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == '--help':
+        print("Usage: server_demo.py [--help]")
+        print("Connects to an MQTT broker and demonstrates {{stinger.name}} server functionality.")
+        print("Environment variables:")
+        print("  MQTT_HOSTNAME - MQTT broker hostname (default: localhost)")
+        print("  MQTT_PORT - MQTT broker port (default: 1883)")
+        sys.exit(0)
+
     {%if stinger.properties | length > 0 %}
     {% if config.properties.stinger_owned_values %}
     initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
