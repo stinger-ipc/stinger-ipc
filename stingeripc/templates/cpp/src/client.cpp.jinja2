@@ -229,7 +229,7 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         throw std::runtime_error("Received payload for '{{method_name}}' response is not an object");
     }
     {%endif%}
-    auto correlationData = msg.properties.correlationData.value_or({});
+    auto correlationData = msg.properties.correlationData.value_or(std::vector<std::byte>{});
     auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationData);
     if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())
     {

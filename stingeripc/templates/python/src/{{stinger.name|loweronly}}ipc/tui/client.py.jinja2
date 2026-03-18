@@ -214,8 +214,9 @@ class PropertyEditModal(ModalScreen[bool]):
             except Exception as e:
                 self.app.notify(f"Error updating property: {e}", severity="error")
         elif event.button.id == "help_button":
+            help_text = "No documentation available."
             {%for prop_name, prop in stinger.properties.items()-%}
-            if self.property_name == '{{prop_name|snake_case}}':
+            {%if not loop.first%}el{%endif%}if self.property_name == '{{prop_name|snake_case}}':
                 help_text = """{{prop.documentation or "No documentation provided for this property."}}"""
             {%endfor%}
             self.app.push_screen(HelpModal(help_text, title=f"Help: {self.property_name}"))
@@ -352,8 +353,9 @@ class MethodCallModal(ModalScreen[Optional[str]]):
         elif event.button.id == "call_button":
             self._call_method()
         elif event.button.id == "help_button":
+            help_text = "No documentation available."
             {% for method_name, method_obj in stinger.methods.items() %}
-            if self.method_name == "{{method_name|snake_case}}":
+            {%if not loop.first%}el{%endif%}if self.method_name == "{{method_name|snake_case}}":
                 help_text = """{{method_obj.documentation or "No documentation provided for this method."}}"""
             {%endfor%}
             self.app.push_screen(HelpModal(help_text, title=f"Help: {self.method_name}"))
