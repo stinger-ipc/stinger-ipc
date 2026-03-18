@@ -1,6 +1,6 @@
 [project]
 name = "stinger-ipc"
-version = "0.7.6"
+version = "0.7.6.post0"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
