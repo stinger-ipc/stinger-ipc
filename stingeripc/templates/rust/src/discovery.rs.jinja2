@@ -368,7 +368,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
 
                     match property_name {
                         {%for prop_name, prop in stinger.properties.items() %}
-                        "{{prop_name|lowerCamelCase}}" => {
+                        "{{prop_name|snake_case}}" => {
                             
                             let deserialized_property = serde_json::from_slice::<{{prop_name|UpperCamelCase}}Property>(&message.payload);
 
