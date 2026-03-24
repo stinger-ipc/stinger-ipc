@@ -57,7 +57,9 @@ if __name__ == '__main__':
         print("Connects to an MQTT broker and demonstrates {{stinger.name}} server functionality.")
         print("Environment variables:")
         print("  MQTT_HOSTNAME - MQTT broker hostname (default: localhost)")
-        print("  MQTT_PORT - MQTT broker port (default: 1883)")
+        print("  MQTT_PORT - MQTT broker port (default: 1883)"){%for topic_param in config.topics.params %}
+        print("  TOPIC_PARAM_{{topic_param|CONST_CASE}} - Topic parameter (default: example)")
+        {%endfor%}
         sys.exit(0)
 
     {%if stinger.properties | length > 0 %}
@@ -92,7 +94,7 @@ if __name__ == '__main__':
     
     transport = MqttTransport(MqttTransportType.TCP, os.environ.get("MQTT_HOSTNAME", "localhost"), int(os.environ.get("MQTT_PORT", 1883)))
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-server-demo"))
-    server = {{stinger.python.server_class_name}}(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"){%if stinger.properties | length > 0 %}, {% if config.properties.stinger_owned_values %}initial_property_values{%else%}property_access{%endif%}{%endif%}{%for topic_param in config.topics.params %}, {{topic_param|snake_case}}="example"{% endfor %})
+    server = {{stinger.python.server_class_name}}(conn, os.environ.get("SERVICE_ID", "py-server-demo:1"){%if stinger.properties | length > 0 %}, {% if config.properties.stinger_owned_values %}initial_property_values{%else%}property_access{%endif%}{%endif%}{%for topic_param in config.topics.params %}, {{topic_param|snake_case}}=os.environ.get("TOPIC_PARAM_{{topic_param|CONST_CASE}}", "example"){% endfor %})
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}} 
