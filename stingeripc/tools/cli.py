@@ -13,7 +13,6 @@ import yaml
 import yamlloader
 from stingeripc.interface import StingerInterface
 
-from . import cpp_generator
 from . import generic_generator
 
 app = typer.Typer(help="Stinger-IPC Tool")

@@ -312,6 +312,9 @@ class PythonPropertySymbols(PythonSymbols):
     def getter_value_annotation(self) -> str:
         if len(self._prop._arg_list) == 1:
             return self._prop._arg_list[0].python.annotation
+    def getter_value_annotation(self) -> str:
+        if len(self._prop._arg_list) == 1:
+            return self._prop._arg_list[0].python_annotation
         else:
             return self.model_class_name
 

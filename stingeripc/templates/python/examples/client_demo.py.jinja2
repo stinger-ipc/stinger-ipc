@@ -1,3 +1,4 @@
+import os
 import signal
 from time import sleep
 import concurrent.futures as futures
@@ -37,8 +38,17 @@ def request_loop(client: {{stinger.python.client_class_name}}):
 {%endif%} {# any methods or properties #}
 
 if __name__ == '__main__':
+    import sys
 
-    transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883)
+    if len(sys.argv) > 1 and sys.argv[1] == '--help':
+        print("Usage: client_demo.py [--help]")
+        print("Connects to an MQTT broker and demonstrates {{stinger.name}} client functionality.")
+        print("Environment variables:")
+        print("  MQTT_HOSTNAME - MQTT broker hostname (default: localhost)")
+        print("  MQTT_PORT - MQTT broker port (default: 1883)")
+        sys.exit(0)
+
+    transport = MqttTransport(MqttTransportType.TCP, os.environ.get("MQTT_HOSTNAME", "localhost"), int(os.environ.get("MQTT_PORT", 1883)))
     conn = Mqtt5Connection(transport)
 
     client_builder = {{stinger.python.client_class_name}}Builder()

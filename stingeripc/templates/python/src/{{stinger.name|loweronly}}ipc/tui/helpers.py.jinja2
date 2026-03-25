@@ -1,0 +1,10 @@
+
+from importlib.metadata import metadata, PackageNotFoundError
+from typing import Tuple
+
+def get_package_version() -> Tuple[str, str]:
+    try:
+        meta = metadata("{{stinger.name|hyphen_case}}{%if config.python.python37 %}-37{%endif%}-ipc")
+        return meta["Name"], meta["Version"]
+    except PackageNotFoundError:
+        return "{{stinger.name|hyphen_case}}{%if config.python.python37 %}-37{%endif%}-ipc", "{{stinger.version}}+UNPACKAGED"

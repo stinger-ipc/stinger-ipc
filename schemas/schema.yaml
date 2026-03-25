@@ -11,6 +11,7 @@ properties:
     properties:
       version:
         type: string
+        description: "This is the version of the schema that the rest of the file follows."
         enum:
           - "0.0.7"
           - "0.0.8"
@@ -21,12 +22,14 @@ properties:
 
   interface:
     type: object
-    parameters:
+    properties:
       name:
         type: string
         pattern: "^[a-zA-Z0-9_-]+$"
         maxLength: 32
         description: "A short token that will be used to create class names, folder names, filenames, etc."
+        not: 
+          $ref: "#/$defs/reservedKeywords"
       title:
         type: string
         maxLength: 64
@@ -44,6 +47,12 @@ properties:
       license:
         type: string
         description: "The license or copyright under which this interface is provided.  All generated code will be subject to this license."
+      enums: false # 'enums' is allowed only at the top level
+      structures: false # 'structures' is allowed only at the top level
+      signals: false # 'signals' is allowed only at the top level
+      properties: false # 'properties' is allowed only at the top level
+      methods: false # 'methods' is allowed only at the top level
+      constants: false # 'constants' is allowed only at the top level
     required:
       - name
       - version
@@ -52,6 +61,8 @@ properties:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       type: object
       properties:
@@ -84,11 +95,15 @@ properties:
         - values
 
   enumerations: false # Use 'enums' instead
+  enum: false # Use 'enums' instead
+  enumeration: false # Use 'enums' instead
 
   structures:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       type: object
       properties:
@@ -111,36 +126,50 @@ properties:
               $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   structs: false # Use 'structures' instead
+  struct: false # Use 'structures' instead
+  structure: false # Use 'structures' instead
 
   signals:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       $ref: "#/$defs/signal"
 
   sigs: false # Use 'signals' instead
+  signal: false # Use 'signals' instead
 
   properties:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       $ref: "#/$defs/property"
 
   props: false # Use 'properties' instead
+  property: false # Use 'properties' instead
 
   methods:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       $ref: "#/$defs/method"
+
+  method: false # Use 'methods' instead
 
   constants:
     type: object
     propertyNames:
       pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
     additionalProperties:
       type: object
       properties:
@@ -161,12 +190,17 @@ properties:
         - value
 
   const: false # Use 'constants' instead
+  constant: false # Use 'constants' instead
 
 required:
   - stingeripc
   - interface
 
 $defs:
+
+  reservedKeywords:
+    type: string
+    enum: ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
 
   documentation:
     type: string
@@ -175,7 +209,7 @@ $defs:
   argDescription:
     type: string
     description: "A short description of an argument as a single line."
-    maxLength: 256
+    maxLength: 512
     pattern: "^[^\n\r]*$"
   payload:
     type: array
@@ -186,13 +220,13 @@ $defs:
   enumValueDescription:
     type: string
     description: "A short description of an enum value as a single line."
-    maxLength: 256
+    maxLength: 512
     pattern: "^[^\n\r]*$"
 
   constantValueDescription:
     type: string
     description: "A short description of a constant value as a single line."
-    maxLength: 256
+    maxLength: 512
     pattern: "^[^\n\r]*$"
 
   genericArg:
@@ -204,6 +238,8 @@ $defs:
       name:
         type: string
         pattern: "^[a-zA-Z0-9_-]+$"
+        not: 
+          $ref: "#/$defs/reservedKeywords"
       optional:
         type: boolean
         default: false
@@ -333,6 +369,10 @@ $defs:
       description: false
       payload:
         $ref: "#/$defs/payload"
+      arguments: false # Use 'payload' instead
+      args: false # Use 'payload' instead
+      params: false # Use 'payload' instead
+      values: false # Use 'payload' instead
       consumers:
         type: array
         items:
@@ -341,6 +381,7 @@ $defs:
         uniqueItems: true
         description: >
           A list of names representing interface consumers that are allowed receive this signal.
+      consumer: false # Use 'consumers' instead
       version:
         type: string
         pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
@@ -367,6 +408,10 @@ $defs:
         items:
           $ref: "#/$defs/arg"
         minItems: 1
+      payload: false # Use 'values' instead
+      arguments: false # Use 'values' instead
+      params: false # Use 'values' instead
+      value: false # Use 'values' instead
       readOnly:
         type: boolean
         default: false
@@ -380,6 +425,7 @@ $defs:
         uniqueItems: true
         description: >
           A list of names representing interface consumers that are allowed access to this property.
+      consumer: false # Use 'consumers' instead
       version:
         type: string
         pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
@@ -404,8 +450,19 @@ $defs:
       description: false
       arguments:
         $ref: "#/$defs/payload"
+      argument: false # use 'arguments' instead
+      params: false # use 'arguments' instead
+      payload: false # use 'arguments' instead
+      args: false # use 'arguments' instead
+      arg: false # use 'arguments' instead
       returnValues:
         $ref: "#/$defs/payload"
+      returnValue: false # use 'returnValues' instead
+      returnArgs: false # use 'returnValues' instead
+      returnParams: false # use 'returnValues' instead
+      returnPayload: false # use 'returnValues' instead
+      returns: false # use 'returnValues' instead
+      returnArg: false # use 'returnValues' instead
       consumers:
         type: array
         items:
@@ -414,6 +471,7 @@ $defs:
         uniqueItems: true
         description: >
           A list of names representing interface consumers that are allowed to call this method.
+      consumer: false # Use 'consumers' instead
       version:
         type: string
         pattern: "^[0-9]+(\\.[0-9]+){0,2}$"

@@ -1,6 +1,6 @@
 [project]
 name = "stinger-ipc"
-version = "0.7.0.rc5"
+version = "0.7.6"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -25,7 +25,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "black>=25.1.0",
+    "black>=26.3.1",
     "jacobs-json-schema>=0.4.2",
     "mypy>=1.16.0",
     "paho-mqtt>=2.1.0",

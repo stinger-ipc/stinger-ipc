@@ -132,7 +132,7 @@ class {{stinger.python.client_class_name}}:
                 "{{prop_spec.update_topic()}}".format(**self._topic_template_kwargs), # type: ignore[str-format]
                 property_obj, 
                 str(self._property_{{prop_name|snake_case}}_version), 
-                self._property_response_topic,
+                "{{prop_spec.response_topic()}}".format(**self._topic_template_kwargs), # type: ignore[str-format]
                 str(uuid4())
             )
             self._conn.publish(req_msg)
@@ -258,7 +258,8 @@ class {{stinger.python.client_class_name}}:
         self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
 
         self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
-        req_msg = MessageCreator.request_message("{{method.request_topic()}}".format(**self._topic_template_kwargs), payload, self._all_methods_response_topic, correlation_id) # type: ignore[str-format]
+        response_topic = "{{method.response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
+        req_msg = MessageCreator.request_message("{{method.request_topic()}}".format(**self._topic_template_kwargs), payload, response_topic, correlation_id) # type: ignore[str-format]
         self._conn.publish(req_msg)
         return fut
 
@@ -402,6 +403,12 @@ class {{stinger.python.client_class_name}}Discoverer:
         with self._mutex:
             self._removed_service_callbacks.append(callback)
 
+    def set_discovered_interface_info_callback(self, callback: Callable[[{{stinger.name|UpperCamelCase}}InterfaceInfo], None]):
+        """ Sets a callback to be called when new interface info is discovered (even if not fully discovered).
+        """
+        with self._mutex:
+            self._discovered_interface_info_callback = callback
+
     def get_service_instance_ids(self) -> List[str]:
         """ Returns a list of currently discovered service instance IDs.
         """
@@ -438,6 +445,14 @@ class {{stinger.python.client_class_name}}Discoverer:
             if ({%if stinger.properties|length > 0%}instance_id in self._discovered_properties
                     and len(self._discovered_properties[instance_id]) == {{(stinger.properties | length)*2}}
                     and {%endif%}instance_id in self._discovered_interface_infos):
+
+                {%if stinger.properties|length > 0 -%}
+                try:
+                    initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id])
+                except Exception as e:
+                    self._logger.warning("Failed to load initial property values for service %s: %s", instance_id, e)
+                    return
+                {%- endif %}
 
                 entry = DiscoveredInstance(
                     instance_id=instance_id,
@@ -517,7 +532,7 @@ class {{stinger.python.client_class_name}}Discoverer:
             if instance_id not in self._discovered_properties:
                 self._discovered_properties[instance_id] = dict()
             {%for prop_name, prop in stinger.properties.items()%}
-            {%if not loop.first%}el{%endif%}if property_name == "{{prop_name|lowerCamelCase}}":
+            {%if not loop.first%}el{%endif%}if property_name == "{{prop_name}}":
                 try:
                     {{prop_name|snake_case}}_prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
                 except Exception as e:

@@ -14,7 +14,7 @@ TODO: Get license text from stinger file
 
 use {{stinger.rust.package_name}}::client::{{stinger.rust.client_struct_name}};
 use {{stinger.rust.package_name}}::discovery::{{stinger.name|UpperCamelCase}}Discovery;
-use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
+use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection, TcpConnection};
 use tokio::time::{sleep, Duration};
 use tokio::join;
 #[allow(unused_imports)]
@@ -36,7 +36,7 @@ async fn main() {
     // Create an MQTT client that implements the MqttPubSub trait.
     // Application code is responsible for managing the client object.
     let mqttier_options = MqttierOptionsBuilder::default()
-        .connection(Connection::TcpLocalhost(1883))
+        .connection(Connection::Tcp(TcpConnection::from_env_with_defaults("localhost", 1883)))
         .client_id("rust-client-demo".to_string())
         .build().unwrap();
     let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();

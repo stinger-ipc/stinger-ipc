@@ -1,0 +1,68 @@
+name: Generate and Publish Example Code
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout stinger-ipc
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install Task
+        uses: go-task/setup-task@v1
+
+      - name: Install clang-format
+        run: sudo apt-get install -y clang-format
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Generate all code
+        run: task generate
+
+      - name: Checkout example-generated-code repo
+        uses: actions/checkout@v4
+        with:
+          repository: stinger-ipc/example-generated-code
+          token: ${{ secrets.GENERATED_CODE_PAT }}
+          path: example-generated-code
+
+      - name: Switch to matching branch
+        working-directory: example-generated-code
+        run: |
+          git fetch origin ${{ github.ref_name }} || true
+          git checkout -B ${{ github.ref_name }} origin/${{ github.ref_name }} 2>/dev/null || git checkout -B ${{ github.ref_name }}
+
+      - name: Sync generated files
+        run: |
+          mkdir -p example-generated-code/generated
+          rsync -av --delete generated/ example-generated-code/generated/
+
+      - name: Commit and push generated code
+        working-directory: example-generated-code
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: update generated code from stinger-ipc@${{ github.sha }}"
+            git push origin ${{ github.ref_name }}
+          fi

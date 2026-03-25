@@ -15,6 +15,7 @@ from .exceptions import InvalidStingerStructure, InvalidConfiguration
 from jacobsjinjatoo import stringmanip
 from copy import copy
 from stevedore import ExtensionManager
+from pydantic import BaseModel
 
 YamlArg = Mapping[str, str | bool]
 YamlArgList = list[YamlArg]

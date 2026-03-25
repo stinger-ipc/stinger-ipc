@@ -9,7 +9,7 @@ dependencies = [
     "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
     "pyqttier>=0.2.5",
-    "stinger-python-utils>=0.1.5",
+    "stinger-python-utils>=0.1.8",
     {%if config.python.python37%}"typing-extensions>=4.0.0",{%endif%}
 ]
 
@@ -25,7 +25,7 @@ dev = [
 
 {%if not config.python.python37%}
 [project.optional-dependencies]
-tui = ["textual"]
+tui = ["textual[syntax]~=8.1"]
 {%endif%}
 
 [build-system]

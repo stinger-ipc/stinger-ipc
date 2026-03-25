@@ -75,11 +75,10 @@ class TopicConfig(BaseModel):
         return v
 
     @model_validator(mode='after')
-    @classmethod
-    def validate_topic_values(cls, config: 'TopicConfig') -> 'TopicConfig':
-        if config.property_update_responses == config.method_responses:
+    def validate_topic_values(self) -> 'TopicConfig':
+        if self.property_update_responses == self.method_responses:
             raise ValueError('"property_update_responses" and "method_responses" topic templates must be different to avoid routing conflicts')
-        return config
+        return self
 
 class LanguagePluginConfig(BaseModel):
     """ Configuration for languages that are provided via plugins """
