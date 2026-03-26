@@ -406,7 +406,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// This is called because of an MQTT request to update the property value.
     /// It updates the local value, which notifies any watchers, and publishes the new value.
     /// If there is an error, it can publish back if a response topic was provided.
-    async fn update_{{prop_name}}_value(
+    async fn update_{{prop_name|snake_case}}_value(
             mut publisher: C, 
             property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust_type}}{%else%}{{prop.arg_list[0].rust_type}}{%endif%}>>,  // Arc to the property value
             version_pointer: Arc<AtomicU32>,
@@ -590,6 +590,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
+                        debug!("Received request to update '{{prop_name}}' property value through local watch channel. Current version is {}, request is: {:?}", {{prop_name|snake_case}}_prop_version.load(Ordering::SeqCst), request);
                         {%if prop.arg_list | length == 1 %}
                         let payload_obj = {{prop_name | UpperCamelCase}}Property { 
                             {{prop.arg_list[0].name}}: request.clone(),
@@ -597,7 +598,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                         {%else%}
                         let payload_obj = request.clone();
                         {%endif%}
-                        let version_value = {{prop_name|snake_case}}_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let version_value = {{prop_name|snake_case}}_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1; // fetch_add returns the previous value, so add 1 to get the new version after the update.
                         let topic: String = strfmt("{{prop.value_topic()}}", &topic_param_map_for_{{prop_name|snake_case}}).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
                             Ok(msg) => {
@@ -717,3 +718,154 @@ pub trait {{stinger.name | UpperCamelCase }}MethodHandlers<C: Mqtt5PubSub>: Send
     fn as_any(&self) -> &dyn Any;
 }
 {%endif%}{# methods #}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use stinger_mqtt_trait::mock::MockClient;
+    {% if stinger.properties|length > 0%}use crate::message::property_update;{% endif %}
+    use tracing_subscriber::EnvFilter;
+
+    {%if stinger.methods|length > 0%}
+
+    struct {{stinger.name | UpperCamelCase }}MethodImpl {
+        server: Option<{{stinger.name | UpperCamelCase }}Server<MockClient>>,
+    }
+
+    #[async_trait]
+    impl {{stinger.name | UpperCamelCase }}MethodHandlers<MockClient> for {{stinger.name | UpperCamelCase }}MethodImpl {
+
+        async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}<MockClient>) -> Result<(), MethodReturnCode> {
+            self.server = Some(server.clone());
+            Ok(())
+        }
+
+        {%for method_name, method in stinger.methods.items()%}
+        async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode> {
+            println!("Handling {{method_name}}");
+            {%-if method.return_value_type == 'struct'%}
+            let rv = {{method.return_arg_list[0].rust_temp_type}} {
+                {%for arg in method.return_value.members-%}
+                {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
+                {%endfor%}
+            };
+            {%if method.return_arg_list[0].optional %}
+            Ok(Some(rv))
+            {%else%}
+            Ok(rv)
+            {%endif%}
+            {%-elif method.return_value_type == 'multiple'%}
+            let rv = {{method.return_value_rust_type}} {
+                {%for arg in method.return_value-%}
+                {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
+                {%endfor%}
+            };
+            Ok(rv)
+            {%elif method.return_value_type is not false %}
+            Ok({{method.return_value.get_random_example_value(lang="rust")}})
+            {%else%}
+            Ok(())
+            {%-endif%}
+        }
+        {%endfor%}
+
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+    }
+    {%endif%}
+
+    #[tokio::test]
+    async fn mock_server() {
+        let _ = tracing_subscriber::fmt().with_test_writer().with_env_filter(EnvFilter::new("{{stinger.rust.package_name|replace('__', '_')}}=debug")).try_init();
+
+        let service_id = "N".to_string();
+        let client_id = "mock_client".to_string();
+
+        let mut mock_mqtt = MockClient::new(client_id.clone());
+
+        {%if stinger.properties|length > 0%}
+        let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
+            {%for prop_name, prop in stinger.properties.items()%}
+            {{prop_name | snake_case}}: 
+            {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
+            {%-else-%}
+            {{prop.rust_type}} {
+                {%-for arg in prop.arg_list %}
+                    {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
+                {%-endfor%}
+            },
+            {%-endif%}
+            {{prop_name | snake_case}}_version: 1,
+            {%endfor%}
+        };
+        {%endif%}
+
+        let server = {{stinger.rust.server_struct_name}}::new(
+            mock_mqtt.clone(),
+            {%if stinger.methods|length > 0%}Arc::new(AsyncMutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl { server: None }))),{%endif%}
+            service_id.clone(),
+            {%if stinger.properties|length > 0%}initial_property_values.clone(),{%endif%}
+            {%- for topic_param in config.topics.params %}
+            "{{topic_param}}".to_string(),
+            {%- endfor %}
+        ).await;
+
+        // Start the server connection loop in a separate task.
+        let mut looping_server = server.clone();
+        let _loop_join_handle = tokio::spawn(async move {
+            let _conn_loop = looping_server.run_loop().await;
+        });
+
+        let mut topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), service_id.clone()),
+            ("client_id".to_string(), client_id.clone()),
+            ("property_name".to_string(), "prop_xyz".to_string()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), "{{topic_param}}".to_string()),
+            {%-endfor%}
+        ]);
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        let received_messages = mock_mqtt.published_messages();
+        for (i, msg) in received_messages.iter().enumerate() {
+            println!("Initial message {}: {:?}", i, msg);
+        }
+        assert_eq!(received_messages.len(), 1+{{stinger.properties|length}}); // 1 for interface online, plus 1 for each property initial publish
+
+        // Publish a property update message for each property
+        {% for prop_name, prop in stinger.properties.items() %}{%if not prop.read_only%}
+        {
+            mock_mqtt.clear_published_messages();
+
+            topic_param_map.insert("property_name".to_string(), "{{prop_name}}".to_string());
+            let property_{{prop_name|snake_case}}_topic = strfmt("{{config.topics.property_updates}}", &topic_param_map).unwrap();
+
+            // Just to get this test working faster, we're copy-pasting test code from payloads.rs to generate example property payloads. 
+            let json_str = r#"{ {%-for arg in prop.arg_list%}
+                "{{arg.name}}": {{arg.get_random_example_value(lang="json")}} {%if not loop.last%},{%endif%}
+            {%endfor-%} }"#;
+            let payload: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(json_str).unwrap();
+
+            let update_req = property_update(&property_{{prop_name|snake_case}}_topic, &payload, initial_property_values.{{prop_name | snake_case}}_version).unwrap();
+
+            info!("Inject message to {}", update_req.topic);
+            let result = mock_mqtt.simulate_receive(update_req);
+            assert!(result.is_ok());
+            assert_eq!(result.unwrap(), 1);
+
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+            let received_messages = mock_mqtt.published_messages();
+            if received_messages.len() != 2 {
+                for (i, msg) in received_messages.iter().enumerate() {
+                    println!("Message {}: {:?}", i, msg);
+                }
+            }
+            assert_eq!(received_messages.len(), 2);
+        }
+        {%endif%}{% endfor %}
+
+    }
+}
