@@ -13,7 +13,7 @@ metrics = ["payloads"]
 [dependencies]
 # Core dependencies (always available)
 futures = "0.3.31"
-stinger-mqtt-trait = "0.5.1"
+stinger-mqtt-trait = ">=0.6, <0.7"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 tokio = { version = "1", features = ["full"] }
@@ -39,8 +39,8 @@ features = [
 ]
 
 [dev-dependencies]
-mqttier = "0.7.7"
-stinger-mqtt-trait = { version = "0.5.1", features = ["mock_client"] }
+mqttier = "0.7.8"
+stinger-mqtt-trait = { version = "0.6.1", features = ["mock_client"] }
 
 [[example]]
 name = "{{stinger.name | snake_case|replace('__', '_')}}_client_demo"

@@ -14,7 +14,7 @@ tasks:
       - task: python:generate
       - task: python:unittest
       - task: cpp:compile
-      - task: rust:check
+      - task: rust:unittest
       - task: markdown:generate
       - task: web:generate
       - task: protobuf:check
@@ -261,6 +261,24 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: rust:check:{{ .ITEM }}
+
+  rust:unittest:*:
+    desc: Run Rust unit tests for an interface
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/rust/"
+    deps:
+      - task: rust:generate:{{index .MATCH 0}}
+    sources:
+      - ./**
+    cmds:
+      - cargo test --all-features
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  rust:unittest:
+    desc: Run Rust unit tests for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: rust:unittest:{{ .ITEM }}
 
   markdown:generate:*:
     desc: Generate markdown documentation for an interface

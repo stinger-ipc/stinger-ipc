@@ -661,6 +661,11 @@ class ArgDuration(Arg, LanguageSymbolMixin):
                 retval = f"chrono::Duration::seconds({random.randint(1, 3600)})"
         elif lang in ["c++", "cpp"]:
             retval = f"std::chrono::duration<double>({random.randint(1, 3600)})"
+        elif lang == "json":
+            if self.optional and random.choice([True, False, False, False]):
+                retval = "null"
+            else:
+                retval = f'"PT{random.randint(1, 3600)}S"'  # ISO 8601 duration format
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             retval = getattr(self, lang).get_random_example_value(seed=seed)
         random.setstate(random_state)
@@ -723,6 +728,12 @@ class ArgBinary(Arg, LanguageSymbolMixin):
             return 'vec![101, 120, 97, 109, 112, 108, 101]'  # "example" in ASCII bytes
         elif lang in ["c++", "cpp"]:
             return 'std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
+        if lang == "json":
+            if self.optional and random.choice([True, False, False, False]):
+                retval = "null"
+            else:
+                retval = '"ZXhhbXBsZSBiaW5hcnkgZGF0YQ=="'  # "example binary data" base64-encoded
+            return retval
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             return getattr(self, lang).get_random_example_value(seed=seed)
         return None
@@ -788,6 +799,14 @@ class ArgArray(Arg, LanguageSymbolMixin):
             return f"vec![{example_value}, {example_value2}]"
         elif lang in ["c++", "cpp"]:
             return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"
+        elif lang == "json":
+            if self.optional and random.choice([True, False, False, False, False]):
+                retval = "null"
+            elif random.choice([True, False, False, True, False]):
+                retval = "[]"
+            else:
+                retval = f"[{example_value}, {example_value2}]"
+            return retval
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             return getattr(self, lang).get_random_example_value(seed=seed)
         return None
