@@ -267,7 +267,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             {%-endfor%}
         ]);
         let request_topic: String = strfmt("{{method.request_topic()}}", &topic_param_map).unwrap();
-        let response_topic: String = strfmt("{{stinger.all_methods_response_topic()}}", &topic_param_map).unwrap();
+        let response_topic: String = strfmt("{{method.response_topic()}}", &topic_param_map).unwrap();
         let msg = message::request(&request_topic, &data, correlation_id, response_topic).unwrap();
         info!("Sending request to topic '{}': {:?}", request_topic, data);
         let _ = self.mqtt_client.publish(msg).await;
@@ -590,5 +590,83 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         });
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use stinger_mqtt_trait::mock::MockClient;
+    use tracing_subscriber::EnvFilter;
+    use crate::interface::InterfaceInfo;
+    {% if stinger.properties|length > 0%}use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;{%endif%}
+
+    #[tokio::test]
+    async fn mock_client() {
+        let _ = tracing_subscriber::fmt().with_test_writer().with_env_filter(EnvFilter::new("{{stinger.rust.package_name|replace('__', '_')}}=debug")).try_init();
+
+        let client_id = "mock_client".to_string();
+        let mut mock_mqtt = MockClient::new(client_id.clone());
+
+        let server_topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), "singleton".to_string()),
+            ("client_id".to_string(), "server".to_string()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), "{{topic_param}}".to_string()),
+            {%-endfor%}
+        ]);
+
+        {%if stinger.properties|length > 0%}
+        let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
+            {%for prop_name, prop in stinger.properties.items()%}
+            {{prop_name | snake_case}}: 
+            {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
+            {%-else-%}
+            {{prop.rust_type}} {
+                {%-for arg in prop.arg_list %}
+                    {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
+                {%-endfor%}
+            },
+            {%-endif%}
+            {{prop_name | snake_case}}_version: 1,
+            {%endfor%}
+        };
+        {%endif%}
+
+        let topic = strfmt("{{stinger.interface_info_topic()}}", &server_topic_param_map).unwrap();
+        let interface_info = crate::interface::InterfaceInfoBuilder::default()
+            .interface_name(server_topic_param_map.get("interface_name").unwrap().to_string())
+            .title("{{stinger.title}}".to_string())
+            .version("{{stinger.version}}".to_string())
+            .instance(server_topic_param_map.get("service_id").unwrap().to_string())
+            .connection_topic(topic.clone())
+            {%-for topic_param in config.topics.params%}
+            .{{topic_param}}(server_topic_param_map.get("{{topic_param}}").unwrap().to_string())
+            {%-endfor%}
+            .build().unwrap();
+
+        let discovery_info = DiscoveredService {
+            interface_info: interface_info,
+            {%if stinger.properties|length > 0%}properties: initial_property_values,{%endif%}
+        };
+
+        let mut client = {{stinger.rust.client_struct_name}}::new(mock_mqtt.clone(), discovery_info).await;
+
+        {%for method_name, method in stinger.methods.items()%}
+        { // Test calling the {{method_name}} method.
+            mock_mqtt.clear_published_messages();
+            let _rx = client.start_{{method_name | snake_case}}(
+                {%for arg in method.arg_list%}
+                {{arg.get_random_example_value(lang='rust')}},
+                {%endfor%}).await;
+            let sent_message = mock_mqtt.last_published_message().expect("Expected a message to be published");
+
+            assert!(sent_message.response_topic.is_some(), "Expected response_topic to be set");
+            let response_topic = sent_message.response_topic.as_ref().unwrap();
+            assert!(!response_topic.contains('+'), "response_topic should not contain '+'");
+            assert!(!response_topic.contains('#'), "response_topic should not contain '#'");
+        }
+        {%endfor%}
     }
 }

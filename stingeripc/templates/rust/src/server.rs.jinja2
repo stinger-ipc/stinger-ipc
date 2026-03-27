@@ -563,7 +563,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%-endfor%}
         ]);
 
-        {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
+        {%if (stinger.methods|length > 0) or (stinger.properties|length > 0) %}
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
             self.msg_streamer_rx.lock().unwrap().take().expect("msg_streamer_rx should be Some")
@@ -572,13 +572,13 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%if stinger.methods|length > 0 -%}
         let method_handlers = self.method_handlers.clone();
         let _ = self.method_handlers.lock().await.initialize(self.clone()).await;
-        {%endif-%}
+        {%endif-%}{# methods exist#}
 
         let sub_ids = self.subscription_ids.clone();
 
         {%-if stinger.methods|length > 0 %}
         let publisher = self.mqtt_client.clone();
-        {%endif%}
+        {%endif%}{#} end method exist#}
 
         {%-if stinger.properties|length > 0%}
         let props = self.properties.clone();
@@ -626,8 +626,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                 });
             }
         }
-        {% endfor %}
-        {%endif%}
+        {% endfor %}{#for each property#}
+        {%endif%}{# properties exist#}
+        {%endif%} {# any methods or properties #}
 
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
@@ -652,6 +653,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                 let _ = interface_publisher.publish(msg).await;
             }
         });
+        {%if (stinger.methods|length > 0) or (stinger.properties|length > 0) %}
         {%if stinger.properties|length > 0 %}
         let properties = self.properties.clone();
         {%endif%}
@@ -696,7 +698,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         });
 
         let _ = tokio::join!(loop_task);
-        {%endif%} {# any methods or properties #}
+        {%endif%}{# any method or properties #}
         
         warn!("Server receive loop completed. Exiting run_loop.");
         Ok(())
