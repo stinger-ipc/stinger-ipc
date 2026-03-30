@@ -12,6 +12,8 @@ import jsonschema_rs
 import yaml
 import yamlloader
 from stingeripc.interface import StingerInterface
+from stingeripc.config import StingerConfig
+from stingeripc import filtering
 
 from . import generic_generator
 
@@ -74,6 +76,22 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
         error_count += 1
         print(f"Error: {error}")
         print(f"Location: {error.instance_path}")
+    try:
+        StingerInterface(input_obj, StingerConfig())
+    except Exception as e:
+        if error_count == 0:
+            print(f"❌  [bold red]Validation errors found in {input_file}:[/bold red]")
+        error_count += 1
+        print(f"Error constructing interface: {e}")
+
+    try:
+        filtering.check_version_consistency(input_obj)
+    except ValueError as e:
+        if error_count == 0:
+            print(f"❌  [bold red]Validation errors found in {input_file}:[/bold red]")
+        error_count += 1
+        print(f"Version consistency error: {e}")
+
     if error_count == 0:
         print(f"✅  [bold green]No validation errors found in {input_file}[/bold green]")
     sys.exit(error_count)

@@ -231,6 +231,25 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
                 if isinstance(item_type, dict):
                     check_args([item_type], component_name, component_type)
     
+    def args_have_versions(arg_list: list[Dict[str, Any]], component_name: str, component_type: str) -> None:
+        """Raise if any struct or enum arg in the arg list does not have a version specified."""
+        for arg in arg_list:
+            arg_type = arg.get("type")
+            if arg_type == "enum":
+                if not arg.get("enumVersion"):
+                    raise ValueError(f"On {component_type} '{component_name}', argument '{arg.get('name')}' is an enum but does not specify enumVersion")
+            elif arg_type == "struct":
+                if not arg.get("structVersion"):
+                    raise ValueError(f"On {component_type} '{component_name}', argument '{arg.get('name')}' is a struct but does not specify structVersion")
+            elif arg_type == "array":
+                if item_type := arg.get("itemType"):
+                    if item_type.get("type") == "enum":
+                        if not item_type.get("enumVersion"):
+                            raise ValueError(f"On {component_type} '{component_name}', argument '{arg.get('name')}' is an array of enums but does not specify enumVersion for the item type")
+                    elif item_type.get("type") == "struct":
+                        if not item_type.get("structVersion"):
+                            raise ValueError(f"On {component_type} '{component_name}', argument '{arg.get('name')}' is an array of structs but does not specify structVersion for the item type")
+
     # Check signals
     if "signals" in interface:
         for signal_name, signal_spec in interface["signals"].items():
@@ -242,6 +261,8 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
             
             # Check payload arguments
             payload = signal_spec.get("payload", [])
+            if signal_spec.get("version"):
+                args_have_versions(payload, signal_name, "Signal")
             check_args(payload, signal_name, "Signal")
     
     # Check properties
