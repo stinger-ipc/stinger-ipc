@@ -399,7 +399,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         ]);
                         let topic: String = strfmt("{{prop.update_topic()}}", &topic_param_map).unwrap();
                         if let Some(responder) = opt_responder {
-                            let resp_topic = strfmt("{{stinger.all_properties_response_topic()}}", &topic_param_map).unwrap();
+                            let resp_topic = strfmt("{{prop.response_topic()}}", &topic_param_map).unwrap();
                             let correlation_id = Uuid::new_v4();
                             let (sender, receiver) = oneshot::channel();
                             {

@@ -325,7 +325,7 @@ class ArgEnum(Arg, LanguageSymbolMixin):
             else:
                 retval = f"{self._enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)}"
         elif lang == "json":
-            retval = str(random.randint(1, len(self._enum.items)))
+            retval = str(random_enum_item.integer)
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             retval = getattr(self, lang).get_random_example_value(seed=seed)
         else:
