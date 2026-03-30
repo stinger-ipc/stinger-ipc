@@ -1,7 +1,7 @@
 $id: "https://stingeripc.peargrove.com/stingeripc.schema.yaml"
 $schema: "http://json-schema.org/draft-07/schema#"
 description: |
-  This schema is used to validate StingerIPC stinger files.
+  This schema is used to validate StingerIPC stinger files.  
 type: object
 
 properties:
@@ -119,7 +119,7 @@ properties:
               A semantic version that can be used to determine data consistency in this specification.
       required:
         - members
-      dependentSchemas:
+      dependencies:
         version:
           properties:
             members:
@@ -211,6 +211,7 @@ $defs:
     description: "A short description of an argument as a single line."
     maxLength: 512
     pattern: "^[^\n\r]*$"
+
   payload:
     type: array
     uniqueItems: true
@@ -350,16 +351,52 @@ $defs:
               type:
                 const: enum
           then:
-            properties:
-              enumVersion: true
+            required:
+              - enumVersion
         - type: object
           if:
             properties:
               type:
                 const: struct
           then:
+            required:
+              - structVersion
+        - type: object
+          if:
             properties:
-              structVersion: true
+              type:
+                const: array
+              itemType:
+                type: object
+                properties:
+                  type:
+                    const: enum
+          then:
+            properties:
+              type:
+                const: array
+              itemType:
+                type: object
+                required: 
+                  - enumVersion
+        - type: object
+          if:
+            properties:
+              type:
+                const: array
+              itemType:
+                type: object
+                properties:
+                  type:
+                    const: struct
+          then:
+            properties:
+              type:
+                const: array
+              itemType:
+                type: object
+                required: 
+                  - structVersion
 
   signal:
     type: object
@@ -387,13 +424,12 @@ $defs:
         pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
         description: >
           A semantic version that can be used by consumers to check compatibility.
-    dependentRequired:
+    dependencies:
       consumers:
         - version
-    dependentSchemas:
-      payload:
+      version:
         properties:
-          arguments:
+          payload:
             $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   property:
@@ -433,10 +469,9 @@ $defs:
           A semantic version that can be used by consumers to check compatibility.
     required:
       - values
-    dependentRequired:
+    dependencies:
       consumers:
         - version
-    dependentSchemas:
       version:
         properties:
           values:
@@ -479,10 +514,9 @@ $defs:
           A semantic version that can be used by consumers to check compatibility.
     required:
       - arguments
-    dependentRequired:
+    dependencies:
       consumers:
         - version
-    dependentSchemas:
       version:
         properties:
           arguments:
