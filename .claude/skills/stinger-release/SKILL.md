@@ -39,7 +39,26 @@ Edit the `version = "..."` line under `[project]` in `pyproject.toml`. Be precis
 
 ---
 
-## Step 4 — Run the task suite
+## Step 4 — Synchronize `schemas/README.md` with the schema
+
+Compare `schemas/schema.yaml` against `schemas/README.md`. Update the README so that every feature, type, field, and constraint documented in the README accurately reflects the schema. In particular, watch for:
+
+- Argument types (the valid `type` enum values in the schema)
+- Argument fields (`index`, `example`, `schema`, `optional`, `enumVersion`, `structVersion`, etc.)
+- Top-level sections (`enums`, `structures`, `constants`, `signals`, `methods`, `properties`)
+- Component fields (`version`, `consumers`, `readOnly`, `documentation`, etc.)
+- The `stingeripc` key and its allowed version values
+- Interface metadata fields (`name`, `version`, `title`, `summary`, `license`, `documentation`)
+
+If the README is already up to date, skip this step. If changes are made, stage them:
+
+```bash
+git add schemas/README.md
+```
+
+---
+
+## Step 5 — Run the task suite
 
 ```bash
 task
@@ -49,7 +68,7 @@ This runs generate + tests + compile checks across all language targets. If anyt
 
 ---
 
-## Step 5 — Build the package
+## Step 6 — Build the package
 
 ```bash
 uv build
@@ -59,16 +78,22 @@ Fix any build errors before continuing.
 
 ---
 
-## Step 6 — Commit the version bump
+## Step 7 — Commit the version bump
 
 ```bash
 git add pyproject.toml
 git commit -m "chore: bump version to <new_version>"
 ```
 
+If `schemas/README.md` was updated in Step 4, include it in the commit (or make a separate commit):
+```bash
+git add schemas/README.md
+git commit -m "docs: sync schemas/README.md with schema.yaml"
+```
+
 ---
 
-## Step 7 — Create and push a git tag
+## Step 8 — Create and push a git tag
 
 ```bash
 git tag v<new_version>
@@ -82,7 +107,7 @@ git push
 
 ---
 
-## Step 8 — Publish to PyPI
+## Step 9 — Publish to PyPI
 
 Check for the publish token:
 
