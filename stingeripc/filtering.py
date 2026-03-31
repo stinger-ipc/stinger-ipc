@@ -225,7 +225,7 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
                     if arg_ver.major != def_ver.major or arg_ver.minor != def_ver.minor:
                         raise ValueError(
                             f"{component_type} '{component_name}' requires struct '{struct_name}' "
-                            f"semantic version {arg_ver.major}.{arg_ver.minor}, "
+                            f"version {arg_ver}, "
                             f"but the struct is defined with version {struct_version_in_def} "
                             f"and these versions are not compatible."
                         )

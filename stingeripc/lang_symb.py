@@ -1,15 +1,26 @@
 
 from jacobsjinjatoo import stringmanip
-
+from typing import Any
 from stingeripc.args import ArgPrimitiveType
 from stingeripc.exceptions import InvalidStingerStructure
 
 class ISymbolsProvider:
+    """ An ISymbolsProvider is an interface for classes providing symbols and names for a specific plugin or language.
+    The plugin system will check for plugins implementing ISymbolsProvider to know how to use them.
+
+    The plugin uses the `project.entry-points."stinger_symbols"` entry point to find classes that implement this interface.  
+    """
+
+    def __init__(self, config: dict[str, Any]|None = None):
+        """ The constructor takes stinger generation configuration as an argument."""
+        self.config = config
 
     def for_model(self, model_class_name:str, model) -> object|None:
+        """ This should return an object containing symbols for the given model, or None if this provider does not handle that model class. """
         return None
 
 class ModelSymbols:
+    """ """
     
     def __init__(self, model):
         self._model = model
@@ -20,7 +31,6 @@ class RustSymbolsProvider(ISymbolsProvider):
         if model_class_name == "StingerSpec":
             return RustInterfaceSymbols(model)
         return None
-
 
 class PythonSymbolsProvider(ISymbolsProvider):
 

@@ -23,6 +23,11 @@ class PropertyConfig(BaseModel):
 class PythonConfig(BaseModel):
     """Python-specific configuration options."""
     python37: bool = Field(default=False, description="Generate Python 3.7 compatible code")
+    package_suffix: str = Field(default="ipc", description="Suffix to append to generated Python package names")
+
+class RustConfig(BaseModel):
+    """Rust-specific configuration options."""
+    package_suffix: str = Field(default="ipc", description="Suffix to append to generated Rust module names")
 
 class CppConfig(BaseModel):
     """C++-specific configuration options."""
