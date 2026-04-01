@@ -149,7 +149,7 @@ class RustInterfaceSymbols(RustSymbols):
     @property
     def package_name(self) -> str:
         """ Name of the rust package for the interface client."""
-        s = f"{stringmanip.snake_case(self._iface.name)}_ipc"
+        s = f"{stringmanip.snake_case(self._iface.name)}_{stringmanip.snake_case(self.config.rust.package_suffix or 'ipc')}"
         return s.replace('__', '_')
 
     @property
