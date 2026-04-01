@@ -49,7 +49,7 @@ tasks:
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python/
       - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python/
-      - uv run black {{.GENERATED_DIR}}/{{.IFACE}}/python/
+      - uv run black --target-version py312 {{.GENERATED_DIR}}/{{.IFACE}}/python/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -68,7 +68,7 @@ tasks:
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python37/
       - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python37/
-      - uv run black {{.GENERATED_DIR}}/{{.IFACE}}/python37/
+      - uv run black --target-version py37 {{.GENERATED_DIR}}/{{.IFACE}}/python37/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -87,7 +87,7 @@ tasks:
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
       - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/app-owned-props.toml --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
-      - uv run black {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
+      - uv run black --target-version py312 {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -103,7 +103,7 @@ tasks:
 
   python:unittest:*:
     desc: Run Python unit tests for an interface
-    dir: example_interfaces/{{.IFACE}}/python/
+    dir: generated/{{.IFACE}}/python/
     deps:
       - task: python:generate:{{index .MATCH 0}}
     sources:
@@ -116,7 +116,7 @@ tasks:
 
   python-alt1:unittest:*:
     desc: Run Python unit tests for an interface {{.GENERATED_DIR}} with alternative settings
-    dir: example_interfaces/{{.IFACE}}/python-alt1/
+    dir: generated/{{.IFACE}}/python-alt1/
     deps:
       - task: python-alt1:generate:{{index .MATCH 0}}
     sources:
@@ -137,7 +137,7 @@ tasks:
 
   python:mypy:*:
     desc: Run mypy type checking for an interface
-    dir: example_interfaces/{{.IFACE}}/python/
+    dir: generated/{{.IFACE}}/python/
     deps:
       - task: python:generate:{{index .MATCH 0}}
     sources:
@@ -150,7 +150,7 @@ tasks:
     
   python-alt1:mypy:*:
     desc: Run mypy type checking for an interface generated with alternative settings
-    dir: example_interfaces/{{.IFACE}}/python-alt1/
+    dir: generated/{{.IFACE}}/python-alt1/
     deps:
       - task: python-alt1:generate:{{index .MATCH 0}}
     sources:
