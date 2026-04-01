@@ -8,11 +8,11 @@ import os
 from typing import Optional, Union, List
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}
+from {{stinger.python.module_name}}.server import {{stinger.python.server_class_name}}
 {% if stinger.properties|length > 0 -%}
-from {{stinger.python.package_name}}.property import {%if config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}{{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}
+from {{stinger.python.module_name}}.property import {%if config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}{{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}
 {%endif%} {#- end has properties -#}
-from {{stinger.python.package_name}}.interface_types import *
+from {{stinger.python.module_name}}.interface_types import *
 
 {%if (stinger.properties|length > 0) and (not config.properties.stinger_owned_values) %}
 class {{stinger.name|UpperCamelCase}}PropertyOwnership:

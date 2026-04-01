@@ -92,7 +92,7 @@ find all the current property values for discovered interfaces in order to initi
   <summary>Python Discovery Example</summary>
 
 ```python
-from {{stinger.python.package_name}}.client import {{stinger.python.client_class_name}}Discoverer
+from {{stinger.python.module_name}}.client import {{stinger.python.client_class_name}}Discoverer
 
 discovery = {{stinger.python.client_class_name}}Discoverer(connection_object)
 
@@ -136,8 +136,8 @@ the server constructor.
 {%endif%}
 {%if config.properties.stinger_owned_values %}
 ```python
-from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}
-from {{stinger.python.package_name}}.property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
+from {{stinger.python.module_name}}.server import {{stinger.python.server_class_name}}
+from {{stinger.python.module_name}}.property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
 
 # Ideally, you would load these initial property values from a configuration file or database.
 {%if stinger.properties | length > 0 %}
@@ -167,8 +167,8 @@ Application code owns property values. In order for the server to read and write
 object must be provided to the server constructor with function pointers to getters and setters.
 {%endif%}
 ```python
-from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}
-from {{stinger.python.package_name}}.property import {{stinger.name|UpperCamelCase}}PropertyAccess
+from {{stinger.python.module_name}}.server import {{stinger.python.server_class_name}}
+from {{stinger.python.module_name}}.property import {{stinger.name|UpperCamelCase}}PropertyAccess
 
 {%if stinger.properties | length > 0 %}
 # Create a structure which tells the stinger server how to get and set property values.
@@ -194,7 +194,7 @@ When decorating class methods, especially when there might be multiple instances
 class to help capture decorated methods and bind them to a specific instance at runtime. Here is an example of how to use it in a class:
 
 ```python
-from {{stinger.python.package_name}}.client import {{stinger.python.client_class_name}}Builder
+from {{stinger.python.module_name}}.client import {{stinger.python.client_class_name}}Builder
 
 {{stinger.name|snake_case}}_builder = {{stinger.python.client_class_name}}Builder()
 
@@ -322,7 +322,7 @@ Because the client needs correct property values on initialization, a {{stinger.
 the client constructor.  This object is generally created by the discovery mechanism.
 {%endif%}
 ```python
-from {{stinger.python.package_name}}.server import {{stinger.python.server_class_name}}{%if stinger.properties|length > 0 %}, {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}
+from {{stinger.python.module_name}}.server import {{stinger.python.server_class_name}}{%if stinger.properties|length > 0 %}, {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}
 
 {%if stinger.properties | length > 0 %}
 initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(

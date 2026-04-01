@@ -22,15 +22,17 @@ YamlIfaceEnum = dict[str, str | YamlArgList]
 YamlIfaceEnums = dict[str, YamlIfaceEnum]
 YamlIfaceProperty = dict[str, str | bool | YamlArgList]
 
+# These names cannot be used for method/property/signal names because they are reserved keywords.
 RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
 
 
 class LanguageSymbolMixin:
 
-    def __init__(self):
+    def __init__(self, config: dict[str, Any]|None = None):
         mgr: ExtensionManager = ExtensionManager(
             namespace="stinger_symbols",
             invoke_on_load=True,
+            invoke_kwds={"config": config},
         )
         for ext in mgr:
             domain = ext.name
@@ -847,9 +849,10 @@ class InterfaceComponent:
 
 
 class Signal(InterfaceComponent, LanguageSymbolMixin):
+
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
-        LanguageSymbolMixin.__init__(self)
+        LanguageSymbolMixin.__init__(self, self._config)
         self._arg_list: list[Arg] = []
 
     def add_arg(self, arg: Arg) -> Signal:
@@ -898,7 +901,7 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
 
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
-        LanguageSymbolMixin.__init__(self)
+        LanguageSymbolMixin.__init__(self, self._config)
         self._arg_list: list[Arg] = []
         self._return_value: Arg | list[Arg] | None = None
         self._return_arg_list: list[Arg] = []
@@ -1100,7 +1103,7 @@ class Property(InterfaceComponent, LanguageSymbolMixin):
 
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
-        LanguageSymbolMixin.__init__(self)
+        LanguageSymbolMixin.__init__(self, self._config)
         self._arg_list: list[Arg] = []
         self._read_only = False
 
@@ -1378,7 +1381,7 @@ class InterfaceStruct(LanguageSymbolMixin):
 class StingerSpec(LanguageSymbolMixin):
 
     def __init__(self, interface: dict[str, Any], config: StingerConfig):
-        LanguageSymbolMixin.__init__(self)
+        LanguageSymbolMixin.__init__(self, config)
         self._config = config
         try:
             self._name: str = interface["name"]
