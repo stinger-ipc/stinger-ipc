@@ -32,6 +32,7 @@ class RustConfig(BaseModel):
 class CppConfig(BaseModel):
     """C++-specific configuration options."""
     namespace: List[str] = Field(default_factory=lambda: ["stinger", "gen"], description="List of nested namespaces for generated C++ code.  The interface name is appended to this as the innermost namespace.")
+    package_suffix: str = Field(default="ipc", description="Suffix to append to generated C++ namespace and filenames")
 
 class TopicConfig(BaseModel):
     """ Configuration for which topic schemas to use """
