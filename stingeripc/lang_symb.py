@@ -62,12 +62,12 @@ class PythonInterfaceSymbols(PythonSymbols):
 
     @property
     def package_directory(self) -> str:
-        s = f"{stringmanip.lower_only(self._iface.name).lower()}{stringmanip.lower_only(self.config.python.package_suffix or 'ipc')}"
+        s = f"{stringmanip.lower_only(self._iface.name).lower()}{stringmanip.lower_only(self.config.python.package_suffix) or 'ipc'}"
         return s
 
     @property
     def package_name(self):
-        s = f"{stringmanip.hyphen_case(self._iface.name).lower()}-{stringmanip.hyphen_case(self.config.python.package_suffix or 'ipc')}"
+        s = f"{stringmanip.hyphen_case(self._iface.name).lower()}-{stringmanip.hyphen_case(self.config.python.package_suffix) or 'ipc'}"
         return s
 
     @property
@@ -147,10 +147,10 @@ class RustInterfaceSymbols(RustSymbols):
         self._iface = interface
 
     @property
-    def package_name(self) -> str:
+    def cargo_package_name(self) -> str:
         """ Name of the rust package for the interface client."""
-        s = f"{stringmanip.snake_case(self._iface.name)}_{stringmanip.snake_case(self.config.rust.package_suffix or 'ipc')}"
-        return s.replace('__', '_')
+        s = f"{stringmanip.snake_case(self._iface.name)}_{stringmanip.snake_case(self.config.rust.package_suffix) or 'ipc'}"
+        return s
 
     @property
     def client_struct_name(self) -> str:
@@ -180,6 +180,14 @@ class CppInterfaceSymbols(CppSymbols):
     def __init__(self, interface):
         super().__init__()
         self._iface = interface
+
+    @property
+    def project_name(self) -> str:
+        return f"{stringmanip.hyphen_case(self._iface.name)}-ipc"
+    
+    @property
+    def cmake_name(self) -> str:
+        return f"{stringmanip.upper_camel_case(self._iface.name)}Ipc"
 
     @property
     def client_class_name(self) -> str:
