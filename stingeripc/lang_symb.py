@@ -147,7 +147,7 @@ class RustInterfaceSymbols(RustSymbols):
         self._iface = interface
 
     @property
-    def cargo_package_name(self) -> str:
+    def package_name(self) -> str:
         """ Name of the rust package for the interface client."""
         s = f"{stringmanip.snake_case(self._iface.name)}_{stringmanip.snake_case(self.config.rust.package_suffix) or 'ipc'}"
         return s
