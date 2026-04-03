@@ -524,6 +524,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
 
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
+    /// Use `.borrow_and_update()` on the Receiver to get the current value and reset the watcher.
     pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
