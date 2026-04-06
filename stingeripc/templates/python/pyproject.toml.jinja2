@@ -1,5 +1,5 @@
 [project]
-name = "{{stinger.name|hyphen_case}}{%if config.python.python37 %}-37{%endif%}-ipc"
+name = "{{stinger.python.package_name}}"
 version = "{{stinger.version}}"
 description = "{{stinger.title}}"
 
@@ -34,11 +34,11 @@ build-backend = "setuptools.build_meta"
 
 {%if not config.python.python37%}
 [project.scripts]
-{{stinger.name|hyphen_case}}-tui = "{{stinger.name|loweronly}}ipc.tui.app:main"
+{{stinger.name|hyphen_case}}-tui = "{{stinger.python.package_directory}}.tui.app:main"
 {%endif%}
 
 [tool.setuptools.package-data]
-packages = ["{{stinger.name|snake_case}}ipc"]
+packages = ["{{stinger.python.package_directory}}"]
 
 [stinger-ipc]
 generator_version = "{{generator.version}}"
@@ -51,4 +51,4 @@ module = [
 ignore_missing_imports = true
 
 [project.entry-points."stinger_python_utils.mcp_plugins"]
-{{stinger.name|snake_case}} = "{{stinger.name|loweronly}}ipc.mcp:{{stinger.name|UpperCamelCase}}MCPPlugin"
+{{stinger.name|snake_case}} = "{{stinger.python.package_directory}}.mcp:{{stinger.name|UpperCamelCase}}MCPPlugin"

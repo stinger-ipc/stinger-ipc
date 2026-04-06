@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(VERSION 3.16)
-{% set project_name %}{{stinger.name|snake_case|replace('_', '-')|replace('--', '-')}}{% endset %}
-{% set cmake_name %}{{stinger.name|PascalCase|replace('_', '')|replace('--', '')}}{% endset %}
+{% set project_name %}{{stinger.cpp.project_name}}{% endset %}
+{% set cmake_name %}{{stinger.cpp.cmake_name}}{% endset %}
 project ({{project_name}}
 	LANGUAGES CXX
 	VERSION {{stinger.version}})

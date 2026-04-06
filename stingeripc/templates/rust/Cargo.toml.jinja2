@@ -1,5 +1,5 @@
 [package]
-name = "{{stinger.rust.package_name|replace('__', '_')}}"
+name = "{{stinger.rust.package_name}}"
 version = "{{stinger.version}}"
 edition = "2021"
 
@@ -43,11 +43,11 @@ mqttier = "0.7.8"
 stinger-mqtt-trait = { version = "0.6.1", features = ["mock_client"] }
 
 [[example]]
-name = "{{stinger.name | snake_case|replace('__', '_')}}_client_demo"
+name = "{{stinger.name|snake_case}}_client_demo"
 path = "examples/client_demo.rs"
 required-features = ["client"]
 
 [[example]]
-name = "{{stinger.name | snake_case|replace('__', '_')}}_server_demo" 
+name = "{{stinger.name|snake_case}}_server_demo" 
 path = "examples/server_demo.rs"
 required-features = ["server"]
