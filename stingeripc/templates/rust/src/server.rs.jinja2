@@ -465,14 +465,22 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                         {%if prop.arg_list | length == 1 %}
                         // Single value property.  Use the {{prop.arg_list[0].name | snake_case}} field of the struct.
                         *write_request = new_property_structure.{{prop.arg_list[0].name | snake_case}}.clone();
+                        debug!("Updating '{{prop_name}}' property to new value: {:?}", *write_request);
                         {%else%}
                         // Multi-value property set as a struct.
                         *write_request = new_property_structure.clone();
+                        debug!("Updating '{{prop_name}}' property to new structure: {:?}", *write_request);
                         {%endif%}
 
                         // Committing the write request blocks until the message has been published to MQTT.
-                        write_request.commit(std::time::Duration::from_secs(2)).await;
-                        Some((*write_request).clone())
+                        match write_request.commit(std::time::Duration::from_secs(2)).await {
+                            CommitResult::Applied(_) => Some((*write_request).clone()),
+                            CommitResult::TimedOut => {
+                                error!("Timeout committing '{{prop_name}}' property change");
+                                return_code = MethodReturnCode::ServerError("Timeout committing '{{prop_name}}' property change".to_string());
+                                None
+                            }
+                        }
                     }
                     Err(e) => {
                         error!("Failed to parse JSON received over MQTT to update '{{prop_name}}' property: {:?}", e);
@@ -510,6 +518,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             };
             match message::property_update_response(&resp_topic, &payload_obj, corr_data, return_code) {
                 Ok(msg) => {
+                    debug!("Publishing response to '{{prop_name}}' property update request to topic '{}', payload: {:?}", resp_topic, payload_obj);
                     let _fut_publish_result = publisher.publish(msg).await;
                 }
                 Err(err) => {
