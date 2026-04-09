@@ -145,7 +145,7 @@ initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
 {%for prop_name, prop in stinger.properties.items()%}
     {{prop_name | snake_case}}=
         {%-if prop.arg_list | length > 1%}
-        {{prop.python_class}}(
+        {{prop.python.class_name}}(
             {%for arg in prop.arg_list%}
             {{arg.name}}={{arg.get_random_example_value()}},
             {%endfor%}
@@ -236,7 +236,7 @@ let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyVa
     {{prop_name | snake_case}}: 
     {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
     {%-else-%}
-    {{prop.rust_type}} {
+    {{prop.rust.type}} {
         {%-for arg in prop.arg_list %}
             {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
         {%-endfor%}
@@ -296,7 +296,7 @@ let instance_info = DiscoveredInstance {
         {{prop_name | snake_case}}: 
         {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
         {%-else-%}
-        {{prop.rust_type}} {
+        {{prop.rust.type}} {
             {%-for arg in prop.arg_list %}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
             {%-endfor%}
@@ -329,7 +329,7 @@ initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
 {%for prop_name, prop in stinger.properties.items()%}
     {{prop_name | snake_case}}=
         {%-if prop.arg_list | length > 1%}
-        {{prop.python_class}}(
+        {{prop.python.class_name}}(
             {%for arg in prop.arg_list%}
             {{arg.name}}={{arg.get_random_example_value()}},
             {%endfor%}
@@ -437,7 +437,7 @@ The `{{sig_name}}` signal can be subscribed to by using the client's `receive_{{
 
 ```python
 @client.receive_{{sig_name | snake_case }}
-def on_{{sig_name | snake_case }}({%for arg in signal.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+def on_{{sig_name | snake_case }}({%for arg in signal.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
     print(f"Got a '{{sig_name}}' signal: {%for arg in signal.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
 ```
 
@@ -487,7 +487,7 @@ The return type is a **Pinned Boxed Future** that resolves to a `Result<(), Meth
 A client can register a callback function to be called when a `{{sig_name}}` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
 
 ```cpp
-client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in signal.arg_list%}{{arg.cpp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in signal.arg_list%}{{arg.cpp.type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
     std::cout << {%for arg in signal.arg_list%}"{{arg.name}}=" << {%-if arg.optional%} "None"{%else%}{%if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]{%else%}{{arg.name}}{%endif%}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
 });
 ```
@@ -571,7 +571,7 @@ The decorated method is called everytime the a request for the method is receive
 
 ```python
 @server.handle_{{method_name | snake_case}} 
-def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
+def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
     """ This is an example handler for the '{{method_name}}' method.  """
     print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
     return {{method.get_return_value_random_example_value('python')}}
@@ -627,7 +627,7 @@ let {{prop_name|snake_case}}_handle = server.get_{{prop_name|snake_case}}_handle
     {%-if prop.arg_list | length == 1 %}
     *{{prop_name|snake_case}}_guard = {{prop.arg_list[0].get_random_example_value(lang="rust", seed=4)}};
     {%else%}
-    let new_{{prop_name|snake_case}}_value = {{prop.rust_type}} {
+    let new_{{prop_name|snake_case}}_value = {{prop.rust.type}} {
         {%-for arg in prop.arg_list %}
             {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
         {%-endfor%}

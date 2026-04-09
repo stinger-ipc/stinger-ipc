@@ -36,7 +36,7 @@ from stinger_python_utils.return_codes import (
     stinger_exception_factory,
 )
 from .interface_types import *
-{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
+{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
 {%if stinger.properties | length > 0 %}
 {%if config.properties.stinger_owned_values%}
 from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
@@ -103,9 +103,9 @@ class {{stinger.python.server_class_name}}:
         self._conn.add_message_callback(self._receive_message)
         {%for prop_name, prop in stinger.properties.items()%}
         {%-if config.properties.stinger_owned_values%}
-        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_annotation}}{%else%}{{prop.python_annotation}}{%endif%}] = PropertyControls(value=initial_property_values.{{prop_name|snake_case}}, version=initial_property_values.{{prop_name|snake_case}}_version)
+        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python.annotation}}{%else%}{{prop.python.annotation}}{%endif%}] = PropertyControls(value=initial_property_values.{{prop_name|snake_case}}, version=initial_property_values.{{prop_name|snake_case}}_version)
         {%else-%}
-        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python_annotation}}{%else%}{{prop.python_annotation}}{%endif%}] = PropertyControls(getter=property_access.{{prop_name|snake_case}}_getter, {%if not prop.read_only%}setter=property_access.{{prop_name|snake_case}}_setter, {%endif%}version=1)
+        self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python.annotation}}{%else%}{{prop.python.annotation}}{%endif%}] = PropertyControls(getter=property_access.{{prop_name|snake_case}}_getter, {%if not prop.read_only%}setter=property_access.{{prop_name|snake_case}}_setter, {%endif%}version=1)
         {%endif-%}
         {%if not prop.read_only-%}
         self._conn.subscribe("{{prop.update_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name|snake_case}}_update_request_message) # type: ignore[str-format]
@@ -288,13 +288,13 @@ class {{stinger.python.server_class_name}}:
         self._logger.warning("Received unexpected message: %s", message)
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    def emit_{{sig_name|snake_case}}(self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def emit_{{sig_name|snake_case}}(self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ Server application code should call this method to emit the '{{sig_name}}' signal.
 
         {{sig_name|UpperCamelCase}}SignalPayload is a pydantic BaseModel which will validate the arguments.
         """
         {%for arg in sig.arg_list%}
-        assert isinstance({{arg.name|snake_case}}, {{arg.python_type}}){%if arg.optional%} or {{arg.name|snake_case}} is None{%endif%}, f"The '{{arg.name}}' argument must be of type {{arg.python_annotation}}, but was {type({{arg.name|snake_case}})}"
+        assert isinstance({{arg.name|snake_case}}, {{arg.python_type}}){%if arg.optional%} or {{arg.name|snake_case}} is None{%endif%}, f"The '{{arg.name}}' argument must be of type {{arg.python.annotation}}, but was {type({{arg.name|snake_case}})}"
         {%endfor%}
 
         payload = {{sig_name|UpperCamelCase}}SignalPayload({%-for arg in sig.arg_list%}
@@ -387,8 +387,8 @@ class {{stinger.python.server_class_name}}:
     {%if prop.arg_list | length == 1%}
     {%-set arg = prop.arg_list[0] %}
     @property
-    def {{prop_name | snake_case}}(self) -> {%if arg.optional%}{{prop.python_annotation}}{%else%}Optional[{{prop.python_annotation}}]{%endif%}:
-        """ This property returns the last received ({{prop.python_annotation}}) value for the '{{prop_name}}' property.
+    def {{prop_name | snake_case}}(self) -> {%if arg.optional%}{{prop.python.annotation}}{%else%}Optional[{{prop.python.annotation}}]{%endif%}:
+        """ This property returns the last received ({{prop.python.annotation}}) value for the '{{prop_name}}' property.
         {%if not config.properties.stinger_owned_values%}
         This calls back into the application code to get the current value of the property.
         {%-endif%}
@@ -396,14 +396,14 @@ class {{stinger.python.server_class_name}}:
         return self._property_{{prop_name|snake_case}}.get_value()
 
     @{{prop_name | snake_case}}.setter
-    def {{prop_name | snake_case}}(self, {{arg.name|snake_case}}: {{prop.python_annotation}}):
-        """ This property sets (publishes) a new {{prop.python_annotation}} value for the '{{prop_name}}' property.
+    def {{prop_name | snake_case}}(self, {{arg.name|snake_case}}: {{prop.python.annotation}}):
+        """ This property sets (publishes) a new {{prop.python.annotation}} value for the '{{prop_name}}' property.
         {%if not config.properties.stinger_owned_values%}
         This call the setter callback into the application code to set the property value.
         {%-endif%}
         """
-        if {%if arg.optional%}({{arg.name|snake_case}} is not None) and {%endif%}(not isinstance({{arg.name|snake_case}}, {{prop.python_local_type}})):
-            raise ValueError(f"The value must be {{prop.python_class}} {%if arg.optional%}or None{%endif%}.")
+        if {%if arg.optional%}({{arg.name|snake_case}} is not None) and {%endif%}(not isinstance({{arg.name|snake_case}}, {{prop.python.local_type}})):
+            raise ValueError(f"The value must be {{prop.python.class_name}} {%if arg.optional%}or None{%endif%}.")
 
         value_updated = False
         with self._property_{{prop_name|snake_case}}.mutex:
@@ -423,7 +423,7 @@ class {{stinger.python.server_class_name}}:
 
     {%-else%} {# property with multiple arguments #}
     @property
-    def {{prop_name | snake_case}}(self) -> {{prop.python_annotation}}:
+    def {{prop_name | snake_case}}(self) -> {{prop.python.annotation}}:
         """ This property returns the last received value for the '{{prop_name}}' property.
         The '{{prop_name}}' property contains multiple values, so we operate on the full 
         `{{prop_name|UpperCamelCase}}Property` structure.
@@ -441,7 +441,7 @@ class {{stinger.python.server_class_name}}:
         {%-endif%}
         """
         if not isinstance(value, {{prop_name|UpperCamelCase}}Property):
-            raise ValueError(f"The value must be {{prop.python_class}}.")
+            raise ValueError(f"The value must be {{prop.python.class_name}}.")
 
         value_updated = False
         with self._property_{{prop_name|snake_case}}.mutex:
@@ -459,16 +459,16 @@ class {{stinger.python.server_class_name}}:
         {%endif%}
     {%endif%}
 
-    def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ This method sets (publishes) a new value for the '{{prop_name}}' property.
         """
         {%-for arg in prop.arg_list%}
         if not isinstance({{arg.name|snake_case}}, {{arg.python_class}}){%if arg.optional%} and {{arg.name|snake_case}} is not None{%endif%}:
-            raise ValueError(f"The '{{arg.name|snake_case}}' value must be {{arg.python_annotation}}.")
+            raise ValueError(f"The '{{arg.name|snake_case}}' value must be {{arg.python.annotation}}.")
         {%-endfor%}
 
         {%if prop.arg_list | length > 1%}
-        obj = {{prop.python_local_type}}({%for arg in prop.arg_list%}
+        obj = {{prop.python.local_type}}({%for arg in prop.arg_list%}
             {{arg.name|snake_case}}={{arg.name|snake_case}},
             {%endfor%}
         )
@@ -480,7 +480,7 @@ class {{stinger.python.server_class_name}}:
         self.{{prop_name|snake_case}} = obj
 
     {%if config.properties.stinger_owned_values%}
-    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
         """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
         """
         {%-if prop.arg_list | length > 1%}
@@ -505,7 +505,7 @@ class {{stinger.python.server_class_name}}Builder:
         {%-endfor%}
         {%if config.properties.stinger_owned_values%}
         {%for prop_name, property in stinger.properties.items()%}
-        self._{{prop_name|snake_case}}_property_callbacks: List[Callable[[{%for arg in property.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]] = []
+        self._{{prop_name|snake_case}}_property_callbacks: List[Callable[[{%for arg in property.arg_list %}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]] = []
         {%-endfor%}
         {%endif%}{# only when stinger owned values #}
     {%for method_name, method in stinger.methods.items()%}
@@ -521,7 +521,7 @@ class {{stinger.python.server_class_name}}Builder:
     {%endfor%}
     {%if config.properties.stinger_owned_values%}
     {%for prop_name, prop in stinger.properties.items()%}
-    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
         """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
         """
         @functools.wraps(handler)

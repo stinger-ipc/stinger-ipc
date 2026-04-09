@@ -30,7 +30,7 @@ struct {{signal_name | UpperCamelCase}}Payload {
     {%-if signal.arg_list | length > 0 %}
     // Values...
     {%-for arg in signal.arg_list %}
-    {{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}};
+    {{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}};
     {%-endfor%}
     {%endif%}
 };

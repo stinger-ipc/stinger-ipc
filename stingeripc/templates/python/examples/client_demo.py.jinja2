@@ -54,19 +54,19 @@ if __name__ == '__main__':
     client_builder = {{stinger.python.client_class_name}}Builder()
     {%for sig_name, sig in stinger.signals.items()%}
     @client_builder.receive_{{sig_name | snake_case }}
-    def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """{{sig.description}}
         {%for arg in sig.arg_list-%}
-        @param {{arg.name}} {{arg.python_annotation}} {{arg.description or ''}}
+        @param {{arg.name}} {{arg.python.annotation}} {{arg.description or ''}}
         {%endfor%}"""
-        print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}}{% if 'bytes' in arg.python_annotation %}!r{%endif-%} } {%endfor%}")
+        print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} } {%endfor%}")
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
     @client_builder.{{prop_name | snake_case}}_updated
-    def print_new_{{prop_name}}_value(value: {{prop.python_annotation}}):
+    def print_new_{{prop_name}}_value(value: {{prop.python.annotation}}):
         """{{prop.description}}
         """
-        print(f"Property '{{prop_name}}' has been updated to: {value{% if 'bytes' in prop.python_annotation %}!r{%endif-%} }")
+        print(f"Property '{{prop_name}}' has been updated to: {value{% if 'bytes' in prop.python.annotation %}!r{%endif-%} }")
     {%endfor%}
 
     discovery = {{stinger.python.client_class_name}}Discoverer(conn, client_builder)

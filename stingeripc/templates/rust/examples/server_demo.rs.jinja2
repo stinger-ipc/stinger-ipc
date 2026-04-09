@@ -51,7 +51,7 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient> for {{sting
     async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode> {
         println!("Handling {{method_name}}");
         {%-if method.return_value_type == 'struct'%}
-        let rv = {{method.return_arg_list[0].rust_temp_type}} {
+        let rv = {{method.return_arg_list[0].rust.temp_type}} {
             {%for arg in method.return_value.members-%}
             {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
             {%endfor%}
@@ -107,7 +107,7 @@ async fn main() {
         {{prop_name | snake_case}}: 
         {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
         {%-else-%}
-        {{prop.rust_type}} {
+        {{prop.rust.type}} {
             {%-for arg in prop.arg_list %}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
             {%-endfor%}
@@ -175,7 +175,7 @@ async fn main() {
                 {%-if prop.arg_list | length == 1 %}
                 *{{prop_name|snake_case}}_guard = {{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}};
                 {%else%}
-                let new_{{prop_name|snake_case}}_value = {{prop.rust_type}} {
+                let new_{{prop_name|snake_case}}_value = {{prop.rust.type}} {
                     {%-for arg in prop.arg_list %}
                         {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
                     {%-endfor%}

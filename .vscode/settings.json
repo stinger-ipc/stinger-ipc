@@ -161,5 +161,8 @@
     "strfmt",
     "templator",
     "usize"
-  ]
+  ],
+  "chat.tools.terminal.autoApprove": {
+    "diff": true
+  }
 }

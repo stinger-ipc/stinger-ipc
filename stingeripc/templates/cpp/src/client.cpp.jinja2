@@ -104,14 +104,14 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
                 }
 
                 {%for arg in sig.arg_list%}
-                {{arg.cpp_temp_type}} temp{{arg.name|UpperCamelCase}};
+                {{arg.cpp.temp_type}} temp{{arg.name|UpperCamelCase}};
                 { // Scoping
                     rapidjson::Value::ConstMemberIterator itr = doc.FindMember("{{arg.name}}");
-                    if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+                    if (itr != doc.MemberEnd() && itr->value.Is{{arg.cpp.rapidjson_type}}()) {
                         {%if arg.arg_type.name.lower() == 'primitive'%}
-                        temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+                        temp{{arg.name|UpperCamelCase}} = itr->value.Get{{arg.cpp.rapidjson_type}}();
                         {%elif arg.arg_type.name.lower() == 'enum'%}
-                        temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+                        temp{{arg.name|UpperCamelCase}} = static_cast<{{arg.cpp.data_type}}>(itr->value.Get{{arg.cpp.rapidjson_type}}());
                         {%elif arg.arg_type.name.lower() == 'datetime'%}
                         std::istringstream ss(itr->value.GetString());
                         std::tm tm = {};
@@ -172,7 +172,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
 
 
 {%-for sig_name, sig in stinger.signals.items() %}
-void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb)
+void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb)
 {
     std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
     _{{sig_name | lowerCamelCase}}SignalCallbacks.push_back(cb);
@@ -180,7 +180,7 @@ void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Cal
 {%-endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-std::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+std::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
     std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
     _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData] = std::promise<{{method.return_value_cpp_class}}>();

@@ -177,8 +177,8 @@ class PropertyEditModal(ModalScreen[bool]):
 {%-elif arg.type.name == 'FLOAT'%}float({{value}})
 {%-elif arg.type.name == 'STRING'%}str({{value}})
 {%-else%}{{value}}{%endif%}
-{%-elif arg.arg_type.name == 'ENUM'%}{{arg.enum.python_type}}({{value}})
-{%-elif arg.arg_type.name == 'STRUCT'%}{{arg.struct.python_type}}.model_validate_json({{value}})
+{%-elif arg.arg_type.name == 'ENUM'%}{{arg.enum.python.type}}({{value}})
+{%-elif arg.arg_type.name == 'STRUCT'%}{{arg.struct.python.type}}.model_validate_json({{value}})
 {%-elif arg.arg_type.name == 'DATETIME'%}datetime.fromisoformat({{value}})
 {%-elif arg.arg_type.name == 'DURATION'%}isodate.parse_duration({{value}})
 {%-elif arg.arg_type.name == 'BINARY'%}{{value}}.encode('utf-8')
@@ -431,7 +431,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
                 kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                  {% elif arg.arg_type.name == 'ENUM'%}
                 {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Select)
-                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.enum.python_type}}(int({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value))
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.enum.python.type}}(int({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value))
                 kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% endif %}{# arg type switch#}
                 {%endfor-%} {# for each arg #}
@@ -593,7 +593,7 @@ class ClientScreen(Screen):
         # Define all methods with their parameters
         methods = {
         {%-for method_name, method in stinger.methods.items()%}
-            "{{method_name|snake_case}}": { {% for arg in method.arg_list %}"{{arg.name|snake_case}}": {{arg.python_annotation}}, {%endfor%} }, 
+            "{{method_name|snake_case}}": { {% for arg in method.arg_list %}"{{arg.name|snake_case}}": {{arg.python.annotation}}, {%endfor%} }, 
         {%endfor%}
         } # type: Dict[str, Dict[str, Any]]
         
@@ -663,7 +663,7 @@ class ClientScreen(Screen):
             
             {%for prop_name, prop in stinger.properties.items() %}
             {%if not loop.first%}el{%endif%}if prop_name == "{{prop_name|snake_case}}":
-                def on_{{prop_name|snake_case}}_updated(value: {{prop.python_annotation}}):
+                def on_{{prop_name|snake_case}}_updated(value: {{prop.python.annotation}}):
                     prop_widget.current_value = value
                     
                     values = []

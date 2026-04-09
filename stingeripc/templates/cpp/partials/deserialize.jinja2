@@ -1,10 +1,10 @@
 {%macro deserialize_value(target, arg)%}
 {%-if arg.arg_type.name.lower() == 'primitive'%}
-{{target}} = itr->value.Get{{arg.cpp_rapidjson_type}}();
+{{target}} = itr->value.Get{{arg.cpp.rapidjson_type}}();
 {%-elif arg.arg_type.name.lower() == 'enum'%}
-{{target}} = static_cast<{{arg.cpp_data_type}}>(itr->value.Get{{arg.cpp_rapidjson_type}}());
+{{target}} = static_cast<{{arg.cpp.data_type}}>(itr->value.Get{{arg.cpp.rapidjson_type}}());
 {%-elif arg.arg_type.name.lower() == 'struct'%}
-{{target}} = {{arg.cpp_type}}::FromRapidJsonObject(itr->value);
+{{target}} = {{arg.cpp.type}}::FromRapidJsonObject(itr->value);
 {%-elif arg.arg_type.name.lower() == 'datetime'%}
 auto temp{{arg.name|UpperCamelCase}}IsoString = itr->value.GetString();
 {{target}} = stinger::utils::parseIsoTimestamp(temp{{arg.name|UpperCamelCase}}IsoString);
@@ -16,7 +16,7 @@ auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
 {{target}} = stinger::utils::base64Decode(temp{{arg.name|UpperCamelCase}}B64String);
 {%elif arg.arg_type.name.lower() == 'array'%}
 {
-    std::vector<{{arg.element.cpp_temp_type}}> tempArray;
+    std::vector<{{arg.element.cpp.temp_type}}> tempArray;
     for (const auto& item : itr->value.GetArray()) {
         if (item.Is{{arg.element.cpp_rapidjson_type}}()) {
             {%if arg.element.arg_type.name.lower() == 'primitive'%}
@@ -56,7 +56,7 @@ auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
 {%-set arg_target %}{{target}}.{{arg.name|lowerCamelCase}}{%endset%}
 { // Scoping
     rapidjson::Value::ConstMemberIterator itr = {{json_obj}}.FindMember("{{arg.name}}");
-    if (itr != {{json_obj}}.MemberEnd() && itr->value.Is{{arg.cpp_rapidjson_type}}()) {
+    if (itr != {{json_obj}}.MemberEnd() && itr->value.Is{{arg.cpp.rapidjson_type}}()) {
         {{deserialize_value(arg_target, arg) | indent(8)}}
     } else {
     {%-if arg.optional%}
