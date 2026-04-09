@@ -48,11 +48,11 @@ public:
     virtual ~{{stinger.cpp.server_class_name}}();
 
     {%for sig_name, sig in stinger.signals.items()%}
-    std::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_func_param_type}}{%if not loop.last%}, {%endif%}{%endfor%});
+    std::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp.func_param_type}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    void register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func);
+    void register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func);
     {%endfor%}
 
     {%for prop_name, prop in stinger.properties.items()%}
@@ -70,7 +70,7 @@ private:
 
     {%for method_name, method in stinger.methods.items()%}
     void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
-    std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
+    std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
     int _{{method_name | camelCase}}MethodSubscriptionId;
     {%endfor%}
 

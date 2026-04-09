@@ -7,7 +7,7 @@
 // If no value has been received yet, an empty optional is returned.
 {%if prop.arg_list|length == 1%}
 {%if prop.arg_list[0].optional%}
-{{prop.arg_list[0].cpp_temp_type}} get{{prop_name | UpperCamelCase}}Property();
+{{prop.arg_list[0].cpp.temp_type}} get{{prop_name | UpperCamelCase}}Property();
 {%-else%}
 std::optional<{{prop.arg_list[0].cpp_type}}> get{{prop_name | UpperCamelCase}}Property();
 {%-endif%}
@@ -49,7 +49,7 @@ std::mutex _{{prop_name | lowerCamelCase}}PropertyCallbacksMutex;
 {%macro get_property_definition(class_name, prop_name, prop)%}
 {%if prop.arg_list|length == 1%}
 {%if prop.arg_list[0].optional%}
-{{prop.arg_list[0].cpp_temp_type}} {{class_name}}::get{{prop_name | UpperCamelCase}}Property()
+{{prop.arg_list[0].cpp.temp_type}} {{class_name}}::get{{prop_name | UpperCamelCase}}Property()
 {%-else%}
 std::optional<{{prop.arg_list[0].cpp_type}}> {{class_name}}::get{{prop_name | UpperCamelCase}}Property()
 {%-endif%}
