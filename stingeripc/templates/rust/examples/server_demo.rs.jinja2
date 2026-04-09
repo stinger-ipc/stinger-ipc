@@ -48,7 +48,7 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient> for {{sting
     }
 
     {%for method_name, method in stinger.methods.items()%}
-    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode> {
+    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode> {
         println!("Handling {{method_name}}");
         {%-if method.return_value_type == 'struct'%}
         let rv = {{method.return_arg_list[0].rust.temp_type}} {
@@ -62,7 +62,7 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient> for {{sting
         Ok(rv)
         {%endif%}
         {%-elif method.return_value_type == 'multiple'%}
-        let rv = {{method.return_value_rust_type}} {
+        let rv = {{method.rust.return_value_type}} {
             {%for arg in method.return_value-%}
             {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
             {%endfor%}

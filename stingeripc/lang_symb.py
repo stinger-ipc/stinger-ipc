@@ -33,6 +33,8 @@ class RustSymbolsProvider(ISymbolsProvider):
             return RustEnumSymbols(model)
         elif model_class_name == "InterfaceStruct":
             return RustStructSymbols(model)
+        elif model_class_name == "Method":
+            return RustMethodSymbols(model)
         elif model_class_name == "Property":
             return RustPropertySymbols(model)
         elif model_class_name == "ArgEnum":
@@ -410,6 +412,21 @@ class RustStructSymbols(RustSymbols):
     @property
     def type(self) -> str:
         return self.local_type
+
+
+class RustMethodSymbols(RustSymbols):
+
+    def __init__(self, method):
+        super().__init__()
+        self._method = method
+
+    @property
+    def return_value_type(self) -> str:
+        if self._method.return_value is None:
+            return "()"
+        elif isinstance(self._method.return_value, list):
+            return stringmanip.upper_camel_case(self._method.return_value_name)
+        return self._method.return_value.rust.type
 
 
 class RustArgSymbols(RustSymbols):

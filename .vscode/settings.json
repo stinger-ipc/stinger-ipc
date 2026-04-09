@@ -163,6 +163,10 @@
     "usize"
   ],
   "chat.tools.terminal.autoApprove": {
-    "diff": true
+    "diff": true,
+    "/^git stash -u && git status --porcelain$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
   }
 }
