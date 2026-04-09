@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}} 
-    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
+    def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.python.return_value_annotation}}:
         """ This is an example handler for the '{{method_name}}' method.  """
         print(f"--> Running {{method_name | snake_case}}({%for arg in method.arg_list %}{ {{-arg.name-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%})'")
         return {{method.get_return_value_random_example_value('python')}}

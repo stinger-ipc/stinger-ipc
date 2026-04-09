@@ -36,7 +36,7 @@ from stinger_python_utils.return_codes import (
     stinger_exception_factory,
 )
 from .interface_types import *
-{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}{%endif%}], {{method.return_value_python_annotation}}]{%endmacro%}
+{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}{%endif%}], {{method.python.return_value_annotation}}]{%endmacro%}
 {%if stinger.properties | length > 0 %}
 {%if config.properties.stinger_owned_values%}
 from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
@@ -294,7 +294,7 @@ class {{stinger.python.server_class_name}}:
         {{sig_name|UpperCamelCase}}SignalPayload is a pydantic BaseModel which will validate the arguments.
         """
         {%for arg in sig.arg_list%}
-        assert isinstance({{arg.name|snake_case}}, {{arg.python_type}}){%if arg.optional%} or {{arg.name|snake_case}} is None{%endif%}, f"The '{{arg.name}}' argument must be of type {{arg.python.annotation}}, but was {type({{arg.name|snake_case}})}"
+        assert isinstance({{arg.name|snake_case}}, {{arg.python.type}}){%if arg.optional%} or {{arg.name|snake_case}} is None{%endif%}, f"The '{{arg.name}}' argument must be of type {{arg.python.annotation}}, but was {type({{arg.name|snake_case}})}"
         {%endfor%}
 
         payload = {{sig_name|UpperCamelCase}}SignalPayload({%-for arg in sig.arg_list%}
@@ -344,13 +344,13 @@ class {{stinger.python.server_class_name}}:
                 {%if method.return_arg_list|length == 0%}
                 return_data = "{}"
                 {%elif method.return_arg_list|length == 1 %}
-                if not isinstance(return_values, {{method.return_arg_list[0].python_local_type}}){% if method.return_arg_list[0].optional %} and return_values is not None{% endif %}:
-                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.return_arg_list[0].python_class}}, but was {type(return_values)}")
-                ret_obj = {{method_name|UpperCamelCase}}MethodResponse({{method.return_arg_list[0].name}}=return_values)
+                if not isinstance(return_values, {{method.return_arg_list[0].python.local_type}}){% if method.return_arg_list[0].optional %} and return_values is not None{% endif %}:
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.return_arg_list[0].python.class_name}}, but was {type(return_values)}")
+                ret_obj = {{method.python.response_class_name}}({{method.return_arg_list[0].name}}=return_values)
                 return_data = ret_obj
                 {%else%}
-                if not isinstance(return_values, {{method_name|UpperCamelCase}}MethodResponse):
-                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method_name|UpperCamelCase}}MethodResponse, but was {type(return_values)}")
+                if not isinstance(return_values, {{method.python.response_class_name}}):
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.python.response_class_name}}, but was {type(return_values)}")
                 return_data = return_values
                 {%endif%}
             except (json.JSONDecodeError, ValidationError) as e:
@@ -463,7 +463,7 @@ class {{stinger.python.server_class_name}}:
         """ This method sets (publishes) a new value for the '{{prop_name}}' property.
         """
         {%-for arg in prop.arg_list%}
-        if not isinstance({{arg.name|snake_case}}, {{arg.python_class}}){%if arg.optional%} and {{arg.name|snake_case}} is not None{%endif%}:
+        if not isinstance({{arg.name|snake_case}}, {{arg.python.class_name}}){%if arg.optional%} and {{arg.name|snake_case}} is not None{%endif%}:
             raise ValueError(f"The '{{arg.name|snake_case}}' value must be {{arg.python.annotation}}.")
         {%-endfor%}
 

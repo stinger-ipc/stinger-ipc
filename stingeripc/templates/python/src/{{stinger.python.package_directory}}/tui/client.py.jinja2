@@ -145,7 +145,7 @@ class PropertyEditModal(ModalScreen[bool]):
                 {%if prop.arg_list[0].arg_type.name == 'ENUM'%}
                 enum_options = [
                     (f"{member.name} ({member.value})", member.value)
-                    for member in {{prop.arg_list[0].enum.python_type}}
+                    for member in {{prop.arg_list[0].enum.python.type}}
                 ]
                 yield Select(options=enum_options, value=self.current_value.value if self.current_value is not None else None, id="property_input")
                 {%elif prop.arg_list[0].arg_type.name == 'PRIMITIVE' and prop.arg_list[0].type.name == 'BOOLEAN'%}
@@ -381,14 +381,14 @@ class MethodCallModal(ModalScreen[Optional[str]]):
                     return
                 {% endif %} {# non-optional check #}
                 try:
-                    {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.python_type}}.model_validate_json({{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value)
+                    {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.python.type}}.model_validate_json({{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value)
                 except Exception as e:
                     self.result_widget.update(f"[red]Error parsing JSON for parameter {{arg.name}}: {e}[/red]")
                     return
                 else:
                     kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% elif arg.arg_type.name == 'ARRAY' %}
-                type_adapter = TypeAdapter({{arg.python_type}})
+                type_adapter = TypeAdapter({{arg.python.type}})
 
                 try:
                     {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)

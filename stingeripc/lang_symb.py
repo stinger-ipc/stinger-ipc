@@ -288,15 +288,19 @@ class PythonMethodSymbols(PythonSymbols):
     
     @property
     def return_value_annotation(self) -> str:
-        return self._method.return_value_python_type
+        if self._method.return_value is None:
+            return "None"
+        if isinstance(self._method.return_value, list):
+            return self.response_class_name
+        return self._method.return_value.python.annotation
     
     @property
-    def return_value_local_class(self) -> str:
-        return f"{stringmanip.upper_camel_case(self._method.name)}ReturnValue"
+    def response_class_name(self) -> str:
+        return f"{stringmanip.upper_camel_case(self._method.name)}MethodResponse"
 
     @property
-    def return_value_class(self):
-        return f"{self.type_definition_module}.{self.return_value_local_class}"
+    def request_class_name(self) -> str:
+        return f"{stringmanip.upper_camel_case(self._method.name)}MethodRequest"
 
 class PythonPropertySymbols(PythonSymbols):
 
