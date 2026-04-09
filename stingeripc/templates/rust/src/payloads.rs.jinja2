@@ -482,7 +482,7 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
     {%-elif arg.arg_type.name.lower() == 'struct'%}
     pub {{arg.name|snake_case}}: {{arg.rust_type}},
     {%elif arg.arg_type.name.lower() == 'enum'%}
-    pub {{arg.name|snake_case}}: {{arg.rust_local_type}},
+    pub {{arg.name|snake_case}}: {{arg.rust.local_type}},
     {%elif arg.arg_type.name.lower() == 'datetime'%}
     {%-if arg.optional %}
     #[serde(
@@ -549,9 +549,9 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
     {%endif%}{# array optionality #}
     {%else%}
     {%-if arg.optional %}
-    pub {{arg.name|snake_case}}: Option<Vec<{{arg.element.rust_type}}>>,
+    pub {{arg.name|snake_case}}: Option<Vec<{{arg.element.rust.type}}>>,
     {%else%}{# not optional array #}
-    pub {{arg.name|snake_case}}: Vec<{{arg.element.rust_type}}>,
+    pub {{arg.name|snake_case}}: Vec<{{arg.element.rust.type}}>,
     {%endif%}{# array optionality #}
     {%endif%} {# array element cases #}
     {%-else%} 

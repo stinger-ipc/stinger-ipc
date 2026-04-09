@@ -13,11 +13,11 @@ model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
 {%for arg in arg_list-%}
 {%set field_desc %}Field({%if arg.description%}description="{{arg.description}}", {%endif%}{%if (arg.name|snake_case) != arg.name %}alias="{{arg.name}}"{%endif%}){%endset%}
 {%-if arg.arg_type.name.lower() == 'primitive' -%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python.local_type}}]{%else%}{{arg.python.local_type}}{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'enum'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python.local_type}}]{%else%}{{arg.python.local_type}}{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'struct'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python.local_type}}]{%else%}{{arg.python.local_type}}{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'datetime'-%}
 {{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[datetime]{%else%}datetime{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'duration'-%}

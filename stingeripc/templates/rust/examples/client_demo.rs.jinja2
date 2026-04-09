@@ -142,7 +142,7 @@ async fn main() {
                 {%if prop.arg_list|length == 1 -%}
                 let {{prop_name|snake_case}}_new_value = {%if prop.arg_list[0].arg_type.name.lower() == "primitive" and prop.arg_list[0].type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{prop.arg_list[0].get_random_example_value(lang="rust")}}{%endif%};
                 {%else-%}
-                let {{prop_name|snake_case}}_new_value = {{prop.rust_type}} {
+                let {{prop_name|snake_case}}_new_value = {{prop.rust.type}} {
                     {%-for arg in prop.arg_list %}
                         {{arg.name|snake_case}}: {%if arg.arg_type.name.lower() == "primitive" and arg.type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{arg.get_random_example_value(lang="rust")}}{%endif%},
                     {%-endfor%}

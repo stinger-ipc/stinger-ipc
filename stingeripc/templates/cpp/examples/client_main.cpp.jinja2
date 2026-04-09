@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 
     // Register callbacks for signals.
     {%-for sig_name, sig in stinger.signals.items() %}
-    client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in sig.arg_list%}{{arg.cpp_temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+    client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in sig.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
     {
         {%-for arg in sig.arg_list-%}
         {%if arg.arg_type.name.lower() == 'datetime'%}
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
                                         {%-elif arg.arg_type.name.lower() == 'datetime' or arg.arg_type.name.lower() == 'duration' or arg.arg_type.name.lower() == 'binary'-%}
                                             {{arg.name|lowerCamelCase}}Str
                                         {%-elif arg.arg_type.name.lower() == 'struct'-%}
-                                            "[{{arg.cpp_type}} object]"
+                                            "[{{arg.cpp.type}} object]"
                                         {%elif arg.arg_type.name.lower() == 'array'-%}
                                             "[Array of " << {{arg.name|lowerCamelCase}}{%if arg.optional%}->{%else%}.{%endif%}size() << " {{arg.element.arg_type.name}} values]"
                                         {%-else-%}
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
 
     // Register callbacks for property updates.
     {%- for prop_name, prop in stinger.properties.items() %}
-    client.register{{prop_name | UpperCamelCase}}PropertyCallback([]({%for arg in prop.arg_list%}{{ arg.cpp_temp_type }} {{ arg.name |lowerCamelCase}}{% if not loop.last %}, {% endif %}{%endfor%}) {
+    client.register{{prop_name | UpperCamelCase}}PropertyCallback([]({%for arg in prop.arg_list%}{{ arg.cpp.temp_type }} {{ arg.name |lowerCamelCase}}{% if not loop.last %}, {% endif %}{%endfor%}) {
         {%-for arg in prop.arg_list-%}{%if arg.arg_type.name.lower() == 'datetime'%}
         {%if arg.optional%}
         std::string {{arg.name|lowerCamelCase}}Str = "None";
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
                             {%-if arg.arg_type.name.lower() == 'enum'%}
                                 {{arg.enum.name | camelCase }}Strings.at(static_cast<int>({{arg.name|lowerCamelCase}}))
                             {%elif arg.arg_type.name.lower() == 'struct'-%}
-                                "[{{arg.cpp_type}} object]"
+                                "[{{arg.cpp.type}} object]"
                             {%elif arg.arg_type.name.lower() == 'datetime'%}
                                 {{arg.name|lowerCamelCase}}Str
                             {%elif arg.arg_type.name.lower() == 'duration'%}
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
     { // Restrict scope for the `{{method_name}}` method call.
         std::cout << "CALLING {{method_name|CONST_CASE}}" << std::endl;
         {%-for arg in method.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}
-        {{arg.cpp_type}} {{arg.name|lowerCamelCase}}Arg = {{arg.get_random_example_value('c++')}};
+        {{arg.cpp.type}} {{arg.name|lowerCamelCase}}Arg = {{arg.get_random_example_value('c++')}};
         {%endif%}{%endfor-%}
         auto {{method_name|camelCase}}ResultFuture = client.{{method_name | camelCase}}({%for arg in method.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}{{arg.name|lowerCamelCase}}Arg{%else%}{{arg.get_random_example_value('c++')}}{%endif%}{%if not loop.last%}, {%endif%}{%endfor%});
         auto {{method_name|camelCase}}Status = {{method_name|camelCase}}ResultFuture.wait_for(std::chrono::seconds(5));
@@ -173,7 +173,7 @@ int main(int argc, char** argv)
                     {%-elif arg.arg_type.name.lower() == "enum"%}
                     {{arg.enum.name | camelCase }}Strings.at(static_cast<int>({%if arg.optional%}*{%endif%}{{var_name}}))
                     {%-elif arg.arg_type.name.lower() == "struct"%}
-                    "[{{arg.cpp_type}} object]"
+                    "[{{arg.cpp.type}} object]"
                     {%-elif arg.arg_type.name.lower() == "binary"%}
                     "[BINARY DATA]"
                     {%elif arg.arg_type.name.lower() == 'array'%}

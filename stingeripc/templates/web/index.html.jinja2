@@ -72,7 +72,7 @@
 {%endmarkdown%}
         {%endif%}
         </div>
-        <!--<div class="signal-topic topic">Subscribe: {{ sig.topic }}</div>-->
+        <!--<div class="signal-topic topic">Subscribe: {{ sig.topic() }}</div>-->
         <div class="last-received signal-value">
         {{ arglist(sig.arg_list, ['signals', sig_name, 'received'], true) | indent(8) }}
         </div>
