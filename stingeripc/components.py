@@ -99,14 +99,6 @@ class Arg:
         return self._type.name
 
     @property
-    def rust_type(self) -> str:
-        return self.name
-
-    @property
-    def rust_local_type(self) -> str:
-        return self.rust_type
-
-    @property
     def cpp_type(self) -> str:
         return stringmanip.upper_camel_case(self.name)
 
@@ -251,18 +243,6 @@ class ArgEnum(Arg, LanguageSymbolMixin):
         return self._enum.cpp_type
 
     @property
-    def rust_type(self) -> str:
-        if self.optional:
-            return f"Option<{self._enum.rust_type}>"
-        return self._enum.rust_type
-
-    @property
-    def rust_local_type(self) -> str:
-        if self.optional:
-            return f"Option<{self._enum.rust_local_type}>"
-        return self._enum.rust_local_type
-
-    @property
     def cpp_temp_type(self) -> str:
         return self.cpp_type
 
@@ -319,10 +299,6 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
     @property
     def primitive_type(self) -> ArgPrimitiveType:
         return self._arg_type
-
-    @property
-    def rust_type(self) -> str:
-        return ArgPrimitiveType.to_rust_type(self._arg_type, optional=self._optional)
 
     @property
     def cpp_type(self) -> str:
@@ -419,22 +395,6 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         return self._interface_struct.cpp_type
 
     @property
-    def rust_type(self) -> str:
-        if self.optional:
-            return f"Option<{self._interface_struct.rust_type}>"
-        return self._interface_struct.rust_type
-
-    @property
-    def rust_local_type(self) -> str:
-        if self.optional:
-            return f"Option<{self._interface_struct.rust_local_type}>"
-        return self._interface_struct.rust_local_type
-
-    @property
-    def rust_temp_type(self) -> str:
-        return self._interface_struct.rust_local_type
-
-    @property
     def markdown_type(self) -> str:
         return f"[Struct {self._interface_struct.class_name}](#enum-{self._interface_struct.class_name})"
 
@@ -457,7 +417,7 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         elif lang == "rust":
             return "%s%s {%s}%s" % (
                 "Some(" if self.optional else "",
-                self._interface_struct.rust_type,
+                self._interface_struct.rust.type,
                 ", ".join([f"{k}: {v}" for k, v in example_list.items()]),
                 ")" if self.optional else "",
             )
@@ -494,12 +454,6 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
     @property
     def cpp_rapidjson_type(self) -> str:
         return "String"
-
-    @property
-    def rust_type(self) -> str:
-        if self.optional:
-            return "Option<chrono::DateTime<chrono::Utc>>"
-        return "chrono::DateTime<chrono::Utc>"
 
     @property
     def markdown_type(self) -> str:
@@ -545,12 +499,6 @@ class ArgDuration(Arg, LanguageSymbolMixin):
     @property
     def cpp_temp_type(self) -> str:
         return self.cpp_type
-
-    @property
-    def rust_type(self) -> str:
-        if self.optional:
-            return "Option<chrono::Duration>"
-        return "chrono::Duration"
 
     @property
     def markdown_type(self) -> str:
@@ -599,12 +547,6 @@ class ArgBinary(Arg, LanguageSymbolMixin):
         Arg.__init__(self, name)
         LanguageSymbolMixin.__init__(self)
         self._type = ArgType.BINARY
-
-    @property
-    def rust_type(self) -> str:
-        if self.optional:
-            return "Option<Vec<u8>>"
-        return "Vec<u8>"
 
     @property
     def markdown_type(self) -> str:
@@ -667,12 +609,6 @@ class ArgArray(Arg, LanguageSymbolMixin):
         if self.optional:
             return f"std::optional<std::vector<{self.element.cpp_temp_type}>>"
         return f"std::vector<{self.element.cpp_temp_type}>"
-
-    @property
-    def rust_type(self) -> str:
-        if self.optional:
-            return f"Option<Vec<{self.element.rust_type}>>"
-        return f"Vec<{self.element.rust_type}>"
 
     @property
     def markdown_type(self) -> str:
@@ -857,15 +793,6 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
             return stringmanip.upper_camel_case(self.return_value_name)
 
     @property
-    def return_value_rust_type(self) -> str:
-        if self._return_value is None:
-            return "()"
-        elif isinstance(self._return_value, Arg):
-            return self._return_value.rust_type
-        elif isinstance(self._return_value, list):
-            return stringmanip.upper_camel_case(self.return_value_name)
-
-    @property
     def return_value_property_name(self) -> str:
         if isinstance(self._return_value, Arg):
             return self._return_value.name
@@ -967,20 +894,6 @@ class Property(InterfaceComponent, LanguageSymbolMixin):
         return template_topic
 
     @property
-    def rust_local_type(self) -> str:
-        if len(self._arg_list) == 1:
-            return self._arg_list[0].rust_local_type
-        else:
-            return f"{stringmanip.upper_camel_case(self.name)}Property"
-
-    @property
-    def rust_type(self) -> str:
-        if len(self._arg_list) == 1:
-            return self._arg_list[0].rust.type
-        else:
-            return f"{self.rust_local_type}"
-
-    @property
     def arg_list(self) -> list[Arg]:
         return self._arg_list
 
@@ -1059,14 +972,6 @@ class InterfaceEnum(LanguageSymbolMixin):
         return stringmanip.upper_camel_case(self.name)
 
     @property
-    def rust_local_type(self) -> str:
-        return stringmanip.upper_camel_case(self.name)
-
-    @property
-    def rust_type(self) -> str:
-        return f"{self.rust_local_type}"
-
-    @property
     def cpp_type(self) -> str:
         return stringmanip.upper_camel_case(self.name)
 
@@ -1125,14 +1030,6 @@ class InterfaceStruct(LanguageSymbolMixin):
     @property
     def class_name(self):
         return stringmanip.upper_camel_case(self.name)
-
-    @property
-    def rust_local_type(self) -> str:
-        return stringmanip.upper_camel_case(self.name)
-
-    @property
-    def rust_type(self) -> str:
-        return f"{self.rust_local_type}"
 
     @property
     def cpp_type(self) -> str:

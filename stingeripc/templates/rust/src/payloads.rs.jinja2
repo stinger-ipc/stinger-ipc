@@ -478,9 +478,9 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
     #[serde(rename = "{{arg.name}}")]
     {%-endif%} {# end rename if needed #}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
-    pub {{arg.name|snake_case}}: {{arg.rust_type}},
+    pub {{arg.name|snake_case}}: {{arg.rust.type}},
     {%-elif arg.arg_type.name.lower() == 'struct'%}
-    pub {{arg.name|snake_case}}: {{arg.rust_type}},
+    pub {{arg.name|snake_case}}: {{arg.rust.type}},
     {%elif arg.arg_type.name.lower() == 'enum'%}
     pub {{arg.name|snake_case}}: {{arg.rust.local_type}},
     {%elif arg.arg_type.name.lower() == 'datetime'%}
