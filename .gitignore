@@ -8,6 +8,7 @@ PGK-INFO
 # All generated code
 generated/
 reference/
+temp/
 
 .vscode/
 build/
