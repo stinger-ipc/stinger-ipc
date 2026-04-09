@@ -80,9 +80,11 @@ Output lands in `./modified/`.
 
 ## Step 5 — Diff the two trees
 
+Use the `./temp/` directory (present in the project root) for any temporary files created during this process, such as diff output. Do not use `/tmp/`.
+
 ```bash
-diff -r --unified=3 ./original ./modified > /tmp/stinger_gen_diff.txt 2>&1
-wc -l /tmp/stinger_gen_diff.txt
+diff -r --unified=3 ./original ./modified > ./temp/stinger_gen_diff.txt 2>&1
+wc -l ./temp/stinger_gen_diff.txt
 ```
 
 Read the diff file. If it's large (hundreds of lines), work through it by file/directory.
@@ -122,7 +124,7 @@ When in doubt, surface it as unintentional — better to over-report than to sil
 <only mention if useful context>
 ```
 
-If everything looks intentional, say so clearly. If there are unintentional changes, paste the relevant diff hunks inline so the user doesn't have to go dig through `/tmp/stinger_gen_diff.txt` themselves.
+If everything looks intentional, say so clearly. If there are unintentional changes, paste the relevant diff hunks inline so the user doesn't have to go dig through `./temp/stinger_gen_diff.txt` themselves.
 
 ---
 

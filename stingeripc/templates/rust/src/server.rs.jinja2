@@ -299,7 +299,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     {%endif-%}
     {%for sig_name, sig in stinger.signals.items()-%}
     /// Emits the {{sig_name}} signal with the given arguments.
-    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
+    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
             {{arg.name|snake_case}},
@@ -322,7 +322,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     }
 
     /// Emits the {{sig_name}} signal with the given arguments, but this is a fire-and-forget version.
-    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
+    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
             {{arg.name|snake_case}},
@@ -364,7 +364,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         let payload = payload_obj.unwrap();
         {%endif%}{# has arg_list #} 
         // call the method handler
-        let rc: Result<{{method.return_value_rust_type}}, MethodReturnCode> = {
+        let rc: Result<{{method.rust.return_value_type}}, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_{{method_name|snake_case}}({%for arg in method.arg_list%}payload.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}).await
         };
@@ -723,7 +723,7 @@ pub trait {{stinger.name | UpperCamelCase }}MethodHandlers<C: Mqtt5PubSub>: Send
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode>;
+    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode>;
     
     {%endfor%}
 
@@ -753,7 +753,7 @@ mod tests {
         }
 
         {%for method_name, method in stinger.methods.items()%}
-        async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode> {
+        async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode> {
             println!("Handling {{method_name}}");
             {%-if method.return_value_type == 'struct'%}
             let rv = {{method.return_arg_list[0].rust.temp_type}} {
@@ -767,7 +767,7 @@ mod tests {
             Ok(rv)
             {%endif%}
             {%-elif method.return_value_type == 'multiple'%}
-            let rv = {{method.return_value_rust_type}} {
+            let rv = {{method.rust.return_value_type}} {
                 {%for arg in method.return_value-%}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%endfor%}
