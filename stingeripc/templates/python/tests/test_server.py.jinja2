@@ -96,7 +96,7 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
         return self.{{prop_name|snake_case}}
 
     {%-if not prop.read_only%}
-    def set_property_{{prop_name|snake_case}}(self, value: {{prop.python_annotation}}):
+    def set_property_{{prop_name|snake_case}}(self, value: {{prop.python.annotation}}):
         """Set the value for the '{{prop_name|snake_case}}' property."""
         self.{{prop_name|snake_case}}_modified_flag = True
         self.{{prop_name|snake_case}} = value

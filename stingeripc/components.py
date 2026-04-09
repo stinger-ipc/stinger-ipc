@@ -342,6 +342,10 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
         return self._arg_type
 
     @property
+    def primitive_type(self) -> ArgPrimitiveType:
+        return self._arg_type
+
+    @property
     def python_type(self) -> str:
         return ArgPrimitiveType.to_python_type(self._arg_type)
 
@@ -433,6 +437,10 @@ class ArgStruct(Arg, LanguageSymbolMixin):
 
     @property
     def struct(self) -> InterfaceStruct:
+        return self._interface_struct
+
+    @property
+    def interface_struct(self) -> InterfaceStruct:
         return self._interface_struct
 
     @property
@@ -1094,7 +1102,7 @@ class Property(InterfaceComponent, LanguageSymbolMixin):
     @property
     def python_annotation(self) -> str:
         if len(self._arg_list) == 1:
-            return self._arg_list[0].python_annotation
+            return self._arg_list[0].python.annotation
         else:
             return f"{stringmanip.upper_camel_case(self.name)}Property"
 
@@ -1108,7 +1116,7 @@ class Property(InterfaceComponent, LanguageSymbolMixin):
     @property
     def rust_type(self) -> str:
         if len(self._arg_list) == 1:
-            return self._arg_list[0].rust_type
+            return self._arg_list[0].rust.type
         else:
             return f"{self.rust_local_type}"
 

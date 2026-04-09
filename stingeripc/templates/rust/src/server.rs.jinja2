@@ -67,9 +67,9 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
     {%-if prop.arg_list | length > 1%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust_type}}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust.type}}>>,
     {%-else%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust_type}}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust.type}}>>,
     {%endif-%}
     {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%-endfor%}
@@ -408,7 +408,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_{{prop_name|snake_case}}_value(
             mut publisher: C, 
-            property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust_type}}{%else%}{{prop.arg_list[0].rust_type}}{%endif%}>>,  // Arc to the property value
+            property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust.type}}{%else%}{{prop.arg_list[0].rust.type}}{%endif%}>>,  // Arc to the property value
             version_pointer: Arc<AtomicU32>,
             msg: MqttMessage
     )
@@ -534,16 +534,16 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     /// Use `.borrow_and_update()` on the Receiver to get the current value and reset the watcher.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.write_request()
     }
 
     /// Sets the value{%if prop.arg_list|length > 1%}s{%endif%} of the {{prop_name}} property.
-    pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust_type}}) -> SentMessageFuture {
+    pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust.type}}) -> SentMessageFuture {
         let write_request_lock = self.get_{{prop_name | snake_case}}_handle();
         Box::pin(async move { 
             let mut write_request = write_request_lock.write().await;
@@ -756,7 +756,7 @@ mod tests {
         async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode> {
             println!("Handling {{method_name}}");
             {%-if method.return_value_type == 'struct'%}
-            let rv = {{method.return_arg_list[0].rust_temp_type}} {
+            let rv = {{method.return_arg_list[0].rust.temp_type}} {
                 {%for arg in method.return_value.members-%}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%endfor%}
@@ -802,7 +802,7 @@ mod tests {
             {{prop_name | snake_case}}: 
             {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
             {%-else-%}
-            {{prop.rust_type}} {
+            {{prop.rust.type}} {
                 {%-for arg in prop.arg_list %}
                     {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%-endfor%}
