@@ -502,7 +502,8 @@ class {{stinger.python.client_class_name}}Discoverer:
             self._check_for_fully_discovered(service_info.instance)
 
         else: # Empty payload means the service is going away
-            instance_id = message.topic.split('/')[-2]
+            instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}}
+            instance_id = message.topic.split('/')[instance_id_expected_index]
             with self._mutex:
                 if instance_id in self._discovered_services:
                     self._logger.info("Service %s is going away", instance_id)

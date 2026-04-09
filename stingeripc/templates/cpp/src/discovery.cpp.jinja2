@@ -45,9 +45,9 @@ bool InstanceInfo::isComplete() const
 
 void InstanceInfo::UpdateFromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
-    if (jsonObj.HasMember("service_id") && jsonObj["service_id"].IsString())
+    if (jsonObj.HasMember("instance") && jsonObj["instance"].IsString())
     {
-        serviceId = jsonObj["service_id"].GetString();
+        serviceId = jsonObj["instance"].GetString();
     }
     {%-for topic_param in config.topics.params %}
     if (jsonObj.HasMember("{{topic_param}}") && jsonObj["{{topic_param}}"].IsString())

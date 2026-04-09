@@ -1,7 +1,9 @@
 """Main TUI application for {{stinger.name|UpperCamelCase}}IPC."""
 
-import argparse
+import typer
 from typing import Optional, Dict, Any
+
+cli = typer.Typer()
 from textual.app import App # typing: ignore
 from textual.screen import Screen # typing: ignore
 from textual.command import Provider, Hit  # typing: ignore
@@ -62,42 +64,28 @@ class {{stinger.name|UpperCamelCase}}IPCApp(App):
         self.push_screen("connection")
 
 
-def main() -> None:
+@cli.command(
+    epilog="Environment variables: MQTT_HOSTNAME — MQTT broker hostname (default: 'localhost')"
+)
+def main(
+    cafile: Optional[str] = typer.Option(None, help="Path to CA certificate file for TLS certificate validation"),
+    capath: Optional[str] = typer.Option(None, help="Path to directory containing CA certificates for TLS"),
+    cert: Optional[str] = typer.Option(None, help="Path to client certificate file for TLS client authentication"),
+    insecure: bool = typer.Option(False, help="Disable TLS certificate verification (not recommended for production)"),
+) -> None:
     """Run the TUI application."""
-
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description="{{stinger.name|UpperCamelCase}}IPC TUI Application")
-    parser.add_argument(
-        "--cafile",
-        help="Path to CA certificate file for TLS certificate validation",
-    )
-    parser.add_argument(
-        "--capath",
-        help="Path to directory containing CA certificates for TLS",
-    )
-    parser.add_argument(
-        "--cert",
-        help="Path to client certificate file for TLS client authentication",
-    )
-    parser.add_argument(
-        "--insecure",
-        action="store_true",
-        help="Disable TLS certificate verification (not recommended for production)",
-    )
-    args = parser.parse_args()
-
     app = {{stinger.name|UpperCamelCase}}IPCApp()
 
     # Store TLS configuration in the app
     app.tls_config = {
-        "cafile": args.cafile,
-        "capath": args.capath,
-        "cert": args.cert,
-        "insecure": args.insecure,
+        "cafile": cafile,
+        "capath": capath,
+        "cert": cert,
+        "insecure": insecure,
     }
-    
+
     app.run()
 
 
 if __name__ == "__main__":
-    main()
+    cli()

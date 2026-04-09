@@ -23,10 +23,16 @@ class PropertyConfig(BaseModel):
 class PythonConfig(BaseModel):
     """Python-specific configuration options."""
     python37: bool = Field(default=False, description="Generate Python 3.7 compatible code")
+    package_suffix: str = Field(default="ipc", description="Suffix to append to generated Python package names")
+
+class RustConfig(BaseModel):
+    """Rust-specific configuration options."""
+    package_suffix: str = Field(default="ipc", description="Suffix to append to generated Rust module names")
 
 class CppConfig(BaseModel):
     """C++-specific configuration options."""
     namespace: List[str] = Field(default_factory=lambda: ["stinger", "gen"], description="List of nested namespaces for generated C++ code.  The interface name is appended to this as the innermost namespace.")
+    package_suffix: str = Field(default="ipc", description="Suffix to append to generated C++ namespace and filenames")
 
 class TopicConfig(BaseModel):
     """ Configuration for which topic schemas to use """
@@ -93,6 +99,7 @@ class StingerConfig(BaseModel):
     """Root configuration model for Stinger IPC code generation."""
     python: PythonConfig = Field(default_factory=PythonConfig, description="Python generation options")
     cpp: CppConfig = Field(default_factory=CppConfig, description="C++ generation options")
+    rust: RustConfig = Field(default_factory=RustConfig, description="Rust generation options")
     properties: PropertyConfig = Field(default_factory=PropertyConfig, description="Property generation options")
     server: ServerConfig = Field(default_factory=ServerConfig, description="Server code generation options")
     client: ClientConfig = Field(default_factory=ClientConfig, description="Client code generation options")

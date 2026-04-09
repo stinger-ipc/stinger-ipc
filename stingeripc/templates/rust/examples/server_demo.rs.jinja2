@@ -155,6 +155,14 @@ async fn main() {
     // Provide property handles to the property_publish_task which will use them to continuously update property values.
     {%for prop_name, prop in stinger.properties.items()%}
     let {{prop_name | snake_case}}_property = server.get_{{prop_name | snake_case}}_handle();
+    let {{prop_name | snake_case}}_property_monitor = tokio::spawn({
+        let mut property_handle_watcher = {{prop_name | snake_case}}_property.subscribe();
+        async move {
+            while property_handle_watcher.changed().await.is_ok() {
+                println!("Property '{{prop_name}}' value has changed to: {:?}", *(property_handle_watcher.borrow_and_update()));
+            }
+        }
+    });
     {%endfor-%}
     let property_publish_task = tokio::spawn(async move {
         loop {
@@ -162,7 +170,7 @@ async fn main() {
             {%for prop_name, prop in stinger.properties.items()%}
             sleep(Duration::from_secs(1)).await;
             {
-                println!("Changing property '{{prop_name}}'");
+                println!("Demo code periodic change of property '{{prop_name}}'");
                 let mut {{prop_name|snake_case}}_guard = {{prop_name | snake_case}}_property.write().await;
                 {%-if prop.arg_list | length == 1 %}
                 *{{prop_name|snake_case}}_guard = {{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}};

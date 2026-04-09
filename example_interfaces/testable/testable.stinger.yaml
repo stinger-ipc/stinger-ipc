@@ -19,6 +19,7 @@ enums:
       - name: three
         value: 3
         description: Value two has no description.
+    version: 2.0.0
 
 structures:
 
@@ -46,6 +47,7 @@ structures:
       - name: the_enum
         type: enum
         enumName: Numbers
+        enumVersion: 2.0.0
         description: An enum type
       - name: an_entry_object
         type: struct
@@ -184,8 +186,6 @@ signals:
       - name: value
         type: integer
         description: The integer value.
-    consumers:
-      - integers
   
   singleOptionalInt:
     documentation: A signal with a single optional integer parameter.
@@ -194,8 +194,6 @@ signals:
         type: integer
         optional: true
         description: The integer value.
-    consumers:
-      - integers
 
   threeIntegers:
     documentation: A signal with three integer parameters, the third is optional.
@@ -210,8 +208,6 @@ signals:
         type: integer
         description: The third integer value.
         optional: true
-    consumers:
-      - integers
 
   singleString:
     documentation: A signal with a single string parameter.
@@ -248,7 +244,9 @@ signals:
       - name: value
         type: enum
         enumName: Numbers
+        enumVersion: 2.0.0
         description: The enum value.
+    version: 0.1.0
 
   singleOptionalEnum:
     documentation: A signal with a single optional enum parameter.
@@ -787,8 +785,6 @@ methods:
         type: array
         itemType:
           type: integer
-    consumers:
-      - integers
 
   callOptionalListOfFloats:
     documentation: Method that takes one optional list of floats argument and returns one optional list of floats value.
@@ -813,6 +809,7 @@ methods:
         itemType:
           type: enum
           enumName: Numbers
+          enumVersion: 2.0.0
         description: The first list of enums.
       - name: input2
         type: array
@@ -825,12 +822,14 @@ methods:
         itemType:
           type: enum
           enumName: Numbers
+          enumVersion: 2.0.0
         description: The first list of enums.
       - name: output2
         type: array
         itemType:
           type: string
         optional: true
+    version: 0.1.0
 
 properties:
 
@@ -839,8 +838,6 @@ properties:
     values:
       - name: value
         type: integer
-    consumers:
-      - integers
 
   read_only_integer:
     documentation: A read-only integer property.
@@ -848,8 +845,9 @@ properties:
     values:
       - name: value
         type: integer
+    version: 0.2.3
     consumers:
-      - integers
+      - people
 
   read_write_optional_integer:
     documentation: A read-write optional integer property.
@@ -857,8 +855,6 @@ properties:
       - name: value
         type: integer
         optional: true
-    consumers:
-      - integers
 
   read_write_two_integers:
     documentation: A read-write property with two integer values. The second is optional.
@@ -869,8 +865,6 @@ properties:
       - name: second
         type: integer
         optional: true
-    consumers:
-      - integers
   
   read_only_string:
     documentation: A read-only string property.

@@ -23,6 +23,7 @@ YamlIfaceEnum = dict[str, str | YamlArgList]
 YamlIfaceEnums = dict[str, YamlIfaceEnum]
 YamlIfaceProperty = dict[str, str | bool | YamlArgList]
 
+# These names cannot be used for method/property/signal names because they are reserved keywords.
 RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
 
 
@@ -238,7 +239,7 @@ class ArgEnum(Arg):
             else:
                 retval = f"{self.enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)}"
         elif lang == "json":
-            retval = str(random.randint(1, len(self.enum.items)))
+            retval = str(random_enum_item.integer)
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             retval = getattr(self, lang).get_random_example_value(seed=seed)
         else:
@@ -438,6 +439,11 @@ class ArgDuration(Arg):
                 retval = f"chrono::Duration::seconds({random.randint(1, 3600)})"
         elif lang in ["c++", "cpp"]:
             retval = f"std::chrono::duration<double>({random.randint(1, 3600)})"
+        elif lang == "json":
+            if self.optional and random.choice([True, False, False, False]):
+                retval = "null"
+            else:
+                retval = f'"PT{random.randint(1, 3600)}S"'  # ISO 8601 duration format
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             retval = getattr(self, lang).get_random_example_value(seed=seed)
         random.setstate(random_state)
@@ -469,6 +475,12 @@ class ArgBinary(Arg):
             return 'vec![101, 120, 97, 109, 112, 108, 101]'  # "example" in ASCII bytes
         elif lang in ["c++", "cpp"]:
             return 'std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
+        if lang == "json":
+            if self.optional and random.choice([True, False, False, False]):
+                retval = "null"
+            else:
+                retval = '"ZXhhbXBsZSBiaW5hcnkgZGF0YQ=="'  # "example binary data" base64-encoded
+            return retval
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             return getattr(self, lang).get_random_example_value(seed=seed)
         return None
@@ -502,7 +514,15 @@ class ArgArray(Arg):
                 return f"Some(vec![{example_value}, {example_value2}, {example_value3}])"
             return f"vec![{example_value}, {example_value2}]"
         elif lang in ["c++", "cpp"]:
-            return f"std::vector<{self.element.cpp.temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"
+            return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"
+        elif lang == "json":
+            if self.optional and random.choice([True, False, False, False, False]):
+                retval = "null"
+            elif random.choice([True, False, False, True, False]):
+                retval = "[]"
+            else:
+                retval = f"[{example_value}, {example_value2}]"
+            return retval
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             return getattr(self, lang).get_random_example_value(seed=seed)
         return None
@@ -546,9 +566,10 @@ class InterfaceComponent:
 
 
 class Signal(InterfaceComponent, LanguageSymbolMixin):
+
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
-        LanguageSymbolMixin.__init__(self)
+        LanguageSymbolMixin.__init__(self, self._config)
         self._arg_list: list[Arg] = []
 
     def add_arg(self, arg: Arg) -> Signal:
@@ -597,7 +618,7 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
 
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
-        LanguageSymbolMixin.__init__(self)
+        LanguageSymbolMixin.__init__(self, self._config)
         self._arg_list: list[Arg] = []
         self._return_value: Arg | list[Arg] | None = None
         self._return_arg_list: list[Arg] = []
@@ -799,7 +820,7 @@ class Property(InterfaceComponent, LanguageSymbolMixin):
 
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
-        LanguageSymbolMixin.__init__(self)
+        LanguageSymbolMixin.__init__(self, self._config)
         self._arg_list: list[Arg] = []
         self._read_only = False
 
@@ -1005,7 +1026,7 @@ class InterfaceStruct(LanguageSymbolMixin):
 class StingerSpec(LanguageSymbolMixin):
 
     def __init__(self, interface: dict[str, Any], config: StingerConfig):
-        LanguageSymbolMixin.__init__(self)
+        LanguageSymbolMixin.__init__(self, config)
         self._config = config
         try:
             self._name: str = interface["name"]

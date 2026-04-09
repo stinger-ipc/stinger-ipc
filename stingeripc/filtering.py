@@ -152,8 +152,14 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
     Raises:
         ValueError: If any method, property, signal, or event specifies consumers but does not specify a version.
     """
+
     def check_args(args: list[Dict[str, Any]], component_name: str, component_type: str) -> None:
-        """Check version consistency for a list of arguments."""
+        """Check version consistency for a list of arguments:
+        1) Check that reference enums/structs actually have a definition in the interface.
+        2) If the argument specifies an enumVersion/structVersion, check that the corresponding
+           enum/struct definition has a version and that they are semantically compatible (major and minor must match).
+        """
+
         for arg in args:
             arg_type = arg.get("type")
             
@@ -186,9 +192,8 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
                     if arg_ver.major != def_ver.major or arg_ver.minor != def_ver.minor:
                         raise ValueError(
                             f"{component_type} '{component_name}' requires enum '{enum_name}' "
-                            f"version {enum_version_in_arg} (major.minor: {arg_ver.major}.{arg_ver.minor}), "
-                            f"but the enum is defined with version {enum_version_in_def} "
-                            f"(major.minor: {def_ver.major}.{def_ver.minor})"
+                            f"semantic version {arg_ver.major}.{arg_ver.minor}, "
+                            f"but the enum is defined with version {enum_version_in_def} and these versions are not compatible. "
                         )
             
             # Check struct version consistency
@@ -220,9 +225,9 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
                     if arg_ver.major != def_ver.major or arg_ver.minor != def_ver.minor:
                         raise ValueError(
                             f"{component_type} '{component_name}' requires struct '{struct_name}' "
-                            f"version {struct_version_in_arg} (major.minor: {arg_ver.major}.{arg_ver.minor}), "
+                            f"version {arg_ver}, "
                             f"but the struct is defined with version {struct_version_in_def} "
-                            f"(major.minor: {def_ver.major}.{def_ver.minor})"
+                            f"and these versions are not compatible."
                         )
             
             # Recursively check array item types
@@ -230,7 +235,7 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
                 item_type = arg.get("itemType")
                 if isinstance(item_type, dict):
                     check_args([item_type], component_name, component_type)
-    
+
     # Check signals
     if "signals" in interface:
         for signal_name, signal_spec in interface["signals"].items():

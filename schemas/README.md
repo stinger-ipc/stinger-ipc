@@ -20,7 +20,7 @@ All arguments have required `name` and `type` fields.  See below for valid `type
 
 All arguments can have an optional `description` field which takes a string.  All arguments can have an optional `optional` field which takes a boolean; by default, arguments are not optional.
 
-Structs and enums must have respective`structName` and `enumName` fields, where the value is the name of a struct or enum as defined in the stinger file.
+Struct and enum arguments must have respective `structName` and `enumName` fields, where the value is the name of a struct or enum as defined in the stinger file.  When the parent component has a `version` field, struct and enum arguments should also include `structVersion` and `enumVersion` fields respectively.
 
 Example:
 
@@ -43,15 +43,34 @@ Example:
 * float
 * boolean
 * string
-* datetime (coming soon)
-* duration (coming soon)
+* datetime
+* duration
+* binary
 * struct (see below)
 * enum (see below)
-* list (coming soon)
+* array (see below)
 
-### Coming Soon: JSON Schema
+### Arrays
 
-Coming soon: Arguments can have a `schema` field consisting of JSON Schema.  The value of the argument is **runtime** evaluated against the schema.  The schema can restrict values.  For example, minimum and maximum on numbers, or a regex pattern on a string.
+Array arguments require an `itemType` field which specifies the type of the array elements.  The `itemType` can be a primitive type, an enum, or a struct.
+
+```yaml
+- name: scores
+  type: array
+  itemType:
+    type: float
+  description: A list of scores
+- name: colors
+  type: array
+  itemType:
+    type: enum
+    enumName: Color
+  description: A list of colors
+```
+
+### JSON Schema
+
+Arguments can have a `schema` field consisting of JSON Schema.  The value of the argument is **runtime** evaluated against the schema.  The schema can restrict values.  For example, minimum and maximum on numbers, or a regex pattern on a string.
 
 Example of an integer where, at runtime, the value is enforced to be between 1 and 12.
 
@@ -76,8 +95,8 @@ A Stinger file typically contains the following:
 Here is a minimal example that shows metadata and the sections for types and IPC components.  No types or components are defined in this example, which is why the sections are an empty mapping.
 
 ```yaml
-stinger:
-  version: 0.0.7
+stingeripc:
+  version: 0.1.0
 
 interface:
   name: example_interface
@@ -110,13 +129,19 @@ enums:
     values:
       - name: RED
         description: The color red
+        value: 1
       - name: GREEN
         description: The color green
+        value: 2
       - name: BLUE
         description: The color blue
+        value: 3
       - name: YELLOW
         description: The color yellow
+        value: 4
 ```
+
+Enum values have a required `name` field.  They can have an optional `description` field and an optional integer `value` field.
 
 ## Structs
 
@@ -242,15 +267,16 @@ The default value for the `readOnly` field is `false`.
 
 At some point, we'd like properties to start off with a default value, though I'm uncertain whether those should be statically defined in the stinger file, loaded from a config file at runtime, or both.
 
-## Coming Soon: Stabilization
 
-You'll have the ability in a stinger file to specify which IPC components should be stable for external consumption.  Right now, stinger won't do much with components marked as stable, except to attach the version number to messages as an MQTTv5 user property.  However, in the future, it could create the following to support stabilization:
+## Versioning and Consumers
 
-* ACL lists
-* Protocol buffers
-* Export mappings
+Signals, methods, properties, enums, and structures can each have an optional `version` field, which is a [semantic version](https://semver.org) (e.g. `1.0.0`) that can be used to determine data consistency and compatibility.
 
-Here is example of a signal marked as stable.  Each argument in the list is marked with an ID (for stabilizing protocol buffers).  Additionally, a `stable` field is provided on the signal.  It should include a `version` field which is a [semantic version](https://semver.org) for that component.  (Version should be at least 1.0.0 to be considered stable).  Additionally, a `consumers` field should be provided with is a list of who can consume the component.  This can be used to dictate whether the component is to be bridged to another broker, or ACL'ed for a client ID (those tools are not part of stinger).
+Signals, methods, and properties can also have an optional `consumers` field, which is a list of names representing interface consumers allowed to access that component.  If `consumers` is specified, `version` is required.  This can be used to dictate whether the component is to be bridged to another broker, or ACL'ed for a client ID.
+
+Each argument in the payload can be marked with an `index` (a positive integer) for payload ordering in serialization formats like protocol buffers.
+
+Here is an example of a signal with versioning and consumers:
 
 ```yaml
 signals:
@@ -259,15 +285,15 @@ signals:
       - name: color
         type: enum
         enumName: color
-        id: 1
+        enumVersion: "1.0.0"
+        index: 1
       - name: diameter
         type: float
-        id: 2
-    stable:
-      version: 1.0.0
-      consumers:
-        - cloud
-        - automation
+        index: 2
+    version: "1.0.0"
+    consumers:
+      - cloud
+      - automation
 ```
 
 ## Validation

@@ -9,9 +9,9 @@ from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{
 {%if config.python.python37 %}
 UTC = timezone.utc
 {%endif%}
-from {{stinger.python.package_name}}.server import {{stinger.name | UpperCamelCase}}Server
+from {{stinger.python.module_name}}.server import {{stinger.name | UpperCamelCase}}Server
 {%if stinger.properties | length > 0 -%}
-from {{stinger.python.package_name}}.property import {%if not config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{{stinger.name | UpperCamelCase}}InitialPropertyValues
+from {{stinger.python.module_name}}.property import {%if not config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{{stinger.name | UpperCamelCase}}InitialPropertyValues
 {%endif-%}
 from {{stinger.name | loweronly}}ipc.interface_types import *
 from stinger_python_utils.return_codes import (

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(VERSION 3.16)
-{% set project_name %}{{stinger.name|snake_case|replace('_', '-')|replace('--', '-')}}{% endset %}
-{% set cmake_name %}{{stinger.name|PascalCase|replace('_', '')|replace('--', '')}}{% endset %}
+{% set project_name %}{{stinger.cpp.project_name}}{% endset %}
+{% set cmake_name %}{{stinger.cpp.cmake_name}}{% endset %}
 project ({{project_name}}
 	LANGUAGES CXX
 	VERSION {{stinger.version}})
@@ -9,9 +9,14 @@ project ({{project_name}}
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+# require C++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # more secure code
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+find_package(Threads REQUIRED)
 find_package(RapidJSON REQUIRED)
 
 # Fetch stinger-cpp-utils dependency
@@ -68,24 +73,28 @@ add_executable({{project_name}}-client-demo examples/client_main.cpp)
 target_link_libraries({{project_name}}-client-demo
 	PRIVATE
 		{{cmake_name}}::Client
+		Threads::Threads
 )
 
 add_executable({{project_name}}-server-demo examples/server_main.cpp)
 target_link_libraries({{project_name}}-server-demo
 	PRIVATE
 		{{cmake_name}}::Server
+		Threads::Threads
 )
 
 add_executable({{project_name}}-discovery-example examples/discovery_example.cpp)
 target_link_libraries({{project_name}}-discovery-example
 	PRIVATE
 		{{cmake_name}}::Client
+		Threads::Threads
 )
 
 add_executable({{project_name}}-discovery-publisher examples/discovery_publisher.cpp)
 target_link_libraries({{project_name}}-discovery-publisher
 	PRIVATE
 		{{cmake_name}}::Client
+		Threads::Threads
 )
 
 set_target_properties(

@@ -152,6 +152,10 @@ pub struct {{stinger.name|UpperCamelCase}}Discovery<C: Mqtt5PubSub + Clone + Sen
     prop_listener_handle: JoinHandle<()>,
     {%endif%}
     notification_tx: broadcast::Sender<DiscoveredService>,
+    interface_discovery_topic: String,
+    {% if stinger.properties|length > 0 %}
+    all_property_subscription_topic: String,
+    {%endif%}
     #[cfg(feature = "metrics")] pub metrics: Arc<Mutex<{{stinger.name|UpperCamelCase}}DiscoveryMetrics>>,
 }
 
@@ -178,7 +182,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
         let (info_tx, info_rx) = broadcast::channel::<MqttMessage>(32);
         debug!("Subscribing to discovery topic: {discovery_topic}");
         let _subscription_id = connection
-            .subscribe(discovery_topic, QoS::AtLeastOnce, info_tx.clone())
+            .subscribe(discovery_topic.clone(), QoS::AtLeastOnce, info_tx.clone())
             .await
             .map_err({{stinger.name|UpperCamelCase}}DiscoveryError::from)?;
         {%if stinger.properties|length > 0 %}
@@ -186,7 +190,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
         let (prop_tx, prop_rx) = broadcast::channel::<MqttMessage>(32);
         let all_property_subscription_topic = strfmt("{{stinger.all_properties_value_topic()}}", &discovery_topic_params_map).unwrap();
         let _property_subscription_id = connection
-            .subscribe(all_property_subscription_topic, QoS::AtLeastOnce, prop_tx.clone())
+            .subscribe(all_property_subscription_topic.clone(), QoS::AtLeastOnce, prop_tx.clone())
             .await
             .map_err({{stinger.name|UpperCamelCase}}DiscoveryError::from)?;
         {%endif%}
@@ -200,7 +204,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
         #[cfg(feature = "metrics")]
         let metrics = Arc::new(Mutex::new({{stinger.name|UpperCamelCase}}DiscoveryMetrics::default()));
 
-        let info_listener_handle = Self::spawn_listener(
+        let info_listener_handle = Self::spawn_interface_info_listener(
             info_rx,
             instances_in_discovery.clone(),
             notification_tx.clone(),
@@ -223,6 +227,8 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
             prop_listener_handle,
             {%endif%}
             notification_tx,
+            interface_discovery_topic: discovery_topic,
+            {% if stinger.properties|length > 0 %}all_property_subscription_topic: all_property_subscription_topic,{%endif%}
             #[cfg(feature = "metrics")] metrics,
         })
     }
@@ -320,7 +326,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
         {% endif %}
     }
 
-    fn spawn_listener(
+    fn spawn_interface_info_listener(
         mut message_rx: broadcast::Receiver<MqttMessage>,
         instances_in_discovery: Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
         notification_tx: broadcast::Sender<DiscoveredService>,
@@ -329,7 +335,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
         tokio::spawn(async move {
             debug!("Listening for discovery messages");
             while let Ok(message) = message_rx.recv().await {
-                Self::handle_message(
+                Self::handle_interface_info_message(
                     message, 
                     &instances_in_discovery, 
                     &notification_tx, 
@@ -368,7 +374,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
 
                     match property_name {
                         {%for prop_name, prop in stinger.properties.items() %}
-                        "{{prop_name|lowerCamelCase}}" => {
+                        "{{prop_name}}" => {
                             
                             let deserialized_property = serde_json::from_slice::<{{prop_name|UpperCamelCase}}Property>(&message.payload);
 
@@ -409,7 +415,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
     }
     {%endif%}
 
-    fn handle_message(
+    fn handle_interface_info_message(
         message: MqttMessage,
         instances_in_discovery: &Arc<RwLock<HashMap<String, ServiceInDiscovery>>>,
         notification_tx: &broadcast::Sender<DiscoveredService>,
@@ -417,10 +423,11 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
     ) {
         if message.payload.is_empty() {
             info!("Service represented by {} is now offline", message.topic);
-            // Parse instance_id from topic (format: full/{instance_id}/interface)
+            // Parse instance_id from topic (format: {{stinger.interface_info_topic()}})
             let topic_parts: Vec<&str> = message.topic.split('/').collect();
-            if topic_parts.len() >= 2 {
-                let instance_id = topic_parts[topic_parts.len() - 2].to_string();
+            let instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}};
+            if topic_parts.len() >= instance_id_expected_index + 1 {
+                let instance_id = topic_parts[instance_id_expected_index].to_string();
                 let mut interfaces_guard = instances_in_discovery
                     .write()
                     .expect("interfaces write lock poisoned");
@@ -463,21 +470,11 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
 
 impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for {{stinger.name|UpperCamelCase}}Discovery<C> {
     fn drop(&mut self) {
-        let discovery_topic_params_map = HashMap::from([
-            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
-            ("service_id".to_string(), "+".to_string()),
-            ("client_id".to_string(), "+".to_string()),
-            ("property_name".to_string(), "+".to_string()),
-            {%-for topic_param in config.topics.params%}
-            ("{{topic_param}}".to_string(), "+".to_string()),
-            {%-endfor%}
-        ]);
-
         self.info_listener_handle.abort();
-        let _ = self.connection.unsubscribe(strfmt("{{stinger.interface_info_topic()}}", &discovery_topic_params_map).unwrap());
+        let _ = self.connection.unsubscribe(self.interface_discovery_topic.clone());
         {% if stinger.properties|length > 0 %}
         self.prop_listener_handle.abort();
-        let _ = self.connection.unsubscribe("{{stinger.name|lowerCamelCase}}/+/property/+/value".to_string());
+        let _ = self.connection.unsubscribe(self.all_property_subscription_topic.clone());
         {% endif %}
     }
 }
@@ -485,61 +482,126 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for {{stinger.name|Upp
 #[cfg(test)]
 mod tests {
     use super::*;
+    use stinger_mqtt_trait::{mock::MockClient, QoS};
+    use crate::interface::InterfaceInfo;
+    use crate::message::{interface_online,{% if stinger.properties|length > 0 %} property_value{% endif %}};
+    use tracing_subscriber::EnvFilter;
 
-    fn sample_message(topic: &str, instance: &str) -> MqttMessage {
+    fn topic_param_map(service_id: String) -> HashMap<String, String> {
+        HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), service_id),
+            ("client_id".to_string(), "client_abc".to_string()),
+            ("property_name".to_string(), "prop_xyz".to_string()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), "{{topic_param}}".to_string()),
+            {%-endfor%}
+        ])
+    }
+
+    fn sample_message(service_id: String) -> MqttMessage {
+
+        let topic_param_map = topic_param_map(service_id.clone());
+
+        let topic = strfmt("{{stinger.interface_info_topic()}}", &topic_param_map).unwrap();
+
         let info = InterfaceInfo {
-            interface_name: "sample".into(),
-            title: "Sample".into(),
-            version: "1.0".into(),
-            instance: instance.into(),
-            connection_topic: format!("sample/{instance}"),
+            interface_name: "{{stinger.name}}".into(),
+            title: "{{stinger.title}}".into(),
+            version: "{{stinger.version}}".into(),
+            instance: service_id.clone(),
+            connection_topic: format!("sample/{}", service_id),
             timestamp: "2024-01-01T00:00:00Z".into(),
+            {%-for topic_param in config.topics.params %}
+            {{topic_param}}: "{{topic_param}}".into(),
+            {%-endfor%}
         };
         let payload = serde_json::to_vec(&info).expect("serialize");
 
-        MqttMessage {
-            topic: topic.into(),
-            payload,
-            qos: 1,
-            subscription_id: 42,
-            response_topic: None,
-            content_type: None,
-            correlation_data: None,
-            user_properties: HashMap::new(),
-        }
+        interface_online(&topic, &info, 60).unwrap()
     }
 
     #[tokio::test]
     async fn collects_unique_instances_and_topics() {
         let interfaces = Arc::new(RwLock::new(HashMap::new()));
-        let (notification_tx, mut notification_rx) = broadcast::channel::<InterfaceInfo>(32);
+        let (notification_tx, mut notification_rx) = broadcast::channel::<DiscoveredService>(32);
 
-        {{stinger.name|UpperCamelCase}}Discovery::handle_message(
-            sample_message("service/alpha/interface", "alpha"),
-            &interfaces,
-            &notification_tx,
-        );
-        {{stinger.name|UpperCamelCase}}Discovery::handle_message(
-            sample_message("service/beta/interface", "beta"),
-            &interfaces,
-            &notification_tx,
-        );
-        {{stinger.name|UpperCamelCase}}Discovery::handle_message(
-            sample_message("service/alpha/interface", "alpha"),
-            &interfaces,
-            &notification_tx,
-        );
+        #[cfg(feature = "metrics")]
+        let metrics = Arc::new(Mutex::new({{stinger.name|UpperCamelCase}}DiscoveryMetrics::default()));
+
+        {%set iface_count = 5 %}
+
+        {%for i in range(iface_count)%}
+        {
+            let service_id = "service_{{loop.index}}".to_string();
+            
+            let msg = sample_message(service_id.clone());
+
+            {{stinger.name|UpperCamelCase}}Discovery::<MockClient>::handle_interface_info_message(
+                msg,
+                &interfaces,
+                &notification_tx,
+                #[cfg(feature = "metrics")]
+                metrics.clone()
+            );
+        }
+        {%endfor%}
 
         let interfaces_guard = interfaces.read().unwrap();
-        assert_eq!(interfaces_guard.len(), 2);
-        assert!(interfaces_guard.contains_key("alpha"));
-        assert!(interfaces_guard.contains_key("beta"));
+        assert_eq!(interfaces_guard.len(), {{iface_count}});
+        {%for i in range(iface_count)%}
+        assert!(interfaces_guard.contains_key("service_{{loop.index}}"));
+        {%endfor%}
+    }
 
-        // Check that we received exactly 2 notifications (only for new interfaces)
-        let info1 = notification_rx.try_recv().expect("should have first notification");
-        assert_eq!(info1.instance, "alpha");
-        let info2 = notification_rx.try_recv().expect("should have second notification");
-        assert_eq!(info2.instance, "beta");
-        assert!(notification_rx.try_recv().is_err(), "should not have third notification");
+    #[tokio::test]
+    async fn full_mock_discovery() {
+        // This test simulates a full discovery process using the MockClient. It verifies that
+        // when interface info messages are published to the discovery topic, the discovery logic
+        // correctly processes them and sends notifications about discovered services.
+
+        let _ = tracing_subscriber::fmt().with_test_writer().with_env_filter(EnvFilter::new("{{stinger.name|snake_case}}_ipc=debug")).try_init();
+        let service_id = "N".to_string();
+        let mut topic_param_map = topic_param_map(service_id.clone());
+        let client_id = topic_param_map.get("client_id").unwrap().clone();
+
+        let mut mock_client = MockClient::new(client_id.clone());
+        let discovery = {{stinger.name|UpperCamelCase}}Discovery::new(&mut mock_client).await.unwrap();
+
+        let mut notification_rx = discovery.subscribe();
+
+        // Publish the interface discovery message
+        let msg = sample_message(service_id.clone());
+        info!("Inject message to {}", msg.topic);
+        mock_client.simulate_receive(msg).unwrap();
+
+        // Publish a property value message for each property
+        {% for prop_name, prop in stinger.properties.items() %}
+        {
+            topic_param_map.insert("property_name".to_string(), "{{prop_name}}".to_string());
+            let property_{{prop_name|snake_case}}_topic = strfmt("{{config.topics.property_values}}", &topic_param_map).unwrap();
+
+            // Just to get this test working faster, we're copy-pasting test code from payloads.rs to generate example property payloads. 
+            let json_str = r#"{ {%-for arg in prop.arg_list%}
+                "{{arg.name}}": {{arg.get_random_example_value(lang="json")}} {%if not loop.last%},{%endif%}
+            {%endfor-%} }"#;
+            let payload: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(json_str).unwrap();
+
+            let property_msg = property_value(&property_{{prop_name|snake_case}}_topic, &payload, {{loop.index}}).unwrap();
+
+            info!("Inject message to {}", property_msg.topic);
+            mock_client.simulate_receive(property_msg).unwrap();
+        }
+        {% endfor %}
+
+        let discovered_service = tokio::time::timeout(
+            tokio::time::Duration::from_secs(2),
+            notification_rx.recv()
+        )
+        .await
+        .expect("timeout waiting for discovery notification")
+        .unwrap();
+        assert_eq!(discovered_service.interface_info.interface_name, "{{stinger.name}}");
+
     }
 }

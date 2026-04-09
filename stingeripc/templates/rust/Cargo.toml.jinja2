@@ -1,5 +1,5 @@
 [package]
-name = "{{stinger.rust.package_name|replace('__', '_')}}"
+name = "{{stinger.rust.package_name}}"
 version = "{{stinger.version}}"
 edition = "2021"
 
@@ -13,7 +13,7 @@ metrics = ["payloads"]
 [dependencies]
 # Core dependencies (always available)
 futures = "0.3.31"
-stinger-mqtt-trait = "0.5.1"
+stinger-mqtt-trait = ">=0.6, <0.7"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 tokio = { version = "1", features = ["full"] }
@@ -27,7 +27,7 @@ tracing = { version = "0.1.41", optional = true }
 tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter", "fmt"] }
 bytes = "1.10.1"
 async-trait = { version = "0.1", optional = true } # For server-side async traits
-stinger-rwlock-watch = "0.3.3"
+stinger-rwlock-watch = "0.3.5"
 strfmt = "0.2.5"
 
 [dependencies.uuid]
@@ -39,15 +39,15 @@ features = [
 ]
 
 [dev-dependencies]
-mqttier = "0.7.7"
-stinger-mqtt-trait = { version = "0.5.1", features = ["mock_client"] }
+mqttier = "0.8.0"
+stinger-mqtt-trait = { version = "0.6.1", features = ["mock_client"] }
 
 [[example]]
-name = "{{stinger.name | snake_case|replace('__', '_')}}_client_demo"
+name = "{{stinger.name|snake_case}}_client_demo"
 path = "examples/client_demo.rs"
 required-features = ["client"]
 
 [[example]]
-name = "{{stinger.name | snake_case|replace('__', '_')}}_server_demo" 
+name = "{{stinger.name|snake_case}}_server_demo" 
 path = "examples/server_demo.rs"
 required-features = ["server"]

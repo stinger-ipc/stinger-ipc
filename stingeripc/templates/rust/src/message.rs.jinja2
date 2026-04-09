@@ -5,7 +5,7 @@ use bytes::Bytes;
 #[cfg(feature = "client")]
 use uuid::Uuid;
 
-#[cfg(feature = "server")]
+#[cfg(any(feature = "server", test))]
 pub fn interface_online(topic: &str, payload: &crate::interface::InterfaceInfo, message_expiry_seconds: u32) -> Result<MqttMessage, MethodReturnCode> {
     let mut builder = MqttMessageBuilder::default();
     builder
@@ -21,7 +21,7 @@ pub fn interface_online(topic: &str, payload: &crate::interface::InterfaceInfo, 
     Ok(msg)
 }
 {%if stinger.properties|length > 0 %}
-#[cfg(feature = "server")]
+#[cfg(any(feature = "server", test))]
 pub fn property_value<T: Serialize>(
         topic: &str, 
         payload: &T, 

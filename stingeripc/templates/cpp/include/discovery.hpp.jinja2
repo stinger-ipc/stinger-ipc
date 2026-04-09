@@ -32,20 +32,35 @@ public:
 };
 {%endif%}
 
+/**
+ * Information about a discovered service instance, including its service ID, topic parameters, and initial property values.
+ * This is updated as information is received over MQTT about the interface.
+ */
 struct InstanceInfo {
 public:
-    std::optional<std::string> serviceId;
+    std::optional<std::string> serviceId; // In the payload, this is the 'instance' field.
     {%-for topic_param in config.topics.params %}
     std::optional<std::string> {{topic_param|lowerCamelCase}};
     {%-endfor%}
     {%if stinger.properties | length > 0 %}InitialPropertyValues initial_property_values; // Not included in (de-)serialization.{%endif%}
 
+    /**
+     * This is the deserialization method for the InstanceInfo struct. 
+     * The JSON text should already be parsed into a rapidjson::Value object, and this method will extract the relevant fields to populate the InstanceInfo struct.
+     */
     void UpdateFromRapidJsonObject(const rapidjson::Value& jsonObj);
+
+    /**
+    * This is the serialization method for the InstanceInfo struct.
+    */
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
 
     bool isComplete() const;
 };
 
+/**
+ * This uses an IConnection object to subscribe to MQTT topics to receive messages that describe the {{stinger.name}} interface.
+ */
 class {{stinger.name|UpperCamelCase}}Discovery
 {
 public:

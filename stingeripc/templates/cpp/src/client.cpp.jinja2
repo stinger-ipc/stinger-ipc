@@ -53,10 +53,10 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     {%-endfor%}{# end signals for loop #}
     {%-for method_name, method in stinger.methods.items() %}
     { // Restrict scope
-        auto {{method_name | lowerCamelCase}}RequestTopic = stinger::utils::format("{{method.request_topic()}}", topicParams);
+        auto {{method_name | lowerCamelCase}}ResponseTopic = stinger::utils::format("{{method.response_topic()}}", topicParams);
         std::stringstream responseTopicStringStream;
-        responseTopicStringStream << stinger::utils::format({{method_name|lowerCamelCase}}RequestTopic, topicParams);
-        _{{method_name | lowerCamelCase}}MethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), {{stinger.method_request_qos}});
+        responseTopicStringStream << stinger::utils::format({{method_name|lowerCamelCase}}ResponseTopic, topicParams);
+        _{{method_name | lowerCamelCase}}MethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), {{stinger.method_response_qos}});
     }
     {%-endfor%}{# end methods for loop #}
     {%-for prop_name, prop in stinger.properties.items() %}

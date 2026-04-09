@@ -265,7 +265,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
     }
     
     TextArea {
-        height: 3;
+        height: 40vw;
         width: 100%;
     }
 
@@ -374,7 +374,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
                 {%-for arg in method_obj.arg_list%}
                 {% if arg.arg_type.name == 'STRUCT' %}
                 {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
-                {{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value = {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value.strip()
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value = {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.text.strip()
                 {% if not arg.optional %}
                 if not {{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value:
                     self.result_widget.update(f"[red]Error: Missing required parameter {{arg.name}}[/red]")
@@ -392,7 +392,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
 
                 try:
                     {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
-                    {{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value = {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value.strip()
+                    {{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value = {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.text.strip()
                     {{method_name|snake_case}}_{{arg.name|snake_case}}_values = type_adapter.validate_json({{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value)
                 except Exception as e:
                     self.result_widget.update(f"[red]Error parsing JSON for parameter {{arg.name}}: {e}[/red]")
