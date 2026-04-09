@@ -425,7 +425,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         """Test that the server can handle the '{{method_name|snake_case}}' method."""
         handler_callback_data = {{method.get_return_value_random_example_value('python')}}
         received_args = None # type: Optional[Dict[str, Any]]
-        def handler({%for arg in method.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
+        def handler({%for arg in method.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.python.return_value_annotation}}:
             nonlocal received_args
             received_args = {
                 {%-for arg in method.arg_list%}
@@ -474,7 +474,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         {%if method.return_arg_list|length > 1%}
         expected_resp_dict = to_jsonified_dict(handler_callback_data)
         {%elif method.return_arg_list|length == 1 %}
-        expected_return_obj = {{method_name|UpperCamelCase}}MethodResponse({{method.return_arg_list[0].name|snake_case}}=handler_callback_data)
+        expected_return_obj = {{method.python.response_class_name}}({{method.return_arg_list[0].name|snake_case}}=handler_callback_data)
         expected_resp_dict = to_jsonified_dict(expected_return_obj)
         {%else%}
         expected_resp_dict = {} # type: Dict[str, Any]

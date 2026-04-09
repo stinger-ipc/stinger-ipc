@@ -29,7 +29,7 @@ model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
 {{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[bytes]]{%else%}List[bytes]{%endif%}, {{field_desc}}, PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]), PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr])]
 
 {%else%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[{{arg.element.python_local_type}}]]{%else%}List[{{arg.element.python_local_type}}]{%endif%}, {{field_desc}}]
+{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[{{arg.element.python.local_type}}]]{%else%}List[{{arg.element.python.local_type}}]{%endif%}, {{field_desc}}]
 {%endif%}{# end array element cases #}
 
 {%endif-%}
@@ -115,14 +115,14 @@ class {{prop.python.model_class_name}}(BaseModel):
 
 # There are {{stinger.methods|length}} method definitions
 {%- for method_name, method in stinger.methods.items()%}
-class {{method_name|UpperCamelCase}}MethodRequest(BaseModel):
+class {{method.python.request_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` request object. {%if method.documentation%}
 
     {{method.documentation}}{%endif%}
     """
     {{field_list(method.arg_list)|indent(4)}}
 
-class {{method_name|UpperCamelCase}}MethodResponse(BaseModel):
+class {{method.python.response_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` response object. {%if method.documentation%}
 
     {{method.documentation}}{%endif%}
