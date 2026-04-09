@@ -5,7 +5,7 @@ version: '3'
 vars:
   THREADS: '{{default "16" .THREADS}}'
   INTERFACES: [full, simple, testable, signal_only, weather]
-  GENERATED_DIR: './generated'
+  GENERATED_DIR: '{{default "./generated" .GENERATED_DIR}}'
 
 tasks:
   default:

@@ -436,15 +436,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                 }
                             }
                         } else {
-                            match message::property_update(&topic, &payload_obj, {{prop_name|snake_case}}_prop_version.load(std::sync::atomic::Ordering::Relaxed)) {
-                                Ok(msg) => {
-                                    let _publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish_nowait(msg);
-                                }
-                                Err(e) => {
-                                    warn!("Failed to create property update message for '{{prop_name}}': {:?}", e);
-                                    continue;
-                                }
-                            }
+                            error!("No responder provided for property update request for '{{prop_name}}'");
                         }
                     };
                 });

@@ -40,18 +40,6 @@ pub fn property_value<T: Serialize>(
 }
 
 #[cfg(feature = "client")]
-pub fn property_update<T: Serialize>(topic: &str, payload: &T, property_version: u32) -> Result<MqttMessage, MethodReturnCode> {
-    let msg = MqttMessageBuilder::default()
-        .topic(topic)
-        .object_payload(payload).map_err(|e| MethodReturnCode::ClientSerializationError(e.to_string()))?
-        .qos(QoS::AtLeastOnce)
-        .retain(false)
-        .user_property("PropertyVersion", property_version.to_string())
-        .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
-    Ok(msg)
-}
-
-#[cfg(feature = "client")]
 pub fn property_update_request<T: Serialize>(topic: &str, payload: &T, property_version: u32, correlation_id: Uuid, response_topic: String) -> Result<MqttMessage, MethodReturnCode> {
     let msg = MqttMessageBuilder::default()
         .topic(topic)
