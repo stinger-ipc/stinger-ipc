@@ -162,7 +162,7 @@ std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamel
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
+void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle {{method.topic | replace('%1%', '+') }} method requests.");
     _{{method_name | camelCase}}Handler = func;

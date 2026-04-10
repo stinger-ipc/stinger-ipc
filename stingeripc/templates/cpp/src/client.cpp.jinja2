@@ -180,10 +180,10 @@ void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Cal
 {%-endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-std::future<{{method.return_value_cpp_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+std::future<{{method.cpp.return_value_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
     std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
-    _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData] = std::promise<{{method.return_value_cpp_class}}>();
+    _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData] = std::promise<{{method.cpp.return_value_class}}>();
 
     rapidjson::Document doc;
     doc.SetObject();
