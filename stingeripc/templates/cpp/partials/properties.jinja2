@@ -1,5 +1,5 @@
 {% import 'partials/args.jinja2' as ar %}
-{%macro prop_value_type(prop) -%}{%if prop.arg_list|length == 1 and prop.arg_list[0].optional and prop.arg_list[0].arg_type.name.lower() != 'struct'%}{{prop.arg_list[0].cpp_type}}{%else%}{{prop.name | UpperCamelCase}}Property{%endif%}{%endmacro%}
+{%macro prop_value_type(prop) -%}{%if prop.arg_list|length == 1 and prop.arg_list[0].optional and prop.arg_list[0].arg_type.name.lower() != 'struct'%}{{prop.arg_list[0].cpp.type}}{%else%}{{prop.name | UpperCamelCase}}Property{%endif%}{%endmacro%}
 {%macro public_declarations(prop_name, prop, client)%}
 // ---{{prop_name}} Property---
 
@@ -9,7 +9,7 @@
 {%if prop.arg_list[0].optional%}
 {{prop.arg_list[0].cpp.temp_type}} get{{prop_name | UpperCamelCase}}Property();
 {%-else%}
-std::optional<{{prop.arg_list[0].cpp_type}}> get{{prop_name | UpperCamelCase}}Property();
+std::optional<{{prop.arg_list[0].cpp.type}}> get{{prop_name | UpperCamelCase}}Property();
 {%-endif%}
 {%-else%}
 std::optional<{{prop_value_type(prop)}}> get{{prop_name | UpperCamelCase}}Property();
@@ -51,7 +51,7 @@ std::mutex _{{prop_name | lowerCamelCase}}PropertyCallbacksMutex;
 {%if prop.arg_list[0].optional%}
 {{prop.arg_list[0].cpp.temp_type}} {{class_name}}::get{{prop_name | UpperCamelCase}}Property()
 {%-else%}
-std::optional<{{prop.arg_list[0].cpp_type}}> {{class_name}}::get{{prop_name | UpperCamelCase}}Property()
+std::optional<{{prop.arg_list[0].cpp.type}}> {{class_name}}::get{{prop_name | UpperCamelCase}}Property()
 {%-endif%}
 {%-else%}
 std::optional<{{prop_value_type(prop)}}> {{class_name}}::get{{prop_name | UpperCamelCase}}Property()

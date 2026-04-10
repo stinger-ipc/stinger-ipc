@@ -98,22 +98,6 @@ class Arg:
         """
         return self._type.name
 
-    @property
-    def cpp_type(self) -> str:
-        return stringmanip.upper_camel_case(self.name)
-
-    @property
-    def cpp_temp_type(self) -> str:
-        if self.optional and "optional" not in self.cpp_type:
-            return f"std::optional<{self.cpp_type}>"
-        return self.cpp_type
-
-    @property
-    def cpp_func_param_type(self) -> str:
-        if self.optional and "optional" not in self.cpp_type:
-            return f"std::optional<{self.cpp_type}>"
-        return self.cpp_type
-
     @classmethod
     def new_arg_from_stinger(cls, arg_spec: YamlArg, stinger_spec: Optional[StingerSpec] = None) -> Arg:
         # arg_spec may be an immutable Mapping; copy to mutable dict for validation/mutation
@@ -237,24 +221,6 @@ class ArgEnum(Arg, LanguageSymbolMixin):
         return self._enum
 
     @property
-    def cpp_type(self) -> str:
-        if self.optional:
-            return f"std::optional<{self._enum.cpp_type}>"
-        return self._enum.cpp_type
-
-    @property
-    def cpp_temp_type(self) -> str:
-        return self.cpp_type
-
-    @property
-    def cpp_data_type(self) -> str:
-        return self._enum.cpp_type
-
-    @property
-    def cpp_rapidjson_type(self) -> str:
-        return ArgPrimitiveType.to_cpp_rapidjson_type_str(ArgPrimitiveType.INTEGER)
-
-    @property
     def markdown_type(self) -> str:
         return f"[Enum {self._enum.class_name}](#enum-{self._enum.class_name})"
 
@@ -301,31 +267,16 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
         return self._arg_type
 
     @property
-    def cpp_type(self) -> str:
-        return ArgPrimitiveType.to_cpp_type(self._arg_type, optional=self._optional)
-
-    @property
     def protobuf_type(self) -> str:
         return ArgPrimitiveType.to_protobuf_type(self._arg_type)
-
-    @property
-    def cpp_temp_type(self) -> str:
-        if self._arg_type == ArgPrimitiveType.STRING:
-            if self.optional:
-                return "std::optional<std::string>"
-            return "std::string"
-        else:
-            return self.cpp_type
 
     @property
     def json_type(self) -> str:
         return ArgPrimitiveType.to_json_type(self._arg_type)
 
-    @property
-    def cpp_rapidjson_type(self) -> str:
-        return ArgPrimitiveType.to_cpp_rapidjson_type_str(self._arg_type)
-
-    def get_random_example_value(self, lang="python", seed: int = 2) -> str | float | int | bool | None:
+    def get_random_example_value(
+        self, lang="python", seed: int = 2
+    ) -> str | float | int | bool | None:
         random_state = random.getstate()
         random.seed(seed)
         retval: str | float | int | bool | None = None
@@ -391,16 +342,8 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         return self._interface_struct.members
 
     @property
-    def cpp_type(self) -> str:
-        return self._interface_struct.cpp_type
-
-    @property
     def markdown_type(self) -> str:
         return f"[Struct {self._interface_struct.class_name}](#enum-{self._interface_struct.class_name})"
-
-    @property
-    def cpp_rapidjson_type(self) -> str:
-        return "Object"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         # Build a dict of example values keyed appropriately depending on language.
@@ -410,7 +353,7 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         else:
             example_list = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
         if lang == "c++":
-            return self.cpp_type + "{" + ", ".join(example_list.values()) + "}"
+            return self.cpp.type + "{" + ", ".join(example_list.values()) + "}"
         elif lang == "python":
             init_list = ", ".join([f"{k}={v}" for k, v in example_list.items()])
             return f"{self._interface_struct.python.type}({init_list})"
@@ -440,20 +383,6 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
         Arg.__init__(self, name)
         LanguageSymbolMixin.__init__(self)
         self._type = ArgType.DATETIME
-
-    @property
-    def cpp_type(self) -> str:
-        if self.optional:
-            return "std::optional<std::chrono::time_point<std::chrono::system_clock>>"
-        return "std::chrono::time_point<std::chrono::system_clock>"
-
-    @property
-    def cpp_temp_type(self) -> str:
-        return self.cpp_type
-
-    @property
-    def cpp_rapidjson_type(self) -> str:
-        return "String"
 
     @property
     def markdown_type(self) -> str:
@@ -491,22 +420,8 @@ class ArgDuration(Arg, LanguageSymbolMixin):
         self._type = ArgType.DURATION
 
     @property
-    def cpp_type(self) -> str:
-        if self.optional:
-            return "std::optional<std::chrono::duration<double>>"
-        return "std::chrono::duration<double>"
-
-    @property
-    def cpp_temp_type(self) -> str:
-        return self.cpp_type
-
-    @property
     def markdown_type(self) -> str:
         return "[Duration](#duration)"
-
-    @property
-    def cpp_rapidjson_type(self) -> str:
-        return "String"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         random_state = random.getstate()
@@ -552,20 +467,6 @@ class ArgBinary(Arg, LanguageSymbolMixin):
     def markdown_type(self) -> str:
         return "[Binary](#binary)"
 
-    @property
-    def cpp_rapidjson_type(self) -> str:
-        return "String"
-
-    @property
-    def cpp_type(self) -> str:
-        if self.optional:
-            return "std::optional<std::vector<uint8_t>>"
-        return "std::vector<uint8_t>"
-
-    @property
-    def cpp_temp_type(self) -> str:
-        return self.cpp_type
-
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":
             return f'b"example binary data"'
@@ -605,18 +506,8 @@ class ArgArray(Arg, LanguageSymbolMixin):
         return self._element
 
     @property
-    def cpp_type(self) -> str:
-        if self.optional:
-            return f"std::optional<std::vector<{self.element.cpp_temp_type}>>"
-        return f"std::vector<{self.element.cpp_temp_type}>"
-
-    @property
     def markdown_type(self) -> str:
         return f"Array of {self.element.markdown_type}"
-
-    @property
-    def cpp_rapidjson_type(self) -> str:
-        return "Array"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         example_value = self.element.get_random_example_value(lang, seed=seed)
@@ -629,7 +520,7 @@ class ArgArray(Arg, LanguageSymbolMixin):
                 return f"Some(vec![{example_value}, {example_value2}, {example_value3}])"
             return f"vec![{example_value}, {example_value2}]"
         elif lang in ["c++", "cpp"]:
-            return f"std::vector<{self.element.cpp_temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"
+            return f"std::vector<{self.element.cpp.temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"
         elif lang == "json":
             if self.optional and random.choice([True, False, False, False, False]):
                 retval = "null"
@@ -776,21 +667,6 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
     @property
     def return_value_name(self) -> str:
         return f"{self.name} return values"
-
-    @property
-    def return_value_cpp_class(self) -> str:
-        if self._return_value is None:
-            return "void"
-        elif isinstance(self._return_value, Arg):
-            if isinstance(self._return_value, ArgPrimitive) and self._return_value.type == ArgPrimitiveType.STRING:
-                if self._return_value.optional:
-                    return "std::optional<std::string>"
-                return "std::string"
-            elif isinstance(self._return_value, ArgStruct) and self._return_value.optional:
-                return f"std::optional<{self._return_value.cpp_type}>"
-            return self._return_value.cpp_type
-        elif isinstance(self._return_value, list):
-            return stringmanip.upper_camel_case(self.return_value_name)
 
     @property
     def return_value_property_name(self) -> str:
@@ -972,10 +848,6 @@ class InterfaceEnum(LanguageSymbolMixin):
         return stringmanip.upper_camel_case(self.name)
 
     @property
-    def cpp_type(self) -> str:
-        return stringmanip.upper_camel_case(self.name)
-
-    @property
     def items(self) -> list[EnumItem]:
         if self.has_value(0) and self._items[0].integer != 0:
             # Rearrange so that the item with integer value 0 is first. This is because .proto files require an initial 0-value.
@@ -1029,10 +901,6 @@ class InterfaceStruct(LanguageSymbolMixin):
 
     @property
     def class_name(self):
-        return stringmanip.upper_camel_case(self.name)
-
-    @property
-    def cpp_type(self) -> str:
         return stringmanip.upper_camel_case(self.name)
 
     @property

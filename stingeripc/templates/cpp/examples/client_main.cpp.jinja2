@@ -147,7 +147,7 @@ int main(int argc, char** argv)
         else
         {
         {%if method.return_arg_list|length > 0%}
-            {{method.return_value_cpp_class}} returnValue;
+            {{method.cpp.return_value_class}} returnValue;
             bool success = false;
             try
             {

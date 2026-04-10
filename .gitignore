@@ -9,6 +9,8 @@ PGK-INFO
 generated/
 reference/
 temp/
+original/
+modified/
 
 .vscode/
 build/

@@ -18,13 +18,13 @@ auto temp{{arg.name|UpperCamelCase}}B64String = itr->value.GetString();
 {
     std::vector<{{arg.element.cpp.temp_type}}> tempArray;
     for (const auto& item : itr->value.GetArray()) {
-        if (item.Is{{arg.element.cpp_rapidjson_type}}()) {
+        if (item.Is{{arg.element.cpp.rapidjson_type}}()) {
             {%if arg.element.arg_type.name.lower() == 'primitive'%}
-            tempArray.push_back(item.Get{{arg.element.cpp_rapidjson_type}}());
+            tempArray.push_back(item.Get{{arg.element.cpp.rapidjson_type}}());
             {%elif arg.element.arg_type.name.lower() == 'enum'%}
-            tempArray.push_back(static_cast<{{arg.element.cpp_data_type}}>(item.Get{{arg.element.cpp_rapidjson_type}}()));
+            tempArray.push_back(static_cast<{{arg.element.cpp.data_type}}>(item.Get{{arg.element.cpp.rapidjson_type}}()));
             {%elif arg.element.arg_type.name.lower() == 'struct'%}
-            tempArray.push_back({{arg.element.cpp_type}}::FromRapidJsonObject(item));
+            tempArray.push_back({{arg.element.cpp.type}}::FromRapidJsonObject(item));
             {%elif arg.element.arg_type.name.lower() == 'datetime'%}
             {
                 std::string tempIsoString = item.GetString();
