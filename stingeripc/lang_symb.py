@@ -548,6 +548,8 @@ class CppSymbolsProvider(ISymbolsProvider):
             return CppInterfaceSymbols(model)
         elif model_class_name == "Property":
             return CppPropertySymbols(model)
+        elif model_class_name == "Method":
+            return CppMethodSymbols(model)
         elif model_class_name == "InterfaceEnum":
             return CppEnumSymbols(model)
         elif model_class_name == "InterfaceStruct":
@@ -613,6 +615,29 @@ class CppPropertySymbols(CppSymbols):
         return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
 
 
+class CppMethodSymbols(CppSymbols):
+
+    def __init__(self, method):
+        super().__init__()
+        self._method = method
+
+    @property
+    def return_value_class(self) -> str:
+        from stingeripc.components import Arg, ArgPrimitive, ArgStruct
+        if self._method._return_value is None:
+            return "void"
+        elif isinstance(self._method._return_value, Arg):
+            if isinstance(self._method._return_value, ArgPrimitive) and self._method._return_value.type == ArgPrimitiveType.STRING:
+                if self._method._return_value.optional:
+                    return "std::optional<std::string>"
+                return "std::string"
+            elif isinstance(self._method._return_value, ArgStruct) and self._method._return_value.optional:
+                return f"std::optional<{self._method._return_value.cpp.type}>"
+            return self._method._return_value.cpp.type
+        elif isinstance(self._method._return_value, list):
+            return stringmanip.upper_camel_case(self._method.return_value_name)
+
+
 class CppEnumSymbols(CppSymbols):
 
     def __init__(self, enum):
@@ -622,6 +647,10 @@ class CppEnumSymbols(CppSymbols):
     @property
     def type(self) -> str:
         return stringmanip.upper_camel_case(self._enum.name)
+
+    @property
+    def rapidjson_type(self) -> str:
+        return ArgPrimitiveType.to_cpp_rapidjson_type_str(ArgPrimitiveType.INTEGER)
 
 
 class CppStructSymbols(CppSymbols):

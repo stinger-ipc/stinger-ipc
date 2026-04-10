@@ -349,7 +349,7 @@ tasks:
     sources:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/protobuf/**"
     cmds:
-      - uvx --from=protoc-wrapper@30.2 protoc --proto_path="{{.GENERATED_DIR}}/{{.IFACE}}/protobuf/" --descriptor_set_out=/dev/null "{{.GENERATED_DIR}}/{{.IFACE}}/protobuf/*.proto"
+      - uvx --from=protoc-wrapper@30.2 protoc --proto_path="{{.GENERATED_DIR}}/{{.IFACE}}/protobuf/" --descriptor_set_out=/dev/null {{.GENERATED_DIR}}/{{.IFACE}}/protobuf/*.proto
     vars:
       IFACE: '{{index .MATCH 0}}'
 

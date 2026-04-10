@@ -167,6 +167,18 @@
     "/^git stash -u && git status --porcelain$/": {
       "approve": true,
       "matchCommandLine": true
+    },
+    "/^git stash && git status --porcelain$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^ls -d \\./original \\./modified 2>/dev/null \\|\\| true$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^mkdir -p \\./temp && diff -r --unified=3 \\./original \\./modified > \\./temp/stinger_gen_diff\\.txt 2>&1; wc -l \\./temp/stinger_gen_diff\\.txt$/": {
+      "approve": true,
+      "matchCommandLine": true
     }
   }
 }
