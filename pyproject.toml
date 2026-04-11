@@ -55,7 +55,7 @@ stinger = "stingeripc.tools.cli:run"
 stinger-ipc = "stingeripc.tools.cli:run"
 
 [project.entry-points."stinger_symbols"]
-python = 'stingeripc.lang_symb:PythonSymbolsProvider'
-rust = 'stingeripc.lang_symb:RustSymbolsProvider'
-cpp = 'stingeripc.lang_symb:CppSymbolsProvider'
+python = 'stingeripc.python_symb:PythonSymbolsProvider'
+rust = 'stingeripc.rust_symb:RustSymbolsProvider'
+cpp = 'stingeripc.cpp_symb:CppSymbolsProvider'
 pb = 'stingeripc.symbols.protobuf:ProtocolBufferSymbolsProvider'
