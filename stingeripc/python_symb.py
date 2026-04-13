@@ -3,6 +3,7 @@ from typing import Any
 from jacobsjinjatoo import stringmanip
 
 from stingeripc.args import ArgPrimitiveType
+from stingeripc.config import StingerConfig
 from stingeripc.lang_symb import ISymbolsProvider
 
 
@@ -38,7 +39,7 @@ class PythonSymbolsProvider(ISymbolsProvider):
 
 class PythonSymbols:
 
-    def __init__(self, config: dict[str, Any] | None = None):
+    def __init__(self, config: StingerConfig | None = None):
         self.config = config
 
     @property
@@ -48,18 +49,18 @@ class PythonSymbols:
 
 class PythonInterfaceSymbols(PythonSymbols):
 
-    def __init__(self, interface, config: dict[str, Any] | None = None):
+    def __init__(self, interface, config: StingerConfig | None = None):
         super().__init__(config)
         self._iface = interface
 
     @property
     def package_directory(self) -> str:
-        s = f"{stringmanip.lower_only(self._iface.name).lower()}{stringmanip.lower_only(self.config.python.package_suffix) or 'ipc'}"
+        s = f"{stringmanip.lower_only(self._iface.name).lower()}{stringmanip.lower_only(self.config.python.package_suffix) or 'ipc'}"  # type: ignore[union-attr]
         return s
 
     @property
     def package_name(self):
-        s = f"{stringmanip.hyphen_case(self._iface.name).lower()}-{stringmanip.hyphen_case(self.config.python.package_suffix) or 'ipc'}"
+        s = f"{stringmanip.hyphen_case(self._iface.name).lower()}-{stringmanip.hyphen_case(self.config.python.package_suffix) or 'ipc'}"  # type: ignore[union-attr]
         return s
 
     @property
@@ -79,7 +80,7 @@ class PythonInterfaceSymbols(PythonSymbols):
 
 class PythonStructSymbols(PythonSymbols):
 
-    def __init__(self, iface_struct, config: dict[str, Any] | None = None):
+    def __init__(self, iface_struct, config: StingerConfig | None = None):
         super().__init__(config)
         self._iface_struct = iface_struct
 
@@ -238,7 +239,7 @@ class PythonArgArraySymbols(PythonArgSymbols):
 
 class PythonMethodSymbols(PythonSymbols):
 
-    def __init__(self, method, config: dict[str, Any] | None = None):
+    def __init__(self, method, config: StingerConfig | None = None):
         super().__init__(config)
         self._method = method
 
@@ -261,7 +262,7 @@ class PythonMethodSymbols(PythonSymbols):
 
 class PythonPropertySymbols(PythonSymbols):
 
-    def __init__(self, prop, config: dict[str, Any] | None = None):
+    def __init__(self, prop, config: StingerConfig | None = None):
         super().__init__(config)
         self._prop = prop
 

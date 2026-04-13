@@ -1,4 +1,7 @@
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from stingeripc.config import StingerConfig
 
 
 class ISymbolsProvider:
@@ -8,7 +11,7 @@ class ISymbolsProvider:
     `project.entry-points."stinger_symbols"`.
     """
 
-    def __init__(self, config: dict[str, Any] | None = None):
+    def __init__(self, config: "StingerConfig | None" = None):
         """The constructor takes stinger generation configuration as an argument."""
         self.config = config
 
