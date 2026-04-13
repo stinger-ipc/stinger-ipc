@@ -443,20 +443,20 @@ class {{stinger.python.server_class_name}}:
         if not isinstance(value, {{prop_name|UpperCamelCase}}Property):
             raise ValueError(f"The value must be {{prop.python_class}}.")
 
-            value_updated = False
-            with self._property_{{prop_name|snake_case}}.mutex:
-                if value != self._property_{{prop_name|snake_case}}.get_value():
-                    value_updated = True
-                    self._property_{{prop_name|snake_case}}.set_value(value)
-                    self._property_{{prop_name|snake_case}}.version += 1
-                    prop_value_topic = "{{prop.value_topic()}}".format(**self._topic_template_kwargs)
-                    state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_{{prop_name|snake_case}}.get_value(), self._property_{{prop_name|snake_case}}.version)
-                    self._conn.publish(state_msg)
-            {%if config.properties.stinger_owned_values%}{# only call callbacks if it is a stinger-owned value#}
-            if value_updated:
-                for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
-                    {{prop_name|snake_case}}_callback(self._property_{{prop_name|snake_case}}.get_value())
-            {%endif%}
+        value_updated = False
+        with self._property_{{prop_name|snake_case}}.mutex:
+            if value != self._property_{{prop_name|snake_case}}.get_value():
+                value_updated = True
+                self._property_{{prop_name|snake_case}}.set_value(value)
+                self._property_{{prop_name|snake_case}}.version += 1
+                prop_value_topic = "{{prop.value_topic()}}".format(**self._topic_template_kwargs)
+                state_msg = MessageCreator.property_state_message(prop_value_topic, self._property_{{prop_name|snake_case}}.get_value(), self._property_{{prop_name|snake_case}}.version)
+                self._conn.publish(state_msg)
+        {%if config.properties.stinger_owned_values%}{# only call callbacks if it is a stinger-owned value#}
+        if value_updated:
+            for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
+                {{prop_name|snake_case}}_callback(self._property_{{prop_name|snake_case}}.get_value())
+        {%endif%}
     {%endif%}
 
     def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
