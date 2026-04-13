@@ -101,6 +101,7 @@ class {{stinger.python.server_class_name}}:
         self._re_advertise_server_interval_seconds = {{config.discovery.advert_interval_seconds}}
         self._running = True
         self._conn.add_message_callback(self._receive_message)
+        self._force_property_publish = False # can be set to true for unit tests
         {%for prop_name, prop in stinger.properties.items()%}
         {%-if config.properties.stinger_owned_values%}
         self._property_{{prop_name|snake_case}}: PropertyControls[{%if prop.arg_list | length == 1%}{{prop.arg_list[0].python.annotation}}{%else%}{{prop.python.annotation}}{%endif%}] = PropertyControls(value=initial_property_values.{{prop_name|snake_case}}, version=initial_property_values.{{prop_name|snake_case}}_version)
@@ -407,7 +408,7 @@ class {{stinger.python.server_class_name}}:
 
         value_updated = False
         with self._property_{{prop_name|snake_case}}.mutex:
-            if {{arg.name|snake_case}} != self._property_{{prop_name|snake_case}}.get_value():
+            if ({{arg.name|snake_case}} != self._property_{{prop_name|snake_case}}.get_value()) or self._force_property_publish:
                 value_updated = True
                 self._property_{{prop_name|snake_case}}.set_value({{arg.name|snake_case}})
                 self._property_{{prop_name|snake_case}}.version += 1
@@ -445,7 +446,7 @@ class {{stinger.python.server_class_name}}:
 
         value_updated = False
         with self._property_{{prop_name|snake_case}}.mutex:
-            if value != self._property_{{prop_name|snake_case}}.get_value():
+            if (value != self._property_{{prop_name|snake_case}}.get_value()) or self._force_property_publish:
                 value_updated = True
                 self._property_{{prop_name|snake_case}}.set_value(value)
                 self._property_{{prop_name|snake_case}}.version += 1

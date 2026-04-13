@@ -176,6 +176,37 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         payload_dict = json.loads(msg.payload.decode('utf-8'))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
+    def test_{{prop_name|snake_case}}_property_setter(self, server, mock_connection):
+        """Test that setting the '{{prop_name|snake_case}}' property publishes the correct message."""
+        mock_connection.clear_published_messages()
+        server._force_property_publish = True # Backdoor way to force server to publish property updates even if the value hasn't changed.  For unittests only.
+
+        new_{{prop_name | snake_case}}_value =
+            {%-if prop.arg_list | length > 1%}
+            {{-prop.python.class_name}}(
+                {%for arg in prop.arg_list%}
+                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
+                {%endfor%}
+            )
+            {%-else-%}
+            {{prop.arg_list[0].get_random_example_value()}}
+            {%endif%}
+        server.{{prop_name|snake_case}} = new_{{prop_name | snake_case}}_value
+
+        assert len(mock_connection.published_messages) == 1, f"No message was published for property '{{prop_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
+
+        published_msg = mock_connection.published_messages[-1]
+        assert published_msg.qos == {{stinger.property_value_qos}}, "Property '{{prop_name|snake_case}}' setter published message with incorrect QoS"
+        assert published_msg.retain is True, "Property '{{prop_name|snake_case}}' setter published message with incorrect retain flag"
+        assert published_msg.content_type == "application/json", "Property '{{prop_name|snake_case}}' setter published message with incorrect content type"
+        published_msg_json_obj = json.loads(published_msg.payload)
+        {%-if prop.arg_list | length > 1%}
+        assert json.loads(new_{{prop_name | snake_case}}_value.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
+        {%else%}
+        new_{{prop_name | snake_case}}_obj = {{-prop.python.model_class_name}}({{prop.arg_list[0].name|snake_case}}=new_{{prop_name | snake_case}}_value)
+        assert json.loads(new_{{prop_name | snake_case}}_obj.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
+        {%endif%}
+
     {%if not config.properties.stinger_owned_values -%}
     def test_{{prop_name|snake_case}}_receive(self, server, server_setup, mock_connection):
         mock_connection.clear_published_messages()
