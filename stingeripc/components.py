@@ -88,14 +88,6 @@ class Arg:
     def optional(self, value: bool):
         self._optional = value
 
-    @property
-    def markdown_type(self) -> str:
-        """Default markdown representation for an Arg.
-
-        Subclasses may override this to provide richer markdown links.
-        """
-        return self._type.name
-
     @classmethod
     def new_arg_from_stinger(
         cls, arg_spec: YamlArg, stinger_spec: Optional[StingerSpec] = None
@@ -230,10 +222,6 @@ class ArgEnum(Arg, LanguageSymbolMixin):
     def enum(self) -> InterfaceEnum:
         return self._enum
 
-    @property
-    def markdown_type(self) -> str:
-        return f"[Enum {self._enum.class_name}](#enum-{self._enum.class_name})"
-
     def get_random_example_value(self, lang="python", seed: int = 2) -> str:
         random_state = random.getstate()
         random.seed(seed)
@@ -359,10 +347,6 @@ class ArgStruct(Arg, LanguageSymbolMixin):
     def members(self) -> list[Arg]:
         return self._interface_struct.members
 
-    @property
-    def markdown_type(self) -> str:
-        return f"[Struct {self._interface_struct.class_name}](#enum-{self._interface_struct.class_name})"
-
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         # Build a dict of example values keyed appropriately depending on language.
         example_list: dict[str, str]
@@ -407,10 +391,6 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
         LanguageSymbolMixin.__init__(self)
         self._type = ArgType.DATETIME
 
-    @property
-    def markdown_type(self) -> str:
-        return "[DateTime](#datetime)"
-
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":
             if self.optional and random.choice([True, False, False, False]):
@@ -440,10 +420,6 @@ class ArgDuration(Arg, LanguageSymbolMixin):
         Arg.__init__(self, name)
         LanguageSymbolMixin.__init__(self)
         self._type = ArgType.DURATION
-
-    @property
-    def markdown_type(self) -> str:
-        return "[Duration](#duration)"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         random_state = random.getstate()
@@ -485,10 +461,6 @@ class ArgBinary(Arg, LanguageSymbolMixin):
         LanguageSymbolMixin.__init__(self)
         self._type = ArgType.BINARY
 
-    @property
-    def markdown_type(self) -> str:
-        return "[Binary](#binary)"
-
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":
             return f'b"example binary data"'
@@ -526,10 +498,6 @@ class ArgArray(Arg, LanguageSymbolMixin):
     @property
     def element(self) -> Arg:
         return self._element
-
-    @property
-    def markdown_type(self) -> str:
-        return f"Array of {self.element.markdown_type}"
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         example_value = self.element.get_random_example_value(lang, seed=seed)
