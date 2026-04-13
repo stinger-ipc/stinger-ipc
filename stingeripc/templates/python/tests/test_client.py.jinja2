@@ -89,6 +89,23 @@ class TestClientProperties:
         {%-endif%}
         assert client.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
         {%endfor%}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    {%- if not prop.read_only %}
+    def test_{{prop_name|snake_case}}_setter(self, client):
+        new_{{prop_name | snake_case}}_value =
+            {%-if prop.arg_list | length > 1%}
+            {{-prop.python_class}}(
+                {%for arg in prop.arg_list%}
+                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
+                {%endfor%}
+            )
+            {%-else-%}
+            {{prop.arg_list[0].get_random_example_value()}}
+            {%endif%}
+        client.{{prop_name|snake_case}} = new_{{prop_name | snake_case}}_value
+    {%endif%}{# don't generate for readonly#}
+    {%-endfor%}{# each property#}
 {%endif%}
 {%if stinger.methods | length > 0 %}
 class TestClientMethods:

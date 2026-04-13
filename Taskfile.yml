@@ -49,7 +49,7 @@ tasks:
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python/
       - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python/
-      - uv run black --target-version py312 {{.GENERATED_DIR}}/{{.IFACE}}/python/
+      - uv run black --target-version py312 --exclude '.venv' {{.GENERATED_DIR}}/{{.IFACE}}/python/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -68,7 +68,7 @@ tasks:
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python37/
       - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python37/
-      - uv run black --target-version py37 {{.GENERATED_DIR}}/{{.IFACE}}/python37/
+      - uv run black --target-version py37 --exclude '.venv' {{.GENERATED_DIR}}/{{.IFACE}}/python37/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
