@@ -294,13 +294,6 @@ class PythonPropertySymbols(PythonSymbols):
         return self.model_class_name
 
     @property
-    def getter_value_annotation(self) -> str:
-        if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].python.annotation
-        else:
-            return self.model_class_name
-
-    @property
     def setter_value_annotation(self) -> str:
         if len(self._prop._arg_list) == 1:
             return f"Union[{self._prop._arg_list[0].python.annotation}, {self.model_class_name}]"

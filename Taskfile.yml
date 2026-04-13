@@ -109,8 +109,10 @@ tasks:
     sources:
       - example_interfaces/{{.IFACE}}/python/tests/**
       - example_interfaces/{{.IFACE}}/python/src/**
+    generates:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python/tests/junit.xml"
     cmds:
-      - uv run pytest -vv
+      - uv run pytest -vv --junit-xml=junit.xml
     vars:
       IFACE: '{{index .MATCH 0}}'
 
