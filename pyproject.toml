@@ -58,4 +58,5 @@ stinger-ipc = "stingeripc.tools.cli:run"
 python = 'stingeripc.python_symb:PythonSymbolsProvider'
 rust = 'stingeripc.rust_symb:RustSymbolsProvider'
 cpp = 'stingeripc.cpp_symb:CppSymbolsProvider'
+markdown = 'stingeripc.markdown_symb:MarkdownSymbolsProvider'
 pb = 'stingeripc.symbols.protobuf:ProtocolBufferSymbolsProvider'
