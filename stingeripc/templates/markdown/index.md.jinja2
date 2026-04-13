@@ -397,7 +397,7 @@ connection->SetLogFunction([](int level, const char* msg)
 
 {%macro argrow(arg) -%}
 |{{arg.name|center(15)}}|
-{%-if arg.arg_type.name.lower() == "enum" or arg.arg_type.name.lower() == "struct"%}{{arg.markdown_type|center(10)}}
+{%-if arg.arg_type.name.lower() == "enum" or arg.arg_type.name.lower() == "struct"%}{{arg.markdown.markdown_type|center(10)}}
 {%-else%}{{arg.json_type|center(10)}}
 {%-endif%}{%if arg.optional%} (optional){%endif%}|
 {{- arg.description or ''}}|
