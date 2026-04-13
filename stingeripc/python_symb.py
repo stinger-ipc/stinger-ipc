@@ -16,9 +16,9 @@ class PythonSymbolsProvider(ISymbolsProvider):
             return PythonStructSymbols(model, self.config)
         elif model_class_name == "InterfaceEnum":
             return PythonEnumSymbols(model)
-        elif model_class_name == "Method":
+        elif model_class_name == "IpcMethod":
             return PythonMethodSymbols(model, self.config)
-        elif model_class_name == "Property":
+        elif model_class_name == "IpcProperty":
             return PythonPropertySymbols(model, self.config)
         elif model_class_name == "ArgEnum":
             return PythonArgEnumSymbols(model)
