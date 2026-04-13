@@ -1,4 +1,5 @@
-from stingeripc.components import StingerSpec, Signal
+from stingeripc.components import StingerSpec
+from stingeripc.ipc_signal import IpcSignal
 from stingeripc.config import StingerConfig
 import unittest
 
@@ -9,7 +10,7 @@ class TestSpecCreateManually(unittest.TestCase):
             "version": "1.2.3",
         }
         self.spec = StingerSpec(self.interface, StingerConfig())
-        signal = Signal("mySignal", self.spec)
+        signal = IpcSignal("mySignal", self.spec)
         self.spec.add_signal(signal)
 
     def test_create_spec(self):

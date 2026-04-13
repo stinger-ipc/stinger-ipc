@@ -16,9 +16,9 @@ class RustSymbolsProvider(ISymbolsProvider):
             return RustEnumSymbols(model)
         elif model_class_name == "InterfaceStruct":
             return RustStructSymbols(model)
-        elif model_class_name == "Method":
+        elif model_class_name == "IpcMethod":
             return RustMethodSymbols(model)
-        elif model_class_name == "Property":
+        elif model_class_name == "IpcProperty":
             return RustPropertySymbols(model)
         elif model_class_name == "ArgEnum":
             return RustArgEnumSymbols(model)
