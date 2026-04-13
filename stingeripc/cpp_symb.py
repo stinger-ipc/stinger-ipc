@@ -9,9 +9,9 @@ class CppSymbolsProvider(ISymbolsProvider):
     def for_model(self, model_class_name: str, model) -> object | None:
         if model_class_name == "StingerSpec":
             return CppInterfaceSymbols(model)
-        elif model_class_name == "Property":
+        elif model_class_name == "IpcProperty":
             return CppPropertySymbols(model)
-        elif model_class_name == "Method":
+        elif model_class_name == "IpcMethod":
             return CppMethodSymbols(model)
         elif model_class_name == "InterfaceEnum":
             return CppEnumSymbols(model)
