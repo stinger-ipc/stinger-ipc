@@ -185,6 +185,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
             .subscribe(discovery_topic.clone(), QoS::AtLeastOnce, info_tx.clone())
             .await
             .map_err({{stinger.name|UpperCamelCase}}DiscoveryError::from)?;
+        debug!("Subscription (id={}) to interface discovery topic", _subscription_id);
         {%if stinger.properties|length > 0 %}
         // Subscribe to all property value topics.
         let (prop_tx, prop_rx) = broadcast::channel::<MqttMessage>(32);
@@ -193,6 +194,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
             .subscribe(all_property_subscription_topic.clone(), QoS::AtLeastOnce, prop_tx.clone())
             .await
             .map_err({{stinger.name|UpperCamelCase}}DiscoveryError::from)?;
+        debug!("Subscription (id={}) to wildcard property value topic", _property_subscription_id);
         {%endif%}
 
         // Map holds information about instances in the process of being fully discovered. Keyed by instance_id.
@@ -476,6 +478,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for {{stinger.name|Upp
         self.prop_listener_handle.abort();
         let _ = self.connection.unsubscribe(self.all_property_subscription_topic.clone());
         {% endif %}
+        debug!("Dropping {{stinger.name}} discovery object after unsubscribing from discovery topics");
     }
 }
 

@@ -148,6 +148,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         let topic_any_method_response = strfmt("{{stinger.all_methods_response_topic()}}", &topic_map).unwrap();
         let subscription_id_any_method_response = connection.subscribe(topic_any_method_response, QoS::ExactlyOnce, message_received_tx.clone()).await;
         let subscription_id_any_method_response = subscription_id_any_method_response.unwrap_or(u32::MAX);
+        debug!("Subscription (id={}) to any method response topic", subscription_id_any_method_response);
         {%endif%}
 
         // Subscribe to all the topics needed for signals.
@@ -445,7 +446,18 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         {% endfor %}
         {%endif%}
         let _loop_task = tokio::spawn(async move {
-            while let Ok(msg) = message_receiver.recv().await {
+            loop {
+                let msg = match message_receiver.recv().await {
+                    Ok(msg) => msg,
+                    Err(broadcast::error::RecvError::Lagged(n)) => {
+                        warn!("Message receiver lagged behind by {} messages", n);
+                        continue;
+                    }
+                    Err(broadcast::error::RecvError::Closed) => {
+                        debug!("Message receiver channel closed");
+                        break;
+                    }
+                };
                 {% if stinger.methods|length > 0 %}
                 let opt_corr_id: Option<Uuid> = msg.correlation_data.as_ref().and_then(|b| {
                     // Try parsing as 16-byte binary UUID first
