@@ -93,6 +93,8 @@ class TestClientProperties:
     {%for prop_name, prop in stinger.properties.items()%}
     {%- if not prop.read_only %}
     def test_{{prop_name|snake_case}}_setter(self, mock_connection, client):
+        mock_connection.clear_published_messages()
+
         new_{{prop_name | snake_case}}_value =
             {%-if prop.arg_list | length > 1%}
             {{-prop.python.class_name}}(
