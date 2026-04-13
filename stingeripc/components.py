@@ -32,7 +32,7 @@ class LanguageSymbolMixin:
     Plugins are registered by providing a `project.entry-points."stinger_symbols"` entry in `pyproject.toml`.  Plugins have a name/domain that is used to identify the language.
     """
 
-    def __init__(self, config: dict[str, Any]|None = None):
+    def __init__(self, config: StingerConfig|None = None):
         """ The ExtensionManager searches for all `stinger_symbols` plugins.  For each discovered plugin, it invokes the plugin's `for_model`
         method to determine a symbol-providing class to attached to the child class (if any).  The symbol-providing class is then attached 
         as an attribute to the child class, with the attribute name equal to the plugin's name/domain.  
@@ -361,14 +361,14 @@ class ArgStruct(Arg, LanguageSymbolMixin):
                 for a in self.members
             }
         if lang == "c++":
-            return self.cpp.type + "{" + ", ".join(example_list.values()) + "}"
+            return self.cpp.type + "{" + ", ".join(example_list.values()) + "}"  # type: ignore[attr-defined]
         elif lang == "python":
             init_list = ", ".join([f"{k}={v}" for k, v in example_list.items()])
-            return f"{self._interface_struct.python.type}({init_list})"
+            return f"{self._interface_struct.python.type}({init_list})"  # type: ignore[attr-defined]
         elif lang == "rust":
             return "%s%s {%s}%s" % (
                 "Some(" if self.optional else "",
-                self._interface_struct.rust.type,
+                self._interface_struct.rust.type,  # type: ignore[attr-defined]
                 ", ".join([f"{k}: {v}" for k, v in example_list.items()]),
                 ")" if self.optional else "",
             )
@@ -510,7 +510,7 @@ class ArgArray(Arg, LanguageSymbolMixin):
                 return f"Some(vec![{example_value}, {example_value2}, {example_value3}])"
             return f"vec![{example_value}, {example_value2}]"
         elif lang in ["c++", "cpp"]:
-            return f"std::vector<{self.element.cpp.temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"
+            return f"std::vector<{self.element.cpp.temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"  # type: ignore[attr-defined]
         elif lang == "json":
             if self.optional and random.choice([True, False, False, False, False]):
                 retval = "null"
@@ -693,7 +693,7 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
                 return self._return_value.get_random_example_value(lang, seed)
             elif isinstance(self._return_value, list):
                 s = ", ".join([f"{a.name}={a.get_random_example_value(lang,seed)}" for a in self._return_value])
-                return f"{self.python.response_class_name}({s})"
+                return f"{self.python.response_class_name}({s})"  # type: ignore[attr-defined]
             else:
                 raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
         if lang in ["c++", "cpp", "qt"]:
