@@ -3,6 +3,7 @@ from typing import Any
 from jacobsjinjatoo import stringmanip
 
 from stingeripc.args import ArgPrimitiveType
+from stingeripc.config import StingerConfig
 from stingeripc.lang_symb import ISymbolsProvider
 
 
@@ -38,20 +39,20 @@ class RustSymbolsProvider(ISymbolsProvider):
 
 class RustSymbols:
 
-    def __init__(self, config: dict[str, Any] | None = None):
+    def __init__(self, config: StingerConfig | None = None):
         self.config = config
 
 
 class RustInterfaceSymbols(RustSymbols):
 
-    def __init__(self, interface, config: dict[str, Any] | None = None):
+    def __init__(self, interface, config: StingerConfig | None = None):
         super().__init__(config)
         self._iface = interface
 
     @property
     def package_name(self) -> str:
         """ Name of the rust package for the interface client."""
-        s = f"{stringmanip.snake_case(self._iface.name)}_{stringmanip.snake_case(self.config.rust.package_suffix) or 'ipc'}"
+        s = f"{stringmanip.snake_case(self._iface.name)}_{stringmanip.snake_case(self.config.rust.package_suffix) or 'ipc'}"  # type: ignore[union-attr]
         return s
 
     @property
