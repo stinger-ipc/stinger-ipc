@@ -98,10 +98,11 @@ class CppMethodSymbols(CppSymbols):
                     return "std::optional<std::string>"
                 return "std::string"
             elif isinstance(self._method._return_value, ArgStruct) and self._method._return_value.optional:
-                return f"std::optional<{self._method._return_value.cpp.type}>"
-            return self._method._return_value.cpp.type
+                return f"std::optional<{self._method._return_value.cpp.type}>"  # type: ignore[attr-defined]
+            return self._method._return_value.cpp.type  # type: ignore[attr-defined]
         elif isinstance(self._method._return_value, list):
             return stringmanip.upper_camel_case(self._method.return_value_name)
+        raise RuntimeError(f"Unhandled return value type: {self._method._return_value}")
 
 
 class CppEnumSymbols(CppSymbols):
