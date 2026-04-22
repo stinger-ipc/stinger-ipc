@@ -395,6 +395,7 @@ class {{stinger.python.server_class_name}}:
         """
         return self._property_{{prop_name|snake_case}}.get_value()
 
+    {%if not (config.properties.stinger_owned_values and prop.read_only) %} {# if the property is read-only, we have no way of setting app-owned values. #}
     @{{prop_name | snake_case}}.setter
     def {{prop_name | snake_case}}(self, {{arg.name|snake_case}}: {{prop.python_annotation}}):
         """ This property sets (publishes) a new {{prop.python_annotation}} value for the '{{prop_name}}' property.
@@ -420,6 +421,7 @@ class {{stinger.python.server_class_name}}:
             for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
                 {{prop_name|snake_case}}_callback(prop_obj.{{arg.name|snake_case}})
         {%endif%}
+    {%endif%}{# above block allowed if stinger-owned-values or not read-only #}
 
     {%-else%} {# property with multiple arguments #}
     @property
@@ -433,6 +435,7 @@ class {{stinger.python.server_class_name}}:
         """
         return self._property_{{prop_name|snake_case}}.get_value()
 
+    {%if not (config.properties.stinger_owned_values and prop.read_only) %} {# if the property is read-only, we have no way of setting app-owned values. #}
     @{{prop_name | snake_case}}.setter
     def {{prop_name | snake_case}}(self, value: {{prop_name|UpperCamelCase}}Property):
         """ This property sets (publishes) a new value structure for the '{{prop_name}}' property.
@@ -457,8 +460,10 @@ class {{stinger.python.server_class_name}}:
             for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
                 {{prop_name|snake_case}}_callback(self._property_{{prop_name|snake_case}}.get_value())
         {%endif%}
-    {%endif%}
+    {%endif%}{# above block allowed if stinger-owned-values or not read-only #}
+    {%endif%}{# property with multiple arguments #}
 
+    {%if not (config.properties.stinger_owned_values and prop.read_only) %} {# if the property is read-only, we have no way of setting app-owned values. #}
     def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ This method sets (publishes) a new value for the '{{prop_name}}' property.
         """
@@ -478,8 +483,9 @@ class {{stinger.python.server_class_name}}:
 
         # Use the property.setter to do that actual work.
         self.{{prop_name|snake_case}} = obj
+    {%endif%}{# above block allowed if stinger-owned-values or not read-only #}
 
-    {%if config.properties.stinger_owned_values%}
+    {%if config.properties.stinger_owned_values and not prop.read_only %}
     def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
         """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
         """
@@ -490,7 +496,7 @@ class {{stinger.python.server_class_name}}:
         {%-else%}
         self._property_{{prop_name|snake_case}}.callbacks.append(handler)
         {%-endif%}
-    {%endif%}{# stinger owned value#}
+    {%endif%}{# stinger owned value that are read/write. #}
     {%endfor%}
 
 class {{stinger.python.server_class_name}}Builder:

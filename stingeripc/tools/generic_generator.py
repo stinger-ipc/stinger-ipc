@@ -32,7 +32,8 @@ def main(
     
     At least one of --language, --template-pkg, or --template-path must be provided.
     """
-    
+    print(f"▶️ [bold cyan]VERSION:[/bold cyan] {__version__}")
+
     # Validate that at least one template source is provided
     if not language and not template_pkg and not template_path:
         raise typer.BadParameter(
@@ -64,6 +65,10 @@ def main(
     else:
         with inname.open(mode="r") as f:
             stinger = StingerInterface.from_yaml(f, config_obj)
+    
+    print(f"🚥 [bold cyan]SIGNALS:[/bold cyan] {len(stinger.signals)}")
+    print(f"💠 [bold cyan]METHODS:[/bold cyan] {len(stinger.methods)}")
+    print(f"🍌   [bold cyan]PROPS:[/bold cyan] {len(stinger.properties)}")
 
     params: dict[str, Any] = {
         "stinger": stinger, 
