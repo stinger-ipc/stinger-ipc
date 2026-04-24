@@ -525,8 +525,9 @@ class {{stinger.python.server_class_name}}Builder:
             raise Exception("Method handler already set")
         return wrapper
     {%endfor%}
-    {%if config.properties.stinger_owned_values%}
+    {%if config.properties.stinger_owned_values %}
     {%for prop_name, prop in stinger.properties.items()%}
+    {%if not prop.read_only %}
     def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
         """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
         """
@@ -535,7 +536,8 @@ class {{stinger.python.server_class_name}}Builder:
             return handler(*args, **kwargs)
         self._{{prop_name|snake_case}}_property_callbacks.append(wrapper)
         return wrapper
-    {%endfor%}
+    {%endif%} {# read/write properties #}
+    {%endfor%} {# for each property loop #}
     {%endif%}{# only when stinger owned values #}
     def build(self, connection: IBrokerConnection, instance_id: str, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues, {%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{%endif%}{%for topic_param in config.topics.params %}{{topic_param|snake_case}}: str, {% endfor %}binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
         new_server = {{stinger.python.server_class_name}}(connection, instance_id, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values{%else%}property_access{%endif%},{%endif%} {%for topic_param in config.topics.params %}{{topic_param|snake_case}}, {% endfor %})
@@ -548,11 +550,13 @@ class {{stinger.python.server_class_name}}Builder:
         {%-endfor%}
         {%if config.properties.stinger_owned_values%}
         {%for prop_name, prop in stinger.properties.items()%}
+        {%if not prop.read_only %}
         for {{prop_name|snake_case}}_callback in self._{{prop_name|snake_case}}_property_callbacks:
             if binding:
                 new_server.on_{{prop_name|snake_case}}_updated({{prop_name|snake_case}}_callback.__get__(binding, binding.__class__))
             else:
                 new_server.on_{{prop_name|snake_case}}_updated({{prop_name|snake_case}}_callback)
+        {%endif%}{# read/write properties #}
         {%endfor%}
         {%endif%}{# only when stinger owned values #}
         return new_server
