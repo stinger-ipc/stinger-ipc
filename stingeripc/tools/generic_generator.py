@@ -13,11 +13,11 @@ from stevedore import ExtensionManager
 from stingeripc import StingerInterface, __version__, topic_util
 from stingeripc.filtering import filter_by_consumer
 from stingeripc.config import load_config, StingerConfig
-import logging
 import yaml
 import yamlloader
 
-#logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
+
 
 def main(
     inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir_okay=False, readable=True)],
@@ -29,16 +29,14 @@ def main(
     config: Annotated[list[Path], typer.Option("--config", help="TOML configuration file(s) - later files override earlier ones", exists=True, file_okay=True, dir_okay=False, readable=True)] = [],
 ):
     """Generate output for a Stinger interface.
-    
+
     At least one of --language, --template-pkg, or --template-path must be provided.
     """
     print(f"▶️ [bold cyan]VERSION:[/bold cyan] {__version__}")
 
     # Validate that at least one template source is provided
     if not language and not template_pkg and not template_path:
-        raise typer.BadParameter(
-            "At least one of: --language, --template-pkg, or --template-path must be provided"
-        )
+        raise typer.BadParameter("At least one of: --language, --template-pkg, or --template-path must be provided")
 
     # Load and merge configuration files
     config_obj = StingerConfig()
@@ -52,7 +50,7 @@ def main(
             merged_dict.update(file_config.model_dump(exclude_unset=True))
             config_obj = StingerConfig.model_validate(merged_dict)
     assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
-    for k,v in config_obj.model_dump().items():
+    for k, v in config_obj.model_dump().items():
         print(f"🔧{k:>10.10}: {v}")
 
     print(f"🟢   [bold cyan]LOAD:[/bold cyan] {inname}")
@@ -65,13 +63,13 @@ def main(
     else:
         with inname.open(mode="r") as f:
             stinger = StingerInterface.from_yaml(f, config_obj)
-    
+
     print(f"🚥 [bold cyan]SIGNALS:[/bold cyan] {len(stinger.signals)}")
     print(f"💠 [bold cyan]METHODS:[/bold cyan] {len(stinger.methods)}")
     print(f"🍌   [bold cyan]PROPS:[/bold cyan] {len(stinger.properties)}")
 
     params: dict[str, Any] = {
-        "stinger": stinger, 
+        "stinger": stinger,
         "config": config_obj,
         "consumer": consumer,
         "generator": {
@@ -80,14 +78,14 @@ def main(
         "templates": dict(),
         "utils": {
             "topic_template_placeholder_index": topic_util.get_argument_position,
-        }
+        },
     }
 
     if outdir.is_file():
         raise RuntimeError("Output directory is a file!")
-    
+
     print(f"📁 [bold cyan]OUTPUT:[/bold cyan] {outdir}")
-    
+
     mgr: ExtensionManager = ExtensionManager(
         namespace="stinger_symbols",
         invoke_on_load=False,
@@ -102,7 +100,7 @@ def main(
 
     # Collect all template directories
     template_dirs = []
-    
+
     code_templator = jj2.CodeTemplator(output_dir=outdir)
     web_templator = jj2.WebTemplator(output_dir=outdir)
 
@@ -126,10 +124,10 @@ def main(
             match = re.search(pattern, pkg_name)
             if match:
                 package_name = match.group(1)
-                template_subdir = match.group(2).replace('.', '/')
+                template_subdir = match.group(2).replace(".", "/")
             else:
                 package_name = pkg_name
-                template_subdir = ''
+                template_subdir = ""
             try:
                 print(f"[bold cyan]TEMPLATES:[/bold cyan] {package_name} {template_subdir}")
                 code_templator.add_template_package(package_name, template_subdir)
@@ -140,16 +138,16 @@ def main(
                 # Try to import package and get version
                 try:
                     pkg_module = importlib.import_module(package_name)
-                    if hasattr(pkg_module, '__version__'):
-                        if package_name not in params['templates']:
-                            params['templates'][package_name] = {}
-                        params['templates'][package_name]['version'] = pkg_module.__version__
+                    if hasattr(pkg_module, "__version__"):
+                        if package_name not in params["templates"]:
+                            params["templates"][package_name] = {}
+                        params["templates"][package_name]["version"] = pkg_module.__version__
                 except Exception:
                     pass  # Silently ignore if we can't get version
-                
+
             except ModuleNotFoundError as e:
                 raise RuntimeError(f"Template package not found: {package_name}") from e
-    
+
     # Add language-based template directory if language is specified
     if language:
         this_file = Path(__file__)
@@ -167,14 +165,14 @@ def main(
         for entry in os.listdir(src_walker):
             src_entry = src_walker / entry
             dest_entry = dest_walker / entry
-            if ('{{' in entry and '}}' in entry) or ('{%' in entry and '%}' in entry):
+            if ("{{" in entry and "}}" in entry) or ("{%" in entry and "%}" in entry):
                 rendered_entry_name = code_templator.render_string(entry, **params)
                 if len(rendered_entry_name) > 0:
                     dest_entry = dest_walker / rendered_entry_name
                 else:
                     continue
             if entry.endswith(".jinja2"):
-                dest_path_str = str(dest_entry)[:-len(".jinja2")]
+                dest_path_str = str(dest_entry)[: -len(".jinja2")]
                 dest_path = Path(dest_path_str).relative_to(outdir)
                 found_files.append(str(dest_path))
             elif src_entry.is_dir():
@@ -183,7 +181,7 @@ def main(
                 dest_path = Path(dest_entry).relative_to(outdir)
                 found_files.append(str(dest_path))
         return found_files
-    
+
     output_file_list = set()
     for template_dir in template_dirs:
         output_file_list.update(recursive_find_output_files(Path(template_dir), Path(outdir)))
@@ -192,20 +190,20 @@ def main(
     def recursive_render_templates(template_dir, src_walker: Path, dest_walker: Path):
         print(f"🚶   [green]WALK[/green]: {src_walker}")
         for entry in os.listdir(src_walker):
-            if entry.endswith('partials'):
+            if entry.endswith("partials"):
                 continue
             src_entry = src_walker / entry
             dest_entry = dest_walker / entry
             print(f"🚶  [white]ENTRY[/white]: {src_entry.relative_to(template_dir)}")
-            if ('{{' in entry and '}}' in entry) or ('{%' in entry and '%}' in entry):
+            if ("{{" in entry and "}}" in entry) or ("{%" in entry and "%}" in entry):
                 rendered_entry_name = code_templator.render_string(entry, **params)
                 if len(rendered_entry_name) == 0:
                     print(f"👓   [grey]NAME[/grey]: {entry} -> [excluded]")
                     continue
                 dest_entry = dest_walker / rendered_entry_name
                 print(f"👓   [grey]NAME[/grey]: {entry} -> {rendered_entry_name}")
-            if str(dest_entry).endswith(".jinja2") and '.jinja2' in str(src_entry):
-                dest_path_str = str(dest_entry)[:-len(".jinja2")]
+            if str(dest_entry).endswith(".jinja2") and ".jinja2" in str(src_entry):
+                dest_path_str = str(dest_entry)[: -len(".jinja2")]
                 template = str(src_entry.relative_to(template_dir))
                 dest_path = Path(dest_path_str).relative_to(outdir)
                 print(f"✨  [green]GENER[/green]: {dest_path}")
@@ -228,6 +226,7 @@ def main(
     for template_dir in template_dirs:
         src = Path(template_dir)
         recursive_render_templates(template_dir, src, Path(outdir))
+
 
 def run():
     typer.run(main)

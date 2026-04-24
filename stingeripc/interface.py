@@ -1,8 +1,9 @@
-from typing import Optional, Any, Dict, IO, Union
+from typing import Any, Dict, IO, Union
+
 import yaml
 import yamlloader
 
-from .components import StingerSpec, InvalidStingerStructure
+from .components import InvalidStingerStructure, StingerSpec
 from .config import StingerConfig
 
 VERSIONS_SUPPORTED = ["0.0.7", "0.1.0"]

@@ -1,23 +1,22 @@
-
-import os
 import sys
-from wsgiref.validate import validator
-from rich import print
 from pathlib import Path
-import typer
+
+from rich import print
 from typing_extensions import Annotated
 from typing import Optional
-from jacobsjinjatoo import templator as jj2
 import jsonschema_rs
+import typer
 import yaml
 import yamlloader
-from stingeripc.interface import StingerInterface
-from stingeripc.config import StingerConfig
+
 from stingeripc import filtering
+from stingeripc.config import StingerConfig
+from stingeripc.interface import StingerInterface
 
 from . import generic_generator
 
 app = typer.Typer(help="Stinger-IPC Tool")
+
 
 @app.command()
 def generate(
@@ -33,29 +32,28 @@ def generate(
 
     INPUT_FILE is the .stinger.yaml file
     OUTPUT_DIR is the directory that will receive generated files
-    
+
     At least one of --language, --template-pkg, or --template-path must be provided.
     """
 
     # Check if at least one template source is provided
     if not language and not template_pkg and not template_path:
-        raise typer.BadParameter(
-            "At least one of: --language, --template-pkg, or --template-path must be provided"
-        )
-    
+        raise typer.BadParameter("At least one of: --language, --template-pkg, or --template-path must be provided")
+
     # If language is provided, validate and use specialized generators
     if language:
         lang = language.lower()
         if lang not in ("rust", "python", "markdown", "cpp", "web", "protobuf"):
             raise typer.BadParameter("language must be one of: rust, python, markdown, cpp, web, protobuf")
 
-        generic_generator.main(input_file, output_dir, lang, template_pkg, template_path, consumer, config)       
+        generic_generator.main(input_file, output_dir, lang, template_pkg, template_path, consumer, config)
         print(f"Generation for '{lang}' completed.")
-    
+
     # Use generic generator if template-pkg or template-path is provided
     if template_pkg or template_path:
         generic_generator.main(input_file, output_dir, language, template_pkg, template_path, consumer, config)
         print(f"Generation from custom templates completed.")
+
 
 @app.command()
 def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)]):
@@ -66,7 +64,7 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
     schema_file = Path(__file__).parent.parent / "schema" / "schema.yaml"
     schema_obj = yaml.load(schema_file.open("r"), Loader=yamlloader.ordereddict.Loader)
     validator = jsonschema_rs.validator_for(schema_obj)
-    
+
     input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
 
     error_count = 0
@@ -96,13 +94,15 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
         print(f"✅  [bold green]No validation errors found in {input_file}[/bold green]")
     sys.exit(error_count)
 
+
 @app.command()
 def hello():
     print("Hello world")
 
+
 def run():
     app()
 
+
 if __name__ == "__main__":
     run()
-

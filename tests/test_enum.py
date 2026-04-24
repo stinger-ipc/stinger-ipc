@@ -2,6 +2,7 @@ from stingeripc.components import InterfaceEnum
 
 import unittest
 
+
 class TestEnumCreateManually(unittest.TestCase):
     def setUp(self):
         self.enum = InterfaceEnum("bread")
@@ -11,7 +12,7 @@ class TestEnumCreateManually(unittest.TestCase):
 
     def test_name(self):
         self.assertEqual(self.enum.name, "bread")
-    
+
     def test_values(self):
         self.assertEqual(len(self.enum.items), 3)
 
@@ -29,7 +30,6 @@ class TestSignalCreateFromStinger(unittest.TestCase):
 
     def test_name(self):
         self.assertEqual(self.enum.name, "color")
-    
+
     def test_values(self):
         self.assertEqual(len(self.enum.items), 3)
-

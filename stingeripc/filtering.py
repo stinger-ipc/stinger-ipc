@@ -2,10 +2,14 @@
 For both functions, the interface provided is the raw dictionary parsed from the Stinger YAML file, as specified in `schema/schema.yaml`.
 
 """
-import semantic_version
-from typing import Dict, Any, Set, cast
+
 from copy import deepcopy
+from typing import Any, Dict, Set, cast
+
+import semantic_version
+
 from stingeripc.components import StingerSpec
+
 
 def _collect_used_types(args: list[Dict[str, Any]], used_enums: Set[str], used_structs: Set[str]) -> None:
     """Recursively collect enum and struct names used in argument lists."""
@@ -47,7 +51,7 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
     Args:
         interface: The original StingerInterface.
         consumer_name: The name of the consumer to filter by.
-        
+
     Returns:
         A new StingerInterface containing only the elements that are required for a client interface for the given consumer.
 
@@ -62,11 +66,11 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
     """
     # Create a deep copy to avoid modifying the original
     filtered = deepcopy(interface)
-    
+
     # Track which enums and structs are used
     used_enums: Set[str] = set()
     used_structs: Set[str] = set()
-    
+
     # Filter signals
     filtered_dict = cast(Dict[str, Any], filtered)  # StingerSpec acts as dict-like
     if "signals" in filtered_dict:
@@ -81,7 +85,7 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
                 payload = signal_spec.get("payload", [])
                 _collect_used_types(payload, used_enums, used_structs)
         filtered_dict["signals"] = filtered_signals
-    
+
     # Filter properties
     if "properties" in filtered_dict:
         filtered_properties = {}
@@ -93,7 +97,7 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
                 values = prop_spec.get("values", [])
                 _collect_used_types(values, used_enums, used_structs)
         filtered_dict["properties"] = filtered_properties
-    
+
     # Filter methods
     if "methods" in filtered_dict:
         filtered_methods = {}
@@ -108,7 +112,7 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
                 return_values = method_spec.get("returnValues", [])
                 _collect_used_types(return_values, used_enums, used_structs)
         filtered_dict["methods"] = filtered_methods
-    
+
     # Now collect dependencies from used structs
     interface_dict = cast(Dict[str, Any], interface)  # StingerSpec acts as dict-like
     if "structures" in interface_dict:
@@ -118,31 +122,20 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
             prev_struct_count = len(used_structs)
             for struct_name in list(used_structs):
                 if struct_name in interface_dict["structures"]:
-                    _collect_struct_dependencies(
-                        interface_dict["structures"][struct_name], 
-                        used_enums, 
-                        used_structs
-                    )
-    
+                    _collect_struct_dependencies(interface_dict["structures"][struct_name], used_enums, used_structs)
+
     # Filter enums to only include used ones
     if "enums" in filtered_dict:
-        filtered_enums = {
-            enum_name: enum_spec
-            for enum_name, enum_spec in filtered_dict["enums"].items()
-            if enum_name in used_enums
-        }
+        filtered_enums = {enum_name: enum_spec for enum_name, enum_spec in filtered_dict["enums"].items() if enum_name in used_enums}
         filtered_dict["enums"] = filtered_enums
-    
+
     # Filter structs to only include used ones
     if "structures" in filtered_dict:
-        filtered_structs = {
-            struct_name: struct_spec
-            for struct_name, struct_spec in filtered_dict["structures"].items()
-            if struct_name in used_structs
-        }
+        filtered_structs = {struct_name: struct_spec for struct_name, struct_spec in filtered_dict["structures"].items() if struct_name in used_structs}
         filtered_dict["structures"] = filtered_structs
-    
+
     return filtered_dict
+
 
 def check_version_consistency(interface: Dict[str, Any]) -> None:
     """
@@ -162,66 +155,58 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
 
         for arg in args:
             arg_type = arg.get("type")
-            
+
             # Check enum version consistency
             if arg_type == "enum":
                 enum_name = arg.get("enumName")
                 enum_version_in_arg = arg.get("enumVersion")
-                
+
                 if enum_version_in_arg:
                     # Get the enum definition
                     if "enums" not in interface or enum_name not in interface["enums"]:
-                        raise ValueError(
-                            f"{component_type} '{component_name}' references enum '{enum_name}' "
-                            f"which is not defined in the interface"
-                        )
-                    
+                        raise ValueError(f"{component_type} '{component_name}' references enum '{enum_name}' " f"which is not defined in the interface")
+
                     enum_spec = interface["enums"][enum_name]
                     enum_version_in_def = enum_spec.get("version")
-                    
+
                     if not enum_version_in_def:
                         raise ValueError(
-                            f"{component_type} '{component_name}' specifies enumVersion '{enum_version_in_arg}' "
-                            f"for enum '{enum_name}', but the enum definition does not have a version"
+                            f"{component_type} '{component_name}' specifies enumVersion '{enum_version_in_arg}' " f"for enum '{enum_name}', but the enum definition does not have a version"
                         )
-                    
+
                     # Check semantic version compatibility (major.minor must match)
                     arg_ver = semantic_version.Version(enum_version_in_arg)
                     def_ver = semantic_version.Version(enum_version_in_def)
-                    
+
                     if arg_ver.major != def_ver.major or arg_ver.minor != def_ver.minor:
                         raise ValueError(
                             f"{component_type} '{component_name}' requires enum '{enum_name}' "
                             f"semantic version {arg_ver.major}.{arg_ver.minor}, "
                             f"but the enum is defined with version {enum_version_in_def} and these versions are not compatible. "
                         )
-            
+
             # Check struct version consistency
             elif arg_type == "struct":
                 struct_name = arg.get("structName")
                 struct_version_in_arg = arg.get("structVersion")
-                
+
                 if struct_version_in_arg:
                     # Get the struct definition
                     if "structures" not in interface or struct_name not in interface["structures"]:
-                        raise ValueError(
-                            f"{component_type} '{component_name}' references struct '{struct_name}' "
-                            f"which is not defined in the interface"
-                        )
-                    
+                        raise ValueError(f"{component_type} '{component_name}' references struct '{struct_name}' " f"which is not defined in the interface")
+
                     struct_spec = interface["structures"][struct_name]
                     struct_version_in_def = struct_spec.get("version")
-                    
+
                     if not struct_version_in_def:
                         raise ValueError(
-                            f"{component_type} '{component_name}' specifies structVersion '{struct_version_in_arg}' "
-                            f"for struct '{struct_name}', but the struct definition does not have a version"
+                            f"{component_type} '{component_name}' specifies structVersion '{struct_version_in_arg}' " f"for struct '{struct_name}', but the struct definition does not have a version"
                         )
-                    
+
                     # Check semantic version compatibility (major.minor must match)
                     arg_ver = semantic_version.Version(struct_version_in_arg)
                     def_ver = semantic_version.Version(struct_version_in_def)
-                    
+
                     if arg_ver.major != def_ver.major or arg_ver.minor != def_ver.minor:
                         raise ValueError(
                             f"{component_type} '{component_name}' requires struct '{struct_name}' "
@@ -229,7 +214,7 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
                             f"but the struct is defined with version {struct_version_in_def} "
                             f"and these versions are not compatible."
                         )
-            
+
             # Recursively check array item types
             elif arg_type == "array":
                 item_type = arg.get("itemType")
@@ -241,44 +226,38 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
         for signal_name, signal_spec in interface["signals"].items():
             # Check if consumers specified but version is missing
             if signal_spec.get("consumers") and not signal_spec.get("version"):
-                raise ValueError(
-                    f"Signal '{signal_name}' specifies consumers but does not specify a version"
-                )
-            
+                raise ValueError(f"Signal '{signal_name}' specifies consumers but does not specify a version")
+
             # Check payload arguments
             payload = signal_spec.get("payload", [])
             check_args(payload, signal_name, "Signal")
-    
+
     # Check properties
     if "properties" in interface:
         for prop_name, prop_spec in interface["properties"].items():
             # Check if consumers specified but version is missing
             if prop_spec.get("consumers") and not prop_spec.get("version"):
-                raise ValueError(
-                    f"Property '{prop_name}' specifies consumers but does not specify a version"
-                )
-            
+                raise ValueError(f"Property '{prop_name}' specifies consumers but does not specify a version")
+
             # Check values arguments
             values = prop_spec.get("values", [])
             check_args(values, prop_name, "Property")
-    
+
     # Check methods
     if "methods" in interface:
         for method_name, method_spec in interface["methods"].items():
             # Check if consumers specified but version is missing
             if method_spec.get("consumers") and not method_spec.get("version"):
-                raise ValueError(
-                    f"Method '{method_name}' specifies consumers but does not specify a version"
-                )
-            
+                raise ValueError(f"Method '{method_name}' specifies consumers but does not specify a version")
+
             # Check arguments
             arguments = method_spec.get("arguments", [])
             check_args(arguments, method_name, "Method")
-            
+
             # Check return values
             return_values = method_spec.get("returnValues", [])
             check_args(return_values, method_name, "Method")
-    
+
     # Check struct members recursively
     if "structures" in interface:
         for struct_name, struct_spec in interface["structures"].items():

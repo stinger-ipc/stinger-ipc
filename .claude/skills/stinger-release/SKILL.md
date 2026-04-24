@@ -14,12 +14,13 @@ Work through the steps below in order. Pause only when a decision can't be infer
 
 Read the `version` field from `pyproject.toml` (it follows semver: MAJOR.MINOR.PATCH, with optional `.postN` suffix).
 
-Ask the user which component to bump **only if they haven't already told you**:
-- Bug-fix / maintenance → bump **patch** (most common)
-- New backwards-compatible feature → bump **minor**
-- Breaking changes → bump **major**
+Calculate suggested versions:
+- **Patch bump** (bug-fix / maintenance) → increment PATCH
+- **Minor bump** (new backwards-compatible feature) → increment MINOR, reset PATCH to 0
+- **Major bump** (breaking changes) → increment MAJOR, reset MINOR and PATCH to 0
 
-Confirm the new version before proceeding (e.g. "I'll bump from 0.7.6.post1 → 0.7.7. Shall I proceed?").
+Present the suggestions to the user using `vscode_askQuestions` with the three suggested versions as options, plus a freeform text option for a custom version. Allow the user to select one of the suggestions or enter a custom version string.
+
 
 ---
 
@@ -39,7 +40,17 @@ Edit the `version = "..."` line under `[project]` in `pyproject.toml`. Be precis
 
 ---
 
-## Step 4 — Synchronize `schemas/README.md` with the schema
+## Step 4 — Format Python source code
+
+```bash
+uv run black tests/ stingeripc/
+```
+
+This ensures consistent code formatting across the project. If any files are reformatted, they will be committed in Step 8.
+
+---
+
+## Step 5 — Synchronize `schemas/README.md` with the schema
 
 Compare `schemas/schema.yaml` against `schemas/README.md`. Update the README so that every feature, type, field, and constraint documented in the README accurately reflects the schema. In particular, watch for:
 
@@ -58,7 +69,7 @@ git add schemas/README.md
 
 ---
 
-## Step 5 — Run the task suite
+## Step 6 — Run the task suite
 
 ```bash
 task
@@ -68,7 +79,7 @@ This runs generate + tests + compile checks across all language targets. If anyt
 
 ---
 
-## Step 6 — Build the package
+## Step 7 — Build the package
 
 ```bash
 uv build
@@ -78,14 +89,14 @@ Fix any build errors before continuing.
 
 ---
 
-## Step 7 — Commit the version bump
+## Step 8 — Commit the version bump
 
 ```bash
 git add pyproject.toml
 git commit -m "chore: bump version to <new_version>"
 ```
 
-If `schemas/README.md` was updated in Step 4, include it in the commit (or make a separate commit):
+If `schemas/README.md` was updated in Step 5, include it in the commit. If any Python files were reformatted by black in Step 4, include them as well (or make separate commits):
 ```bash
 git add schemas/README.md
 git commit -m "docs: sync schemas/README.md with schema.yaml"
@@ -93,7 +104,7 @@ git commit -m "docs: sync schemas/README.md with schema.yaml"
 
 ---
 
-## Step 8 — Create and push a git tag
+## Step 9 — Create and push a git tag
 
 ```bash
 git tag v<new_version>
@@ -107,7 +118,7 @@ git push
 
 ---
 
-## Step 9 — Publish to PyPI
+## Step 10 — Publish to PyPI
 
 Check for the publish token:
 

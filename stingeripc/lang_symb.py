@@ -1,39 +1,41 @@
+from typing import Any
 
 from jacobsjinjatoo import stringmanip
-from typing import Any
-from stingeripc.args import ArgPrimitiveType
-from stingeripc.exceptions import InvalidStingerStructure
+
 
 class ISymbolsProvider:
-    """ An ISymbolsProvider is an interface for classes providing symbols and names for a specific plugin or language.
+    """An ISymbolsProvider is an interface for classes providing symbols and names for a specific plugin or language.
     The plugin system will check for plugins implementing ISymbolsProvider to know how to use them.
 
-    The plugin uses the `project.entry-points."stinger_symbols"` entry point to find classes that implement this interface.  
+    The plugin uses the `project.entry-points."stinger_symbols"` entry point to find classes that implement this interface.
     """
 
-    def __init__(self, config: dict[str, Any]|None = None):
-        """ The constructor takes stinger generation configuration as an argument."""
+    def __init__(self, config: dict[str, Any] | None = None):
+        """The constructor takes stinger generation configuration as an argument."""
         self.config = config
 
-    def for_model(self, model_class_name:str, model) -> object|None:
-        """ This should return an object containing symbols for the given model, or None if this provider does not handle that model class. """
+    def for_model(self, model_class_name: str, model) -> object | None:
+        """This should return an object containing symbols for the given model, or None if this provider does not handle that model class."""
         return None
 
+
 class ModelSymbols:
-    
+
     def __init__(self, model):
         self._model = model
-    
+
+
 class RustSymbolsProvider(ISymbolsProvider):
 
-    def for_model(self, model_class_name:str, model) -> object|None:
+    def for_model(self, model_class_name: str, model) -> object | None:
         if model_class_name == "StingerSpec":
             return RustInterfaceSymbols(model, self.config)
         return None
 
+
 class PythonSymbolsProvider(ISymbolsProvider):
 
-    def for_model(self, model_class_name:str, model) -> object|None:
+    def for_model(self, model_class_name: str, model) -> object | None:
         if model_class_name == "StingerSpec":
             return PythonInterfaceSymbols(model, self.config)
         elif model_class_name == "InterfaceStruct":
@@ -44,9 +46,10 @@ class PythonSymbolsProvider(ISymbolsProvider):
             return PythonPropertySymbols(model, self.config)
         return None
 
+
 class PythonSymbols:
 
-    def __init__(self, config: dict[str, Any]|None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config
 
     @property
@@ -56,7 +59,7 @@ class PythonSymbols:
 
 class PythonInterfaceSymbols(PythonSymbols):
 
-    def __init__(self, interface, config: dict[str, Any]|None = None):
+    def __init__(self, interface, config: dict[str, Any] | None = None):
         super().__init__(config)
         self._iface = interface
 
@@ -76,32 +79,32 @@ class PythonInterfaceSymbols(PythonSymbols):
 
     @property
     def client_class_name(self) -> str:
-        """ Name of the python class for the interface client."""
+        """Name of the python class for the interface client."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Client"
 
     @property
     def server_class_name(self) -> str:
-        """ Name of the python class for the interface server."""
+        """Name of the python class for the interface server."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Server"
 
 
 class PythonStructSymbols(PythonSymbols):
 
-    def __init__(self, iface_struct, config: dict[str, Any]|None = None):
+    def __init__(self, iface_struct, config: dict[str, Any] | None = None):
         super().__init__(config)
         self._iface_struct = iface_struct
 
 
 class PythonMethodSymbols(PythonSymbols):
 
-    def __init__(self, method, config: dict[str, Any]|None = None):
+    def __init__(self, method, config: dict[str, Any] | None = None):
         super().__init__(config)
         self._method = method
-    
+
     @property
     def return_value_annotation(self) -> str:
         return self._method.return_value_python_type
-    
+
     @property
     def return_value_local_class(self) -> str:
         return f"{stringmanip.upper_camel_case(self._method.name)}ReturnValue"
@@ -110,9 +113,10 @@ class PythonMethodSymbols(PythonSymbols):
     def return_value_class(self):
         return f"{self.type_definition_module}.{self.return_value_local_class}"
 
+
 class PythonPropertySymbols(PythonSymbols):
 
-    def __init__(self, prop, config: dict[str, Any]|None = None):
+    def __init__(self, prop, config: dict[str, Any] | None = None):
         super().__init__(config)
         self._prop = prop
 
@@ -134,49 +138,53 @@ class PythonPropertySymbols(PythonSymbols):
     def model_class_name(self) -> str:
         return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
 
+
 class RustSymbols:
 
-    def __init__(self, config: dict[str, Any]|None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config
-        
+
 
 class RustInterfaceSymbols(RustSymbols):
 
-    def __init__(self, interface, config: dict[str, Any]|None = None):
+    def __init__(self, interface, config: dict[str, Any] | None = None):
         super().__init__(config)
         self._iface = interface
 
     @property
     def package_name(self) -> str:
-        """ Name of the rust package for the interface client."""
+        """Name of the rust package for the interface client."""
         s = f"{stringmanip.snake_case(self._iface.name)}_{stringmanip.snake_case(self.config.rust.package_suffix) or 'ipc'}"
         return s
 
     @property
     def client_struct_name(self) -> str:
-        """ Name of the rust struct for the interface client."""
+        """Name of the rust struct for the interface client."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Client"
 
     @property
     def server_struct_name(self) -> str:
-        """ Name of the struct for the interface server."""
+        """Name of the struct for the interface server."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Server"
+
 
 class CppSymbolsProvider(ISymbolsProvider):
 
-    def for_model(self, model_class_name:str, model) -> object|None:
+    def for_model(self, model_class_name: str, model) -> object | None:
         if model_class_name == "StingerSpec":
             return CppInterfaceSymbols(model)
         elif model_class_name == "Property":
             return CppPropertySymbols(model)
         return None
 
+
 class CppSymbols:
     def __init__(self):
         pass
 
+
 class CppInterfaceSymbols(CppSymbols):
-    
+
     def __init__(self, interface):
         super().__init__()
         self._iface = interface
@@ -184,7 +192,7 @@ class CppInterfaceSymbols(CppSymbols):
     @property
     def project_name(self) -> str:
         return f"{stringmanip.hyphen_case(self._iface.name)}-ipc"
-    
+
     @property
     def cmake_name(self) -> str:
         return f"{stringmanip.upper_camel_case(self._iface.name)}Ipc"
@@ -192,7 +200,7 @@ class CppInterfaceSymbols(CppSymbols):
     @property
     def client_class_name(self) -> str:
         return f"{stringmanip.upper_camel_case(self._iface.name)}Client"
-    
+
     @property
     def server_class_name(self) -> str:
         return f"{stringmanip.upper_camel_case(self._iface.name)}Server"
@@ -200,10 +208,11 @@ class CppInterfaceSymbols(CppSymbols):
     @property
     def enum_header_file(self) -> str:
         return "enums.hpp"
-    
+
     @property
     def property_struct_header_file(self) -> str:
         return "property_structs.hpp"
+
 
 class CppPropertySymbols(CppSymbols):
 

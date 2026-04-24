@@ -1,41 +1,56 @@
 """Configuration models for Stinger IPC."""
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 import tomllib
 from .topic_util import get_argument_position
 import re
 
+
 class ServerConfig(BaseModel):
     """Configuration options for generating server/provider code."""
+
     enabled: bool = Field(default=True, description="Whether to generate server code")
 
 
 class ClientConfig(BaseModel):
     """Configuration options for generating client code."""
+
     enabled: bool = Field(default=True, description="Whether to generate client code")
+
 
 class PropertyConfig(BaseModel):
     """Configuration options for properties."""
+
     stinger_owned_values: bool = Field(default=True, description="Whether the stinger-server owns property values")
+
 
 class PythonConfig(BaseModel):
     """Python-specific configuration options."""
+
     python37: bool = Field(default=False, description="Generate Python 3.7 compatible code")
     package_suffix: str = Field(default="ipc", description="Suffix to append to generated Python package names")
 
+
 class RustConfig(BaseModel):
     """Rust-specific configuration options."""
+
     package_suffix: str = Field(default="ipc", description="Suffix to append to generated Rust module names")
+
 
 class CppConfig(BaseModel):
     """C++-specific configuration options."""
-    namespace: List[str] = Field(default_factory=lambda: ["stinger", "gen"], description="List of nested namespaces for generated C++ code.  The interface name is appended to this as the innermost namespace.")
+
+    namespace: List[str] = Field(
+        default_factory=lambda: ["stinger", "gen"], description="List of nested namespaces for generated C++ code.  The interface name is appended to this as the innermost namespace."
+    )
     package_suffix: str = Field(default="ipc", description="Suffix to append to generated C++ namespace and filenames")
 
+
 class TopicConfig(BaseModel):
-    """ Configuration for which topic schemas to use """
+    """Configuration for which topic schemas to use"""
+
     params: List[str] = Field(default_factory=list, description="List of parameters to include in topic templates")
     signals: str = Field(default="{interface_name}/{service_id}/signal/{signal_name}", description="Topic template for signals")
     property_values: str = Field(default="{interface_name}/{service_id}/property/{property_name}/value", description="Topic template for property values")
@@ -45,58 +60,64 @@ class TopicConfig(BaseModel):
     method_responses: str = Field(default="client/{client_id}/{interface_name}/method/{method_name}/response", description="Topic template for method responses")
     interface_discovery: str = Field(default="{interface_name}/{service_id}/interface", description="Topic template for interface discovery")
 
-    @field_validator('property_values')
+    @field_validator("property_values")
     @classmethod
     def validate_property_values(cls, v: str) -> str:
-        if get_argument_position(v, 'property_name') is None:
+        if get_argument_position(v, "property_name") is None:
             raise ValueError('"property_values" topic template must contain {property_name} placeholder')
-        if get_argument_position(v, 'service_id') is None:
+        if get_argument_position(v, "service_id") is None:
             raise ValueError('"property_values" topic template must contain {service_id} placeholder')
         return v
-    
-    @field_validator('property_update_responses')
+
+    @field_validator("property_update_responses")
     @classmethod
     def validate_property_update_responses(cls, v: str) -> str:
-        if get_argument_position(v, 'property_name') is None:
+        if get_argument_position(v, "property_name") is None:
             raise ValueError('"property_update_responses" topic template must contain {property_name} placeholder')
         return v
-    
-    @field_validator('method_responses')
+
+    @field_validator("method_responses")
     @classmethod
     def validate_method_responses(cls, v: str) -> str:
-        if get_argument_position(v, 'method_name') is None:
+        if get_argument_position(v, "method_name") is None:
             raise ValueError('"method_responses" topic template must contain {method_name} placeholder')
         return v
 
-    @field_validator('params')
+    @field_validator("params")
     @classmethod
     def validate_params(cls, v: List[str]) -> List[str]:
-        reserved_params = {'interface_name', 'service_id', 'signal_name', 'property_name', 'method_name', 'client_id', 'instance_id'}
+        reserved_params = {"interface_name", "service_id", "signal_name", "property_name", "method_name", "client_id", "instance_id"}
         for param in v:
             if param in reserved_params:
-                raise ValueError(f'Custom topic parameters cannot use reserved names: {param}')
+                raise ValueError(f"Custom topic parameters cannot use reserved names: {param}")
         for param in v:
-            if not re.match(r'^[a-zA-Z0-9]+(_[a-zA-Z0-9]+)*$', param):
-                raise ValueError(f'Custom topic parameters must be alphanumeric with optional underscores, but no consecutive underscores: {param}')
+            if not re.match(r"^[a-zA-Z0-9]+(_[a-zA-Z0-9]+)*$", param):
+                raise ValueError(f"Custom topic parameters must be alphanumeric with optional underscores, but no consecutive underscores: {param}")
         return v
 
-    @model_validator(mode='after')
-    def validate_topic_values(self) -> 'TopicConfig':
+    @model_validator(mode="after")
+    def validate_topic_values(self) -> "TopicConfig":
         if self.property_update_responses == self.method_responses:
             raise ValueError('"property_update_responses" and "method_responses" topic templates must be different to avoid routing conflicts')
         return self
 
+
 class LanguagePluginConfig(BaseModel):
-    """ Configuration for languages that are provided via plugins """
+    """Configuration for languages that are provided via plugins"""
+
     name: str = Field(..., description="Name of the language plugin")
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
+
 
 class DiscoveryConfig(BaseModel):
     """Configuration options for service discovery."""
+
     advert_interval_seconds: int = Field(default=120, description="Interval in seconds for re-advertising the server's presence")
+
 
 class StingerConfig(BaseModel):
     """Root configuration model for Stinger IPC code generation."""
+
     python: PythonConfig = Field(default_factory=PythonConfig, description="Python generation options")
     cpp: CppConfig = Field(default_factory=CppConfig, description="C++ generation options")
     rust: RustConfig = Field(default_factory=RustConfig, description="Rust generation options")
@@ -112,21 +133,21 @@ class StingerConfig(BaseModel):
 def load_config(config_path: Path) -> StingerConfig:
     """
     Load and parse a TOML configuration file.
-    
+
     Args:
         config_path: Path to the TOML configuration file.
-        
+
     Returns:
         A StingerConfig instance with the parsed configuration.
-        
+
     Raises:
         FileNotFoundError: If the config file doesn't exist.
         ValueError: If the TOML is invalid or doesn't match the schema.
     """
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
-    
+
     with config_path.open(mode="rb") as f:
         config_dict = tomllib.load(f)
-    
+
     return StingerConfig(**config_dict)

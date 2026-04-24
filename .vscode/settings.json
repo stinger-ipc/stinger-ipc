@@ -161,5 +161,15 @@
     "strfmt",
     "templator",
     "usize"
-  ]
+  ],
+  "chat.tools.terminal.autoApprove": {
+    "/^uv run pylint stingeripc$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^uv run pylint stingeripc 2>&1$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
 }

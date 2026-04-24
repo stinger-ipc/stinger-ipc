@@ -218,7 +218,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         {%endif%}
     {% endif %}{# end app-owned values -#}
 
-    {%if config.properties.stinger_owned_values -%}
+    {%if config.properties.stinger_owned_values and not prop.read_only-%}
     def test_{{prop_name|snake_case}}_property_receive(self, server, mock_connection):
         """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
         received_data = None

@@ -1,20 +1,21 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from enum import Enum
-import random
+
 from abc import abstractmethod
-from typing import Any, Optional, Mapping
+from copy import copy
+from dataclasses import dataclass
+from typing import Any, Mapping, Optional
+
+from jacobsjinjatoo import stringmanip
+from stevedore import ExtensionManager
 
 from stingeripc.config import StingerConfig, TopicConfig
 
 from . import topic_util
+from .args import ArgPrimitiveType, ArgType
+from .exceptions import InvalidConfiguration, InvalidStingerStructure
 from .lang_symb import *
-from .args import ArgType, ArgPrimitiveType
-from .exceptions import InvalidStingerStructure, InvalidConfiguration
-from jacobsjinjatoo import stringmanip
-from copy import copy
-from stevedore import ExtensionManager
-from pydantic import BaseModel
+
+import random
 
 YamlArg = Mapping[str, str | bool]
 YamlArgList = list[YamlArg]
@@ -28,7 +29,7 @@ RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "op
 
 class LanguageSymbolMixin:
 
-    def __init__(self, config: dict[str, Any]|None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         mgr: ExtensionManager = ExtensionManager(
             namespace="stinger_symbols",
             invoke_on_load=True,
@@ -40,6 +41,7 @@ class LanguageSymbolMixin:
                 symbols = ext.obj.for_model(self.__class__.__name__, self)
                 if symbols is not None:
                     setattr(self, domain, symbols)
+
 
 class Arg:
 
@@ -114,7 +116,7 @@ class Arg:
     @property
     def cpp_type(self) -> str:
         return stringmanip.upper_camel_case(self.name)
-    
+
     @property
     def cpp_temp_type(self) -> str:
         if self.optional and "optional" not in self.cpp_type:
@@ -128,9 +130,7 @@ class Arg:
         return self.cpp_type
 
     @classmethod
-    def new_arg_from_stinger(
-        cls, arg_spec: YamlArg, stinger_spec: Optional[StingerSpec] = None
-    ) -> Arg:
+    def new_arg_from_stinger(cls, arg_spec: YamlArg, stinger_spec: Optional[StingerSpec] = None) -> Arg:
         # arg_spec may be an immutable Mapping; copy to mutable dict for validation/mutation
         spec: dict[str, Any]
         if isinstance(arg_spec, dict):
@@ -157,9 +157,7 @@ class Arg:
             return arg
         else:
             if stinger_spec is None:
-                raise RuntimeError(
-                    "Need the root StingerSpec when creating an enum or struct Arg"
-                )
+                raise RuntimeError("Need the root StingerSpec when creating an enum or struct Arg")
 
         if spec["type"] == "enum":
             if "enumName" not in arg_spec:
@@ -167,12 +165,8 @@ class Arg:
             if not isinstance(arg_spec["enumName"], str):
                 raise InvalidStingerStructure("'enumName' in arg structure must be a string")
             if arg_spec["enumName"] not in stinger_spec.enums:
-                raise InvalidStingerStructure(
-                    f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums"
-                )
-            enum_arg = ArgEnum(
-                spec["name"], stinger_spec.get_interface_enum(spec["enumName"])
-            )
+                raise InvalidStingerStructure(f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums")
+            enum_arg = ArgEnum(spec["name"], stinger_spec.get_interface_enum(spec["enumName"]))
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
@@ -186,19 +180,15 @@ class Arg:
             if not isinstance(spec["structName"], str):
                 raise InvalidStingerStructure("'structName' in arg structure must be a string")
             if spec["structName"] not in stinger_spec.structs:
-                raise InvalidStingerStructure(
-                    f"Struct arg '{spec["structName"]}' was not found in the list of stinger spec structs"
-                )
-            st_arg = ArgStruct(
-                spec["name"], stinger_spec.structs[spec["structName"]]
-            )
+                raise InvalidStingerStructure(f"Struct arg '{spec["structName"]}' was not found in the list of stinger spec structs")
+            st_arg = ArgStruct(spec["name"], stinger_spec.structs[spec["structName"]])
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 st_arg.optional = opt
             st_arg.try_set_description_from_spec(spec)
             return st_arg
-        
+
         if spec["type"] == "datetime":
             dt_arg = ArgDateTime(spec["name"])
             if opt := spec.get("optional", False):
@@ -216,7 +206,7 @@ class Arg:
                 dur_arg.optional = opt
             dur_arg.try_set_description_from_spec(spec)
             return dur_arg
-        
+
         if spec["type"] == "binary":
             bin_arg = ArgBinary(spec["name"])
             if opt := spec.get("optional", False):
@@ -225,7 +215,7 @@ class Arg:
                 bin_arg.optional = opt
             bin_arg.try_set_description_from_spec(spec)
             return bin_arg
-        
+
         if spec["type"] == "array":
             if "itemType" not in spec:
                 raise InvalidStingerStructure("Array args need an 'itemType'")
@@ -250,7 +240,7 @@ class Arg:
 
 
 class ArgEnum(Arg, LanguageSymbolMixin):
-    
+
     def __init__(self, name: str, enum: InterfaceEnum, description: Optional[str] = None):
         Arg.__init__(self, name, description)
         LanguageSymbolMixin.__init__(self)
@@ -340,10 +330,8 @@ class ArgEnum(Arg, LanguageSymbolMixin):
 
 
 class ArgPrimitive(Arg, LanguageSymbolMixin):
-    
-    def __init__(
-        self, name: str, arg_type: ArgPrimitiveType, description: Optional[str] = None
-    ):
+
+    def __init__(self, name: str, arg_type: ArgPrimitiveType, description: Optional[str] = None):
         Arg.__init__(self, name, description)
         LanguageSymbolMixin.__init__(self)
         self._arg_type = arg_type
@@ -390,9 +378,7 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
     def cpp_rapidjson_type(self) -> str:
         return ArgPrimitiveType.to_cpp_rapidjson_type_str(self._arg_type)
 
-    def get_random_example_value(
-        self, lang="python", seed: int = 2
-    ) -> str | float | int | bool | None:
+    def get_random_example_value(self, lang="python", seed: int = 2) -> str | float | int | bool | None:
         random_state = random.getstate()
         random.seed(seed)
         retval: str | float | int | bool | None = None
@@ -405,13 +391,11 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
         elif self._arg_type == ArgPrimitiveType.INTEGER:
             retval = random.choice([42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955])
         elif self._arg_type == ArgPrimitiveType.STRING:
-            retval = random.choice(
-                ['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"', '"bear"', '"root beer"']
-            )
+            retval = random.choice(['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"', '"bear"', '"root beer"'])
             if lang == "rust":
                 retval = f"{retval}.to_string()"
             if self.optional and lang in ["cpp", "c++"]:
-                retval = f'std::make_optional(std::string({retval}))'
+                retval = f"std::make_optional(std::string({retval}))"
         if self.optional and lang == "rust":
             retval = f"Some({retval})"
         random.setstate(random_state)
@@ -421,9 +405,7 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
         return f"<ArgPrimitive name={self._name} type={ArgPrimitiveType.to_python_type(self.type)}>"
 
     @classmethod
-    def new_arg_primitive_from_stinger(
-        cls, arg_spec: Mapping[str, Any]
-    ) -> ArgPrimitive:
+    def new_arg_primitive_from_stinger(cls, arg_spec: Mapping[str, Any]) -> ArgPrimitive:
         if "type" not in arg_spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in arg_spec:
@@ -445,9 +427,7 @@ class ArgStruct(Arg, LanguageSymbolMixin):
     def __init__(self, name: str, iface_struct: InterfaceStruct):
         Arg.__init__(self, name)
         LanguageSymbolMixin.__init__(self)
-        assert isinstance(
-            iface_struct, InterfaceStruct
-        ), f"Passed {iface_struct=} is type {type(iface_struct)} which is not InterfaceStruct"
+        assert isinstance(iface_struct, InterfaceStruct), f"Passed {iface_struct=} is type {type(iface_struct)} which is not InterfaceStruct"
         self._interface_struct: InterfaceStruct = iface_struct
         self._type = ArgType.STRUCT
 
@@ -505,15 +485,9 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         # Build a dict of example values keyed appropriately depending on language.
         example_list: dict[str, str]
         if lang in ["rust", "python"]:
-            example_list = {
-                stringmanip.snake_case(a.name): str(a.get_random_example_value(lang, seed=seed))
-                for a in self.members
-            }
+            example_list = {stringmanip.snake_case(a.name): str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
         else:
-            example_list = {
-                a.name: str(a.get_random_example_value(lang, seed=seed))
-                for a in self.members
-            }
+            example_list = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
         if lang == "c++":
             return self.cpp_type + "{" + ", ".join(example_list.values()) + "}"
         elif lang == "python":
@@ -538,8 +512,9 @@ class ArgStruct(Arg, LanguageSymbolMixin):
     def __repr__(self):
         return f"ArgStruct(name={self.name}, iface_struct={self._interface_struct})"
 
+
 class ArgDateTime(Arg, LanguageSymbolMixin):
-    
+
     def __init__(self, name: str):
         Arg.__init__(self, name)
         LanguageSymbolMixin.__init__(self)
@@ -566,7 +541,7 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
     @property
     def python_local_type(self) -> str:
         return "datetime"
-    
+
     @property
     def python_annotation(self) -> str:
         if self.optional:
@@ -606,8 +581,9 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
     def __repr__(self):
         return f"ArgDateTime(name={self.name})"
 
+
 class ArgDuration(Arg, LanguageSymbolMixin):
-    
+
     def __init__(self, name: str):
         Arg.__init__(self, name)
         LanguageSymbolMixin.__init__(self)
@@ -678,10 +654,10 @@ class ArgDuration(Arg, LanguageSymbolMixin):
 
     def __repr__(self):
         return f"ArgDuration(name={self.name})"
-    
+
 
 class ArgBinary(Arg, LanguageSymbolMixin):
-    
+
     def __init__(self, name: str):
         Arg.__init__(self, name)
         LanguageSymbolMixin.__init__(self)
@@ -710,13 +686,13 @@ class ArgBinary(Arg, LanguageSymbolMixin):
     @property
     def cpp_rapidjson_type(self) -> str:
         return "String"
-    
+
     @property
     def cpp_type(self) -> str:
         if self.optional:
             return "std::optional<std::vector<uint8_t>>"
         return "std::vector<uint8_t>"
-    
+
     @property
     def cpp_temp_type(self) -> str:
         return self.cpp_type
@@ -726,10 +702,10 @@ class ArgBinary(Arg, LanguageSymbolMixin):
             return f'b"example binary data"'
         elif lang == "rust":
             if self.optional:
-                return 'Some(vec![101, 120, 97, 109, 112, 108, 101])'  # "example" in ASCII bytes
-            return 'vec![101, 120, 97, 109, 112, 108, 101]'  # "example" in ASCII bytes
+                return "Some(vec![101, 120, 97, 109, 112, 108, 101])"  # "example" in ASCII bytes
+            return "vec![101, 120, 97, 109, 112, 108, 101]"  # "example" in ASCII bytes
         elif lang in ["c++", "cpp"]:
-            return 'std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
+            return "std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}"  # "example" in ASCII bytes
         if lang == "json":
             if self.optional and random.choice([True, False, False, False]):
                 retval = "null"
@@ -745,10 +721,10 @@ class ArgBinary(Arg, LanguageSymbolMixin):
 
     def __repr__(self):
         return f"ArgBinary(name={self.name})"
-    
+
 
 class ArgArray(Arg, LanguageSymbolMixin):
-    
+
     def __init__(self, name: str, element_type: Arg):
         Arg.__init__(self, name)
         LanguageSymbolMixin.__init__(self)
@@ -791,8 +767,8 @@ class ArgArray(Arg, LanguageSymbolMixin):
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         example_value = self.element.get_random_example_value(lang, seed=seed)
-        example_value2 = self.element.get_random_example_value(lang, seed=seed+1)
-        example_value3 = self.element.get_random_example_value(lang, seed=seed+2)
+        example_value2 = self.element.get_random_example_value(lang, seed=seed + 1)
+        example_value3 = self.element.get_random_example_value(lang, seed=seed + 2)
         if lang == "python":
             return f"[{example_value}, {example_value2}]"
         elif lang == "rust":
@@ -840,9 +816,7 @@ class InterfaceComponent:
         self._documentation = documentation
         return self
 
-    def try_set_documentation_from_spec(
-        self, spec: dict[str, Any]
-    ) -> InterfaceComponent:
+    def try_set_documentation_from_spec(self, spec: dict[str, Any]) -> InterfaceComponent:
         if "documentation" in spec and isinstance(spec["documentation"], str):
             self._documentation = spec["documentation"]
         return self
@@ -882,9 +856,7 @@ class Signal(InterfaceComponent, LanguageSymbolMixin):
         if "payload" not in signal_spec:
             raise InvalidStingerStructure("Signal specification must have 'payload'")
         if not isinstance(signal_spec["payload"], list):
-            raise InvalidStingerStructure(
-                f"Payload must be a list.  It is '{type(signal_spec['payload'])}' "
-            )
+            raise InvalidStingerStructure(f"Payload must be a list.  It is '{type(signal_spec['payload'])}' ")
 
         for arg_spec in signal_spec["payload"]:
             if "name" not in arg_spec or "type" not in arg_spec:
@@ -918,15 +890,11 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
             self._return_value = value
         elif isinstance(self._return_value, list):
             if value.name in [a.name for a in self._return_value]:
-                raise InvalidStingerStructure(
-                    f"A return value named '{value.name}' has been already added."
-                )
+                raise InvalidStingerStructure(f"A return value named '{value.name}' has been already added.")
             self._return_value.append(value)
         elif isinstance(self._return_value, Arg):
             if value.name == self._return_value.name:
-                raise InvalidStingerStructure(
-                    f"Attempt to add '{value.name}' to return value when it is already been added."
-                )
+                raise InvalidStingerStructure(f"Attempt to add '{value.name}' to return value when it is already been added.")
             self._return_value = [self._return_value, value]
         return self
 
@@ -987,9 +955,7 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
         elif isinstance(self._return_value, Arg):
             return self._return_value.python_type
         elif isinstance(self._return_value, list):
-            return (
-                f"{stringmanip.upper_camel_case(self.name)}MethodResponse"
-            )
+            return f"{stringmanip.upper_camel_case(self.name)}MethodResponse"
         else:
             raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
 
@@ -1000,9 +966,7 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
         elif isinstance(self._return_value, Arg):
             return self._return_value.python_annotation
         elif isinstance(self._return_value, list):
-            return (
-                f"{stringmanip.upper_camel_case(self.name)}MethodResponse"
-            )
+            return f"{stringmanip.upper_camel_case(self.name)}MethodResponse"
         else:
             raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
 
@@ -1032,9 +996,7 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
             return "multiple"
         raise RuntimeError("Method return value type was not recognized")
 
-    def get_return_value_random_example_value(
-        self, lang: str = "python", seed: int = 2
-    ):
+    def get_return_value_random_example_value(self, lang: str = "python", seed: int = 2):
         if lang == "python":
             if self._return_value is None:
                 return "None"
@@ -1051,12 +1013,7 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
             elif isinstance(self._return_value, Arg):
                 return self._return_value.get_random_example_value(lang, seed)
             elif isinstance(self._return_value, list):
-                return ", ".join(
-                    [
-                        str(a.get_random_example_value(lang, seed))
-                        for a in self._return_value
-                    ]
-                )
+                return ", ".join([str(a.get_random_example_value(lang, seed)) for a in self._return_value])
         raise RuntimeError(f"No random example for return value for {lang}")
 
     @classmethod
@@ -1069,13 +1026,9 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
         """Alternative constructor from a Stinger method structure."""
         method = cls(name, stinger_spec)
         if "arguments" not in method_spec:
-            raise InvalidStingerStructure(
-                f"Method '{name}' specification must have 'arguments'"
-            )
+            raise InvalidStingerStructure(f"Method '{name}' specification must have 'arguments'")
         if not isinstance(method_spec["arguments"], list):
-            raise InvalidStingerStructure(
-                f"Arguments for '{name}' method must be a list.  It is '{type(method_spec['arguments'])}' "
-            )
+            raise InvalidStingerStructure(f"Arguments for '{name}' method must be a list.  It is '{type(method_spec['arguments'])}' ")
 
         for arg_spec in method_spec["arguments"]:
             if "name" not in arg_spec or "type" not in arg_spec:
@@ -1089,15 +1042,14 @@ class Method(InterfaceComponent, LanguageSymbolMixin):
 
             for arg_spec in method_spec["returnValues"]:
                 if "name" not in arg_spec or "type" not in arg_spec:
-                    raise InvalidStingerStructure(
-                        "Return value must have name and type."
-                    )
+                    raise InvalidStingerStructure("Return value must have name and type.")
                 new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
                 method.add_return_value(new_arg)
 
         method.try_set_documentation_from_spec(method_spec)
 
         return method
+
 
 class Property(InterfaceComponent, LanguageSymbolMixin):
 
@@ -1180,9 +1132,7 @@ class Property(InterfaceComponent, LanguageSymbolMixin):
         if "values" not in prop_spec:
             raise InvalidStingerStructure("Property specification must have 'values'")
         if not isinstance(prop_spec["values"], list):
-            raise InvalidStingerStructure(
-                f"Values must be a list.  It is '{type(prop_spec['values'])}' "
-            )
+            raise InvalidStingerStructure(f"Values must be a list.  It is '{type(prop_spec['values'])}' ")
 
         for arg_spec in prop_spec["values"]:
             if "name" not in arg_spec or "type" not in arg_spec:
@@ -1278,23 +1228,15 @@ class InterfaceEnum(LanguageSymbolMixin):
             if "name" in enum_obj and isinstance(enum_obj["name"], str):
                 value_description = enum_obj.get("description", None)
                 if value_description is not None and not isinstance(value_description, str):
-                    raise InvalidStingerStructure(
-                        f"InterfaceEnum '{name}' item descriptions must be strings."
-                    )
+                    raise InvalidStingerStructure(f"InterfaceEnum '{name}' item descriptions must be strings.")
                 value_integer = enum_obj.get("value", None)
                 if value_integer is not None and not isinstance(value_integer, int):
-                    raise InvalidStingerStructure(
-                        f"InterfaceEnum '{name}' item values must be integers."
-                    )
+                    raise InvalidStingerStructure(f"InterfaceEnum '{name}' item values must be integers.")
                 if value_integer is not None and ie.has_value(value_integer):
-                    raise InvalidStingerStructure(
-                        f"InterfaceEnum '{name}' already has an item with value {value_integer}."
-                    )
+                    raise InvalidStingerStructure(f"InterfaceEnum '{name}' already has an item with value {value_integer}.")
                 ie.add_item(enum_obj["name"], integer=value_integer, description=value_description)
             else:
-                raise InvalidStingerStructure(
-                    f"InterfaceEnum '{name}' items must have string names."
-                )
+                raise InvalidStingerStructure(f"InterfaceEnum '{name}' items must have string names.")
         doc = enum_spec.get("documentation", None)
         if doc is not None and isinstance(doc, str):
             ie._documentation = doc
@@ -1387,21 +1329,15 @@ class StingerSpec(LanguageSymbolMixin):
             self._name: str = interface["name"]
             self._version: str = interface["version"]
         except KeyError as e:
-            raise InvalidStingerStructure(
-                f"Missing interface property in {interface}: {e}"
-            )
+            raise InvalidStingerStructure(f"Missing interface property in {interface}: {e}")
         except TypeError:
-            raise InvalidStingerStructure(
-                f"Interface didn't appear to have a correct type"
-            )
+            raise InvalidStingerStructure(f"Interface didn't appear to have a correct type")
 
         assert isinstance(config, StingerConfig), f"Config must be a StingerConfig object. Got {type(config)}"
         assert isinstance(config.topics, TopicConfig), f"Config must have a TopicConfig object in its 'topics' property. Got {type(config.topics)}"
 
         if not topic_util.is_valid_topic_template(self._config.topics.interface_discovery, self._config.topics.params):
-            raise InvalidConfiguration(
-                f"Interface discovery topic template '{self._config.topics.interface_discovery}' is not valid. "
-            )
+            raise InvalidConfiguration(f"Interface discovery topic template '{self._config.topics.interface_discovery}' is not valid. ")
 
         self._summary = interface.get("summary")
         self._title = interface.get("title")
@@ -1442,11 +1378,11 @@ class StingerSpec(LanguageSymbolMixin):
     @property
     def summary(self) -> str:
         return self._summary or ""
-    
+
     @property
     def title(self) -> str:
         return self._title or self._name or ""
-    
+
     @property
     def documentation(self) -> str:
         return self._documentation or ""
@@ -1511,7 +1447,7 @@ class StingerSpec(LanguageSymbolMixin):
     @property
     def property_value_qos(self) -> int:
         return 1
-    
+
     @property
     def property_update_qos(self) -> int:
         return 1
@@ -1531,17 +1467,13 @@ class StingerSpec(LanguageSymbolMixin):
         return topic_template
 
     @classmethod
-    def new_spec_from_stinger(
-        cls, stinger: dict[str, Any], config: StingerConfig
-    ) -> StingerSpec:
+    def new_spec_from_stinger(cls, stinger: dict[str, Any], config: StingerConfig) -> StingerSpec:
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if "version" not in stinger["stingeripc"]:
             raise InvalidStingerStructure("Stinger spec version not present")
         if stinger["stingeripc"]["version"] not in ["0.0.7", "0.1.0"]:
-            raise InvalidStingerStructure(
-                f"Unsupported stinger spec version {stinger['stingeripc']['version']}"
-            )
+            raise InvalidStingerStructure(f"Unsupported stinger spec version {stinger['stingeripc']['version']}")
 
         stinger_spec = StingerSpec(stinger["interface"], config)
 
@@ -1550,29 +1482,19 @@ class StingerSpec(LanguageSymbolMixin):
             if "enums" in stinger:
                 for enum_name, enum_spec in stinger["enums"].items():
                     ie = InterfaceEnum.new_enum_from_stinger(enum_name, enum_spec)
-                    assert (
-                        ie is not None
-                    ), f"Did not create enum from {enum_name} and {enum_spec}"
+                    assert ie is not None, f"Did not create enum from {enum_name} and {enum_spec}"
                     stinger_spec.add_enum(ie)
         except TypeError as e:
-            raise InvalidStingerStructure(
-                f"Signal specification appears to be invalid: {e}"
-            )
+            raise InvalidStingerStructure(f"Signal specification appears to be invalid: {e}")
 
         try:
             if "structures" in stinger:
                 for struct_name, struct_spec in stinger["structures"].items():
-                    istruct = InterfaceStruct.new_struct_from_stinger(
-                        struct_name, struct_spec, stinger_spec
-                    )
-                    assert (
-                        istruct is not None
-                    ), f"Did not create struct from {struct_name} and {struct_spec}"
+                    istruct = InterfaceStruct.new_struct_from_stinger(struct_name, struct_spec, stinger_spec)
+                    assert istruct is not None, f"Did not create struct from {struct_name} and {struct_spec}"
                     stinger_spec.add_struct(istruct)
         except TypeError as e:
-            raise InvalidStingerStructure(
-                f"Struct specification appears to be invalid: {e}"
-            )
+            raise InvalidStingerStructure(f"Struct specification appears to be invalid: {e}")
 
         try:
             if "signals" in stinger:
@@ -1582,14 +1504,10 @@ class StingerSpec(LanguageSymbolMixin):
                         signal_spec,
                         stinger_spec,
                     )
-                    assert (
-                        signal is not None
-                    ), f"Did not create signal from {signal_name} and {signal_spec}"
+                    assert signal is not None, f"Did not create signal from {signal_name} and {signal_spec}"
                     stinger_spec.add_signal(signal)
         except TypeError as e:
-            raise InvalidStingerStructure(
-                f"Signal specification appears to be invalid: {e}"
-            )
+            raise InvalidStingerStructure(f"Signal specification appears to be invalid: {e}")
 
         try:
             if "methods" in stinger:
@@ -1599,14 +1517,10 @@ class StingerSpec(LanguageSymbolMixin):
                         method_spec,
                         stinger_spec,
                     )
-                    assert (
-                        method is not None
-                    ), f"Did not create method from {method_name} and {method_spec}"
+                    assert method is not None, f"Did not create method from {method_name} and {method_spec}"
                     stinger_spec.add_method(method)
         except TypeError as e:
-            raise InvalidStingerStructure(
-                f"Method specification appears to be invalid: {e}"
-            )
+            raise InvalidStingerStructure(f"Method specification appears to be invalid: {e}")
 
         try:
             if "properties" in stinger:
@@ -1616,13 +1530,9 @@ class StingerSpec(LanguageSymbolMixin):
                         prop_spec,
                         stinger_spec,
                     )
-                    assert (
-                        prop is not None
-                    ), f"Did not create property from {prop_name} and {prop_spec}"
+                    assert prop is not None, f"Did not create property from {prop_name} and {prop_spec}"
                     stinger_spec.add_property(prop)
         except TypeError as e:
-            raise InvalidStingerStructure(
-                f"Property specification appears to be invalid: {e}"
-            )
+            raise InvalidStingerStructure(f"Property specification appears to be invalid: {e}")
 
         return stinger_spec

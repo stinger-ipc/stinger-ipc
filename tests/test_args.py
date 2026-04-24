@@ -2,6 +2,7 @@ import unittest
 from stingeripc.components import Arg, ArgPrimitive, InvalidStingerStructure
 from stingeripc.args import ArgPrimitiveType
 
+
 class TestArgCreationFromSpec(unittest.TestCase):
 
     def setUp(self):
@@ -16,9 +17,9 @@ class TestArgCreationFromSpec(unittest.TestCase):
         for obj in self.spec_objs:
             with self.subTest(obj):
                 arg = Arg.new_arg_from_stinger(obj)
-                self.assertEqual(arg.name, obj['name'])
-                self.assertEqual(arg.python_type, obj['python_type'])
-                self.assertEqual(arg.type, obj['value_type'])
+                self.assertEqual(arg.name, obj["name"])
+                self.assertEqual(arg.python_type, obj["python_type"])
+                self.assertEqual(arg.type, obj["value_type"])
                 example = arg.get_random_example_value()
                 real_python_type = eval(arg.python_type)
                 self.assertIsInstance(example, real_python_type)
@@ -36,19 +37,20 @@ class TestInvalidArgCreation(unittest.TestCase):
 
     def test_arg_primitive_name_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgPrimitive.new_arg_primitive_from_stinger({"type": "integer"})  
+            ArgPrimitive.new_arg_primitive_from_stinger({"type": "integer"})
 
     def test_arg_name_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgPrimitive.new_arg_primitive_from_stinger({"type": "integer"})  
-    
+            ArgPrimitive.new_arg_primitive_from_stinger({"type": "integer"})
+
     def test_arg_primitive_type_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgPrimitive.new_arg_primitive_from_stinger({"name": "foo"})  
+            ArgPrimitive.new_arg_primitive_from_stinger({"name": "foo"})
 
     def test_arg_type_missing(self):
         with self.assertRaises(InvalidStingerStructure):
-            ArgPrimitive.new_arg_primitive_from_stinger({"name": "foo"})  
+            ArgPrimitive.new_arg_primitive_from_stinger({"name": "foo"})
+
 
 class TestPythonTypes(unittest.TestCase):
 
