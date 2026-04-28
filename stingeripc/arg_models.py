@@ -5,15 +5,17 @@ from abc import abstractmethod
 from copy import copy
 from typing import Any, Optional, Mapping, TYPE_CHECKING
 
-from stevedore import ExtensionManager
 from jacobsjinjatoo import stringmanip
+from pydantic import BaseModel, Field, ConfigDict
 
 from stingeripc.config import StingerConfig
 from .args import ArgType, ArgPrimitiveType
 from .exceptions import InvalidStingerStructure
+from .lang_symb import LanguageSymbolMixin
 
 if TYPE_CHECKING:
-    from stingeripc.components import InterfaceEnum, InterfaceStruct, StingerSpec
+    from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
+    from stingeripc.components import StingerSpec
 
 YamlArg = Mapping[str, str | bool]
 YamlArgList = list[YamlArg]
@@ -25,67 +27,21 @@ YamlIfaceProperty = dict[str, str | bool | YamlArgList]
 RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
 
 
-class LanguageSymbolMixin:
-    """ When this class is provided as a mixin to a child class, it allows the child class to search for plugins that can provide language-specific symbols for the child class.
-    
-    Plugins are registered by providing a `project.entry-points."stinger_symbols"` entry in `pyproject.toml`.  Plugins have a name/domain that is used to identify the language.
-    """
-
-    def __init__(self, config: StingerConfig|None = None):
-        """ The ExtensionManager searches for all `stinger_symbols` plugins.  For each discovered plugin, it invokes the plugin's `for_model`
-        method to determine a symbol-providing class to attached to the child class (if any).  The symbol-providing class is then attached 
-        as an attribute to the child class, with the attribute name equal to the plugin's name/domain.  
-        """
-        mgr: ExtensionManager = ExtensionManager(
-            namespace="stinger_symbols",
-            invoke_on_load=True,
-            invoke_kwds={"config": config},
-        )
-        for ext in mgr:
-            domain = ext.name
-            if ext.obj is not None:
-                symbols = ext.obj.for_model(self.__class__.__name__, self)
-                if symbols is not None:
-                    setattr(self, domain, symbols)
-
-class Arg:
+class Arg(BaseModel):
     """Represents an argument to a method, signal, or property.  This is the base class for all argument types."""
+    model_config = ConfigDict(extra="allow")
+    name:str  = Field(..., description="The name of the argument")
+    description: str|None = Field(None, description="A description of the argument")
+    optional: bool = Field(default=False, description="Whether the argument is optional")
+    arg_type: ArgType = Field(ArgType.UNKNOWN, description="The type of the argument")
 
-    def __init__(self, name: str, description: Optional[str] = None):
-        self._name = name
-        self._description = description.strip() if description else None
-        self._default_value = None
-        self._type: ArgType = ArgType.UNKNOWN
-        self._optional: bool = False
-
-    def set_description(self, description: str) -> Arg:
-        self._description = description.strip()
-        return self
-
-    def try_set_description_from_spec(self, spec: Mapping[str, Any]) -> Arg:
+    def try_set_description_from_spec(self, spec: Mapping[str, Any]) -> "Arg":
         if "description" in spec and isinstance(spec["description"], str):
-            self.set_description(spec["description"])
+            self.description = spec["description"].strip()
         return self
 
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def arg_type(self) -> ArgType:
-        return self._type
-
-    @property
-    def description(self) -> str | None:
-        return self._description
-
-    @property
-    def optional(self) -> bool:
-        return self._optional
-
-    @optional.setter
-    def optional(self, value: bool):
-        self._optional = value
+    def __str__(self) -> str:
+        return repr(self)
 
     @classmethod
     def new_arg_from_stinger(
@@ -131,7 +87,7 @@ class Arg:
                     f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums"
                 )
             enum_arg = ArgEnum(
-                spec["name"], stinger_spec.get_interface_enum(spec["enumName"])
+                name=spec["name"], enum=stinger_spec.get_interface_enum(spec["enumName"])
             )
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
@@ -150,7 +106,7 @@ class Arg:
                     f"Struct arg '{spec["structName"]}' was not found in the list of stinger spec structs"
                 )
             st_arg = ArgStruct(
-                spec["name"], stinger_spec.structs[spec["structName"]]
+                name=spec["name"], interface_struct=stinger_spec.structs[spec["structName"]]
             )
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
@@ -160,7 +116,7 @@ class Arg:
             return st_arg
         
         if spec["type"] == "datetime":
-            dt_arg = ArgDateTime(spec["name"])
+            dt_arg = ArgDateTime(name=spec["name"])
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
@@ -169,7 +125,7 @@ class Arg:
             return dt_arg
 
         if spec["type"] == "duration":
-            dur_arg = ArgDuration(spec["name"])
+            dur_arg = ArgDuration(name=spec["name"])
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
@@ -178,7 +134,7 @@ class Arg:
             return dur_arg
         
         if spec["type"] == "binary":
-            bin_arg = ArgBinary(spec["name"])
+            bin_arg = ArgBinary(name=spec["name"])
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
@@ -194,7 +150,7 @@ class Arg:
                 raise InvalidStingerStructure("'itemType' in arg structure must be a dict")
             element_arg_spec["name"] = "name_not_used_in_array_element"
             element_arg = Arg.new_arg_from_stinger(element_arg_spec, stinger_spec)
-            array_arg = ArgArray(spec["name"], element_arg)
+            array_arg = ArgArray(name=spec["name"], element=element_arg)
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
@@ -209,31 +165,26 @@ class Arg:
         pass
 
 
-class ArgEnum(Arg, LanguageSymbolMixin):
+class ArgEnum(Arg):
     
-    def __init__(self, name: str, enum: InterfaceEnum, description: Optional[str] = None):
-        Arg.__init__(self, name, description)
-        LanguageSymbolMixin.__init__(self)
-        self._enum = enum
-        self._type = ArgType.ENUM
+    enum: InterfaceEnum = Field(..., description="The InterfaceEnum that restricts the values this ArgEnum represents.")
+    arg_type: ArgType = Field(ArgType.ENUM, description="The type of the argument, which is 'enum' for this class")
 
-    @property
-    def enum(self) -> InterfaceEnum:
-        return self._enum
-
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
     def get_random_example_value(self, lang="python", seed: int = 2) -> str:
         random_state = random.getstate()
         random.seed(seed)
-        random_enum_item = random.choice(self._enum.items)
+        random_enum_item = random.choice(self.enum.items)
         if lang == "python":
-            retval = f"{self._enum.class_name}.{stringmanip.const_case(random_enum_item.name) }"
+            retval = f"{self.enum.class_name}.{stringmanip.const_case(random_enum_item.name) }"
         elif lang == "c++":
-            retval = f"{self._enum.class_name}::{stringmanip.const_case(random_enum_item.name)}"
+            retval = f"{self.enum.class_name}::{stringmanip.const_case(random_enum_item.name)}"
         elif lang == "rust":
             if self.optional:
-                retval = f"Some({self._enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)})"
+                retval = f"Some({self.enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)})"
             else:
-                retval = f"{self._enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)}"
+                retval = f"{self.enum.class_name}::{stringmanip.upper_camel_case(random_enum_item.name)}"
         elif lang == "json":
             retval = str(random_enum_item.integer)
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
@@ -244,34 +195,29 @@ class ArgEnum(Arg, LanguageSymbolMixin):
         return retval
 
     def __repr__(self) -> str:
-        return f"<ArgEnum name={self._name}>"
+        return f"<ArgEnum name={self.name}>"
 
 
-class ArgPrimitive(Arg, LanguageSymbolMixin):
+class ArgPrimitive(Arg):
     
-    def __init__(
-        self, name: str, arg_type: ArgPrimitiveType, description: Optional[str] = None
-    ):
-        Arg.__init__(self, name, description)
-        LanguageSymbolMixin.__init__(self)
-        self._arg_type = arg_type
-        self._type = ArgType.PRIMITIVE
+    arg_type: ArgType = Field(ArgType.PRIMITIVE, description="The type of the argument, which is 'primitive' for this class")
+    primitive_type: ArgPrimitiveType = Field(..., description="The specific primitive type that this argument represents (e.g. boolean, integer, float, string)")
+
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
+
 
     @property
     def type(self) -> ArgPrimitiveType:
-        return self._arg_type
-
-    @property
-    def primitive_type(self) -> ArgPrimitiveType:
-        return self._arg_type
+        return self.primitive_type
 
     @property
     def protobuf_type(self) -> str:
-        return ArgPrimitiveType.to_protobuf_type(self._arg_type)
+        return ArgPrimitiveType.to_protobuf_type(self.primitive_type)
 
     @property
     def json_type(self) -> str:
-        return ArgPrimitiveType.to_json_type(self._arg_type)
+        return ArgPrimitiveType.to_json_type(self.primitive_type)
 
     def get_random_example_value(
         self, lang="python", seed: int = 2
@@ -279,15 +225,15 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
         random_state = random.getstate()
         random.seed(seed)
         retval: str | float | int | bool | None = None
-        if self._arg_type == ArgPrimitiveType.BOOLEAN:
+        if self.primitive_type == ArgPrimitiveType.BOOLEAN:
             retval = random.choice([True, False])
             if lang != "python":
                 retval = str(retval).lower()
-        elif self._arg_type == ArgPrimitiveType.FLOAT:
+        elif self.primitive_type == ArgPrimitiveType.FLOAT:
             retval = random.choice([3.14, 1.0, 2.5, 97.9, 1.53])
-        elif self._arg_type == ArgPrimitiveType.INTEGER:
+        elif self.primitive_type == ArgPrimitiveType.INTEGER:
             retval = random.choice([42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955])
-        elif self._arg_type == ArgPrimitiveType.STRING:
+        elif self.primitive_type == ArgPrimitiveType.STRING:
             retval = random.choice(
                 ['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"', '"bear"', '"root beer"']
             )
@@ -301,7 +247,7 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
         return retval
 
     def __repr__(self) -> str:
-        return f"<ArgPrimitive name={self._name} type={ArgPrimitiveType.to_python_type(self.type)}>"
+        return f"<ArgPrimitive name={self.name} type={ArgPrimitiveType.to_python_type(self.primitive_type)}>"
 
     @classmethod
     def new_arg_primitive_from_stinger(
@@ -317,35 +263,26 @@ class ArgPrimitive(Arg, LanguageSymbolMixin):
             raise InvalidStingerStructure("'name' in arg structure must be a string")
 
         arg_primitive_type = ArgPrimitiveType.from_string(arg_spec["type"])
-        arg: ArgPrimitive = cls(name=arg_spec["name"], arg_type=arg_primitive_type)
+        arg: ArgPrimitive = cls(name=arg_spec["name"], primitive_type=arg_primitive_type)
 
         arg.try_set_description_from_spec(arg_spec)
         return arg
 
 
-class ArgStruct(Arg, LanguageSymbolMixin):
+class ArgStruct(Arg):
 
-    def __init__(self, name: str, iface_struct: InterfaceStruct):
-        Arg.__init__(self, name)
-        LanguageSymbolMixin.__init__(self)
-        from stingeripc.components import InterfaceStruct as _InterfaceStruct
-        assert isinstance(
-            iface_struct, _InterfaceStruct
-        ), f"Passed {iface_struct=} is type {type(iface_struct)} which is not InterfaceStruct"
-        self._interface_struct: InterfaceStruct = iface_struct
-        self._type = ArgType.STRUCT
+    interface_struct: InterfaceStruct = Field(..., description="The InterfaceStruct that defines the structure used for this argument.")
+    arg_type: ArgType = Field(ArgType.STRUCT, description="The type of the argument, which is 'struct' for this class")
 
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
     @property
     def struct(self) -> InterfaceStruct:
-        return self._interface_struct
-
-    @property
-    def interface_struct(self) -> InterfaceStruct:
-        return self._interface_struct
+        return self.interface_struct
 
     @property
     def members(self) -> list[Arg]:
-        return self._interface_struct.members
+        return self.interface_struct.members
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         # Build a dict of example values keyed appropriately depending on language.
@@ -364,11 +301,11 @@ class ArgStruct(Arg, LanguageSymbolMixin):
             return self.cpp.type + "{" + ", ".join(example_list.values()) + "}"  # type: ignore[attr-defined]
         elif lang == "python":
             init_list = ", ".join([f"{k}={v}" for k, v in example_list.items()])
-            return f"{self._interface_struct.python.type}({init_list})"  # type: ignore[attr-defined]
+            return f"{self.interface_struct.python.type}({init_list})"  # type: ignore[attr-defined]
         elif lang == "rust":
             return "%s%s {%s}%s" % (
                 "Some(" if self.optional else "",
-                self._interface_struct.rust.type,  # type: ignore[attr-defined]
+                self.interface_struct.rust.type,  # type: ignore[attr-defined]
                 ", ".join([f"{k}: {v}" for k, v in example_list.items()]),
                 ")" if self.optional else "",
             )
@@ -382,14 +319,15 @@ class ArgStruct(Arg, LanguageSymbolMixin):
         return f"<ArgStruct name={self.name}>"
 
     def __repr__(self):
-        return f"ArgStruct(name={self.name}, iface_struct={self._interface_struct})"
+        return f"ArgStruct(name={self.name}, iface_struct={self.interface_struct})"
 
-class ArgDateTime(Arg, LanguageSymbolMixin):
+class ArgDateTime(Arg):
     
-    def __init__(self, name: str):
-        Arg.__init__(self, name)
-        LanguageSymbolMixin.__init__(self)
-        self._type = ArgType.DATETIME
+    arg_type: ArgType = Field(ArgType.DATETIME, description="The type of the argument, which is 'datetime' for this class")
+
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
+
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":
@@ -414,12 +352,12 @@ class ArgDateTime(Arg, LanguageSymbolMixin):
     def __repr__(self):
         return f"ArgDateTime(name={self.name})"
 
-class ArgDuration(Arg, LanguageSymbolMixin):
-    
-    def __init__(self, name: str):
-        Arg.__init__(self, name)
-        LanguageSymbolMixin.__init__(self)
-        self._type = ArgType.DURATION
+class ArgDuration(Arg):
+    arg_type: ArgType = Field(ArgType.DURATION, description="The type of the argument, which is 'duration' for this class")
+
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
+
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         random_state = random.getstate()
@@ -454,12 +392,14 @@ class ArgDuration(Arg, LanguageSymbolMixin):
         return f"ArgDuration(name={self.name})"
     
 
-class ArgBinary(Arg, LanguageSymbolMixin):
+class ArgBinary(Arg):
     
-    def __init__(self, name: str):
-        Arg.__init__(self, name)
-        LanguageSymbolMixin.__init__(self)
-        self._type = ArgType.BINARY
+    arg_type: ArgType = Field(ArgType.BINARY, description="The type of the argument, which is 'binary' for this class")
+
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
+
+
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":
@@ -487,17 +427,14 @@ class ArgBinary(Arg, LanguageSymbolMixin):
         return f"ArgBinary(name={self.name})"
     
 
-class ArgArray(Arg, LanguageSymbolMixin):
+class ArgArray(Arg):
     
-    def __init__(self, name: str, element_type: Arg):
-        Arg.__init__(self, name)
-        LanguageSymbolMixin.__init__(self)
-        self._element = element_type
-        self._type = ArgType.ARRAY
+    element: Arg = Field(..., description="The type of the elements in the array")
+    arg_type: ArgType = Field(ArgType.ARRAY, description="The type of the argument, which is 'array' for this class")
 
-    @property
-    def element(self) -> Arg:
-        return self._element
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
+
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         example_value = self.element.get_random_example_value(lang, seed=seed)

@@ -4,7 +4,7 @@ import unittest
 
 class TestEnumCreateManually(unittest.TestCase):
     def setUp(self):
-        self.enum = InterfaceEnum("bread")
+        self.enum = InterfaceEnum(name="bread")
         self.enum.add_item("pumpernickel")
         self.enum.add_item("whole wheat")
         self.enum.add_item("french")

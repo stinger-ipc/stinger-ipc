@@ -16,7 +16,6 @@ from .exceptions import InvalidStingerStructure, InvalidConfiguration
 from jacobsjinjatoo import stringmanip
 from pydantic import BaseModel
 from stingeripc.arg_models import (
-    LanguageSymbolMixin,
     YamlArg,
     YamlArgList,
     YamlIfaceEnum,
@@ -32,6 +31,7 @@ from stingeripc.arg_models import (
     ArgBinary,
     ArgArray,
 )
+from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
 
 
 
@@ -65,147 +65,10 @@ class InterfaceComponent:
 
 
 
-
-
-class InterfaceEnum(LanguageSymbolMixin):
-
-    @dataclass
-    class EnumItem:
-        name: str
-        integer: int
-        description: Optional[str] = None
-
-    def __init__(self, name: str):
-        LanguageSymbolMixin.__init__(self)
-        self._name = name
-        self._items: list[InterfaceEnum.EnumItem] = []
-        self._documentation: Optional[str] = None
-
-    def add_item(self, value: str, integer: Optional[int] = None, description: Optional[str] = None):
-        integer_value = integer if integer is not None else ((max([i.integer for i in self._items]) + 1) if len(self._items) > 0 else 1)
-        item = InterfaceEnum.EnumItem(name=value, integer=integer_value, description=description)
-        self._items.append(item)
-
-    def has_value(self, integer: int) -> bool:
-        for item in self._items:
-            if item.integer == integer:
-                return True
-        return False
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def documentation(self) -> str | None:
-        return self._documentation
-
-    @property
-    def class_name(self):
-        return stringmanip.upper_camel_case(self.name)
-
-    @property
-    def items(self) -> list[EnumItem]:
-        if self.has_value(0) and self._items[0].integer != 0:
-            # Rearrange so that the item with integer value 0 is first. This is because .proto files require an initial 0-value.
-            rearranged_items = [item for item in self._items if item.integer == 0]
-            rearranged_items.extend([item for item in self._items if item.integer != 0])
-            return rearranged_items
-        else:
-            return self._items
-
-    @classmethod
-    def new_enum_from_stinger(cls, name, enum_spec: YamlIfaceEnum) -> InterfaceEnum:
-        ie = cls(name)
-        for enum_obj in enum_spec.get("values", []):
-            assert isinstance(enum_obj, dict), f"Enum values must be a dicts."
-            if "name" in enum_obj and isinstance(enum_obj["name"], str):
-                value_description = enum_obj.get("description", None)
-                if value_description is not None and not isinstance(value_description, str):
-                    raise InvalidStingerStructure(
-                        f"InterfaceEnum '{name}' item descriptions must be strings."
-                    )
-                value_integer = enum_obj.get("value", None)
-                if value_integer is not None and not isinstance(value_integer, int):
-                    raise InvalidStingerStructure(
-                        f"InterfaceEnum '{name}' item values must be integers."
-                    )
-                if value_integer is not None and ie.has_value(value_integer):
-                    raise InvalidStingerStructure(
-                        f"InterfaceEnum '{name}' already has an item with value {value_integer}."
-                    )
-                ie.add_item(enum_obj["name"], integer=value_integer, description=value_description)
-            else:
-                raise InvalidStingerStructure(
-                    f"InterfaceEnum '{name}' items must have string names."
-                )
-        doc = enum_spec.get("documentation", None)
-        if doc is not None and isinstance(doc, str):
-            ie._documentation = doc
-        return ie
-
-
-class InterfaceStruct(LanguageSymbolMixin):
-
-    def __init__(self, name: str):
-        LanguageSymbolMixin.__init__(self)
-        self._name = name
-        self._members: list[Arg] = []
-        self._documentation: Optional[str] = None
-
-    def add_member(self, arg: Arg):
-        self._members.append(arg)
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def documentation(self) -> str | None:
-        return self._documentation
-
-    @property
-    def class_name(self):
-        return stringmanip.upper_camel_case(self.name)
-
-    @property
-    def values(self) -> list[Arg]:
-        return self._members
-
-    @property
-    def members(self) -> list[Arg]:
-        return self._members
-
-    @classmethod
-    def new_struct_from_stinger(
-        cls,
-        name,
-        spec: dict[str, str | list[dict[str, str]]],
-        stinger_spec: StingerSpec,
-    ) -> InterfaceStruct:
-        istruct = cls(name)
-        for memb in spec.get("members", []):
-            if not isinstance(memb, dict):
-                raise InvalidStingerStructure("Struct members must be dicts")
-            arg = Arg.new_arg_from_stinger(memb, stinger_spec=stinger_spec)
-            istruct.add_member(arg)
-        documentation = spec.get("documentation", None)
-        if documentation is not None and not isinstance(documentation, str):
-            raise InvalidStingerStructure("Struct documentation must be a string")
-        istruct._documentation = documentation
-        return istruct
-
-    def __str__(self) -> str:
-        return f"<InterfaceStruct members={[m.name for m in self.members]}>"
-
-    def __repr__(self):
-        return f"InterfaceStruct(name={self.name})"
-
-
-class StingerSpec(LanguageSymbolMixin):
+class StingerSpec:
 
     def __init__(self, interface: dict[str, Any], config: StingerConfig):
-        LanguageSymbolMixin.__init__(self, config)
+        LanguageSymbolMixin.enhance(self, config)
         self._config = config
         try:
             self._name: str = interface["name"]

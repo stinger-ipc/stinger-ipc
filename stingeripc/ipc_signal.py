@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from .components import InterfaceComponent, Arg, LanguageSymbolMixin
+from .components import InterfaceComponent, Arg
+from .lang_symb import LanguageSymbolMixin
 from .exceptions import InvalidStingerStructure
 from . import topic_util
 
@@ -10,11 +11,11 @@ if TYPE_CHECKING:
     from .components import StingerSpec
 
 
-class IpcSignal(InterfaceComponent, LanguageSymbolMixin):
+class IpcSignal(InterfaceComponent):
 
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
-        LanguageSymbolMixin.__init__(self, self._config)
+        LanguageSymbolMixin.enhance(self, self._config)
         self._arg_list: list[Arg] = []
 
     def add_arg(self, arg: Arg) -> IpcSignal:
