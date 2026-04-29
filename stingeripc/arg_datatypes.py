@@ -47,8 +47,8 @@ class InterfaceEnum(BaseModel):
         LanguageSymbolMixin.enhance(self)
 
     def add_item(self, value: str, integer: Optional[int] = None, description: Optional[str] = None):
-        integer_value = integer if integer is not None else ((max([i.integer for i in self.enum_items]) + 1) if len(self.enum_items) > 0 else 1)
-        item = EnumItem(name=value, integer=integer_value, description=description)
+        integer_value = integer if integer is not None else ((max(i.integer for i in self.enum_items if i.integer is not None) + 1) if len(self.enum_items) > 0 else 1)
+        item = EnumItem(name=value, value=integer_value, description=description)
         self.enum_items.append(item)
 
     def has_value(self, integer: int) -> bool:
