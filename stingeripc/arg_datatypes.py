@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
 from jacobsjinjatoo import stringmanip
-from pydantic import BaseModel, ConfigDict, PrivateAttr
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from stingeripc.exceptions import InvalidStingerStructure
 from stingeripc.lang_symb import LanguageSymbolMixin
@@ -14,98 +13,88 @@ if TYPE_CHECKING:
     from stingeripc.components import StingerSpec
 
 
+class EnumItem(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    name: str = Field(pattern=r"^[a-zA-Z0-9_ -]+$")
+    integer: Optional[int] = Field(default=None, alias="value")
+    description: Optional[str] = None
+
+
 class InterfaceEnum(BaseModel):
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     name: str
-    _items: list = PrivateAttr(default_factory=list)
-    _documentation: Optional[str] = PrivateAttr(default=None)
+    enum_items: list[EnumItem] = Field(default_factory=list, alias="values")
+    documentation: Optional[str] = Field(default=None)
+    version: Optional[str] = Field(default=None, pattern=r"^[0-9]+(\.[0-9]+){0,2}$")
+
+    @model_validator(mode="after")
+    def _assign_and_check_integers(self) -> InterfaceEnum:
+        seen: set[int] = set()
+        next_int = 1
+        for item in self.enum_items:
+            if item.integer is None:
+                while next_int in seen:
+                    next_int += 1
+                item.integer = next_int
+            if item.integer in seen:
+                raise ValueError(f"duplicate integer value {item.integer}")
+            seen.add(item.integer)
+            next_int = item.integer + 1
+        return self
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
 
-    @dataclass
-    class EnumItem:
-        name: str
-        integer: int
-        description: Optional[str] = None
-
     def add_item(self, value: str, integer: Optional[int] = None, description: Optional[str] = None):
-        integer_value = integer if integer is not None else ((max([i.integer for i in self._items]) + 1) if len(self._items) > 0 else 1)
-        item = InterfaceEnum.EnumItem(name=value, integer=integer_value, description=description)
-        self._items.append(item)
+        integer_value = integer if integer is not None else ((max([i.integer for i in self.enum_items]) + 1) if len(self.enum_items) > 0 else 1)
+        item = EnumItem(name=value, integer=integer_value, description=description)
+        self.enum_items.append(item)
 
     def has_value(self, integer: int) -> bool:
-        for item in self._items:
+        for item in self.enum_items:
             if item.integer == integer:
                 return True
         return False
-
-    @property
-    def documentation(self) -> str | None:
-        return self._documentation
 
     @property
     def class_name(self):
         return stringmanip.upper_camel_case(self.name)
 
     @property
-    def items(self) -> list[InterfaceEnum.EnumItem]:
-        if self.has_value(0) and self._items[0].integer != 0:
+    def items(self) -> list[EnumItem]:
+        if self.has_value(0) and self.enum_items[0].integer != 0:
             # Rearrange so that the item with integer value 0 is first. This is because .proto files require an initial 0-value.
-            rearranged_items = [item for item in self._items if item.integer == 0]
-            rearranged_items.extend([item for item in self._items if item.integer != 0])
+            rearranged_items = [item for item in self.enum_items if item.integer == 0]
+            rearranged_items.extend([item for item in self.enum_items if item.integer != 0])
             return rearranged_items
         else:
-            return self._items
+            return self.enum_items
 
     @classmethod
     def new_enum_from_stinger(cls, name, enum_spec: YamlIfaceEnum) -> InterfaceEnum:
-        ie = cls(name=name)
-        for enum_obj in enum_spec.get("values", []):
-            assert isinstance(enum_obj, dict), f"Enum values must be a dicts."
-            if "name" in enum_obj and isinstance(enum_obj["name"], str):
-                value_description = enum_obj.get("description", None)
-                if value_description is not None and not isinstance(value_description, str):
-                    raise InvalidStingerStructure(
-                        f"InterfaceEnum '{name}' item descriptions must be strings."
-                    )
-                value_integer = enum_obj.get("value", None)
-                if value_integer is not None and not isinstance(value_integer, int):
-                    raise InvalidStingerStructure(
-                        f"InterfaceEnum '{name}' item values must be integers."
-                    )
-                if value_integer is not None and ie.has_value(value_integer):
-                    raise InvalidStingerStructure(
-                        f"InterfaceEnum '{name}' already has an item with value {value_integer}."
-                    )
-                ie.add_item(enum_obj["name"], integer=value_integer, description=value_description)
-            else:
-                raise InvalidStingerStructure(
-                    f"InterfaceEnum '{name}' items must have string names."
-                )
-        doc = enum_spec.get("documentation", None)
-        if doc is not None and isinstance(doc, str):
-            ie._documentation = doc
-        return ie
+        if "values" not in enum_spec:
+            raise InvalidStingerStructure(f"InterfaceEnum '{name}' spec is missing required 'values'")
+        if len(enum_spec["values"]) == 0:
+            raise InvalidStingerStructure(f"InterfaceEnum '{name}' must have at least one value")
+        try:
+            return cls.model_validate({"name": name, **enum_spec})
+        except ValidationError as e:
+            raise InvalidStingerStructure(f"InterfaceEnum '{name}' spec is invalid: {e}") from e
 
 
 class InterfaceStruct(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     name: str
-    _members: list[Arg] = PrivateAttr(default_factory=list)
-    _documentation: Optional[str] = PrivateAttr(default=None)
+    members: list[Arg] = Field(default_factory=list)
+    documentation: Optional[str] = Field(default=None)
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
 
     def add_member(self, arg: Arg):
-        self._members.append(arg)
-
-    @property
-    def documentation(self) -> str | None:
-        return self._documentation
+        self.members.append(arg)
 
     @property
     def class_name(self):
@@ -113,11 +102,7 @@ class InterfaceStruct(BaseModel):
 
     @property
     def values(self) -> list[Arg]:
-        return self._members
-
-    @property
-    def members(self) -> list[Arg]:
-        return self._members
+        return self.members
 
     @classmethod
     def new_struct_from_stinger(
@@ -135,7 +120,7 @@ class InterfaceStruct(BaseModel):
         documentation = spec.get("documentation", None)
         if documentation is not None and not isinstance(documentation, str):
             raise InvalidStingerStructure("Struct documentation must be a string")
-        istruct._documentation = documentation
+        istruct.documentation = documentation
         return istruct
 
     def __str__(self) -> str:
