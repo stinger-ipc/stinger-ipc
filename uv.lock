@@ -21,6 +21,19 @@ wheels = [
 ]
 
 [[package]]
+name = "asyncapi3"
+version = "0.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyaml" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/56/01/23e1fd7a52db028a08cfb9a4d711754768909fbafd93d943e47558cb5c9b/asyncapi3-0.0.2.tar.gz", hash = "sha256:879ea8494a6ff9c0aa3b1ec9f9532f96392a9a826e664fcd9f385215d5246738", size = 45244, upload-time = "2026-01-14T14:30:51.76Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b4/97/0602d13cc5a94cd9211317f885345144370f80315aa3d6668ab42c3313ac/asyncapi3-0.0.2-py3-none-any.whl", hash = "sha256:eacd449e38524db41d263fcb7b88407e2efb384e2610ad89d7d3591c618f7db4", size = 63618, upload-time = "2026-01-14T14:30:50.606Z" },
+]
+
+[[package]]
 name = "black"
 version = "26.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -430,6 +443,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pyaml"
+version = "26.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/38/fb/2b9590512a9d7763620d87171c7531d5295678ce96e57393614b91da8998/pyaml-26.2.1.tar.gz", hash = "sha256:489dd82997235d4cfcf76a6287fce2f075487d77a6567c271e8d790583690c68", size = 30653, upload-time = "2026-02-06T13:49:30.769Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5d/f3/1f8651f23101e6fae41d0d504414c9722b0140bf0fc6acf87ac52e18aa41/pyaml-26.2.1-py3-none-any.whl", hash = "sha256:6261c2f0a2f33245286c794ad6ec234be33a73d2b05427079fd343e2812a87cf", size = 27211, upload-time = "2026-02-06T13:49:29.652Z" },
+]
+
+[[package]]
 name = "pydantic"
 version = "2.12.5"
 source = { registry = "https://pypi.org/simple" }
@@ -442,18 +467,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/69/44/36f1a6e523abc58ae5f928898e4aca2e0ea509b5aa6f6f392a5d882be928/pydantic-2.12.5.tar.gz", hash = "sha256:4d351024c75c0f085a9febbb665ce8c0c6ec5d30e903bdb6394b7ede26aebb49", size = 821591, upload-time = "2025-11-26T15:11:46.471Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5a/87/b70ad306ebb6f9b585f114d0ac2137d792b48be34d732d60e597c2f8465a/pydantic-2.12.5-py3-none-any.whl", hash = "sha256:e561593fccf61e8a20fc46dfc2dfe075b8be7d0188df33f221ad1f0139180f9d", size = 463580, upload-time = "2025-11-26T15:11:44.605Z" },
-]
-
-[[package]]
-name = "pydantic-asyncapi"
-version = "0.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pydantic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/8c/2c/f8c2e761e7204f245ae364486c6cd0ddbe0e61ef5b6c1e31ac6c07ad500d/pydantic_asyncapi-0.3.1.tar.gz", hash = "sha256:12a1dae308e58a7620a81740339b4165f0f9c5f435da992a9073fa68fcd50326", size = 8952, upload-time = "2026-02-25T14:20:01.008Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/22/bc/02e8561de9008e2631496e09bada04136a88a6125b917e935960c47b802b/pydantic_asyncapi-0.3.1-py3-none-any.whl", hash = "sha256:4f8f982460778e2cd6d94f898da345034546259e83f0005f3573406a03aac0f0", size = 15806, upload-time = "2026-02-25T14:19:59.781Z" },
 ]
 
 [[package]]
@@ -694,12 +707,12 @@ name = "stinger-ipc"
 version = "0.8.7b0"
 source = { editable = "." }
 dependencies = [
+    { name = "asyncapi3" },
     { name = "go-task-bin" },
     { name = "jacobs-jinja-too" },
     { name = "jsonschema-rs" },
     { name = "packaging" },
     { name = "pydantic" },
-    { name = "pydantic-asyncapi" },
     { name = "pyyaml" },
     { name = "ruamel-yaml" },
     { name = "semantic-version" },
@@ -721,12 +734,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "asyncapi3", specifier = ">=0.0.2" },
     { name = "go-task-bin", specifier = ">=3.46.2" },
     { name = "jacobs-jinja-too", specifier = ">=0.2.12" },
     { name = "jsonschema-rs", specifier = ">=0.34.0" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "pydantic", specifier = ">=2.11.7" },
-    { name = "pydantic-asyncapi", specifier = ">=0.3.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "ruamel-yaml", specifier = ">=0.18.14" },
     { name = "semantic-version", specifier = ">=2.10.0" },

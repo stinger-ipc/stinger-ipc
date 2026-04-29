@@ -9,12 +9,12 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
+    "asyncapi3>=0.0.2",
     "go-task-bin>=3.46.2",
     "jacobs-jinja-too>=0.2.12",
     "jsonschema-rs>=0.34.0",
     "packaging>=25.0",
     "pydantic>=2.11.7",
-    "pydantic-asyncapi>=0.3.0",
     "pyyaml>=6.0.2",
     "ruamel-yaml>=0.18.14",
     "semantic-version>=2.10.0",

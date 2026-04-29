@@ -14,6 +14,7 @@ import yamlloader
 from stingeripc.interface import StingerInterface
 from stingeripc.config import StingerConfig
 from stingeripc import filtering
+from stingeripc.asyncapi import stinger_to_asyncapi
 
 from . import generic_generator
 
@@ -56,6 +57,57 @@ def generate(
     if template_pkg or template_path:
         generic_generator.main(input_file, output_dir, language, template_pkg, template_path, consumer, config)
         print(f"Generation from custom templates completed.")
+
+@app.command()
+def asyncapi(
+    input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)],
+    output_dir: Annotated[Path, typer.Argument(..., file_okay=False, dir_okay=True, writable=True, readable=True)],
+    consumer: Annotated[Optional[str], typer.Option("--consumer", help="Consumer name/identifier")] = None,
+    config: Annotated[list[Path], typer.Option("--config", help="TOML configuration file(s) - later files override earlier ones", exists=True, file_okay=True, dir_okay=False, readable=True)] = [],
+):
+    """Generate an AsyncAPI specification from a Stinger interface.
+
+    INPUT_FILE is the .stinger.yaml file
+    OUTPUT_DIR is the directory that will receive the generated asyncapi.yaml
+    """
+    input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
+
+    config_obj = StingerConfig()
+    if config:
+        for config_file in config:
+            print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
+            file_config = load_config(config_file)
+            # Merge configs - later files override earlier ones
+            # Use model_validate to ensure nested models are properly instantiated
+            merged_dict = config_obj.model_dump(exclude_unset=True)
+            merged_dict.update(file_config.model_dump(exclude_unset=True))
+            config_obj = StingerConfig.model_validate(merged_dict)
+    assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
+    for k,v in config_obj.model_dump().items():
+        print(f"🔧{k:>10.10}: {v}")
+
+    print(f"🟢   [bold cyan]LOAD:[/bold cyan] {input_file}")
+    if consumer:
+        print(f"💠 CONSUMER {consumer}")
+        with input_file.open(mode="r") as f:
+            yaml_obj = yaml.load(f, Loader=yamlloader.ordereddict.Loader)
+            stinger_yaml = filtering.filter_by_consumer(yaml_obj, consumer)
+            stinger = StingerInterface.from_dict(stinger_yaml, config_obj)
+    else:
+        with input_file.open(mode="r") as f:
+            stinger = StingerInterface.from_yaml(f, config_obj)
+
+    result = stinger_to_asyncapi(stinger)
+
+    if not output_dir.is_dir():
+        os.makedirs(output_dir)
+
+    output_file = output_dir / "asyncapi.yaml"
+    with output_file.open("w") as f:
+        yaml.dump(result, f, default_flow_style=False, allow_unicode=True)
+
+    print(f"✅  [bold green]AsyncAPI specification written to {output_file}[/bold green]")
+
 
 @app.command()
 def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)]):

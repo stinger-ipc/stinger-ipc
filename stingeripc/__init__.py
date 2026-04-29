@@ -6,6 +6,5 @@ except PackageNotFoundError:
     __version__ = "unknown"
 
 from .interface import StingerInterface
-from .asyncapi import StingerToAsyncApi
 
-__all__ = ["StingerInterface", "StingerToAsyncApi", "__version__"]
+__all__ = ["StingerInterface", "__version__"]
