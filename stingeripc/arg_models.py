@@ -31,9 +31,9 @@ class Arg(BaseModel):
     """Represents an argument to a method, signal, or property.  This is the base class for all argument types."""
     model_config = ConfigDict(extra="allow")
     name:str  = Field(..., description="The name of the argument")
-    description: str|None = Field(None, description="A description of the argument")
+    description: str|None = Field(default=None, description="A description of the argument")
     optional: bool = Field(default=False, description="Whether the argument is optional")
-    arg_type: ArgType = Field(ArgType.UNKNOWN, description="The type of the argument")
+    arg_type: ArgType = Field(default=ArgType.UNKNOWN, description="The type of the argument")
 
     def try_set_description_from_spec(self, spec: Mapping[str, Any]) -> "Arg":
         if "description" in spec and isinstance(spec["description"], str):
@@ -168,7 +168,7 @@ class Arg(BaseModel):
 class ArgEnum(Arg):
     
     enum: InterfaceEnum = Field(..., description="The InterfaceEnum that restricts the values this ArgEnum represents.")
-    arg_type: ArgType = Field(ArgType.ENUM, description="The type of the argument, which is 'enum' for this class")
+    arg_type: ArgType = Field(default=ArgType.ENUM, description="The type of the argument, which is 'enum' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
@@ -200,7 +200,7 @@ class ArgEnum(Arg):
 
 class ArgPrimitive(Arg):
     
-    arg_type: ArgType = Field(ArgType.PRIMITIVE, description="The type of the argument, which is 'primitive' for this class")
+    arg_type: ArgType = Field(default=ArgType.PRIMITIVE, description="The type of the argument, which is 'primitive' for this class")
     primitive_type: ArgPrimitiveType = Field(..., description="The specific primitive type that this argument represents (e.g. boolean, integer, float, string)")
 
     def model_post_init(self, __context) -> None:
@@ -272,7 +272,7 @@ class ArgPrimitive(Arg):
 class ArgStruct(Arg):
 
     interface_struct: InterfaceStruct = Field(..., description="The InterfaceStruct that defines the structure used for this argument.")
-    arg_type: ArgType = Field(ArgType.STRUCT, description="The type of the argument, which is 'struct' for this class")
+    arg_type: ArgType = Field(default=ArgType.STRUCT, description="The type of the argument, which is 'struct' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
@@ -323,7 +323,7 @@ class ArgStruct(Arg):
 
 class ArgDateTime(Arg):
     
-    arg_type: ArgType = Field(ArgType.DATETIME, description="The type of the argument, which is 'datetime' for this class")
+    arg_type: ArgType = Field(default=ArgType.DATETIME, description="The type of the argument, which is 'datetime' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
@@ -353,7 +353,7 @@ class ArgDateTime(Arg):
         return f"ArgDateTime(name={self.name})"
 
 class ArgDuration(Arg):
-    arg_type: ArgType = Field(ArgType.DURATION, description="The type of the argument, which is 'duration' for this class")
+    arg_type: ArgType = Field(default=ArgType.DURATION, description="The type of the argument, which is 'duration' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
@@ -394,7 +394,7 @@ class ArgDuration(Arg):
 
 class ArgBinary(Arg):
     
-    arg_type: ArgType = Field(ArgType.BINARY, description="The type of the argument, which is 'binary' for this class")
+    arg_type: ArgType = Field(default=ArgType.BINARY, description="The type of the argument, which is 'binary' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
@@ -430,7 +430,7 @@ class ArgBinary(Arg):
 class ArgArray(Arg):
     
     element: Arg = Field(..., description="The type of the elements in the array")
-    arg_type: ArgType = Field(ArgType.ARRAY, description="The type of the argument, which is 'array' for this class")
+    arg_type: ArgType = Field(default=ArgType.ARRAY, description="The type of the argument, which is 'array' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
