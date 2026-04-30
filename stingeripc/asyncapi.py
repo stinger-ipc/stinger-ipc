@@ -12,11 +12,21 @@ from asyncapi3 import models
 from asyncapi3.models import Schema
 from asyncapi3.models.components import Schemas
 
+from asyncapi3.models.bindings import (
+    MQTTChannelBindings,
+    MQTTOperationBindings,
+    MQTTMessageBindings,
+    ChannelBindingsObject,
+    OperationBindingsObject,
+    MessageBindingsObject,
+)
+
 from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
-from stingeripc.arg_models import Arg
+from stingeripc.arg_models import Arg, ArgEnum, ArgStruct, ArgPrimitive
+from stingeripc.ipc_method import IpcMethod
 from stingeripc.ipc_signal import IpcSignal
 from stingeripc.components import StingerSpec
-
+from stingeripc.args import ArgType
 
 def _primitive_type_to_schema(type_str: str) -> dict:
     type_map = {
@@ -67,22 +77,25 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
         kwargs["description"] = ist.documentation
     return Schema(**kwargs)
 
+def _arg_schema(arg: Arg) -> dict:
+    if arg.arg_type == ArgType.ENUM:
+        assert isinstance(arg, ArgEnum)
+        return {"$ref": f"#/components/schemas/{arg.enum.name}"}
+    elif arg.arg_type == ArgType.STRUCT:
+        assert isinstance(arg, ArgStruct)
+        return {"$ref": f"#/components/schemas/{arg.interface_struct.name}"}
+    elif arg.arg_type == ArgType.PRIMITIVE:
+        assert isinstance(arg, ArgPrimitive)
+        return _primitive_type_to_schema(arg.primitive_type.name.lower())
+    return {"type": "string"}
+
+def _parameters_for_address(address: str) -> models.channel.Parameters:
+    params: dict = {}
+    if '{service_id}' in address:
+        params["service_id"] = {'$ref': '#/components/parameters/service_id'}
+    return models.channel.Parameters(root=params)
 
 def _signal_to_channel(signal: IpcSignal) -> models.Channel:
-    from stingeripc.arg_models import ArgEnum, ArgStruct, ArgPrimitive
-    from stingeripc.args import ArgType
-
-    def _arg_schema(arg: Arg) -> dict:
-        if arg.arg_type == ArgType.ENUM:
-            assert isinstance(arg, ArgEnum)
-            return {"$ref": f"#/components/schemas/{arg.enum.name}"}
-        elif arg.arg_type == ArgType.STRUCT:
-            assert isinstance(arg, ArgStruct)
-            return {"$ref": f"#/components/schemas/{arg.interface_struct.name}"}
-        elif arg.arg_type == ArgType.PRIMITIVE:
-            assert isinstance(arg, ArgPrimitive)
-            return _primitive_type_to_schema(arg.primitive_type.name.lower())
-        return {"type": "string"}
 
     payload_schema = Schema(
         **{
@@ -95,16 +108,61 @@ def _signal_to_channel(signal: IpcSignal) -> models.Channel:
         name=signal.name,
         description=signal.documentation,
         payload=payload_schema,
+        bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
     )
+    address = signal.topic()
     channel = models.Channel(
-        address=signal.topic(),
+        address=address,
         description=signal.documentation,
         messages=models.message.Messages(root={signal.name: message}),
-        parameters=models.channel.Parameters(root={}),
+        parameters=_parameters_for_address(address),
     )
-    if '{service_id}' in channel.address:
-        channel.parameters.root["service_id"] = {'$ref': '#/components/parameters/service_id'}
     return channel
+
+
+def _signal_to_operation(name: str, signal: IpcSignal) -> models.Operation:
+    return models.Operation(
+        action="receive",
+        channel=models.base.Reference(ref=f"#/channels/{name}"),
+        description=signal.documentation,
+        messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
+        bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+    )
+
+
+def _method_request_to_operation(name: str, method: IpcMethod) -> models.Operation:
+    return models.Operation(
+        action="send",
+        channel=models.base.Reference(ref=f"#/channels/{name}"),
+        description=method.documentation,
+        messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
+        bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+    )
+
+
+def _method_request_to_channel(method: IpcMethod) -> models.Channel:
+    payload_schema = Schema(
+        **{
+            "type": "object",
+            "properties": {arg.name: _arg_schema(arg) for arg in method.arg_list},
+            "required": [arg.name for arg in method.arg_list if not arg.optional] or None,
+        }
+    )
+    message = models.Message(
+        name=method.name,
+        description=method.documentation,
+        payload=payload_schema,
+        bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+    )
+    address = method.request_topic()
+    channel = models.Channel(
+        address=address,
+        description=method.documentation,
+        messages=models.message.Messages(root={method.name: message}),
+        parameters=_parameters_for_address(address),
+    )
+    return channel
+
 
 
 def stinger_to_asyncapi(spec: StingerSpec) -> dict:
@@ -115,20 +173,15 @@ def stinger_to_asyncapi(spec: StingerSpec) -> dict:
     for struct_name, ist in spec.structs.items():
         schemas[struct_name] = _struct_to_schema(ist)
 
-    channels: dict[str, models.Channel] = {
-        name: _signal_to_channel(signal)
-        for name, signal in spec.signals.items()
-    }
+    channels: dict[str, models.Channel] = {}
+    operations: dict[str, models.Operation] = {}
+    for name, signal in spec.signals.items():
+        channels[name] = _signal_to_channel(signal)
+        operations[name] = _signal_to_operation(name, signal)
+    for method_name, method in spec.methods.items():
+        channels[method_name] = _method_request_to_channel(method)
+        operations[method_name] = _method_request_to_operation(method_name, method)
 
-    operations: dict[str, models.Operation] = {
-        name: models.Operation(
-            action="send",
-            channel=models.base.Reference(ref=f"#/channels/{name}"),
-            description=signal.documentation,
-            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
-        )
-        for name, signal in spec.signals.items()
-    }
 
     aa = AsyncAPI3(
         info=models.Info(
@@ -142,7 +195,7 @@ def stinger_to_asyncapi(spec: StingerSpec) -> dict:
     )
 
     aa.components.parameters = models.channel.Parameters(root={
-        "service_id": models.Parameter(description="The ID of the service/instance", location="$message.header#/service_id")
+        "service_id": models.Parameter(description="The ID of the service/instance")
     })
 
     return json.loads(aa.model_dump_json(exclude_none=True))
