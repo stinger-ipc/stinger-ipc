@@ -24,6 +24,7 @@ from asyncapi3.models.bindings import (
 from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
 from stingeripc.arg_models import Arg, ArgEnum, ArgStruct, ArgPrimitive
 from stingeripc.ipc_method import IpcMethod
+from stingeripc.ipc_property import IpcProperty
 from stingeripc.ipc_signal import IpcSignal
 from stingeripc.components import StingerSpec
 from stingeripc.args import ArgType
@@ -93,6 +94,8 @@ def _parameters_for_address(address: str) -> models.channel.Parameters:
     params: dict = {}
     if '{service_id}' in address:
         params["service_id"] = {'$ref': '#/components/parameters/service_id'}
+    if '{client_id}' in address:
+        params["client_id"] = {'$ref': '#/components/parameters/client_id'}
     return models.channel.Parameters(root=params)
 
 def _signal_to_channel(signal: IpcSignal) -> models.Channel:
@@ -140,6 +143,16 @@ def _method_request_to_operation(name: str, method: IpcMethod) -> models.Operati
     )
 
 
+def _method_response_to_operation(name: str, method: IpcMethod) -> models.Operation:
+    return models.Operation(
+        action="receive",
+        channel=models.base.Reference(ref=f"#/channels/{name}"),
+        description=method.documentation,
+        messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{method.return_value_name.replace(' ', '_')}")],
+        bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+    )
+
+
 def _method_request_to_channel(method: IpcMethod) -> models.Channel:
     payload_schema = Schema(
         **{
@@ -149,7 +162,7 @@ def _method_request_to_channel(method: IpcMethod) -> models.Channel:
         }
     )
     message = models.Message(
-        name=method.name,
+        name=f"{method.name}_request",
         description=method.documentation,
         payload=payload_schema,
         bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
@@ -158,11 +171,123 @@ def _method_request_to_channel(method: IpcMethod) -> models.Channel:
     channel = models.Channel(
         address=address,
         description=method.documentation,
-        messages=models.message.Messages(root={method.name: message}),
+        messages=models.message.Messages(root={f"{method.name}_request": message}),
         parameters=_parameters_for_address(address),
     )
     return channel
 
+
+def _method_response_to_channel(method: IpcMethod) -> models.Channel:
+    payload_schema = Schema(
+        **{
+            "type": "object",
+            "properties": {arg.name: _arg_schema(arg) for arg in method.return_arg_list},
+            "required": [arg.name for arg in method.return_arg_list if not arg.optional] or None,
+        }
+    )
+    message = models.Message(
+        name=method.return_value_name,
+        description=method.documentation,
+        payload=payload_schema,
+        bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+    )
+    address = method.response_topic()
+    response_key = method.return_value_name.replace(" ", "_")
+    channel = models.Channel(
+        address=address,
+        description=method.documentation,
+        messages=models.message.Messages(root={response_key: message}),
+        parameters=_parameters_for_address(address),
+    )
+    return channel
+
+
+def _property_payload_schema(prop: IpcProperty) -> Schema:
+    return Schema(
+        **{
+            "type": "object",
+            "properties": {arg.name: _arg_schema(arg) for arg in prop.arg_list},
+            "required": [arg.name for arg in prop.arg_list if not arg.optional] or None,
+        }
+    )
+
+
+def _property_value_to_channel(prop: IpcProperty) -> models.Channel:
+    message = models.Message(
+        name=prop.name,
+        description=prop.documentation,
+        payload=_property_payload_schema(prop),
+        bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+    )
+    address = prop.value_topic()
+    return models.Channel(
+        address=address,
+        description=prop.documentation,
+        messages=models.message.Messages(root={prop.name: message}),
+        parameters=_parameters_for_address(address),
+    )
+
+
+def _property_value_to_operation(name: str, prop: IpcProperty) -> models.Operation:
+    return models.Operation(
+        action="receive",
+        channel=models.base.Reference(ref=f"#/channels/{name}"),
+        description=prop.documentation,
+        messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{prop.name}")],
+        bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+    )
+
+
+def _property_update_request_to_channel(prop: IpcProperty) -> models.Channel:
+    message = models.Message(
+        name=prop.name,
+        description=prop.documentation,
+        payload=_property_payload_schema(prop),
+        bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+    )
+    address = prop.update_topic()
+    return models.Channel(
+        address=address,
+        description=prop.documentation,
+        messages=models.message.Messages(root={prop.name: message}),
+        parameters=_parameters_for_address(address),
+    )
+
+
+def _property_update_request_to_operation(name: str, prop: IpcProperty) -> models.Operation:
+    return models.Operation(
+        action="send",
+        channel=models.base.Reference(ref=f"#/channels/{name}"),
+        description=prop.documentation,
+        messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{prop.name}")],
+        bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+    )
+
+
+def _property_update_response_to_channel(prop: IpcProperty) -> models.Channel:
+    message = models.Message(
+        name=prop.name,
+        description=prop.documentation,
+        payload=_property_payload_schema(prop),
+        bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+    )
+    address = prop.response_topic()
+    return models.Channel(
+        address=address,
+        description=prop.documentation,
+        messages=models.message.Messages(root={prop.name: message}),
+        parameters=_parameters_for_address(address),
+    )
+
+
+def _property_update_response_to_operation(name: str, prop: IpcProperty) -> models.Operation:
+    return models.Operation(
+        action="receive",
+        channel=models.base.Reference(ref=f"#/channels/{name}"),
+        description=prop.documentation,
+        messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{prop.name}")],
+        bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+    )
 
 
 def stinger_to_asyncapi(spec: StingerSpec) -> dict:
@@ -179,8 +304,18 @@ def stinger_to_asyncapi(spec: StingerSpec) -> dict:
         channels[name] = _signal_to_channel(signal)
         operations[name] = _signal_to_operation(name, signal)
     for method_name, method in spec.methods.items():
-        channels[method_name] = _method_request_to_channel(method)
-        operations[method_name] = _method_request_to_operation(method_name, method)
+        channels[f"{method_name}_request"] = _method_request_to_channel(method)
+        operations[f"{method_name}_request"] = _method_request_to_operation(f"{method_name}_request", method)
+        channels[f"{method_name}_response"] = _method_response_to_channel(method)
+        operations[f"{method_name}_response"] = _method_response_to_operation(f"{method_name}_response", method)
+    for prop_name, prop in spec.properties.items():
+        channels[f"{prop_name}_value"] = _property_value_to_channel(prop)
+        operations[f"{prop_name}_value"] = _property_value_to_operation(f"{prop_name}_value", prop)
+        if not prop.read_only:
+            channels[f"{prop_name}_update_request"] = _property_update_request_to_channel(prop)
+            operations[f"{prop_name}_update_request"] = _property_update_request_to_operation(f"{prop_name}_update_request", prop)
+            channels[f"{prop_name}_update_response"] = _property_update_response_to_channel(prop)
+            operations[f"{prop_name}_update_response"] = _property_update_response_to_operation(f"{prop_name}_update_response", prop)
 
 
     aa = AsyncAPI3(
@@ -189,13 +324,22 @@ def stinger_to_asyncapi(spec: StingerSpec) -> dict:
             version=spec._version,
             description=spec.summary or None,
         ),
-        components=models.Components(schemas=Schemas(root=schemas) if schemas else None),
+        components=models.Components(
+            schemas=Schemas(root=schemas) if schemas else None,
+            messages=models.message.Messages(root={
+                msg_key: msg
+                for channel in channels.values()
+                if channel.messages
+                for msg_key, msg in channel.messages.root.items()
+            }) or None,
+        ),
         channels=models.Channels(root=channels) if channels else None,
         operations=models.operation.Operations(root=operations) if operations else None,
     )
 
     aa.components.parameters = models.channel.Parameters(root={
-        "service_id": models.Parameter(description="The ID of the service/instance")
+        "service_id": models.Parameter(description="The ID of the service/instance"),
+        "client_id": models.Parameter(description="The MQTT Client ID"),
     })
 
     return json.loads(aa.model_dump_json(exclude_none=True))
