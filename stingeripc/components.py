@@ -14,7 +14,7 @@ from . import topic_util
 from .lang_symb import *
 from .exceptions import InvalidStingerStructure, InvalidConfiguration
 from jacobsjinjatoo import stringmanip
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 from stingeripc.arg_models import (
     YamlArg,
     YamlArgList,
@@ -36,31 +36,28 @@ from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
 
 
 
-class InterfaceComponent:
+class InterfaceComponent(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
-    def __init__(self, name: str, root: StingerSpec):
-        self._name = name
-        self._documentation: Optional[str] = None
+    name: str
+    documentation: Optional[str] = None
+    _config: Any = PrivateAttr()
+    _root: Any = PrivateAttr()
+
+    def __init__(self, name: str, root: "StingerSpec"):
+        super().__init__(name=name)
         self._config = root._config
         self._root = root
 
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def documentation(self) -> str | None:
-        return self._documentation
-
-    def set_documentation(self, documentation: str) -> InterfaceComponent:
-        self._documentation = documentation
+    def set_documentation(self, documentation: str) -> "InterfaceComponent":
+        self.documentation = documentation
         return self
 
     def try_set_documentation_from_spec(
         self, spec: dict[str, Any]
-    ) -> InterfaceComponent:
+    ) -> "InterfaceComponent":
         if "documentation" in spec and isinstance(spec["documentation"], str):
-            self._documentation = spec["documentation"]
+            self.documentation = spec["documentation"]
         return self
 
 
