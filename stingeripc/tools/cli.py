@@ -12,7 +12,7 @@ import jsonschema_rs
 import yaml
 import yamlloader
 from stingeripc.interface import StingerInterface
-from stingeripc.config import StingerConfig
+from stingeripc.config import load_config, StingerConfig
 from stingeripc import filtering
 from stingeripc.asyncapi import stinger_to_asyncapi
 
