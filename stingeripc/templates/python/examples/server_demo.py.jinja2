@@ -105,10 +105,12 @@ if __name__ == '__main__':
     {%endfor%}
     {%if config.properties.stinger_owned_values %}
     {%for prop_name, prop in stinger.properties.items()%}
+    {%if not prop.read_only %}
     @server.on_{{prop_name | snake_case}}_updated
     def on_{{prop_name | snake_case}}_update({%for arg in prop.arg_list %}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ Example callback for when the '{{prop_name}}' property is updated. """
         print(f"~~> Received update for '{{prop_name}}' property: {%for arg in prop.arg_list %}{ {{arg.name}}= }{%if not loop.last%}, {%endif%}{%endfor%}")
+    {%endif%}
     {%endfor%}
     {%endif%}
 

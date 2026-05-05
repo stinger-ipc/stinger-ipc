@@ -2,6 +2,7 @@
 
 import concurrent.futures as futures
 from datetime import datetime, timedelta
+from json import dumps as json_dumps
 import isodate
 from typing import List, Optional, Any, Dict
 from textual.app import ComposeResult # typing: ignore
@@ -10,7 +11,7 @@ from textual.widgets import Header, Footer, Static, RichLog, Button, Input, Labe
 from textual.containers import Horizontal, VerticalScroll, Vertical # typing: ignore
 from {{stinger.name|loweronly}}ipc.interface_types import *
 from {{stinger.name|loweronly}}ipc.client import {{stinger.name|UpperCamelCase}}Client
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, BaseModel
 import logging
 
 # Configure logging
@@ -148,6 +149,10 @@ class PropertyEditModal(ModalScreen[bool]):
                     for member in {{prop.arg_list[0].enum.python_type}}
                 ]
                 yield Select(options=enum_options, value=self.current_value.value if self.current_value is not None else None, id="property_input")
+                {%elif prop.arg_list[0].arg_type.name == 'STRUCT'%}
+                yield TextArea.code_editor(language="json", text=f"{self.current_value.model_dump_json()}", id="property_input")
+                {%elif prop.arg_list[0].arg_type.name == 'ARRAY'%}
+                yield TextArea.code_editor(language="json", text=f"[{", ".join([(x.model_dump_json() if isinstance(x, BaseModel) else json_dumps(x)) for x in self.current_value])}]", id="property_input")
                 {%elif prop.arg_list[0].arg_type.name == 'PRIMITIVE' and prop.arg_list[0].type.name == 'BOOLEAN'%}
                 boolean_enum_options = [
                     ("True", True),
@@ -159,8 +164,15 @@ class PropertyEditModal(ModalScreen[bool]):
                 {%endif%}{# single arg type cases #}
                 {%else%}{# multiple args #}
                 {%-for arg in prop.arg_list%}
-                    yield Label(f"{{arg.name}}{%if arg.arg_type.name == 'STRUCT'%} (JSON){%endif%}", classes="property_input_value_label")
-                    yield Input(placeholder=f"{{arg.name}} value", value={%if arg.arg_type.name == 'STRUCT'%}self.current_value.{{arg.name|snake_case}}.model_dump_json(){%else%}str(self.current_value.{{arg.name|snake_case}}){%endif%}, classes="property_input_value", id="property_input_{{arg.name|snake_case}}")
+                    yield Label(f"{{arg.name}}{%if arg.arg_type.name == 'STRUCT' or arg.arg_type.name == 'ARRAY'%} (JSON){%endif%}", classes="property_input_value_label")
+                    {%if arg.arg_type.name == 'STRUCT'%}
+                    yield TextArea.code_editor(language="json", text=f"{self.current_value.{{arg.name|snake_case}}.model_dump_json()}", id="property_input_{{arg.name|snake_case}}")
+                    {%elif arg.arg_type.name == 'ARRAY'%}
+                    type_adapter = TypeAdapter({{arg.python_annotation}})
+                    yield TextArea.code_editor(language="json", text=f"{type_adapter.dump_json(self.current_value.{{arg.name|snake_case}}).decode('utf-8')}", id="property_input_{{arg.name|snake_case}}")
+                    {%else%}
+                    yield Input(placeholder=f"{{arg.name}} value", value=str(self.current_value.{{arg.name|snake_case}}), classes="property_input_value", id="property_input_{{arg.name|snake_case}}")
+                    {%endif%}
                 {%endfor-%}
                 {%endif%}
             {%endfor%}
@@ -194,12 +206,22 @@ class PropertyEditModal(ModalScreen[bool]):
                 {%-if not loop.first%}el{%endif%}if self.property_name == '{{prop_name|snake_case}}':
                     {%-if prop.arg_list|length == 1%}
                     input_widget = self.query_one("#property_input")
+                    {%if prop.arg_list[0].arg_type.name == 'ARRAY'%}
+                    type_adapter = TypeAdapter({{prop.arg_list[0].python_annotation}})
+                    new_{{prop_name|snake_case}}_value = type_adapter.validate_json(input_widget.text.strip())
+                    {%else%}
                     new_{{prop_name|snake_case}}_value = {{from_input_string(prop.arg_list[0], "input_widget.value")}}
+                    {%endif%}
                     {%else%}
                     {%-for arg in prop.arg_list%}
-                    input_widget_{{arg.name|snake_case}} = self.query_one("#property_input_{{arg.name|snake_case}}", Input)
+                    input_widget_{{arg.name|snake_case}} = self.query_one("#property_input_{{arg.name|snake_case}}", {% if arg.arg_type.name in ['ARRAY', 'STRUCT'] %}TextArea{% else %}Input{% endif %})
                     # {{arg.name}} should be {{arg.type}}
+                    {%if arg.arg_type.name == 'ARRAY'%}
+                    type_adapter = TypeAdapter({{arg.python_annotation}})
+                    new_{{prop_name|snake_case}}_value_{{arg.name|snake_case}} = type_adapter.validate_json(input_widget_{{arg.name|snake_case}}.text.strip())
+                    {%else%}
                     new_{{prop_name|snake_case}}_value_{{arg.name|snake_case}} = {{from_input_string(arg, "input_widget_" + arg.name|snake_case + ".value")}}
+                    {%endif%}
                     {%endfor%}
                     new_{{prop_name|snake_case}}_value = {{prop_name|UpperCamelCase}}Property(
                         {%-for arg in prop.arg_list%}
@@ -388,7 +410,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
                 else:
                     kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% elif arg.arg_type.name == 'ARRAY' %}
-                type_adapter = TypeAdapter({{arg.python_type}})
+                type_adapter = TypeAdapter({{arg.python_annotation}})
 
                 try:
                     {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
@@ -680,7 +702,7 @@ class ClientScreen(Screen):
                         values.append(f"{value!r}")  # binary
                         {%elif prop.arg_list[0].arg_type.name == 'STRUCT'%}
                         {%for mem in prop.arg_list[0].struct.members %}
-                        values.append(f"[bold]{{prop.arg_list[0].name}}.{{mem.name}}[/bold]: { value.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }") # struct member {{mem.arg_type.name}}
+                        values.append(f"[bold]{{prop.arg_list[0].name}}.{{mem.name}}[/bold]: {% if mem.arg_type.name == 'ARRAY'%}{ ", ".join([ str(v) for v in value.{{mem.name|snake_case}}]) }{%else%}{ value.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }{% endif %}") # struct member {{mem.arg_type.name}}
                         {%endfor%}
                         {%elif prop.arg_list[0].arg_type.name == 'ARRAY'%}
                         for i, item in enumerate(value or []):
@@ -704,7 +726,7 @@ class ClientScreen(Screen):
                         values.append(f"[bold]{{arg.name}}[/bold]: None")
                     else:
                         {%for mem in arg.struct.members -%}
-                        values.append(f"[bold]{{arg.name}}.{{mem.name}}[/bold]: { value.{{arg.name|snake_case}}.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }") # Struct Member
+                        values.append(f"[bold]{{arg.name}}.{{mem.name}}[/bold]: {% if mem.arg_type.name == 'ARRAY'%}{ ", ".join([ str(v) for v in value.{{arg.name|snake_case}}.{{mem.name|snake_case}}]) }{%else%}{ value.{{arg.name|snake_case}}.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }{% endif %}") # Struct Member
                         {%endfor%}
                     {%elif arg.arg_type.name == 'ARRAY'%}
                     for i, {{arg.name|snake_case}}_item in enumerate(value.{{arg.name|snake_case}} or []):
