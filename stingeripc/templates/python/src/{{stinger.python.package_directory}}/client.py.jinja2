@@ -104,14 +104,14 @@ class {{stinger.python.client_class_name}}:
 
     {%for prop_name, prop_spec in stinger.properties.items()-%}
     @property
-    def {{prop_name}}(self) -> {{prop_spec.python.getter_value_annotation}}:
+    def {{prop_name|snake_case}}(self) -> {{prop_spec.python.getter_value_annotation}}:
         """ Property '{{prop_name}}' getter.
         """
         with self._property_{{prop_name|snake_case}}_mutex:
             return self._property_{{prop_name|snake_case}}
     {%if not prop_spec.read_only %}
-    @{{prop_name}}.setter
-    def {{prop_name}}(self, value: {{prop_spec.python.setter_value_annotation}}):
+    @{{prop_name|snake_case}}.setter
+    def {{prop_name|snake_case}}(self, value: {{prop_spec.python.setter_value_annotation}}):
         """ Serializes and publishes the '{{prop_name}}' property.
         """
         #if not isinstance(value, {{prop_spec.python_local_type}}){%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} and value is not None and not (isinstance(value, {{prop_spec.python.model_class_name}})){%endif%}:
