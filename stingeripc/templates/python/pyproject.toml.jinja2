@@ -36,7 +36,7 @@ build-backend = "setuptools.build_meta"
 
 {%if not config.python.python37%}
 [project.scripts]
-{{stinger.name|hyphen_case}}-tui = "{{stinger.python.package_directory}}.tui.app:main"
+{{stinger.name|hyphen_case}}-tui = "{{stinger.python.package_directory}}.tui.app:cli"
 {%endif%}
 
 [tool.setuptools.package-data]
