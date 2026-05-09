@@ -11,6 +11,8 @@ import yamlloader
 
 from stingeripc import filtering
 from stingeripc.asyncapi import stinger_to_asyncapi
+from stingeripc.config import StingerConfig, load_config
+from stingeripc.interface import StingerInterface
 
 from . import generic_generator
 
@@ -93,7 +95,7 @@ def asyncapi(
         with input_file.open(mode="r") as f:
             stinger = StingerInterface.from_yaml(f, config_obj)
 
-    result = stinger_to_asyncapi(stinger)
+    result = stinger_to_asyncapi(stinger, config_obj)
 
     if not output_dir.is_dir():
         os.makedirs(output_dir)
