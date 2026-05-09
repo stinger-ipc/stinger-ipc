@@ -28,6 +28,7 @@ from stingeripc.ipc_property import IpcProperty
 from stingeripc.ipc_signal import IpcSignal
 from stingeripc.components import StingerSpec
 from stingeripc.args import ArgType
+from stingeripc.config import StingerConfig
 
 def _primitive_type_to_schema(type_str: str) -> dict:
     type_map = {
@@ -92,12 +93,15 @@ def _arg_schema(arg: Arg) -> dict:
         return _primitive_type_to_schema(arg.primitive_type.name.lower())
     return {"type": "string"}
 
-def _parameters_for_address(address: str) -> models.channel.Parameters:
+def _parameters_for_address(address: str, config: StingerConfig) -> models.channel.Parameters:
     params: dict = {}
     if '{service_id}' in address:
         params["service_id"] = {'$ref': '#/components/parameters/service_id'}
     if '{client_id}' in address:
         params["client_id"] = {'$ref': '#/components/parameters/client_id'}
+    for topic_param in config.topics.params:
+        if f'{{{topic_param}}}' in address:
+            params[topic_param] = {'$ref': f'#/components/parameters/{topic_param}'}
     return models.channel.Parameters(root=params)
 
 def arg_list_to_schema(arg_list: list[Arg]) -> Schema:
@@ -113,8 +117,9 @@ def arg_list_to_schema(arg_list: list[Arg]) -> Schema:
     return Schema(**kwargs)
 
 class AsyncApiSignalHelper:
-    def __init__(self, signal: IpcSignal):
+    def __init__(self, signal: IpcSignal, config: StingerConfig):
         self.signal = signal
+        self.config = config
 
     def get_payload_schema(self) -> Schema:
         return arg_list_to_schema(self.signal.arg_list)
@@ -125,6 +130,7 @@ class AsyncApiSignalHelper:
             name=self.signal.name,
             description=f"This is the message for the '{self.signal.name}' signal.  It is encoded as a JSON object.",
             payload=payload_schema,
+            contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
         )
 
@@ -135,7 +141,7 @@ class AsyncApiSignalHelper:
             address=address,
             description=self.signal.documentation,
             messages=models.message.Messages(root={self.signal.name: message}),
-            parameters=_parameters_for_address(address),
+            parameters=_parameters_for_address(address, self.config),
         )
 
     def to_operation(self) -> models.Operation:
@@ -146,12 +152,14 @@ class AsyncApiSignalHelper:
             description=self.signal.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="signal")],
         )
 
 
 class AsyncApiMethodHelper:
-    def __init__(self, method: IpcMethod):
+    def __init__(self, method: IpcMethod, config: StingerConfig):
         self.method = method
+        self.config = config
 
     def request_channel_name(self) -> str:
         return f"{self.method.name}_request"
@@ -177,6 +185,7 @@ class AsyncApiMethodHelper:
             name=self.request_message_key(),
             description=self.method.documentation,
             payload=payload_schema,
+            contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
         )
         address = self.method.request_topic()
@@ -184,7 +193,7 @@ class AsyncApiMethodHelper:
             address=address,
             description=self.method.documentation,
             messages=models.message.Messages(root={self.request_message_key(): message}),
-            parameters=_parameters_for_address(address),
+            parameters=_parameters_for_address(address, self.config),
         )
 
     def request_to_operation(self) -> models.Operation:
@@ -195,6 +204,7 @@ class AsyncApiMethodHelper:
             description=self.method.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="method")],
         )
 
     def response_to_channel(self) -> models.Channel:
@@ -210,6 +220,7 @@ class AsyncApiMethodHelper:
             name=self.method.return_value_name,
             description=self.method.documentation,
             payload=payload_schema,
+            contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
         )
         address = self.method.response_topic()
@@ -217,7 +228,7 @@ class AsyncApiMethodHelper:
             address=address,
             description=self.method.documentation,
             messages=models.message.Messages(root={response_key: message}),
-            parameters=_parameters_for_address(address),
+            parameters=_parameters_for_address(address, self.config),
         )
 
     def response_to_operation(self) -> models.Operation:
@@ -228,12 +239,14 @@ class AsyncApiMethodHelper:
             description=self.method.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.response_message_key()}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="method")],
         )
 
 
 class AsyncApiPropertyHelper:
-    def __init__(self, prop: IpcProperty):
+    def __init__(self, prop: IpcProperty, config: StingerConfig):
         self.prop = prop
+        self.config = config
 
     def value_channel_name(self) -> str:
         return f"{self.prop.name}_value"
@@ -258,8 +271,12 @@ class AsyncApiPropertyHelper:
             name=self.prop.name,
             description=f"This is the message for the value of the '{self.prop.name}' property.  It is encoded as a JSON object.",
             payload=self.payload_schema(),
+            contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
         )
+
+    def get_message_reference(self) -> models.base.Reference:
+        return models.base.Reference(ref=f"#/components/messages/{self.prop.name}_property")
 
     def value_to_channel(self) -> models.Channel:
         address = self.prop.value_topic()
@@ -267,7 +284,7 @@ class AsyncApiPropertyHelper:
             address=address,
             description=self.prop.documentation,
             messages=models.message.Messages(root={self.prop.name: self.get_message()}),
-            parameters=_parameters_for_address(address),
+            parameters=_parameters_for_address(address, self.config),
         )
 
     def value_to_operation(self) -> models.Operation:
@@ -278,6 +295,7 @@ class AsyncApiPropertyHelper:
             description=self.prop.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="property")],
         )
 
     def update_request_to_channel(self) -> models.Channel:
@@ -285,8 +303,8 @@ class AsyncApiPropertyHelper:
         return models.Channel(
             address=address,
             description=self.prop.documentation,
-            messages=models.message.Messages(root={self.prop.name: self.get_message()}),
-            parameters=_parameters_for_address(address),
+            messages=models.message.Messages(root={self.prop.name: self.get_message_reference()}),
+            parameters=_parameters_for_address(address, self.config),
         )
 
     def update_request_to_operation(self) -> models.Operation:
@@ -297,6 +315,7 @@ class AsyncApiPropertyHelper:
             description=self.prop.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="property")],
         )
 
     def update_response_to_channel(self) -> models.Channel:
@@ -304,8 +323,8 @@ class AsyncApiPropertyHelper:
         return models.Channel(
             address=address,
             description=self.prop.documentation,
-            messages=models.message.Messages(root={self.prop.name: self.get_message()}),
-            parameters=_parameters_for_address(address),
+            messages=models.message.Messages(root={self.prop.name: self.get_message_reference()}),
+            parameters=_parameters_for_address(address, self.config),
         )
 
     def update_response_to_operation(self) -> models.Operation:
@@ -316,33 +335,38 @@ class AsyncApiPropertyHelper:
             description=self.prop.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="property")],
         )
 
 
-def stinger_to_asyncapi(spec: StingerSpec) -> dict:
+def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) -> dict:
     """Convert a StingerSpec to an AsyncAPI 3.0 specification dict."""
+    config_obj = config or StingerConfig()
+
     schemas: dict[str, Schema] = {}
     for enum_name, ie in spec.enums.items():
         schemas[enum_name] = _enum_to_schema(ie)
     for struct_name, ist in spec.structs.items():
         schemas[struct_name] = _struct_to_schema(ist)
 
+    messages: dict[str, models.Message] = {}
     channels: dict[str, models.Channel] = {}
     operations: dict[str, models.Operation] = {}
     for name, signal in spec.signals.items():
-        signal_helper = AsyncApiSignalHelper(signal)
+        signal_helper = AsyncApiSignalHelper(signal, config_obj)
         channels[name] = signal_helper.to_channel()
         operations[name] = signal_helper.to_operation()
     for method_name, method in spec.methods.items():
-        method_helper = AsyncApiMethodHelper(method)
+        method_helper = AsyncApiMethodHelper(method, config_obj)
         channels[method_helper.request_channel_name()] = method_helper.request_to_channel()
         operations[method_helper.request_channel_name()] = method_helper.request_to_operation()
         channels[method_helper.response_channel_name()] = method_helper.response_to_channel()
         operations[method_helper.response_channel_name()] = method_helper.response_to_operation()
     for prop_name, prop in spec.properties.items():
-        prop_helper = AsyncApiPropertyHelper(prop)
+        prop_helper = AsyncApiPropertyHelper(prop, config_obj)
         channels[prop_helper.value_channel_name()] = prop_helper.value_to_channel()
         operations[prop_helper.value_channel_name()] = prop_helper.value_to_operation()
+        messages[f"{prop.name}_property"] = prop_helper.get_message()
         if not prop.read_only:
             channels[prop_helper.update_request_channel_name()] = prop_helper.update_request_to_channel()
             operations[prop_helper.update_request_channel_name()] = prop_helper.update_request_to_operation()
@@ -355,23 +379,28 @@ def stinger_to_asyncapi(spec: StingerSpec) -> dict:
             title=spec.name,
             version=spec._version,
             description=spec.summary or None,
+            tags=[
+                models.base.Tag(name="signal"),
+                models.base.Tag(name="method"),
+                models.base.Tag(name="property"),
+            ],
         ),
         components=models.Components(
             schemas=Schemas(root=schemas) if schemas else None,
-            messages=models.message.Messages(root={
-                msg_key: msg
-                for channel in channels.values()
-                if channel.messages
-                for msg_key, msg in channel.messages.root.items()
-            }) or None,
+            messages=models.message.Messages(root=messages) or None,
         ),
         channels=models.Channels(root=channels) if channels else None,
         operations=models.operation.Operations(root=operations) if operations else None,
     )
 
-    aa.components.parameters = models.channel.Parameters(root={
+    component_parameters: dict[str, models.Parameter] = {
         "service_id": models.Parameter(description="The ID of the service/instance"),
         "client_id": models.Parameter(description="The MQTT Client ID"),
-    })
+    }
+    for topic_param in config_obj.topics.params:
+        if topic_param not in component_parameters:
+            component_parameters[topic_param] = models.Parameter(description=f"Topic parameter '{topic_param}'")
+
+    aa.components.parameters = models.channel.Parameters(root=component_parameters)
 
     return json.loads(aa.model_dump_json(exclude_none=True))
