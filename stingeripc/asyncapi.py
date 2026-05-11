@@ -3,6 +3,7 @@ Provides the functionality needed to create an AsyncAPI service specification fr
 """
 
 import json
+import re
 import warnings
 
 warnings.filterwarnings("ignore", module="asyncapi3")
@@ -104,6 +105,11 @@ def _parameters_for_address(address: str, config: StingerConfig) -> models.chann
             params[topic_param] = {'$ref': f'#/components/parameters/{topic_param}'}
     return models.channel.Parameters(root=params)
 
+
+def _topic_template_to_regex(topic_template: str) -> str:
+    """Convert a topic template into a regex where placeholders map to [^\}]+."""
+    return re.sub(r"\{[^{}]+\}", r"[^\\}]+", topic_template)
+
 def arg_list_to_schema(arg_list: list[Arg]) -> Schema:
     properties: dict[str, dict] = {}
     required: list[str] = []
@@ -181,12 +187,19 @@ class AsyncApiMethodHelper:
                 "required": [arg.name for arg in self.method.arg_list if not arg.optional] or None,
             }
         )
+        response_topic_schema = _topic_template_to_regex(self.method.response_topic())
         message = models.Message(
             name=self.request_message_key(),
             description=self.method.documentation,
             payload=payload_schema,
             contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            bindings=MessageBindingsObject(
+                mqtt=MQTTMessageBindings(
+                    contentType="application/json",
+                    correlationData={"type":"string", "format":"uuid"},
+                    responseTopic=response_topic_schema,
+                )
+            ),
         )
         address = self.method.request_topic()
         return models.Channel(
@@ -266,24 +279,60 @@ class AsyncApiPropertyHelper:
             }
         )
 
-    def get_message(self) -> models.Message:
+    def _payload_ref(self) -> Schema:
+        return Schema(**{"$ref": f"#/components/schemas/{self.prop.name}_property"})
+
+    def get_value_message(self) -> models.Message:
         return models.Message(
             name=self.prop.name,
-            description=f"This is the message for the value of the '{self.prop.name}' property.  It is encoded as a JSON object.",
-            payload=self.payload_schema(),
+            description=f"The current value of the '{self.prop.name}' property.",
+            payload=self._payload_ref(),
+            contentType="application/json",
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            headers=Schema(
+                type="object", 
+                properties={
+                    "PropertyValue": {
+                        "type": "integer",
+                        "description": "An integer that increments with each new value of the property."
+                    }, 
+                }
+            ),
+        )
+
+    def get_request_message(self) -> models.Message:
+        return models.Message(
+            name=self.prop.name,
+            description=f"A request to update the '{self.prop.name}' property.",
+            payload=self._payload_ref(),
+            contentType="application/json",
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            headers=Schema(
+                type="object", 
+                properties={
+                    "PropertyValue": {
+                        "type": "integer",
+                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property."
+                    }, 
+                }
+            ),
+        )
+
+    def get_response_message(self) -> models.Message:
+        return models.Message(
+            name=self.prop.name,
+            description=f"The response after updating the '{self.prop.name}' property.",
+            payload=self._payload_ref(),
             contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
         )
-
-    def get_message_reference(self) -> models.base.Reference:
-        return models.base.Reference(ref=f"#/components/messages/{self.prop.name}_property")
 
     def value_to_channel(self) -> models.Channel:
         address = self.prop.value_topic()
         return models.Channel(
             address=address,
             description=self.prop.documentation,
-            messages=models.message.Messages(root={self.prop.name: self.get_message()}),
+            messages=models.message.Messages(root={self.prop.name: self.get_value_message()}),
             parameters=_parameters_for_address(address, self.config),
         )
 
@@ -303,7 +352,7 @@ class AsyncApiPropertyHelper:
         return models.Channel(
             address=address,
             description=self.prop.documentation,
-            messages=models.message.Messages(root={self.prop.name: self.get_message_reference()}),
+            messages=models.message.Messages(root={self.prop.name: self.get_request_message()}),
             parameters=_parameters_for_address(address, self.config),
         )
 
@@ -323,7 +372,7 @@ class AsyncApiPropertyHelper:
         return models.Channel(
             address=address,
             description=self.prop.documentation,
-            messages=models.message.Messages(root={self.prop.name: self.get_message_reference()}),
+            messages=models.message.Messages(root={self.prop.name: self.get_response_message()}),
             parameters=_parameters_for_address(address, self.config),
         )
 
@@ -349,7 +398,6 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
     for struct_name, ist in spec.structs.items():
         schemas[struct_name] = _struct_to_schema(ist)
 
-    messages: dict[str, models.Message] = {}
     channels: dict[str, models.Channel] = {}
     operations: dict[str, models.Operation] = {}
     for name, signal in spec.signals.items():
@@ -364,9 +412,9 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
         operations[method_helper.response_channel_name()] = method_helper.response_to_operation()
     for prop_name, prop in spec.properties.items():
         prop_helper = AsyncApiPropertyHelper(prop, config_obj)
+        schemas[f"{prop.name}_property"] = prop_helper.payload_schema()
         channels[prop_helper.value_channel_name()] = prop_helper.value_to_channel()
         operations[prop_helper.value_channel_name()] = prop_helper.value_to_operation()
-        messages[f"{prop.name}_property"] = prop_helper.get_message()
         if not prop.read_only:
             channels[prop_helper.update_request_channel_name()] = prop_helper.update_request_to_channel()
             operations[prop_helper.update_request_channel_name()] = prop_helper.update_request_to_operation()
@@ -387,7 +435,6 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
         ),
         components=models.Components(
             schemas=Schemas(root=schemas) if schemas else None,
-            messages=models.message.Messages(root=messages) or None,
         ),
         channels=models.Channels(root=channels) if channels else None,
         operations=models.operation.Operations(root=operations) if operations else None,
