@@ -383,6 +383,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((value, opt_responder)) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
+                        debug!("Property {{prop_name}} has changed locally to {:?}, sending update request to server", value);
                         {%if prop.arg_list | length == 1 %}
                         let payload_obj = {{prop_name | UpperCamelCase}}Property { 
                             {{prop.arg_list[0].name}}: value
@@ -394,25 +395,29 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
                             ("service_id".to_string(), instance_id_for_{{prop_name|snake_case}}_prop.clone()),
                             ("property_name".to_string(), "{{prop_name}}".to_string()),
+                            ("client_id".to_string(), client_id_for_{{prop_name|snake_case}}_prop.clone()),
                             {%-for topic_param in config.topics.params%}
                             ("{{topic_param}}".to_string(), client_id_for_{{prop_name|snake_case}}_prop.clone()),
                             {%-endfor%}
                         ]);
                         let topic: String = strfmt("{{prop.update_topic()}}", &topic_param_map).unwrap();
-                        if let Some(responder) = opt_responder {
-                            let resp_topic = strfmt("{{prop.response_topic()}}", &topic_param_map).unwrap();
-                            let correlation_id = Uuid::new_v4();
-                            let (sender, receiver) = oneshot::channel();
-                            {
-                                let mut hashmap = resp_map_for_{{prop_name|snake_case}}_prop.lock().expect("Mutex was poisoned");
-                                hashmap.insert(correlation_id.clone(), sender);
-                            }
-                            match message::property_update_request(&topic, &payload_obj, {{prop_name|snake_case}}_prop_version.load(std::sync::atomic::Ordering::Relaxed), correlation_id, resp_topic) {
-                                Ok(msg) => {
-                                    let _publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
-                                    let result = receiver.await;
-                                    match result {
-                                        Ok(MethodReturnCode::Success(opt_response_text)) => {
+                        
+                        let resp_topic = strfmt("{{prop.response_topic()}}", &topic_param_map).unwrap();
+                        let correlation_id = Uuid::new_v4();
+                        let (sender, receiver) = oneshot::channel();
+                        {
+                            let mut hashmap = resp_map_for_{{prop_name|snake_case}}_prop.lock().expect("Mutex was poisoned");
+                            hashmap.insert(correlation_id.clone(), sender);
+                        }
+                        match message::property_update_request(&topic, &payload_obj, {{prop_name|snake_case}}_prop_version.load(std::sync::atomic::Ordering::Relaxed), correlation_id, resp_topic) {
+                            Ok(msg) => {
+                                debug!("Publishing property update request for '{{prop_name}}' to topic '{}': {:?}", topic, payload_obj);
+                                let _publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
+                                let result = receiver.await;
+                                debug!("Received property update response for '{{prop_name}}': {:?}", result);
+                                match result {
+                                    Ok(MethodReturnCode::Success(opt_response_text)) => {
+                                        if let Some(responder) = opt_responder {
                                             if let Some(response_text) = opt_response_text {
                                                 let resp_obj = serde_json::from_str::<{{prop_name|UpperCamelCase}}Property>(response_text.as_ref()).unwrap();
                                                 {%if prop.arg_list | length == 1 %}
@@ -424,21 +429,26 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                                 warn!("No response payload received for property update request for '{{prop_name}}'");
                                                 let _ = responder.send(None);
                                             }
-                                        },
-                                        _ => {
-                                            warn!("Property update request for '{{prop_name}}' failed: {:?}", result);
+                                        } else {
+                                            info!("No responder provided for property update request for '{{prop_name}}'");
+                                        }
+                                    },
+                                    _ => {
+                                        warn!("Property update request for '{{prop_name}}' failed: {:?}", result);
+                                        if let Some(responder) = opt_responder {
                                             let _ = responder.send(None);
                                         }
-                                    };
-                                }
-                                Err(e) => {
-                                    warn!("Failed to create property update message for '{{prop_name}}': {:?}", e);
+                                    }
+                                };
+                            }
+                            Err(e) => {
+                                warn!("Failed to create property update message for '{{prop_name}}': {:?}", e);
+                                if let Some(responder) = opt_responder {
                                     let _ = responder.send(None);
                                 }
                             }
-                        } else {
-                            error!("No responder provided for property update request for '{{prop_name}}'");
                         }
+                        
                     };
                 });
             }
@@ -600,6 +610,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio::time::{sleep, Duration};
     use stinger_mqtt_trait::mock::MockClient;
     use tracing_subscriber::EnvFilter;
     use crate::interface::InterfaceInfo;
@@ -657,6 +668,12 @@ mod tests {
 
         let mut client = {{stinger.rust.client_struct_name}}::new(mock_mqtt.clone(), discovery_info).await;
 
+        // Start loop task in background.
+        let mut client_for_loop = client.clone();
+        tokio::spawn(async move {
+            let _ = client_for_loop.run_loop().await;
+        });
+
         {%for method_name, method in stinger.methods.items()%}
         { // Test calling the {{method_name}} method.
             mock_mqtt.clear_published_messages();
@@ -664,13 +681,44 @@ mod tests {
                 {%for arg in method.arg_list%}
                 {{arg.get_random_example_value(lang='rust')}},
                 {%endfor%}).await;
-            let sent_message = mock_mqtt.last_published_message().expect("Expected a message to be published");
+            let sent_message = mock_mqtt.last_published_message().expect("Expected a method request message to be published");
 
-            assert!(sent_message.response_topic.is_some(), "Expected response_topic to be set");
+            assert!(sent_message.response_topic.is_some(), "Expected response_topic to be set on method request message");
             let response_topic = sent_message.response_topic.as_ref().unwrap();
-            assert!(!response_topic.contains('+'), "response_topic should not contain '+'");
-            assert!(!response_topic.contains('#'), "response_topic should not contain '#'");
+            assert!(!response_topic.contains('+'), "In the method request message, the response_topic should not contain '+'");
+            assert!(!response_topic.contains('#'), "In the method request message, the response_topic should not contain '#'");
         }
         {%endfor%}
+
+        {% for prop_name, prop in stinger.properties.items() %}
+        {%if not prop.read_only %}
+        { // Test setting the {{prop_name}} property if it is not read-only.
+            // Create an example value to set the property to.
+            {%if prop.arg_list|length == 1 -%}
+            let {{prop_name|snake_case}}_new_value = {{prop.arg_list[0].get_random_example_value(lang="rust")}};
+            {%else-%}
+            let {{prop_name|snake_case}}_new_value = {{prop.rust_type}} {
+                {%-for arg in prop.arg_list %}
+                    {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
+                {%-endfor%}
+            };
+            {%endif-%}
+
+            mock_mqtt.clear_published_messages();
+            let {{prop_name|snake_case}}_handle = client.get_{{prop_name | snake_case}}_handle();
+            { // Guard scope
+                let mut guard = {{prop_name|snake_case}}_handle.write().await;
+                *guard = {{prop_name|snake_case}}_new_value;
+            } // drop guard should send the mqtt request to update the property value on the server.
+            sleep(Duration::from_millis(50)).await; // Its not so much the sleep time as the await that allows other async code to complete.
+
+            let sent_message = mock_mqtt.last_published_message().expect("Expected a property update message for '{{prop_name}}' to be published");
+            assert!(sent_message.response_topic.is_some(), "Expected response_topic to be set on property update message for '{{prop_name}}'");
+            let response_topic = sent_message.response_topic.as_ref().unwrap();
+            assert!(!response_topic.contains('+'), "In the property update message for '{{prop_name}}', the response_topic should not contain '+'");
+            assert!(!response_topic.contains('#'), "In the property update message for '{{prop_name}}', the response_topic should not contain '#'");
+        }
+        {% endif %}
+        {% endfor %}
     }
 }
