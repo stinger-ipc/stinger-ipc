@@ -19,6 +19,7 @@ dependencies = [
     "ruamel-yaml>=0.18.14",
     "semantic-version>=2.10.0",
     "stevedore>=5.5.0",
+    "stinger-python-utils>=0.1.9",
     "typer>=0.16.1",
     "yamlloader>=1.5.1",
 ]

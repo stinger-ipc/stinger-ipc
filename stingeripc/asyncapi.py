@@ -22,6 +22,10 @@ from asyncapi3.models.bindings import (
     MessageBindingsObject,
 )
 
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+)
+
 from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
 from stingeripc.arg_models import Arg, ArgEnum, ArgStruct, ArgPrimitive
 from stingeripc.ipc_method import IpcMethod
@@ -30,6 +34,7 @@ from stingeripc.ipc_signal import IpcSignal
 from stingeripc.components import StingerSpec
 from stingeripc.args import ArgType
 from stingeripc.config import StingerConfig
+from jacobsjinjatoo.stringmanip import lower_camel_case, upper_camel_case
 
 def _primitive_type_to_schema(type_str: str) -> dict:
     type_map = {
@@ -284,8 +289,9 @@ class AsyncApiPropertyHelper:
 
     def get_value_message(self) -> models.Message:
         return models.Message(
-            name=self.prop.name,
-            description=f"The current value of the '{self.prop.name}' property.",
+            name=f"{upper_camel_case(self.prop.name)}PropertyValue",
+            title=f"{self.prop.name} value",
+            summary=f"The current value of the '{self.prop.name}' property.",
             payload=self._payload_ref(),
             contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
@@ -296,17 +302,25 @@ class AsyncApiPropertyHelper:
                         "type": "integer",
                         "description": "An integer that increments with each new value of the property."
                     }, 
-                }
+                },
+                required=["PropertyValue"]
             ),
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
         )
 
     def get_request_message(self) -> models.Message:
         return models.Message(
-            name=self.prop.name,
-            description=f"A request to update the '{self.prop.name}' property.",
+            name=f"{upper_camel_case(self.prop.name)}UpdateRequest",
+            summary=f"A request to update the '{self.prop.name}' property.",
             payload=self._payload_ref(),
             contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            bindings=MessageBindingsObject(
+                mqtt=MQTTMessageBindings(
+                    contentType="application/json",
+                    correlationData={"type":"string", "format":"uuid"},
+                    responseTopic={"type":"string", "pattern": _topic_template_to_regex(self.prop.response_topic())},
+                )
+            ),
             headers=Schema(
                 type="object", 
                 properties={
@@ -314,17 +328,40 @@ class AsyncApiPropertyHelper:
                         "type": "integer",
                         "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property."
                     }, 
-                }
+                },
+                required=["PropertyValue"]
             ),
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="request")],
         )
 
     def get_response_message(self) -> models.Message:
         return models.Message(
-            name=self.prop.name,
-            description=f"The response after updating the '{self.prop.name}' property.",
+            name=f"{upper_camel_case(self.prop.name)}UpdateResponse",
+            summary=f"The response after updating the '{self.prop.name}' property.",
             payload=self._payload_ref(),
             contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            bindings=MessageBindingsObject(
+                mqtt=MQTTMessageBindings(
+                    contentType="application/json",
+                    correlationData={"type":"string", "format":"uuid"},
+                )
+            ),
+            headers=Schema(
+                type="object", 
+                properties={
+                    "PropertyValue": {
+                        "type": "integer",
+                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property.",
+                        "minimum": -1,
+                    },
+                    "ReturnCode": {
+                        "type": "integer",
+                        "description": " | ".join([f"{code.name}: {code.value}" for code in MethodReturnCode]),
+                        "enum": [code.value for code in MethodReturnCode],
+                    } 
+                },
+                required=["PropertyValue"]
+            ),
         )
 
     def value_to_channel(self) -> models.Channel:
