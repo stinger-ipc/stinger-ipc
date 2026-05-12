@@ -610,6 +610,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pyqttier"
+version = "0.2.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "paho-mqtt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f8/8e/f47db52b49642cf6a43b68e0073eebaf494b6aca839ad9b6583ebbe8123e/pyqttier-0.2.5.tar.gz", hash = "sha256:36ca3dc1698dc5823aeecc23d4bd0c4dedb3cedc32bf3f1e95f546b26673eab8", size = 55619, upload-time = "2025-12-30T03:28:41.658Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a8/ea/944a6e68fb5e2c555a88129d0a1dcef740ff370edcb8cdbd4c6527ea2af2/pyqttier-0.2.5-py3-none-any.whl", hash = "sha256:84e0e3782c50f3c179b942cc51b34fda99273b9c38e551bb786910f80b809572", size = 10804, upload-time = "2025-12-30T03:28:40.428Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -764,6 +776,7 @@ dependencies = [
     { name = "ruamel-yaml" },
     { name = "semantic-version" },
     { name = "stevedore" },
+    { name = "stinger-python-utils" },
     { name = "typer" },
     { name = "yamlloader" },
 ]
@@ -791,6 +804,7 @@ requires-dist = [
     { name = "ruamel-yaml", specifier = ">=0.18.14" },
     { name = "semantic-version", specifier = ">=2.10.0" },
     { name = "stevedore", specifier = ">=5.5.0" },
+    { name = "stinger-python-utils", specifier = ">=0.1.9" },
     { name = "typer", specifier = ">=0.16.1" },
     { name = "yamlloader", specifier = ">=1.5.1" },
 ]
@@ -804,6 +818,19 @@ dev = [
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20250516" },
+]
+
+[[package]]
+name = "stinger-python-utils"
+version = "0.1.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "pyqttier" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d2/f3/8b4c7b09f14958c29b9038eff3508755552a7dd106e8e6e8052bddea7601/stinger_python_utils-0.1.9.tar.gz", hash = "sha256:322114c2b77923f4600bee43eb8b081adfd8bc335aa6bcaa2e90b0bd353d862a", size = 129650, upload-time = "2026-04-14T19:40:26.281Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f9/4e/822ce111da8b9d95bf9250682a68ab6c6ece0c6bac44a089b63daefafc5d/stinger_python_utils-0.1.9-py3-none-any.whl", hash = "sha256:1547faf73ce920cf15a7a7c9d2f56d63aba560aea7b378090402395e67d4cff0", size = 17005, upload-time = "2026-04-14T19:40:29.124Z" },
 ]
 
 [[package]]
