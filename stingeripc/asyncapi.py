@@ -36,7 +36,7 @@ from stingeripc.args import ArgType
 from stingeripc.config import StingerConfig
 from jacobsjinjatoo.stringmanip import lower_camel_case, upper_camel_case
 
-def _primitive_type_to_schema(type_str: str) -> dict:
+def _primitive_type_to_schema(arg: ArgPrimitive) -> dict:
     type_map = {
         "string": "string",
         "integer": "integer",
@@ -46,7 +46,14 @@ def _primitive_type_to_schema(type_str: str) -> dict:
         "duration": "string",
         "binary": "string",
     }
-    return {"type": type_map.get(type_str, "string")}
+    json_type: str | list[str] = type_map.get(arg.primitive_type.name.lower(), "string")
+    if arg.optional:
+        assert isinstance(json_type, str)
+        json_type = [json_type, "null"]
+    return {
+        "type": json_type,
+        "description": arg.description,
+    }
 
 
 def _enum_to_schema(ie: InterfaceEnum) -> Schema:
@@ -72,7 +79,7 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
             prop = {"$ref": f"#/components/schemas/{member.interface_struct.name}"}
         elif member.arg_type == ArgType.PRIMITIVE:
             assert isinstance(member, ArgPrimitive)
-            prop = _primitive_type_to_schema(member.primitive_type.name.lower())
+            prop = _primitive_type_to_schema(member)
         else:
             prop = {"type": "string"}
         if member.description:
@@ -96,7 +103,7 @@ def _arg_schema(arg: Arg) -> dict:
         return {"$ref": f"#/components/schemas/{arg.interface_struct.name}"}
     elif arg.arg_type == ArgType.PRIMITIVE:
         assert isinstance(arg, ArgPrimitive)
-        return _primitive_type_to_schema(arg.primitive_type.name.lower())
+        return _primitive_type_to_schema(arg)
     return {"type": "string"}
 
 def _parameters_for_address(address: str, config: StingerConfig) -> models.channel.Parameters:
@@ -139,7 +146,8 @@ class AsyncApiSignalHelper:
         payload_schema = self.get_payload_schema()
         return models.Message(
             name=self.signal.name,
-            description=f"This is the message for the '{self.signal.name}' signal.  It is encoded as a JSON object.",
+            summary=f"The message for the '{self.signal.name}' signal.",
+            description=f"The payload represents the data for the signal.  It is encoded as a JSON object.",
             payload=payload_schema,
             contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
@@ -158,9 +166,21 @@ class AsyncApiSignalHelper:
     def to_operation(self) -> models.Operation:
         name = self.signal.name
         return models.Operation(
+            summary=f"Receive the '{self.signal.name}' signal.",
+            description=f"""
+            The server publishes a message to the signal topic whenever the signal is emitted.
+            Clients can subscribe to the signal topic to receive messages whenever the signal is emitted.
+
+            ```plantuml
+            Client -> MQTT Broker: Subscribe
+            Server -> MQTT Broker: '{self.signal.name}' Signal
+            MQTT Broker -> Client: '{self.signal.name}' Signal
+            ```
+
+            The message is not retained, so clients will only receive the signal message when the signal is emitted while they are subscribed.
+            """,
             action="receive",
             channel=models.base.Reference(ref=f"#/channels/{name}"),
-            description=self.signal.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
             tags=[models.base.Tag(name="signal")],
@@ -184,7 +204,7 @@ class AsyncApiMethodHelper:
     def response_message_key(self) -> str:
         return self.method.return_value_name.replace(" ", "_")
 
-    def request_to_channel(self) -> models.Channel:
+    def get_request_message(self) -> models.Message:
         payload_schema = Schema(
             **{
                 "type": "object",
@@ -193,7 +213,7 @@ class AsyncApiMethodHelper:
             }
         )
         response_topic_schema = _topic_template_to_regex(self.method.response_topic())
-        message = models.Message(
+        return models.Message(
             name=self.request_message_key(),
             description=self.method.documentation,
             payload=payload_schema,
@@ -202,10 +222,13 @@ class AsyncApiMethodHelper:
                 mqtt=MQTTMessageBindings(
                     contentType="application/json",
                     correlationData={"type":"string", "format":"uuid"},
-                    responseTopic=response_topic_schema,
+                    responseTopic={"type": "string", "pattern": response_topic_schema},
                 )
             ),
         )
+
+    def request_to_channel(self) -> models.Channel:
+        message = self.get_request_message()
         address = self.method.request_topic()
         return models.Channel(
             address=address,
@@ -225,7 +248,7 @@ class AsyncApiMethodHelper:
             tags=[models.base.Tag(name="method")],
         )
 
-    def response_to_channel(self) -> models.Channel:
+    def get_response_message(self) -> models.Message:
         payload_schema = Schema(
             **{
                 "type": "object",
@@ -233,14 +256,17 @@ class AsyncApiMethodHelper:
                 "required": [arg.name for arg in self.method.return_arg_list if not arg.optional] or None,
             }
         )
-        response_key = self.response_message_key()
-        message = models.Message(
+        return models.Message(
             name=self.method.return_value_name,
             description=self.method.documentation,
             payload=payload_schema,
             contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
         )
+
+    def response_to_channel(self) -> models.Channel:
+        response_key = self.response_message_key()
+        message = self.get_response_message()
         address = self.method.response_topic()
         return models.Channel(
             address=address,
@@ -292,6 +318,11 @@ class AsyncApiPropertyHelper:
             name=f"{upper_camel_case(self.prop.name)}PropertyValue",
             title=f"{self.prop.name} value",
             summary=f"The current value of the '{self.prop.name}' property.",
+            description=f"""The payload represents the current value of the property.  It is encoded as a JSON object.
+
+            The `PropertyValue` user property value (an integer provided as an MQTT string) is a version number that increments with each new value of the property.
+            A client typically stores this value in order to provide it in update requests.
+            """,
             payload=self._payload_ref(),
             contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
@@ -301,7 +332,11 @@ class AsyncApiPropertyHelper:
                     "PropertyValue": {
                         "type": "integer",
                         "description": "An integer that increments with each new value of the property."
-                    }, 
+                    },
+                    "DebugInfo": {
+                        "type": "string",
+                        "description": "A optional (not likely to be provided) string that the client should log or print for debugging purposes.",
+                    },
                 },
                 required=["PropertyValue"]
             ),
@@ -312,6 +347,13 @@ class AsyncApiPropertyHelper:
         return models.Message(
             name=f"{upper_camel_case(self.prop.name)}UpdateRequest",
             summary=f"A request to update the '{self.prop.name}' property.",
+            description="""The payload represents the new property value that the client wants to set.
+            
+                The entirety of the JSON object must be provided, and will completely replace the
+                current value of the property if the update is accepted.
+                
+                The `PropertyVersion` user property value (a number provided as an MQTT string)
+                should be the same `PropertyVersion` value that was most recently received.""",
             payload=self._payload_ref(),
             contentType="application/json",
             bindings=MessageBindingsObject(
@@ -338,6 +380,17 @@ class AsyncApiPropertyHelper:
         return models.Message(
             name=f"{upper_camel_case(self.prop.name)}UpdateResponse",
             summary=f"The response after updating the '{self.prop.name}' property.",
+            description="""The payload represents the latest value of the property after the update attempt.
+            
+            If the property update was successful, then there should be a `ReturnCode` user property with value `0`, and the payload should match the value that was sent in the update request.
+            The `PropertyValue` user property will be the newest version of the property value after the update.
+            The `DebugInfo` user property is usually empty or unset on success, but is not required to be empty.  If provided, the
+            client should log or print the provided `DebugInfo` string for debugging purposes.
+
+            If the property update was unsuccessful, then there should be a `ReturnCode` user property with a non-zero value, and the payload will contain the server's current value for the property.
+            The `PropertyValue` user property will be the version of the current property value (which may or may not be what it was before).
+            The `DebugInfo` user property should contain a string describing why the update was unsuccessful, and the client should log or print it for debugging purposes, but the client is not to specifically parse the `DebugInfo` for programatic meaning.
+            """,
             payload=self._payload_ref(),
             contentType="application/json",
             bindings=MessageBindingsObject(
@@ -358,47 +411,85 @@ class AsyncApiPropertyHelper:
                         "type": "integer",
                         "description": " | ".join([f"{code.name}: {code.value}" for code in MethodReturnCode]),
                         "enum": [code.value for code in MethodReturnCode],
-                    } 
+                    },
+                    "DebugInfo": {
+                        "type": "string",
+                        "description": "A string describing why the update was unsuccessful, if applicable.",
+                    }
                 },
-                required=["PropertyValue"]
+                required=["PropertyValue", "ReturnCode", "DebugInfo"]
             ),
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="response")],
         )
 
     def value_to_channel(self) -> models.Channel:
         address = self.prop.value_topic()
         return models.Channel(
+            title=f"{upper_camel_case(self.prop.name)}PropertyValue",
+            summary=f"The current value of the '{self.prop.name}' property.",
             address=address,
             description=self.prop.documentation,
             messages=models.message.Messages(root={self.prop.name: self.get_value_message()}),
             parameters=_parameters_for_address(address, self.config),
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
         )
 
     def value_to_operation(self) -> models.Operation:
         name = self.value_channel_name()
         return models.Operation(
+            title=f"Receive{upper_camel_case(self.prop.name)}PropertyValue",
+            summary=f"Receive the current value of the '{self.prop.name}' property.",
+            description=f"""
+            Every time the property value changes, the server will publish the current property value to MQTT.
+            It publishes with a retain=true flag, so that clients can receive the current property value immediately upon subscribing.
+            Clients can subscribe to the value topic to receive the current property value and be notified of changes to the property value.
+
+            ```plantuml
+            Server -> MQTT Broker: '{self.prop.name}' Value (retain=true)
+            Client -> MQTT Broker: Subscribe
+            MQTT Broker -> Client: '{self.prop.name}' Value
+            ```
+            """,
             action="receive",
             channel=models.base.Reference(ref=f"#/channels/{name}"),
-            description=self.prop.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
-            tags=[models.base.Tag(name="property")],
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
         )
 
     def update_request_to_channel(self) -> models.Channel:
         address = self.prop.update_topic()
         return models.Channel(
-            address=address,
+            title=f"{upper_camel_case(self.prop.name)}UpdateRequest",
+            summary=f"A request to update the '{self.prop.name}' property.",
             description=self.prop.documentation,
+            address=address,
             messages=models.message.Messages(root={self.prop.name: self.get_request_message()}),
             parameters=_parameters_for_address(address, self.config),
         )
 
     def update_request_to_operation(self) -> models.Operation:
         name = self.update_request_channel_name()
+        address = self.prop.update_topic()
         return models.Operation(
             action="send",
             channel=models.base.Reference(ref=f"#/channels/{name}"),
-            description=self.prop.documentation,
+            description=f"""
+            A client publishes to this topic in order to request that the server updates the property value to provided value.
+
+            The server will respond with a message on the response topic indicating whether the update was successful, and what the new property value is after the update attempt.
+
+            ```plantuml
+            Server -> MQTT Broker: Subscribe to {address}
+            Client -> MQTT Broker: Update Request
+            MQTT Broker -> Server:  Update Request
+            Server -> Server: Update property value
+            Server -> MQTT Broker: New Property Value
+            MQTT Broker -> Client: New Property Value
+            Server -> MQTT Broker: Property Update Response
+            MQTT Broker -> Client: Property Update Response
+            ```
+            """,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
             tags=[models.base.Tag(name="property")],
@@ -407,6 +498,8 @@ class AsyncApiPropertyHelper:
     def update_response_to_channel(self) -> models.Channel:
         address = self.prop.response_topic()
         return models.Channel(
+            title=f"{upper_camel_case(self.prop.name)}UpdateResponse",
+            summary=f"A response to the update request for the '{self.prop.name}' property.",
             address=address,
             description=self.prop.documentation,
             messages=models.message.Messages(root={self.prop.name: self.get_response_message()}),
@@ -415,10 +508,30 @@ class AsyncApiPropertyHelper:
 
     def update_response_to_operation(self) -> models.Operation:
         name = self.update_response_channel_name()
+        address = self.prop.update_topic()
         return models.Operation(
             action="receive",
             channel=models.base.Reference(ref=f"#/channels/{name}"),
-            description=self.prop.documentation,
+            description=f"""
+            A server publishes to this topic in order to provide the response to an update request.
+
+            The server will respond with a message on the response topic indicating whether the update was successful, and what the new property value is after the update attempt.
+
+            ```plantuml
+            Server -> MQTT Broker: Subscribe to {address}
+            Client -> MQTT Broker: Update Request
+            MQTT Broker -> Server:  Update Request
+            Server -> Server: Update property value
+            Server -> MQTT Broker: New Property Value
+            MQTT Broker -> Client: New Property Value
+            Server -> MQTT Broker: Property Update Response
+            MQTT Broker -> Client: Property Update Response
+            ```
+
+            If the update failed, the most recent property value will be included in the response payload, 
+            and the client should update its local cached property value to match the value in the response, 
+            as that is the current value of the property on the server.
+            """,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
             tags=[models.base.Tag(name="property")],
