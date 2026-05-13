@@ -205,13 +205,7 @@ class AsyncApiMethodHelper:
         return self.method.return_value_name.replace(" ", "_")
 
     def get_request_message(self) -> models.Message:
-        payload_schema = Schema(
-            **{
-                "type": "object",
-                "properties": {arg.name: _arg_schema(arg) for arg in self.method.arg_list},
-                "required": [arg.name for arg in self.method.arg_list if not arg.optional] or None,
-            }
-        )
+        payload_schema = arg_list_to_schema(self.method.arg_list)
         response_topic_schema = _topic_template_to_regex(self.method.response_topic())
         return models.Message(
             name=self.request_message_key(),
@@ -225,6 +219,7 @@ class AsyncApiMethodHelper:
                     responseTopic={"type": "string", "pattern": response_topic_schema},
                 )
             ),
+            tags=[models.base.Tag(name="method"), models.base.Tag(name="request")],
         )
 
     def request_to_channel(self) -> models.Channel:
@@ -245,23 +240,19 @@ class AsyncApiMethodHelper:
             description=self.method.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
-            tags=[models.base.Tag(name="method")],
+            tags=[models.base.Tag(name="method"), models.base.Tag(name="request")],
+            reply=models.OperationReply(channel=models.base.Reference(ref=f"#/channels/{self.response_channel_name()}"))
         )
 
     def get_response_message(self) -> models.Message:
-        payload_schema = Schema(
-            **{
-                "type": "object",
-                "properties": {arg.name: _arg_schema(arg) for arg in self.method.return_arg_list},
-                "required": [arg.name for arg in self.method.return_arg_list if not arg.optional] or None,
-            }
-        )
+        payload_schema = arg_list_to_schema(self.method.return_arg_list)
         return models.Message(
             name=self.method.return_value_name,
             description=self.method.documentation,
             payload=payload_schema,
             contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            tags=[models.base.Tag(name="method"), models.base.Tag(name="response")],
         )
 
     def response_to_channel(self) -> models.Channel:
@@ -283,7 +274,7 @@ class AsyncApiMethodHelper:
             description=self.method.documentation,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.response_message_key()}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
-            tags=[models.base.Tag(name="method")],
+            tags=[models.base.Tag(name="method"), models.base.Tag(name="response")],
         )
 
 
@@ -302,13 +293,7 @@ class AsyncApiPropertyHelper:
         return f"{self.prop.name}_update_response"
 
     def payload_schema(self) -> Schema:
-        return Schema(
-            **{
-                "type": "object",
-                "properties": {arg.name: _arg_schema(arg) for arg in self.prop.arg_list},
-                "required": [arg.name for arg in self.prop.arg_list if not arg.optional] or None,
-            }
-        )
+        return arg_list_to_schema(self.prop.arg_list)
 
     def _payload_ref(self) -> Schema:
         return Schema(**{"$ref": f"#/components/schemas/{self.prop.name}_property"})
@@ -493,6 +478,7 @@ class AsyncApiPropertyHelper:
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
             tags=[models.base.Tag(name="property")],
+            reply=models.OperationReply(channel=models.base.Reference(ref=f"#/channels/{self.update_response_channel_name()}"))
         )
 
     def update_response_to_channel(self) -> models.Channel:
