@@ -7,7 +7,7 @@ import re
 import warnings
 
 warnings.filterwarnings("ignore", module="asyncapi3")
-
+from typing import Any
 from asyncapi3 import AsyncAPI3
 from asyncapi3 import models
 from asyncapi3.models import Schema
@@ -73,21 +73,27 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
     for member in ist.members:
         if member.arg_type == ArgType.ENUM:
             assert isinstance(member, ArgEnum)
-            prop: dict = {"$ref": f"#/components/schemas/{member.enum.name}"}
+            if member.optional:
+                prop: dict[str, Any] = {"anyOf": [{"$ref": f"#/components/schemas/{member.enum.name}"}, {"type": "null"}]}
+            else:
+                prop: dict[str, Any] = {"$ref": f"#/components/schemas/{member.enum.name}"}
         elif member.arg_type == ArgType.STRUCT:
             assert isinstance(member, ArgStruct)
-            prop = {"$ref": f"#/components/schemas/{member.interface_struct.name}"}
+            if member.optional:
+                prop: dict[str, Any] = {"anyOf": [{"$ref": f"#/components/schemas/{member.interface_struct.name}"}, {"type": "null"}]}
+            else:
+                prop: dict[str, Any] = {"$ref": f"#/components/schemas/{member.interface_struct.name}"}
         elif member.arg_type == ArgType.PRIMITIVE:
             assert isinstance(member, ArgPrimitive)
-            prop = _primitive_type_to_schema(member)
+            prop: dict[str, Any] = _primitive_type_to_schema(member)
         else:
-            prop = {"type": "string"}
+            prop: dict[str, Any] = {"type": "string"}
         if member.description:
             prop["description"] = member.description
         properties[member.name] = prop
         if not member.optional:
             required.append(member.name)
-    kwargs: dict = {"type": "object", "properties": properties}
+    kwargs: dict[str, Any] = {"type": "object", "properties": properties}
     if required:
         kwargs["required"] = required
     if ist.documentation:
@@ -209,7 +215,12 @@ class AsyncApiMethodHelper:
         response_topic_schema = _topic_template_to_regex(self.method.response_topic())
         return models.Message(
             name=self.request_message_key(),
-            description=self.method.documentation,
+            description="""The payload represents the arguments for the method call.  It is encoded as a JSON object.
+            
+            Correlation data must be provided as an MQTT property.  The data can be any binary data, but must be unique to this method.  Typically, using a UUID is sufficient to ensure uniqueness.  The server will include the same correlation data in the response message, so the client can match responses to requests when multiple requests are in-flight.
+            
+            A response topic must be provided as an MQTT property.  The server will publish the response message to the provided response topic.  The method-calling client must have a valid subscription to the MQTT response topic.
+            """,
             payload=payload_schema,
             contentType="application/json",
             bindings=MessageBindingsObject(
@@ -237,7 +248,17 @@ class AsyncApiMethodHelper:
         return models.Operation(
             action="send",
             channel=models.base.Reference(ref=f"#/channels/{name}"),
-            description=self.method.documentation,
+            description="""
+            A method may call one of the server's methods by publishing a message to the method's request topic.
+
+            ```plantuml
+            Client -> MQTT Broker: Method Request
+            MQTT Broker -> Server: Method Request
+            Server -> Server: Process method call
+            Server -> MQTT Broker: Method Response
+            MQTT Broker -> Client: Method Response
+            ```
+            """,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
             tags=[models.base.Tag(name="method"), models.base.Tag(name="request")],
@@ -248,7 +269,12 @@ class AsyncApiMethodHelper:
         payload_schema = arg_list_to_schema(self.method.return_arg_list)
         return models.Message(
             name=self.method.return_value_name,
-            description=self.method.documentation,
+            description="""
+            This payload represents the {% if self.method.return_arg_list | length > 1 %}return values{%elif self.method.return_arg_list | length == 1 %}return value{% else %}completion{% endif %} of the method call response.  It is encoded as a JSON object.
+            
+            A "correlation data" MQTT property will be included in the response message, and will match the correlation data provided in the request message, so the client can match responses to requests when multiple requests are in-flight.  Whatever binary data was provided as correlation data in the request will be provided as correlation data in the response.
+            (Hint: any blob of data works, so you could include extra tracking information like a timestamp if you needed it).
+            """,
             payload=payload_schema,
             contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
@@ -271,7 +297,17 @@ class AsyncApiMethodHelper:
         return models.Operation(
             action="receive",
             channel=models.base.Reference(ref=f"#/channels/{name}"),
-            description=self.method.documentation,
+            description="""
+            The server will publish a response message to the response topic provided in the request message.  The response message will contain the return value(s) of the method call.
+
+            ```plantuml
+            Client -> MQTT Broker: Method Request
+            MQTT Broker -> Server: Method Request
+            Server -> Server: Process method call
+            Server -> MQTT Broker: Method Response
+            MQTT Broker -> Client: Method Response
+            ```
+            """,
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.response_message_key()}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
             tags=[models.base.Tag(name="method"), models.base.Tag(name="response")],
