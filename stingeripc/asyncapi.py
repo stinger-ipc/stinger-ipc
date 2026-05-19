@@ -37,24 +37,38 @@ from stingeripc.config import StingerConfig
 from jacobsjinjatoo.stringmanip import lower_camel_case, upper_camel_case
 
 def _primitive_type_to_schema(arg: ArgPrimitive) -> dict:
+    schema_dict: dict[str, Any] = {}
     type_map = {
         "string": "string",
         "integer": "integer",
         "float": "number",
         "boolean": "boolean",
-        "datetime": "string",
-        "duration": "string",
-        "binary": "string",
     }
     json_type: str | list[str] = type_map.get(arg.primitive_type.name.lower(), "string")
     if arg.optional:
         assert isinstance(json_type, str)
-        json_type = [json_type, "null"]
-    return {
-        "type": json_type,
-        "description": arg.description,
-    }
+        schema_dict['type'] = [json_type, "null"]
+    else:
+        schema_dict['type'] = json_type
+    if arg.description:
+        schema_dict["description"] = arg.description
+    return schema_dict
 
+def _other_arg_to_schema(arg: Arg) -> dict:
+    schema_dict: dict[str, Any] = {"type": "string"}
+    if arg.description:
+        schema_dict["description"] = arg.description
+    if arg.arg_type.name.lower() == "datetime":
+        schema_dict["format"] = "date-time"
+    elif arg.arg_type.name.lower() == "duration":
+        schema_dict["format"] = "duration"
+        if arg.description:
+            schema_dict["description"] = (schema_dict["description"] + " The value should be an ISO 8601 duration string, e.g. 'PT1H30M' for 1 hour and 30 minutes.").strip()
+        else:
+            schema_dict["description"] = "The value should be an ISO 8601 duration string, e.g. 'PT1H30M' for 1 hour and 30 minutes."
+    elif arg.arg_type.name.lower() == "byte":
+        schema_dict["format"] = "binary"
+    return schema_dict
 
 def _enum_to_schema(ie: InterfaceEnum) -> Schema:
     kwargs: dict = {"type": "integer", "enum": [item.integer for item in ie.enum_items]}
@@ -63,7 +77,6 @@ def _enum_to_schema(ie: InterfaceEnum) -> Schema:
         item_descriptions.insert(0, ie.documentation)
     kwargs["description"] = "\n".join(item_descriptions)
     return Schema(**kwargs)
-
 
 def _struct_to_schema(ist: InterfaceStruct) -> Schema:
     from stingeripc.arg_models import ArgEnum, ArgStruct, ArgPrimitive
@@ -87,7 +100,7 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
             assert isinstance(member, ArgPrimitive)
             prop: dict[str, Any] = _primitive_type_to_schema(member)
         else:
-            prop: dict[str, Any] = {"type": "string"}
+            prop: dict[str, Any] = _other_arg_to_schema(member)
         if member.description:
             prop["description"] = member.description
         properties[member.name] = prop
