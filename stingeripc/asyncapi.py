@@ -36,6 +36,7 @@ from stingeripc.args import ArgType
 from stingeripc.config import StingerConfig
 from jacobsjinjatoo.stringmanip import lower_camel_case, upper_camel_case
 
+
 def _primitive_type_to_schema(arg: ArgPrimitive) -> dict:
     schema_dict: dict[str, Any] = {}
     type_map = {
@@ -47,12 +48,13 @@ def _primitive_type_to_schema(arg: ArgPrimitive) -> dict:
     json_type: str | list[str] = type_map.get(arg.primitive_type.name.lower(), "string")
     if arg.optional:
         assert isinstance(json_type, str)
-        schema_dict['type'] = [json_type, "null"]
+        schema_dict["type"] = [json_type, "null"]
     else:
-        schema_dict['type'] = json_type
+        schema_dict["type"] = json_type
     if arg.description:
         schema_dict["description"] = arg.description
     return schema_dict
+
 
 def _other_arg_to_schema(arg: Arg) -> dict:
     schema_dict: dict[str, Any] = {"type": "string"}
@@ -74,6 +76,7 @@ def _other_arg_to_schema(arg: Arg) -> dict:
         schema_dict["type"] = [schema_dict["type"], "null"]
     return schema_dict
 
+
 def _enum_to_schema(ie: InterfaceEnum) -> Schema:
     kwargs: dict = {"type": "integer", "enum": [item.integer for item in ie.enum_items]}
     item_descriptions: list[str] = [f"JSON Value `{item.integer}` is `{item.name}` - {item.description or ''}" for item in ie.enum_items]
@@ -81,6 +84,7 @@ def _enum_to_schema(ie: InterfaceEnum) -> Schema:
         item_descriptions.insert(0, ie.documentation)
     kwargs["description"] = "\n".join(item_descriptions)
     return Schema(**kwargs)
+
 
 def _array_to_schema(arg: ArgArray) -> dict:
     if arg.element.arg_type == ArgType.ENUM:
@@ -101,9 +105,11 @@ def _array_to_schema(arg: ArgArray) -> dict:
         array_schema["description"] = arg.description
     return array_schema
 
+
 def _struct_to_schema(ist: InterfaceStruct) -> Schema:
     from stingeripc.arg_models import ArgEnum, ArgStruct, ArgPrimitive
     from stingeripc.args import ArgType
+
     properties: dict[str, dict] = {}
     required: list[str] = []
     for member in ist.members:
@@ -127,7 +133,7 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
             prop: dict[str, Any] = _array_to_schema(member)
         else:
             prop: dict[str, Any] = _other_arg_to_schema(member)
-        if member.description and 'description' not in prop:
+        if member.description and "description" not in prop:
             prop["description"] = member.description
         properties[member.name] = prop
         if not member.optional:
@@ -138,6 +144,7 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
     if ist.documentation:
         kwargs["description"] = ist.documentation
     return Schema(**kwargs)
+
 
 def _arg_schema(arg: Arg) -> dict:
     if arg.arg_type == ArgType.ENUM:
@@ -151,21 +158,23 @@ def _arg_schema(arg: Arg) -> dict:
         return _primitive_type_to_schema(arg)
     return {"type": "string"}
 
+
 def _parameters_for_address(address: str, config: StingerConfig) -> models.channel.Parameters:
     params: dict = {}
-    if '{service_id}' in address:
-        params["service_id"] = {'$ref': '#/components/parameters/service_id'}
-    if '{client_id}' in address:
-        params["client_id"] = {'$ref': '#/components/parameters/client_id'}
+    if "{service_id}" in address:
+        params["service_id"] = {"$ref": "#/components/parameters/service_id"}
+    if "{client_id}" in address:
+        params["client_id"] = {"$ref": "#/components/parameters/client_id"}
     for topic_param in config.topics.params:
-        if f'{{{topic_param}}}' in address:
-            params[topic_param] = {'$ref': f'#/components/parameters/{topic_param}'}
+        if f"{{{topic_param}}}" in address:
+            params[topic_param] = {"$ref": f"#/components/parameters/{topic_param}"}
     return models.channel.Parameters(root=params)
 
 
 def _topic_template_to_regex(topic_template: str) -> str:
     """Convert a topic template into a regex where placeholders map to [^\}]+."""
     return re.sub(r"\{[^{}]+\}", r"[^\\}]+", topic_template)
+
 
 def arg_list_to_schema(arg_list: list[Arg]) -> Schema:
     properties: dict[str, dict] = {}
@@ -178,6 +187,7 @@ def arg_list_to_schema(arg_list: list[Arg]) -> Schema:
     if required:
         kwargs["required"] = required
     return Schema(**kwargs)
+
 
 class AsyncApiSignalHelper:
     def __init__(self, signal: IpcSignal, config: StingerConfig):
@@ -265,7 +275,7 @@ class AsyncApiMethodHelper:
             bindings=MessageBindingsObject(
                 mqtt=MQTTMessageBindings(
                     contentType="application/json",
-                    correlationData={"type":"string", "format":"uuid"},
+                    correlationData={"type": "string", "format": "uuid"},
                     responseTopic={"type": "string", "pattern": response_topic_schema},
                 )
             ),
@@ -301,7 +311,7 @@ class AsyncApiMethodHelper:
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
             tags=[models.base.Tag(name="method"), models.base.Tag(name="request")],
-            reply=models.OperationReply(channel=models.base.Reference(ref=f"#/channels/{self.response_channel_name()}"))
+            reply=models.OperationReply(channel=models.base.Reference(ref=f"#/channels/{self.response_channel_name()}")),
         )
 
     def get_response_message(self) -> models.Message:
@@ -387,18 +397,15 @@ class AsyncApiPropertyHelper:
             contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
             headers=Schema(
-                type="object", 
+                type="object",
                 properties={
-                    "PropertyValue": {
-                        "type": "integer",
-                        "description": "An integer that increments with each new value of the property."
-                    },
+                    "PropertyValue": {"type": "integer", "description": "An integer that increments with each new value of the property."},
                     "DebugInfo": {
                         "type": "string",
                         "description": "A optional (not likely to be provided) string that the client should log or print for debugging purposes.",
                     },
                 },
-                required=["PropertyValue"]
+                required=["PropertyValue"],
             ),
             tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
         )
@@ -419,19 +426,19 @@ class AsyncApiPropertyHelper:
             bindings=MessageBindingsObject(
                 mqtt=MQTTMessageBindings(
                     contentType="application/json",
-                    correlationData={"type":"string", "format":"uuid"},
-                    responseTopic={"type":"string", "pattern": _topic_template_to_regex(self.prop.response_topic())},
+                    correlationData={"type": "string", "format": "uuid"},
+                    responseTopic={"type": "string", "pattern": _topic_template_to_regex(self.prop.response_topic())},
                 )
             ),
             headers=Schema(
-                type="object", 
+                type="object",
                 properties={
                     "PropertyValue": {
                         "type": "integer",
-                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property."
-                    }, 
+                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property.",
+                    },
                 },
-                required=["PropertyValue"]
+                required=["PropertyValue"],
             ),
             tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="request")],
         )
@@ -456,11 +463,11 @@ class AsyncApiPropertyHelper:
             bindings=MessageBindingsObject(
                 mqtt=MQTTMessageBindings(
                     contentType="application/json",
-                    correlationData={"type":"string", "format":"uuid"},
+                    correlationData={"type": "string", "format": "uuid"},
                 )
             ),
             headers=Schema(
-                type="object", 
+                type="object",
                 properties={
                     "PropertyValue": {
                         "type": "integer",
@@ -475,9 +482,9 @@ class AsyncApiPropertyHelper:
                     "DebugInfo": {
                         "type": "string",
                         "description": "A string describing why the update was unsuccessful, if applicable.",
-                    }
+                    },
                 },
-                required=["PropertyValue", "ReturnCode", "DebugInfo"]
+                required=["PropertyValue", "ReturnCode", "DebugInfo"],
             ),
             tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="response")],
         )
@@ -553,7 +560,7 @@ class AsyncApiPropertyHelper:
             messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
             bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
             tags=[models.base.Tag(name="property")],
-            reply=models.OperationReply(channel=models.base.Reference(ref=f"#/channels/{self.update_response_channel_name()}"))
+            reply=models.OperationReply(channel=models.base.Reference(ref=f"#/channels/{self.update_response_channel_name()}")),
         )
 
     def update_response_to_channel(self) -> models.Channel:
@@ -631,7 +638,6 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
             operations[prop_helper.update_request_channel_name()] = prop_helper.update_request_to_operation()
             channels[prop_helper.update_response_channel_name()] = prop_helper.update_response_to_channel()
             operations[prop_helper.update_response_channel_name()] = prop_helper.update_response_to_operation()
-
 
     aa = AsyncAPI3(
         info=models.Info(

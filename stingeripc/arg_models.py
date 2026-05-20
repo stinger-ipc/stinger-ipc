@@ -29,9 +29,10 @@ RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "op
 
 class Arg(BaseModel):
     """Represents an argument to a method, signal, or property.  This is the base class for all argument types."""
+
     model_config = ConfigDict(extra="allow")
-    name:str  = Field(..., description="The name of the argument")
-    description: str|None = Field(default=None, description="A description of the argument")
+    name: str = Field(..., description="The name of the argument")
+    description: str | None = Field(default=None, description="A description of the argument")
     optional: bool = Field(default=False, description="Whether the argument is optional")
     arg_type: ArgType = Field(default=ArgType.UNKNOWN, description="The type of the argument")
 
@@ -44,9 +45,7 @@ class Arg(BaseModel):
         return repr(self)
 
     @classmethod
-    def new_arg_from_stinger(
-        cls, arg_spec: YamlArg, stinger_spec: Optional[StingerSpec] = None
-    ) -> Arg:
+    def new_arg_from_stinger(cls, arg_spec: YamlArg, stinger_spec: Optional[StingerSpec] = None) -> Arg:
         # arg_spec may be an immutable Mapping; copy to mutable dict for validation/mutation
         spec: dict[str, Any]
         if isinstance(arg_spec, dict):
@@ -73,9 +72,7 @@ class Arg(BaseModel):
             return arg
         else:
             if stinger_spec is None:
-                raise RuntimeError(
-                    "Need the root StingerSpec when creating an enum or struct Arg"
-                )
+                raise RuntimeError("Need the root StingerSpec when creating an enum or struct Arg")
 
         if spec["type"] == "enum":
             if "enumName" not in arg_spec:
@@ -83,12 +80,8 @@ class Arg(BaseModel):
             if not isinstance(arg_spec["enumName"], str):
                 raise InvalidStingerStructure("'enumName' in arg structure must be a string")
             if arg_spec["enumName"] not in stinger_spec.enums:
-                raise InvalidStingerStructure(
-                    f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums"
-                )
-            enum_arg = ArgEnum(
-                name=spec["name"], enum=stinger_spec.get_interface_enum(spec["enumName"])
-            )
+                raise InvalidStingerStructure(f"Enum arg '{arg_spec['enumName']}' was not found in the list of stinger spec enums")
+            enum_arg = ArgEnum(name=spec["name"], enum=stinger_spec.get_interface_enum(spec["enumName"]))
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
@@ -102,19 +95,15 @@ class Arg(BaseModel):
             if not isinstance(spec["structName"], str):
                 raise InvalidStingerStructure("'structName' in arg structure must be a string")
             if spec["structName"] not in stinger_spec.structs:
-                raise InvalidStingerStructure(
-                    f"Struct arg '{spec["structName"]}' was not found in the list of stinger spec structs"
-                )
-            st_arg = ArgStruct(
-                name=spec["name"], interface_struct=stinger_spec.structs[spec["structName"]]
-            )
+                raise InvalidStingerStructure(f"Struct arg '{spec["structName"]}' was not found in the list of stinger spec structs")
+            st_arg = ArgStruct(name=spec["name"], interface_struct=stinger_spec.structs[spec["structName"]])
             if opt := spec.get("optional", False):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 st_arg.optional = opt
             st_arg.try_set_description_from_spec(spec)
             return st_arg
-        
+
         if spec["type"] == "datetime":
             dt_arg = ArgDateTime(name=spec["name"])
             if opt := spec.get("optional", False):
@@ -132,7 +121,7 @@ class Arg(BaseModel):
                 dur_arg.optional = opt
             dur_arg.try_set_description_from_spec(spec)
             return dur_arg
-        
+
         if spec["type"] == "binary":
             bin_arg = ArgBinary(name=spec["name"])
             if opt := spec.get("optional", False):
@@ -141,7 +130,7 @@ class Arg(BaseModel):
                 bin_arg.optional = opt
             bin_arg.try_set_description_from_spec(spec)
             return bin_arg
-        
+
         if spec["type"] == "array":
             if "itemType" not in spec:
                 raise InvalidStingerStructure("Array args need an 'itemType'")
@@ -166,12 +155,13 @@ class Arg(BaseModel):
 
 
 class ArgEnum(Arg):
-    
+
     enum: InterfaceEnum = Field(..., description="The InterfaceEnum that restricts the values this ArgEnum represents.")
     arg_type: ArgType = Field(default=ArgType.ENUM, description="The type of the argument, which is 'enum' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
+
     def get_random_example_value(self, lang="python", seed: int = 2) -> str:
         random_state = random.getstate()
         random.seed(seed)
@@ -199,13 +189,12 @@ class ArgEnum(Arg):
 
 
 class ArgPrimitive(Arg):
-    
+
     arg_type: ArgType = Field(default=ArgType.PRIMITIVE, description="The type of the argument, which is 'primitive' for this class")
     primitive_type: ArgPrimitiveType = Field(..., description="The specific primitive type that this argument represents (e.g. boolean, integer, float, string)")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
-
 
     @property
     def type(self) -> ArgPrimitiveType:
@@ -219,9 +208,7 @@ class ArgPrimitive(Arg):
     def json_type(self) -> str:
         return ArgPrimitiveType.to_json_type(self.primitive_type)
 
-    def get_random_example_value(
-        self, lang="python", seed: int = 2
-    ) -> str | float | int | bool | None:
+    def get_random_example_value(self, lang="python", seed: int = 2) -> str | float | int | bool | None:
         random_state = random.getstate()
         random.seed(seed)
         retval: str | float | int | bool | None = None
@@ -234,13 +221,11 @@ class ArgPrimitive(Arg):
         elif self.primitive_type == ArgPrimitiveType.INTEGER:
             retval = random.choice([42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955])
         elif self.primitive_type == ArgPrimitiveType.STRING:
-            retval = random.choice(
-                ['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"', '"bear"', '"root beer"']
-            )
+            retval = random.choice(['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"', '"bear"', '"root beer"'])
             if lang == "rust":
                 retval = f"{retval}.to_string()"
             if self.optional and lang in ["cpp", "c++"]:
-                retval = f'std::make_optional(std::string({retval}))'
+                retval = f"std::make_optional(std::string({retval}))"
         if self.optional and lang == "rust":
             retval = f"Some({retval})"
         random.setstate(random_state)
@@ -250,9 +235,7 @@ class ArgPrimitive(Arg):
         return f"<ArgPrimitive name={self.name} type={ArgPrimitiveType.to_python_type(self.primitive_type)}>"
 
     @classmethod
-    def new_arg_primitive_from_stinger(
-        cls, arg_spec: Mapping[str, Any]
-    ) -> ArgPrimitive:
+    def new_arg_primitive_from_stinger(cls, arg_spec: Mapping[str, Any]) -> ArgPrimitive:
         if "type" not in arg_spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in arg_spec:
@@ -276,6 +259,7 @@ class ArgStruct(Arg):
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
+
     @property
     def struct(self) -> InterfaceStruct:
         return self.interface_struct
@@ -288,15 +272,9 @@ class ArgStruct(Arg):
         # Build a dict of example values keyed appropriately depending on language.
         example_list: dict[str, str]
         if lang in ["rust", "python"]:
-            example_list = {
-                stringmanip.snake_case(a.name): str(a.get_random_example_value(lang, seed=seed))
-                for a in self.members
-            }
+            example_list = {stringmanip.snake_case(a.name): str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
         else:
-            example_list = {
-                a.name: str(a.get_random_example_value(lang, seed=seed))
-                for a in self.members
-            }
+            example_list = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
         if lang == "c++":
             return self.cpp.type + "{" + ", ".join(example_list.values()) + "}"  # type: ignore[attr-defined]
         elif lang == "python":
@@ -321,13 +299,13 @@ class ArgStruct(Arg):
     def __repr__(self):
         return f"ArgStruct(name={self.name}, iface_struct={self.interface_struct})"
 
+
 class ArgDateTime(Arg):
-    
+
     arg_type: ArgType = Field(default=ArgType.DATETIME, description="The type of the argument, which is 'datetime' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
-
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":
@@ -352,12 +330,12 @@ class ArgDateTime(Arg):
     def __repr__(self):
         return f"ArgDateTime(name={self.name})"
 
+
 class ArgDuration(Arg):
     arg_type: ArgType = Field(default=ArgType.DURATION, description="The type of the argument, which is 'duration' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
-
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         random_state = random.getstate()
@@ -390,26 +368,24 @@ class ArgDuration(Arg):
 
     def __repr__(self):
         return f"ArgDuration(name={self.name})"
-    
+
 
 class ArgBinary(Arg):
-    
+
     arg_type: ArgType = Field(default=ArgType.BINARY, description="The type of the argument, which is 'binary' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
-
-
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         if lang == "python":
             return f'b"example binary data"'
         elif lang == "rust":
             if self.optional:
-                return 'Some(vec![101, 120, 97, 109, 112, 108, 101])'  # "example" in ASCII bytes
-            return 'vec![101, 120, 97, 109, 112, 108, 101]'  # "example" in ASCII bytes
+                return "Some(vec![101, 120, 97, 109, 112, 108, 101])"  # "example" in ASCII bytes
+            return "vec![101, 120, 97, 109, 112, 108, 101]"  # "example" in ASCII bytes
         elif lang in ["c++", "cpp"]:
-            return 'std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}'  # "example" in ASCII bytes
+            return "std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}"  # "example" in ASCII bytes
         if lang == "json":
             if self.optional and random.choice([True, False, False, False]):
                 retval = "null"
@@ -425,10 +401,10 @@ class ArgBinary(Arg):
 
     def __repr__(self):
         return f"ArgBinary(name={self.name})"
-    
+
 
 class ArgArray(Arg):
-    
+
     element: Arg = Field(..., description="The type of the elements in the array")
     arg_type: ArgType = Field(default=ArgType.ARRAY, description="The type of the argument, which is 'array' for this class")
 
@@ -437,8 +413,8 @@ class ArgArray(Arg):
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         example_value = self.element.get_random_example_value(lang, seed=seed)
-        example_value2 = self.element.get_random_example_value(lang, seed=seed+1)
-        example_value3 = self.element.get_random_example_value(lang, seed=seed+2)
+        example_value2 = self.element.get_random_example_value(lang, seed=seed + 1)
+        example_value3 = self.element.get_random_example_value(lang, seed=seed + 2)
         if lang == "python":
             return f"[{example_value}, {example_value2}]"
         elif lang == "rust":

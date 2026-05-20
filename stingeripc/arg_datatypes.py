@@ -132,5 +132,6 @@ class InterfaceStruct(BaseModel):
 
 # Resolve forward references in arg_models that depend on InterfaceEnum/InterfaceStruct
 from stingeripc.arg_models import ArgEnum, ArgStruct  # noqa: E402
+
 ArgEnum.model_rebuild()
 ArgStruct.model_rebuild()

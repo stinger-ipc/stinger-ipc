@@ -90,6 +90,7 @@ class CppMethodSymbols(CppSymbols):
     @property
     def return_value_class(self) -> str:
         from stingeripc.components import Arg, ArgPrimitive, ArgStruct
+
         if self._method._return_value is None:
             return "void"
         elif isinstance(self._method._return_value, Arg):

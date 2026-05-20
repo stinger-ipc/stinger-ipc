@@ -157,4 +157,3 @@ class TestEnumFromStingerValidationErrors(unittest.TestCase):
         stinger = {"values": [{"name": "a"}], "version": "not-a-version"}
         with self.assertRaises(InvalidStingerStructure):
             InterfaceEnum.new_enum_from_stinger("bad", stinger)
-

@@ -60,9 +60,7 @@ class IpcProperty(InterfaceComponent):
         if "values" not in prop_spec:
             raise InvalidStingerStructure("Property specification must have 'values'")
         if not isinstance(prop_spec["values"], list):
-            raise InvalidStingerStructure(
-                f"Values must be a list.  It is '{type(prop_spec['values'])}' "
-            )
+            raise InvalidStingerStructure(f"Values must be a list.  It is '{type(prop_spec['values'])}' ")
 
         for arg_spec in prop_spec["values"]:
             if "name" not in arg_spec or "type" not in arg_spec:

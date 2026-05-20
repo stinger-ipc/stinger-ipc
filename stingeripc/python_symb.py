@@ -69,12 +69,12 @@ class PythonInterfaceSymbols(PythonSymbols):
 
     @property
     def client_class_name(self) -> str:
-        """ Name of the python class for the interface client."""
+        """Name of the python class for the interface client."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Client"
 
     @property
     def server_class_name(self) -> str:
-        """ Name of the python class for the interface server."""
+        """Name of the python class for the interface server."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Server"
 
 

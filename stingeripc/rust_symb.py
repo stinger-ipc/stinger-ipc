@@ -51,18 +51,18 @@ class RustInterfaceSymbols(RustSymbols):
 
     @property
     def package_name(self) -> str:
-        """ Name of the rust package for the interface client."""
+        """Name of the rust package for the interface client."""
         s = f"{stringmanip.snake_case(self._iface.name)}_{stringmanip.snake_case(self.config.rust.package_suffix) or 'ipc'}"  # type: ignore[union-attr]
         return s
 
     @property
     def client_struct_name(self) -> str:
-        """ Name of the rust struct for the interface client."""
+        """Name of the rust struct for the interface client."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Client"
 
     @property
     def server_struct_name(self) -> str:
-        """ Name of the struct for the interface server."""
+        """Name of the struct for the interface server."""
         return f"{stringmanip.upper_camel_case(self._iface.name)}Server"
 
 
