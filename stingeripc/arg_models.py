@@ -435,7 +435,6 @@ class ArgArray(Arg):
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
 
-
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         example_value = self.element.get_random_example_value(lang, seed=seed)
         example_value2 = self.element.get_random_example_value(lang, seed=seed+1)
