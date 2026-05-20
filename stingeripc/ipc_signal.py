@@ -45,9 +45,7 @@ class IpcSignal(InterfaceComponent):
         if "payload" not in signal_spec:
             raise InvalidStingerStructure("Signal specification must have 'payload'")
         if not isinstance(signal_spec["payload"], list):
-            raise InvalidStingerStructure(
-                f"Payload must be a list.  It is '{type(signal_spec['payload'])}' "
-            )
+            raise InvalidStingerStructure(f"Payload must be a list.  It is '{type(signal_spec['payload'])}' ")
 
         for arg_spec in signal_spec["payload"]:
             if "name" not in arg_spec or "type" not in arg_spec:
