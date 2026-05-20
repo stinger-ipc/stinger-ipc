@@ -32,15 +32,11 @@ class IpcMethod(InterfaceComponent):
             self._return_value = value
         elif isinstance(self._return_value, list):
             if value.name in [a.name for a in self._return_value]:
-                raise InvalidStingerStructure(
-                    f"A return value named '{value.name}' has been already added."
-                )
+                raise InvalidStingerStructure(f"A return value named '{value.name}' has been already added.")
             self._return_value.append(value)
         elif isinstance(self._return_value, Arg):
             if value.name == self._return_value.name:
-                raise InvalidStingerStructure(
-                    f"Attempt to add '{value.name}' to return value when it is already been added."
-                )
+                raise InvalidStingerStructure(f"Attempt to add '{value.name}' to return value when it is already been added.")
             self._return_value = [self._return_value, value]
         return self
 
@@ -87,9 +83,7 @@ class IpcMethod(InterfaceComponent):
             return "multiple"
         raise RuntimeError("Method return value type was not recognized")
 
-    def get_return_value_random_example_value(
-        self, lang: str = "python", seed: int = 2
-    ):
+    def get_return_value_random_example_value(self, lang: str = "python", seed: int = 2):
         if lang == "python":
             if self._return_value is None:
                 return "None"
@@ -106,12 +100,7 @@ class IpcMethod(InterfaceComponent):
             elif isinstance(self._return_value, Arg):
                 return self._return_value.get_random_example_value(lang, seed)
             elif isinstance(self._return_value, list):
-                return ", ".join(
-                    [
-                        str(a.get_random_example_value(lang, seed))
-                        for a in self._return_value
-                    ]
-                )
+                return ", ".join([str(a.get_random_example_value(lang, seed)) for a in self._return_value])
         raise RuntimeError(f"No random example for return value for {lang}")
 
     @classmethod
@@ -124,13 +113,9 @@ class IpcMethod(InterfaceComponent):
         """Alternative constructor from a Stinger method structure."""
         method = cls(name, stinger_spec)
         if "arguments" not in method_spec:
-            raise InvalidStingerStructure(
-                f"Method '{name}' specification must have 'arguments'"
-            )
+            raise InvalidStingerStructure(f"Method '{name}' specification must have 'arguments'")
         if not isinstance(method_spec["arguments"], list):
-            raise InvalidStingerStructure(
-                f"Arguments for '{name}' method must be a list.  It is '{type(method_spec['arguments'])}' "
-            )
+            raise InvalidStingerStructure(f"Arguments for '{name}' method must be a list.  It is '{type(method_spec['arguments'])}' ")
 
         for arg_spec in method_spec["arguments"]:
             if "name" not in arg_spec or "type" not in arg_spec:
@@ -144,9 +129,7 @@ class IpcMethod(InterfaceComponent):
 
             for arg_spec in method_spec["returnValues"]:
                 if "name" not in arg_spec or "type" not in arg_spec:
-                    raise InvalidStingerStructure(
-                        "Return value must have name and type."
-                    )
+                    raise InvalidStingerStructure("Return value must have name and type.")
                 new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
                 method.add_return_value(new_arg)
 

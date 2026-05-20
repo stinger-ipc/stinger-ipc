@@ -81,7 +81,7 @@ def asyncapi(
             merged_dict.update(file_config.model_dump(exclude_unset=True))
             config_obj = StingerConfig.model_validate(merged_dict)
     assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
-    for k,v in config_obj.model_dump().items():
+    for k, v in config_obj.model_dump().items():
         print(f"🔧{k:>10.10}: {v}")
 
     print(f"🟢   [bold cyan]LOAD:[/bold cyan] {input_file}")

@@ -36,8 +36,6 @@ from stingeripc.arg_models import (
 from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
 
 
-
-
 class InterfaceComponent(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
@@ -55,13 +53,10 @@ class InterfaceComponent(BaseModel):
         self.documentation = documentation
         return self
 
-    def try_set_documentation_from_spec(
-        self, spec: dict[str, Any]
-    ) -> "InterfaceComponent":
+    def try_set_documentation_from_spec(self, spec: dict[str, Any]) -> "InterfaceComponent":
         if "documentation" in spec and isinstance(spec["documentation"], str):
             self.documentation = spec["documentation"]
         return self
-
 
 
 class StingerSpec:
@@ -133,16 +128,19 @@ class StingerSpec:
 
     def add_signal(self, signal: IpcSignal):
         from stingeripc.ipc_signal import IpcSignal
+
         assert isinstance(signal, IpcSignal)
         self.signals[signal.name] = signal
 
     def add_method(self, method: IpcMethod):
         from stingeripc.ipc_method import IpcMethod
+
         assert isinstance(method, IpcMethod)
         self.methods[method.name] = method
 
     def add_property(self, prop: IpcProperty):
         from stingeripc.ipc_property import IpcProperty
+
         assert isinstance(prop, IpcProperty)
         self.properties[prop.name] = prop
 
