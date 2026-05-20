@@ -27,7 +27,7 @@ from stinger_python_utils.return_codes import (
 )
 
 from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
-from stingeripc.arg_models import Arg, ArgEnum, ArgStruct, ArgPrimitive
+from stingeripc.arg_models import Arg, ArgArray, ArgEnum, ArgStruct, ArgPrimitive
 from stingeripc.ipc_method import IpcMethod
 from stingeripc.ipc_property import IpcProperty
 from stingeripc.ipc_signal import IpcSignal
@@ -56,18 +56,22 @@ def _primitive_type_to_schema(arg: ArgPrimitive) -> dict:
 
 def _other_arg_to_schema(arg: Arg) -> dict:
     schema_dict: dict[str, Any] = {"type": "string"}
-    if arg.description:
-        schema_dict["description"] = arg.description
     if arg.arg_type.name.lower() == "datetime":
         schema_dict["format"] = "date-time"
     elif arg.arg_type.name.lower() == "duration":
         schema_dict["format"] = "duration"
         if arg.description:
-            schema_dict["description"] = (schema_dict["description"] + " The value should be an ISO 8601 duration string, e.g. 'PT1H30M' for 1 hour and 30 minutes.").strip()
+            schema_dict["description"] = (arg.description + " The value should be an ISO 8601 duration string, e.g. 'PT1H30M' for 1 hour and 30 minutes.").strip()
         else:
             schema_dict["description"] = "The value should be an ISO 8601 duration string, e.g. 'PT1H30M' for 1 hour and 30 minutes."
-    elif arg.arg_type.name.lower() == "byte":
-        schema_dict["format"] = "binary"
+    elif arg.arg_type.name.lower() == "binary":
+        schema_dict["format"] = "byte"
+        if arg.description:
+            schema_dict["description"] = (arg.description + " The value should be a base64-encoded string.").strip()
+        else:
+            schema_dict["description"] = "The value should be a base64-encoded string."
+    if arg.optional:
+        schema_dict["type"] = [schema_dict["type"], "null"]
     return schema_dict
 
 def _enum_to_schema(ie: InterfaceEnum) -> Schema:
@@ -77,6 +81,25 @@ def _enum_to_schema(ie: InterfaceEnum) -> Schema:
         item_descriptions.insert(0, ie.documentation)
     kwargs["description"] = "\n".join(item_descriptions)
     return Schema(**kwargs)
+
+def _array_to_schema(arg: ArgArray) -> dict:
+    if arg.element.arg_type == ArgType.ENUM:
+        assert isinstance(arg.element, ArgEnum)
+        item_schema: dict[str, Any] = {"$ref": f"#/components/schemas/{arg.element.enum.name}"}
+    elif arg.element.arg_type == ArgType.STRUCT:
+        assert isinstance(arg.element, ArgStruct)
+        item_schema = {"$ref": f"#/components/schemas/{arg.element.interface_struct.name}"}
+    elif arg.element.arg_type == ArgType.PRIMITIVE:
+        assert isinstance(arg.element, ArgPrimitive)
+        item_schema = _primitive_type_to_schema(arg.element)
+    else:
+        item_schema = _other_arg_to_schema(arg.element)
+    array_schema: dict[str, Any] = {"type": "array", "items": item_schema}
+    if arg.optional:
+        array_schema["type"] = [array_schema["type"], "null"]
+    if arg.description:
+        array_schema["description"] = arg.description
+    return array_schema
 
 def _struct_to_schema(ist: InterfaceStruct) -> Schema:
     from stingeripc.arg_models import ArgEnum, ArgStruct, ArgPrimitive
@@ -99,9 +122,12 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
         elif member.arg_type == ArgType.PRIMITIVE:
             assert isinstance(member, ArgPrimitive)
             prop: dict[str, Any] = _primitive_type_to_schema(member)
+        elif member.arg_type == ArgType.ARRAY:
+            assert isinstance(member, ArgArray)
+            prop: dict[str, Any] = _array_to_schema(member)
         else:
             prop: dict[str, Any] = _other_arg_to_schema(member)
-        if member.description:
+        if member.description and 'description' not in prop:
             prop["description"] = member.description
         properties[member.name] = prop
         if not member.optional:
