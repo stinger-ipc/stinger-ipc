@@ -700,7 +700,7 @@ mod tests {
             {%if prop.arg_list|length == 1 -%}
             let {{prop_name|snake_case}}_new_value = {{prop.arg_list[0].get_random_example_value(lang="rust")}};
             {%else-%}
-            let {{prop_name|snake_case}}_new_value = {{prop.rust_type}} {
+            let {{prop_name|snake_case}}_new_value = {{prop.rust.type}} {
                 {%-for arg in prop.arg_list %}
                     {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%-endfor%}
