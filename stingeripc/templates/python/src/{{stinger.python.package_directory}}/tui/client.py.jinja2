@@ -168,7 +168,7 @@ class PropertyEditModal(ModalScreen[bool]):
                     {%if arg.arg_type.name == 'STRUCT'%}
                     yield TextArea.code_editor(language="json", text=f"{self.current_value.{{arg.name|snake_case}}.model_dump_json()}", id="property_input_{{arg.name|snake_case}}")
                     {%elif arg.arg_type.name == 'ARRAY'%}
-                    type_adapter = TypeAdapter({{arg.python_annotation}})
+                    type_adapter = TypeAdapter({{arg.python.annotation}})
                     yield TextArea.code_editor(language="json", text=f"{type_adapter.dump_json(self.current_value.{{arg.name|snake_case}}).decode('utf-8')}", id="property_input_{{arg.name|snake_case}}")
                     {%else%}
                     yield Input(placeholder=f"{{arg.name}} value", value=str(self.current_value.{{arg.name|snake_case}}), classes="property_input_value", id="property_input_{{arg.name|snake_case}}")
@@ -207,7 +207,7 @@ class PropertyEditModal(ModalScreen[bool]):
                     {%-if prop.arg_list|length == 1%}
                     input_widget = self.query_one("#property_input")
                     {%if prop.arg_list[0].arg_type.name == 'ARRAY'%}
-                    type_adapter = TypeAdapter({{prop.arg_list[0].python_annotation}})
+                    type_adapter = TypeAdapter({{prop.arg_list[0].python.annotation}})
                     new_{{prop_name|snake_case}}_value = type_adapter.validate_json(input_widget.text.strip())
                     {%else%}
                     new_{{prop_name|snake_case}}_value = {{from_input_string(prop.arg_list[0], "input_widget.value")}}
@@ -217,7 +217,7 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_{{arg.name|snake_case}} = self.query_one("#property_input_{{arg.name|snake_case}}", {% if arg.arg_type.name in ['ARRAY', 'STRUCT'] %}TextArea{% else %}Input{% endif %})
                     # {{arg.name}} should be {{arg.type}}
                     {%if arg.arg_type.name == 'ARRAY'%}
-                    type_adapter = TypeAdapter({{arg.python_annotation}})
+                    type_adapter = TypeAdapter({{arg.python.annotation}})
                     new_{{prop_name|snake_case}}_value_{{arg.name|snake_case}} = type_adapter.validate_json(input_widget_{{arg.name|snake_case}}.text.strip())
                     {%else%}
                     new_{{prop_name|snake_case}}_value_{{arg.name|snake_case}} = {{from_input_string(arg, "input_widget_" + arg.name|snake_case + ".value")}}

@@ -19,11 +19,13 @@ from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{
 UTC = timezone.utc
 {%endif%}
 import isodate
+import asyncio
+import inspect
 import functools
 from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
-from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar
+from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar, Union, Coroutine
 from pyqttier.interface import IBrokerConnection
 from pyqttier.message import Message
 from stinger_python_utils.message_creator import MessageCreator
@@ -36,7 +38,7 @@ from stinger_python_utils.return_codes import (
     stinger_exception_factory,
 )
 from .interface_types import *
-{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}{%endif%}], {{method.python.return_value_annotation}}]{%endmacro%}
+{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}{%endif%}], Union[{{method.python.return_value_annotation}}, Coroutine[Any, Any, {{method.python.return_value_annotation}}]]]{%endmacro%}
 {%if stinger.properties | length > 0 %}
 {%if config.properties.stinger_owned_values%}
 from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
@@ -56,7 +58,7 @@ class PropertyControls(Generic[T]):
     value: T
     mutex = threading.RLock()
     version: int = -1
-    callbacks: List[Callable[[T], None]] = field(default_factory=list)
+    callbacks: List[Callable[[T], Union[None, Coroutine[Any, Any, None]]]] = field(default_factory=list)
 
     def get_value(self) -> T:
         with self.mutex:
@@ -69,7 +71,7 @@ class PropertyControls(Generic[T]):
     {%else%}
     mutex = threading.RLock()
     getter: Callable[[], T]
-    setter: Optional[Callable[[T], None]] = None
+    setter: Optional[Callable[[T], Union[None, Coroutine[Any, Any, None]]]] = None
     version: int = -1
 
     def get_value(self) -> T:
@@ -88,6 +90,7 @@ class {{stinger.python.server_class_name}}:
         self._logger = logging.getLogger(f'{{stinger.python.server_class_name}}:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
+        self._event_loop: Optional[asyncio.AbstractEventLoop] = None
         self._conn = connection
         self._instance_id = instance_id
         self._topic_template_kwargs = {
@@ -130,6 +133,11 @@ class {{stinger.python.server_class_name}}:
 
     def _signal_handler(self, signum, frame):
         self.shutdown()
+
+    def set_event_loop(self, loop: asyncio.AbstractEventLoop):
+        """ Sets the event loop for this server.  This is required if any method handlers or property update handlers are async functions that need to be run on an event loop.
+        """
+        self._event_loop = loop
 
     def shutdown(self, timeout: float=5.0):
         """Gracefully shutdown the server and stop the advertisement thread."""
@@ -259,10 +267,14 @@ class {{stinger.python.server_class_name}}:
             {%if config.properties.stinger_owned_values%}{# only call callbacks if we have stinger-owned values#}
             for {{prop_name|snake_case}}_callback in self._property_{{prop_name|snake_case}}.callbacks:
                 {%if prop.arg_list | length == 1%}
-                {{prop_name|snake_case}}_callback(current_prop_obj.{{prop.arg_list[0].name|snake_case}})
+                result = {{prop_name|snake_case}}_callback(current_prop_obj.{{prop.arg_list[0].name|snake_case}})
                 {%else%}
-                {{prop_name|snake_case}}_callback(current_prop_obj)
+                result = {{prop_name|snake_case}}_callback(current_prop_obj)
                 {%endif%}
+                if inspect.iscoroutine(result):
+                    if self._event_loop is None:
+                        raise RuntimeError(f"Received coroutine result from property update callback for '{{prop_name}}' property, but no event loop was provided to the server to run it on.")
+                    asyncio.run_coroutine_threadsafe(result, self._event_loop)
             {%endif%}
         except Exception as e:
             self._logger.exception("StingerMethodException while processing property update for %s: %s", message.topic, str(e))
@@ -340,7 +352,11 @@ class {{stinger.python.server_class_name}}:
             return_json = ""
             debug_msg = None # type: Optional[str]
             try:
-                {%if method.return_arg_list|length > 0 %}return_values = {%endif%}self._method_{{method_name|snake_case}}_handler(*method_args)
+                return_values = self._method_{{method_name|snake_case}}_handler(*method_args)
+                if inspect.iscoroutine(return_values):
+                    if self._event_loop is None:
+                        raise RuntimeError(f"Method handler for '{{method_name}}' returned a coroutine, but no event loop was provided to the server to run it on.")
+                    return_values = asyncio.run_coroutine_threadsafe(return_values, self._event_loop).result()
                 
                 {%if method.return_arg_list|length == 0%}
                 return_data = "{}"
@@ -465,7 +481,7 @@ class {{stinger.python.server_class_name}}:
     {%endif%}{# property with multiple arguments #}
 
     {%if config.properties.stinger_owned_values or not prop.read_only %} {# if the property is read-only, we have no way of setting app-owned values. #}
-    def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ This method sets (publishes) a new value for the '{{prop_name}}' property.
         """
         {%-for arg in prop.arg_list%}
@@ -487,7 +503,7 @@ class {{stinger.python.server_class_name}}:
     {%endif%}{# above block allowed if stinger-owned-values or not read-only #}
 
     {%if config.properties.stinger_owned_values and not prop.read_only %}
-    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], Union[None, Coroutine[Any, Any, None]]]):
         """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
         """
         {%-if prop.arg_list | length > 1%}
@@ -512,7 +528,7 @@ class {{stinger.python.server_class_name}}Builder:
         {%-endfor%}
         {%if config.properties.stinger_owned_values%}
         {%for prop_name, property in stinger.properties.items()%}
-        self._{{prop_name|snake_case}}_property_callbacks: List[Callable[[{%for arg in property.arg_list %}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]] = []
+        self._{{prop_name|snake_case}}_property_callbacks: List[Callable[[{%for arg in property.arg_list %}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], Union[None, Coroutine[Any, Any, None]]]] = []
         {%-endfor%}
         {%endif%}{# only when stinger owned values #}
     {%for method_name, method in stinger.methods.items()%}
@@ -529,7 +545,7 @@ class {{stinger.python.server_class_name}}Builder:
     {%if config.properties.stinger_owned_values %}
     {%for prop_name, prop in stinger.properties.items()%}
     {%if not prop.read_only %}
-    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]):
+    def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{%for arg in prop.arg_list %}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], Union[None, Coroutine[Any, Any, None]]]):
         """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
         """
         @functools.wraps(handler)
