@@ -59,6 +59,7 @@ class TopicConfig(BaseModel):
     method_requests: str = Field(default="{interface_name}/{service_id}/method/{method_name}/request", description="Topic template for method requests")
     method_responses: str = Field(default="client/{client_id}/{interface_name}/method/{method_name}/response", description="Topic template for method responses")
     interface_discovery: str = Field(default="{interface_name}/{service_id}/interface", description="Topic template for interface discovery")
+    lwt: str = Field(default="client/{client_id}/online", description="Topic template for Last Will and Testament messages")
 
     @field_validator("property_values")
     @classmethod

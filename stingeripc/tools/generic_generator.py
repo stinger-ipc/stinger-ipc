@@ -78,6 +78,7 @@ def main(
         "templates": dict(),
         "utils": {
             "topic_template_placeholder_index": topic_util.get_argument_position,
+            "get_topic_arguments": topic_util.get_topic_arguments,
         },
     }
 
