@@ -296,6 +296,24 @@ signals:
       - automation
 ```
 
+## Constants
+
+Constants are named, typed, read-only values that can be referenced in documentation and generated code. Each constant has a required `type` and `value`, and an optional single-line `description`.
+
+Valid types for constants: `integer`, `float`, `string`, `boolean`.
+
+```yaml
+constants:
+  MAX_SPEED:
+    type: float
+    value: 100.0
+    description: The maximum speed in metres per second.
+  DEVICE_NAME:
+    type: string
+    value: "my-device"
+    description: The default device name.
+```
+
 ## Validation
 
 Stinger files can be validated against a schema to ensure they conform to the expected structure and types. 
