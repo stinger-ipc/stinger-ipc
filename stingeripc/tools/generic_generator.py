@@ -79,6 +79,7 @@ def main(
         "utils": {
             "topic_template_placeholder_index": topic_util.get_argument_position,
             "get_topic_arguments": topic_util.get_topic_arguments,
+            "template_topic_fill_in": topic_util.topic_template_fill_in,
         },
     }
 

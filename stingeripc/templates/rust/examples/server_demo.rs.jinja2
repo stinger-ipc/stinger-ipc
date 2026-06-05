@@ -8,15 +8,16 @@ LICENSE: This generated code is not subject to any license restrictions from the
 TODO: Get license text from stinger file
 */
 use std::any::Any;
+use std::sync::Arc;
 
 use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection, TcpConnection};
 use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
+use {{stinger.rust.package_name}}::lwt::StingerAvailability;
 {%-if stinger.properties|length > 0%}
 use {{stinger.rust.package_name}}::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
 {%endif-%}
 use tokio::time::{sleep, Duration};
 {%if stinger.methods|length > 0%}
-use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing_subscriber;
 use async_trait::async_trait;
@@ -94,9 +95,11 @@ async fn main() {
         .init();
 
     // Set up an MQTT client connection. 
+    let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
     let mqttier_options = MqttierOptionsBuilder::default()
         .connection(Connection::Tcp(TcpConnection::from_env_with_defaults("localhost", 1883)))
         .client_id("rust-server-demo".to_string())
+        .availability_helper(Some(lwt))
         .build().unwrap();
     let mut connection = MqttierClient::new(mqttier_options).unwrap();
     let _ = connection.start().await.unwrap();
