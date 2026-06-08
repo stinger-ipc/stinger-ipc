@@ -76,6 +76,13 @@ impl AvailabilityHelper for StingerAvailability {
     }
 }
 
+pub fn client_id_creator({%for param in utils.get_topic_arguments(config.discovery.client_id) %}{{param}}: impl Into<String>, {% endfor %}) -> String {
+    {% for param in utils.get_topic_arguments(config.discovery.client_id) %}
+    let {{param}} = {{param}}.into();
+    {% endfor %}
+    format!("{{config.discovery.client_id}}", {%for param in utils.get_topic_arguments(config.discovery.client_id) %}{{param}}={{param}}, {% endfor %})
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -12,7 +12,7 @@ StingerIPC takes a interface description file (.singeripc), and will generate co
 
 ```yaml
 stingeripc:
-  version: 0.0.7
+  version: 0.1.0
 
 interface:
   name: Example
@@ -38,6 +38,46 @@ methods:
         type: integer
 
 ```
+
+## Command Line Interface
+
+The `stinger-ipc` command provides two main subcommands for working with Stinger interface files:
+
+### Generate Code
+
+Generate code from a Stinger interface YAML file:
+
+```bash
+uvx stinger-ipc generate INPUT_FILE OUTPUT_DIR [OPTIONS]
+```
+
+**Arguments:**
+- `INPUT_FILE` - Path to the `.stinger.yaml` interface description file
+- `OUTPUT_DIR` - Directory where generated files will be written
+
+**Options:**
+- `-l, --language TEXT` - Language to generate: `rust`, `python`, `markdown`, `cpp`, `web`, `protobuf`
+- `--template-pkg TEXT` - Python package(s) containing custom templates (advanced)
+- `--template-path PATH` - Filesystem path(s) to custom template directories (advanced)
+- `--consumer TEXT` - Consumer name/identifier for filtering interface (advanced)
+- `--config PATH` - TOML configuration file(s) - later files override earlier ones (can be specified multiple times)
+
+**Examples:**
+
+```bash
+# Generate Python code
+uvx stinger-ipc generate my_interface.stinger.yaml ./output --language python
+```
+
+### Validate Interface
+
+Validate a Stinger interface YAML file against the schema:
+
+```bash
+uvx stinger-ipc validate INPUT_FILE
+```
+
+
 ## First class code generation 
 
 From the StingerIPC description file, we directly generate server and client code for these languages: Python3, C++11, and Rust.

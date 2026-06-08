@@ -19,3 +19,7 @@ def StingerPresence({%for param in utils.get_topic_arguments(config.topics.lwt) 
         online=_create_message(is_online=True),
         offline=_create_message(is_online=False),
     )
+
+def ClientIdCreator({%for param in utils.get_topic_arguments(config.discovery.client_id) %}{{param}}: str,{% endfor %}) -> str:
+    """Helper function to generate a client ID string for StingerIPC clients based on the provided topic template parameters."""
+    return f"{{config.discovery.client_id}}".format({%for param in utils.get_topic_arguments(config.discovery.client_id) %}{{param}}={{param}}, {% endfor %})

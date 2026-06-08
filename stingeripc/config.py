@@ -112,7 +112,7 @@ class LanguagePluginConfig(BaseModel):
 
 class DiscoveryConfig(BaseModel):
     """Configuration options for service discovery."""
-
+    client_id: str = Field(default="{client_id}", description="Template for client ID.")
     advert_interval_seconds: int = Field(default=120, description="Interval in seconds for re-advertising the server's presence")
 
 
