@@ -16,7 +16,6 @@ dependencies = [
     "packaging>=25.0",
     "pydantic>=2.11.7",
     "pyyaml>=6.0.2",
-    "ruamel-yaml>=0.18.14",
     "semantic-version>=2.10.0",
     "stevedore>=5.5.0",
     "stinger-python-utils>=0.1.9",
