@@ -9,12 +9,11 @@ from rich import print
 import importlib.resources
 import re
 import yaml
+import yamlloader
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface, __version__, topic_util
 from stingeripc.filtering import filter_by_consumer
 from stingeripc.config import load_config, StingerConfig
-import yaml
-import yamlloader
 
 # logging.basicConfig(level=logging.INFO)
 
@@ -80,6 +79,7 @@ def main(
             "topic_template_placeholder_index": topic_util.get_argument_position,
             "get_topic_arguments": topic_util.get_topic_arguments,
             "template_topic_fill_in": topic_util.topic_template_fill_in,
+            "topic_template_to_js": topic_util.topic_template_to_js,
         },
     }
 

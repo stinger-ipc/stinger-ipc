@@ -84,6 +84,30 @@ def get_topic_arguments(template: str) -> list[str]:
     return arguments
 
 
+def topic_template_to_js(template: str, additional_arguments: List[str]) -> str:
+    """Convert a topic template into a JavaScript template-literal body.
+
+    Arguments in ``additional_arguments`` and ``service_id`` are rewritten to
+    ``${topicParams.<name>}``. Any other placeholder is rewritten to ``${name}``
+    so the generated JavaScript can resolve it from scope.
+    """
+    formatter = Formatter()
+    allowed_arguments = set(additional_arguments) | {"service_id"}
+    result = []
+
+    for literal_text, field_name, _, _ in formatter.parse(template):
+        result.append(literal_text)
+        if field_name is None:
+            continue
+
+        if field_name in allowed_arguments:
+            result.append(f"${{topicParams.{field_name}}}")
+        else:
+            result.append(f"${{{field_name}}}")
+
+    return "".join(result)
+
+
 def get_argument_position(template: str, argument: str) -> int | None:
     """Get the position of an argument in the topic when split by '/'.
 

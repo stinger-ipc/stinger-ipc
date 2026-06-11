@@ -3,6 +3,7 @@ from stingeripc.topic_util import (
     get_topic_arguments,
     is_valid_topic_template,
     get_argument_position,
+    topic_template_to_js,
 )
 
 import unittest
@@ -315,6 +316,21 @@ class TestGetArgumentPosition(unittest.TestCase):
         # Both should be in segment 1
         self.assertEqual(get_argument_position(template, "interface_name"), 1)
         self.assertEqual(get_argument_position(template, "service_id"), 1)
+
+
+class TestTopicTemplateToJs(unittest.TestCase):
+    def test_rewrites_configured_params_and_service_id(self):
+        template = "s1/from/{device_type}/{device_id}/weather-forecasts/{service_id}/property/location/value"
+        result = topic_template_to_js(template, ["device_type", "device_id"])
+        self.assertEqual(
+            result,
+            "s1/from/${topicParams.device_type}/${topicParams.device_id}/weather-forecasts/${topicParams.service_id}/property/location/value",
+        )
+
+    def test_rewrites_unknown_params_to_plain_js_interpolation(self):
+        template = "topic/{device_type}/{custom_var}"
+        result = topic_template_to_js(template, ["device_type"])
+        self.assertEqual(result, "topic/${topicParams.device_type}/${custom_var}")
 
 
 if __name__ == "__main__":

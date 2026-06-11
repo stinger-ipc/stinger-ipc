@@ -15,6 +15,7 @@ tasks:
       - task: python:unittest
       - task: cpp:compile
       - task: rust:unittest
+      - task: asyncapi:generate
       - task: markdown:generate
       - task: web:generate
       - task: protobuf:check
@@ -285,6 +286,28 @@ tasks:
       - for: { var: INTERFACES }
         task: rust:unittest:{{ .ITEM }}
 
+  asyncapi:generate:*:
+    desc: Generate AsyncAPI documentation for an interface
+    deps:
+      - task: validate:{{index .MATCH 0}}
+    sources:
+      - stingeripc/**/*.py
+      - example_interfaces/topic_prefix.toml
+      - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
+    generates:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/**"
+    cmds:
+      - mkdir -p "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
+      - uv run stinger asyncapi {{.CLI_ARGS}} --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  asyncapi:generate:
+    desc: Generate AsyncAPI documentation for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: asyncapi:generate:{{ .ITEM }}
+
   markdown:generate:*:
     desc: Generate markdown documentation for an interface
     sources:
@@ -370,6 +393,7 @@ tasks:
       - task: python:generate
       - task: cpp:generate
       - task: rust:generate
+      - task: asyncapi:generate
       - task: markdown:generate
       - task: web:generate
       - task: protobuf:generate
