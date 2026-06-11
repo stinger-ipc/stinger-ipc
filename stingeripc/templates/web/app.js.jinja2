@@ -12,28 +12,9 @@ function makeRequestProperties() {
     }
 }
 
-function getInstanceIdFromHash() {
-    // Return everything after the last '#' and strip an AngularJS hashbang ('!') if present.
-    if (typeof location === 'undefined' || !location || !location.hash) return null;
-    const hash = location.hash;
-    // Find last '#' in case there are multiple hashes; include support for '#!' (hashbang)
-    const lastHashIdx = hash.lastIndexOf('#');
-    if (lastHashIdx === -1 || lastHashIdx === hash.length - 1) return null;
-    let val = hash.substring(lastHashIdx + 1);
-    // Strip leading '!' used by AngularJS hashbang URLs (#!)
-    if (val.startsWith('!')) val = val.substring(1);
-    if (!val) return null;
-    // Convert '+' to space (common in URL-encoding) before decode
-    const plusConverted = val.replace(/\+/g, ' ');
-    try {
-        return decodeURIComponent(plusConverted);
-    } catch (e) {
-        // If decode fails (malformed percent-encoding), return the raw plus-converted string
-        return plusConverted;
-    }
-}
+const topicParams = Object.fromEntries(new URLSearchParams(location.search));
 
-const instanceId = getInstanceIdFromHash();
+const instanceId = topicParams.instance_id || null;
 
 // Replace '+' tokens in topics with the instance id (if present)
 function resolveTopic(topic) {
@@ -67,7 +48,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "{{sig_name}}",
             "received": null,
             "received_time": null,
-            "mqtt_topic": "{{signal.topic()}}"
+            "mqtt_topic": `{{ utils.topic_template_to_js(signal.topic(), config.topics.params) }}`
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
 
@@ -80,8 +61,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                     "{{member.name}}": "{{member.value}}"{%if not loop.last%},{%endif%}
                 {%endfor%} }{%endif%}{%if not loop.last%},{%endif%}
             {%endfor%} },
-            "mqtt_topic": "{{prop.value_topic()}}",{%if not prop.read_only %}
-            "update_topic": "{{prop.update_topic()}}",{%endif%}
+            "mqtt_topic": `{{ utils.topic_template_to_js(prop.value_topic(), config.topics.params) }}`,{% if not prop.read_only %}
+            "update_topic": `{{ utils.topic_template_to_js(prop.update_topic(), config.topics.params) }}`,{%endif%}
             "property_version": -1
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
@@ -94,8 +75,8 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         {%-for method_name, method in stinger.methods.items() %}
         "{{method_name | lowerCamelCase}}": {
             "name": "{{method_name}}",
-            "mqtt_topic": "{{method.request_topic()}}",
-            "response_topic": "{{ method.response_topic() }}",
+            "mqtt_topic": `{{ utils.topic_template_to_js(method.request_topic(), config.topics.params) }}`,
+            "response_topic": `{{ utils.topic_template_to_js(method.response_topic(), config.topics.params) }}`,
             "pending_correlation_id": null,
             "args": { {%-for arg in method.arg_list %}
                 "{{arg.name}}": {
@@ -233,7 +214,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
         };
 
         $scope.signals["{{signal_name | lowerCamelCase}}"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic("{{signal.topic()}}");
+        var resolvedTopic = resolveTopic(`{{ utils.topic_template_to_js(signal.topic(), config.topics.params) }}`);
         client.subscribe(resolvedTopic, {{signal_name|snake_case}}_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

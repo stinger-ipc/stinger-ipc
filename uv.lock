@@ -706,14 +706,14 @@ wheels = [
 
 [[package]]
 name = "pyqttier"
-version = "0.2.5"
+version = "0.2.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "paho-mqtt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/8e/f47db52b49642cf6a43b68e0073eebaf494b6aca839ad9b6583ebbe8123e/pyqttier-0.2.5.tar.gz", hash = "sha256:36ca3dc1698dc5823aeecc23d4bd0c4dedb3cedc32bf3f1e95f546b26673eab8", size = 55619, upload-time = "2025-12-30T03:28:41.658Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ae/fe/6c247368a1176ebaafae323eff9ac7d15ec5f7a0459f4a46a75de685422d/pyqttier-0.2.9.tar.gz", hash = "sha256:01525ae688dd1ae00e0ab627767570775923ac6d82c4f3f6cb6491123b0820e0", size = 69133, upload-time = "2026-07-10T14:19:11.986Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/ea/944a6e68fb5e2c555a88129d0a1dcef740ff370edcb8cdbd4c6527ea2af2/pyqttier-0.2.5-py3-none-any.whl", hash = "sha256:84e0e3782c50f3c179b942cc51b34fda99273b9c38e551bb786910f80b809572", size = 10804, upload-time = "2025-12-30T03:28:40.428Z" },
+    { url = "https://files.pythonhosted.org/packages/67/b6/d7abc961b0946e785e517b7759d00f46c911d984a93b2136280b39bf4601/pyqttier-0.2.9-py3-none-any.whl", hash = "sha256:a17acabd54d6c3f5f58a4aa7239680c4ef79105f28576e65f7227cdf818e4f8c", size = 11240, upload-time = "2026-07-10T14:19:10.813Z" },
 ]
 
 [[package]]
