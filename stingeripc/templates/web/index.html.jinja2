@@ -25,7 +25,15 @@
       </td>
       <td class="arg-value-cell">
         {%if arg.arg_type|lower == "argtype.primitive"%}
+        {%if arg.primitive_type|lower == "argprimitivetype.integer"%}
+        <input {%if read_only%}disabled {%endif%}type="number" step="1" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%elif arg.primitive_type|lower == "argprimitivetype.float"%}
+        <input {%if read_only%}disabled {%endif%}type="number" step="any" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%elif arg.primitive_type|lower == "argprimitivetype.boolean"%}
+        <input {%if read_only%}disabled {%endif%}type="checkbox" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%else%}
         <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%endif%}
         {%elif arg.arg_type|lower == "argtype.enum"%}
         <select {%if read_only%}disabled {%endif%}ng-model="{{modelpath}}.{{arg.name}}" ng-options="n.id as n.name for n in enums.{{arg.enum.name|lowerCamelCase}}">
         </select>
@@ -39,9 +47,47 @@
         {%elif arg.arg_type|lower == "argtype.binary"%}
         Binary: <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" />
         {%elif arg.arg_type|lower == "argtype.array"%}
+        {%if arg.element.arg_type|lower == "argtype.struct"%}
+        <table class="arglist array-of-struct">
+          <thead>
+            <tr>
+              {%for member in arg.element.members %}
+              <th class="arg-name">{{ member.name }}</th>
+              {%endfor%}
+              {%if not read_only%}<th></th>{%endif%}
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="(index, item) in {{modelpath}}.{{arg.name}} track by $index" class="argrow">
+              {%for member in arg.element.members %}
+              <td class="arg-value-cell">
+                {%if member.arg_type|lower == "argtype.enum"%}
+                <select {%if read_only%}disabled {%endif%}ng-model="{{modelpath}}.{{arg.name}}[index].{{member.name}}" ng-options="n.id as n.name for n in enums.{{member.enum.name|lowerCamelCase}}"></select>
+                {%else%}
+                <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}[index].{{member.name}}" />
+                {%endif%}
+              </td>
+              {%endfor%}
+              {%if not read_only%}
+              <td><button type="button" class="publish-button" ng-click="{{modelpath}}.{{arg.name}}.splice(index, 1)">✕</button></td>
+              {%endif%}
+            </tr>
+          </tbody>
+          {%if not read_only%}
+          <tfoot>
+            <tr>
+              <td colspan="{{ arg.element.members|length + 1 }}">
+                <button type="button" class="publish-button" ng-click="{{modelpath}}.{{arg.name}}.push({})">+ Add row</button>
+              </td>
+            </tr>
+          </tfoot>
+          {%endif%}
+        </table>
+        {%else%}
         <span ng-repeat="(index, item) in {{modelpath}}.{{arg.name}} track by $index">
           <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}[index]" />
         </span>
+        {%endif%}
         {%else%}
         <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" placeholder="(unknown type)" />
         {%endif%} 
@@ -62,10 +108,31 @@
       {%endmarkdown%}
       </p>
     </div>
+
+    <!------------- TAB BAR ------------->
+    <div class="tab-bar">
+      {%if stinger.signals %}
+      <button class="tab-btn" ng-class="{'active': activeTab === 'signals'}" ng-click="activeTab = 'signals'">
+        <span class="mdi mdi-bell-outline"></span> Signals
+      </button>
+      {%endif%}
+      {%if stinger.properties %}
+      <button class="tab-btn" ng-class="{'active': activeTab === 'properties'}" ng-click="activeTab = 'properties'">
+        <span class="mdi mdi-tune"></span> Properties
+      </button>
+      {%endif%}
+      {%if stinger.methods %}
+      <button class="tab-btn" ng-class="{'active': activeTab === 'methods'}" ng-click="activeTab = 'methods'">
+        <span class="mdi mdi-function"></span> Methods
+      </button>
+      {%endif%}
+    </div>
+
     <!------------- SIGNALS ------------->
+    <div ng-show="activeTab === 'signals'">
     {%for sig_name, sig in stinger.signals.items() %}
     <div class="component-box signal-box" id="signal-box-{{ sig_name }}">
-        <h3 class="component-title signal-title">Signal: {{ sig_name }}</h3>
+        <h3 class="component-title signal-title"><span class="mdi mdi-bell-outline"></span> {{ sig_name }}</h3>
         <div class="component-doc signal-doc">{%if sig.documentation %}
 {%markdown%}
 {{ sig.documentation }}
@@ -78,11 +145,13 @@
         </div>
     </div>
     {%endfor%}{# end signals loop #}
+    </div>
 
     <!------------- PROPERTIES ------------->
+    <div ng-show="activeTab === 'properties'">
     {%for prop_name, prop in stinger.properties.items() %}
     <div class="component-box prop-box" id="prop-box-{{ prop_name }}">
-        <h3 class="component-title prop-title">Property: {{ prop_name }}</h3>
+        <h3 class="component-title prop-title"><span class="mdi mdi-tune"></span> {{ prop_name }}</h3>
         <div class="component-doc prop-doc">{%if prop.documentation %}
 {%markdown%}
 {{ prop.documentation }}
@@ -98,11 +167,13 @@
         {%endif%}
     </div>
     {%endfor%} {# end properties loop #}
+    </div>
 
     <!------------- METHODS ------------->
+    <div ng-show="activeTab === 'methods'">
     {%for method_name, method in stinger.methods.items() %}
     <div class="component-box method-box" id="method-box-{{ method_name }}">
-        <h3 class="component-title method-title">Method: {{ method_name }}</h3>
+        <h3 class="component-title method-title"><span class="mdi mdi-function"></span> {{ method_name }}</h3>
         <div class="component-doc method-doc">{%if method.documentation %}
 {%markdown%}
 {{ method.documentation }}
@@ -121,6 +192,7 @@
         </div>
     </div>
     {%endfor%} {# end methods loop #}
+    </div>
 
     {%raw%}
     <div id="console" ng-class="{ 'expanded' : (console.showing) }">

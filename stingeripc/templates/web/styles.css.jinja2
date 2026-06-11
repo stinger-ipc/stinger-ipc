@@ -318,5 +318,91 @@ tr.argrow:not(:last-child) {
     background: #933131;
 }
 
+/* ---------- Array-of-struct table ---------- */
+table.array-of-struct {
+    border-collapse: collapse;
+    margin-top: 6px;
+}
+
+table.array-of-struct thead th {
+    font-size: 0.78em;
+    font-weight: 600;
+    color: #3a6ea5;
+    border-bottom: 2px solid #b3c6e0;
+    padding: 4px 8px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+table.array-of-struct td {
+    padding: 4px 6px;
+    vertical-align: middle;
+}
+
+table.array-of-struct tbody tr:not(:last-child) td {
+    border-bottom: 1px solid #e8edf4;
+}
+
+table.array-of-struct tfoot td {
+    padding: 6px 0 2px 0;
+}
+
+table.array-of-struct input[type="text"],
+table.array-of-struct select {
+    width: 100%;
+    min-width: 80px;
+    box-sizing: border-box;
+}
+
+table.array-of-struct .publish-button {
+    padding: 2px 8px;
+    font-size: 0.8em;
+}
+
+/* ---------- Tab bar ---------- */
+.tab-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #b3c6e0;
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    appearance: none;
+    background: #edf3fa;
+    color: #3a6ea5;
+    border: 1.5px solid #b3c6e0;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 8px 20px 9px 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+    position: relative;
+    bottom: -2px;
+}
+
+.tab-btn:hover:not(.active) {
+    background: #dceaf6;
+    color: #2a5080;
+}
+
+.tab-btn.active {
+    background: #ffffff;
+    color: #2a5080;
+    border-color: #b3c6e0;
+    border-bottom-color: #ffffff;
+    z-index: 1;
+}
+
+.tab-btn .mdi {
+    font-size: 1em;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
 
 {%endraw%}
