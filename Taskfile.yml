@@ -250,9 +250,12 @@ tasks:
     sources:
       - ./**
     cmds:
-      - cargo check --all-features
+      - cargo check
       - cargo check --example {{.IFACE}}_client_demo --features client
       - cargo check --example {{.IFACE}}_server_demo --features server
+      - cargo check --all-features
+      - cargo check --example {{.IFACE}}_client_demo --features client,lwt
+      - cargo check --example {{.IFACE}}_server_demo --features server,lwt
     vars:
       IFACE: '{{index .MATCH 0}}'
 

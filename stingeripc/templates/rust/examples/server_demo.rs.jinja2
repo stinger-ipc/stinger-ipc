@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection, TcpConnection};
 use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
+#[cfg(feature = "lwt")]
 use {{stinger.rust.package_name}}::lwt::StingerAvailability;
 {%-if stinger.properties|length > 0%}
 use {{stinger.rust.package_name}}::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
@@ -95,12 +96,19 @@ async fn main() {
         .init();
 
     // Set up an MQTT client connection. 
+    #[cfg(feature = "lwt")]
     let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
-    let mqttier_options = MqttierOptionsBuilder::default()
+    let mut mqttier_options_builder = MqttierOptionsBuilder::default();
+    mqttier_options_builder
         .connection(Connection::Tcp(TcpConnection::from_env_with_defaults("localhost", 1883)))
-        .client_id("rust-server-demo".to_string())
+        .client_id("rust-server-demo".to_string());
+    #[cfg(feature = "lwt")]
+    let mqttier_options = mqttier_options_builder
         .availability_helper(Some(lwt))
-        .build().unwrap();
+        .build()
+        .unwrap();
+    #[cfg(not(feature = "lwt"))]
+    let mqttier_options = mqttier_options_builder.build().unwrap();
     let mut connection = MqttierClient::new(mqttier_options).unwrap();
     let _ = connection.start().await.unwrap();
 
