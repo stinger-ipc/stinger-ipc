@@ -1,0 +1,6 @@
+{% for const_name, const_obj in stinger.constants.items() %}
+{% if const_obj.description %}
+/// {{ const_obj.description }}
+{% endif %}
+pub const {{ const_name | CONST_CASE }}: {{ const_obj.rust.type }} = {% if const_obj.constant_type == "string" %}"{{ const_obj.value }}"{% elif const_obj.constant_type == "boolean" %}{{ const_obj.value | lower }}{% else %}{{ const_obj.value }}{% endif %};
+{% endfor %}

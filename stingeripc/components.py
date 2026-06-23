@@ -33,7 +33,7 @@ from stingeripc.arg_models import (
     ArgBinary,
     ArgArray,
 )
-from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
+from stingeripc.arg_datatypes import InterfaceConstant, InterfaceEnum, InterfaceStruct
 
 
 class InterfaceComponent(BaseModel):
@@ -87,6 +87,7 @@ class StingerSpec:
         self.methods: dict[str, IpcMethod] = {}
         self.enums: dict[str, InterfaceEnum] = {}
         self.structs: dict[str, InterfaceStruct] = {}
+        self.constants: dict[str, InterfaceConstant] = {}
 
     @property
     def method_return_codes(self) -> dict[int, str]:
@@ -155,6 +156,10 @@ class StingerSpec:
     def add_struct(self, interface_struct: InterfaceStruct):
         assert interface_struct is not None
         self.structs[interface_struct.name] = interface_struct
+
+    def add_constant(self, interface_constant: InterfaceConstant):
+        assert interface_constant is not None
+        self.constants[interface_constant.name] = interface_constant
 
     def uses_enums(self) -> bool:
         return bool(self.enums)
@@ -244,6 +249,15 @@ class StingerSpec:
                     stinger_spec.add_struct(istruct)
         except TypeError as e:
             raise InvalidStingerStructure(f"Struct specification appears to be invalid: {e}")
+
+        try:
+            if "constants" in stinger:
+                for const_name, const_spec in stinger["constants"].items():
+                    ic = InterfaceConstant.new_constant_from_stinger(const_name, const_spec)
+                    assert ic is not None, f"Did not create constant from {const_name} and {const_spec}"
+                    stinger_spec.add_constant(ic)
+        except TypeError as e:
+            raise InvalidStingerStructure(f"Constant specification appears to be invalid: {e}")
 
         try:
             if "signals" in stinger:

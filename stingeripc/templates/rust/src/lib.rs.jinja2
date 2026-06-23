@@ -29,6 +29,10 @@ pub mod server;
 
 pub mod lwt;
 
+{% if stinger.constants %}
+pub mod constants;
+{% endif %}
+
 // Re-export commonly used types from payloads when available
 #[cfg(feature = "payloads")]
 pub use payloads::*;

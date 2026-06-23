@@ -34,6 +34,8 @@ class PythonSymbolsProvider(ISymbolsProvider):
             return PythonArgBinarySymbols(model)
         elif model_class_name == "ArgArray":
             return PythonArgArraySymbols(model)
+        elif model_class_name == "InterfaceConstant":
+            return PythonConstantSymbols(model)
         return None
 
 
@@ -235,6 +237,26 @@ class PythonArgArraySymbols(PythonArgSymbols):
         if self._arg.optional:
             return f"Optional[List[{self._arg.element.python.annotation}]]"
         return f"List[{self._arg.element.python.annotation}]"
+
+
+class PythonConstantSymbols(PythonSymbols):
+    def __init__(self, constant):
+        super().__init__()
+        self._constant = constant
+
+    @property
+    def type(self) -> str:
+        type_map = {
+            "integer": "int",
+            "float": "float",
+            "boolean": "bool",
+            "string": "str",
+        }
+        return type_map.get(self._constant.constant_type, "str")
+
+    @property
+    def local_type(self) -> str:
+        return self.type
 
 
 class PythonMethodSymbols(PythonSymbols):
