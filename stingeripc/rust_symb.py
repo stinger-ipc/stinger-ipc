@@ -34,6 +34,8 @@ class RustSymbolsProvider(ISymbolsProvider):
             return RustArgBinarySymbols(model)
         elif model_class_name == "ArgArray":
             return RustArgArraySymbols(model)
+        elif model_class_name == "InterfaceConstant":
+            return RustConstantSymbols(model)
         return None
 
 
@@ -202,6 +204,26 @@ class RustArgArraySymbols(RustArgSymbols):
         if self._arg.optional:
             return f"Option<Vec<{self._arg.element.rust.type}>>"
         return f"Vec<{self._arg.element.rust.type}>"
+
+
+class RustConstantSymbols(RustSymbols):
+    def __init__(self, constant):
+        super().__init__()
+        self._constant = constant
+
+    @property
+    def type(self) -> str:
+        type_map = {
+            "integer": "i64",
+            "float": "f64",
+            "boolean": "bool",
+            "string": "&str",
+        }
+        return type_map.get(self._constant.constant_type, "&str")
+
+    @property
+    def local_type(self) -> str:
+        return self.type
 
 
 class RustPropertySymbols(RustSymbols):

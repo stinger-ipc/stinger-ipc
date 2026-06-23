@@ -130,6 +130,33 @@ class InterfaceStruct(BaseModel):
         return f"InterfaceStruct(name={self.name})"
 
 
+class InterfaceConstant(BaseModel):
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    name: str
+    constant_type: str = Field(alias="type")
+    value: str | int | float | bool
+    description: Optional[str] = Field(default=None)
+
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
+
+    @property
+    def class_name(self):
+        return stringmanip.upper_camel_case(self.name)
+
+    @classmethod
+    def new_constant_from_stinger(cls, name: str, constant_spec: dict) -> InterfaceConstant:
+        if "type" not in constant_spec:
+            raise InvalidStingerStructure(f"InterfaceConstant '{name}' spec is missing required 'type'")
+        if "value" not in constant_spec:
+            raise InvalidStingerStructure(f"InterfaceConstant '{name}' spec is missing required 'value'")
+        try:
+            return cls.model_validate({"name": name, **constant_spec})
+        except ValidationError as e:
+            raise InvalidStingerStructure(f"InterfaceConstant '{name}' spec is invalid: {e}") from e
+
+
 # Resolve forward references in arg_models that depend on InterfaceEnum/InterfaceStruct
 from stingeripc.arg_models import ArgEnum, ArgStruct  # noqa: E402
 

@@ -1,0 +1,8 @@
+
+from typing import Final
+{% for const_name, const in stinger.constants.items() %}
+{% if const.description %}
+# {{ const.description }}
+{% endif %}
+{{ const_name | CONST_CASE }}: Final[{{ const.python.type }}] = {% if const.constant_type == "string" %}"{{ const.value }}"{% else %}{{ const.value }}{% endif %}
+{% endfor %}

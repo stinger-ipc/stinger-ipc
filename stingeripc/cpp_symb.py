@@ -31,6 +31,8 @@ class CppSymbolsProvider(ISymbolsProvider):
             return CppArgBinarySymbols(model)
         elif model_class_name == "ArgArray":
             return CppArgArraySymbols(model)
+        elif model_class_name == "InterfaceConstant":
+            return CppConstantSymbols(model)
         return None
 
 
@@ -68,6 +70,22 @@ class CppInterfaceSymbols(CppSymbols):
     @property
     def property_struct_header_file(self) -> str:
         return "property_structs.hpp"
+
+
+class CppConstantSymbols(CppSymbols):
+    def __init__(self, constant):
+        super().__init__()
+        self._constant = constant
+
+    @property
+    def type(self) -> str:
+        type_map = {
+            "integer": "int64_t",
+            "float": "double",
+            "boolean": "bool",
+            "string": "std::string",
+        }
+        return type_map.get(self._constant.constant_type, "std::string")
 
 
 class CppPropertySymbols(CppSymbols):

@@ -1,0 +1,31 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains enumerations used by the {{stinger.name}} interface.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+TODO: Get license text from stinger file
+*/
+
+#pragma once
+#include <string>
+#include <string_view>
+
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
+
+using namespace std::string_view_literals;
+{% for const_name, const_obj in stinger.constants.items() %}
+{% if const_obj.description %}
+/** @brief {{ const_obj.description }} */
+{% endif %}
+inline constexpr auto {{ const_name | CONST_CASE }} = {% if const_obj.constant_type == "string" %}"{{ const_obj.value }}"sv{% elif const_obj.constant_type == "boolean" %}{{ const_obj.value | lower }}{% else %}{{ const_obj.value }}{% endif %};
+{% endfor %}
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}
