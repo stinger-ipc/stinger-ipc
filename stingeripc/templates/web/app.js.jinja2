@@ -23,11 +23,22 @@ function resolveTopic(topic) {
 
 var app = angular.module("myApp", []);
 
-app.controller("myCtrl", function ($scope, $filter, $location) {
+app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
 
     console.log("Running app");
 
     var subscription_state = 0;
+
+    // Briefly flash a component's title bar to indicate a freshly received value.
+    function triggerFlash(obj) {
+        obj.flash = false;
+        $timeout(function () {
+            obj.flash = true;
+            $timeout(function () {
+                obj.flash = false;
+            }, 800);
+        }, 0);
+    }
 
     $scope.timePattern = new RegExp("^[0-2][0-9]:[0-5][0-9]$");
     $scope.online = false;
@@ -58,6 +69,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "name": "{{sig_name}}",
             "received": null,
             "received_time": null,
+            "flash": false,
             "mqtt_topic": `{{ utils.topic_template_to_js(signal.topic(), config.topics.params) }}`
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
@@ -74,6 +86,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             "mqtt_topic": `{{ utils.topic_template_to_js(prop.value_topic(), config.topics.params) }}`,{% if not prop.read_only %}
             "update_topic": `{{ utils.topic_template_to_js(prop.update_topic(), config.topics.params) }}`,
             "response_topic": `{{ utils.topic_template_to_js(prop.response_topic(), config.topics.params) }}`,{%endif%}
+            "flash": false,
             "property_version": -1
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
@@ -170,6 +183,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
             if (sig.subscription_id == subid) {
                 sig.received = obj;
                 sig.received_time = new Date();
+                triggerFlash(sig);
             }
         }
         for (const key in $scope.properties) {
@@ -179,6 +193,7 @@ app.controller("myCtrl", function ($scope, $filter, $location) {
                 prop.received = obj;
                 console.log("Set property '" + prop.name + "' received object to ", prop.received);
                 prop.property_version = packet.properties.userProperties.PropertyVersion;
+                triggerFlash(prop);
             }
         }
         for (const key in $scope.methods) {
