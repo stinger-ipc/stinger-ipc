@@ -194,9 +194,10 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/include/**"
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/src/**"
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/cmake/**"
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/tests/**"
     cmds:
       - uv run stinger generate {{.CLI_ARGS}} --language cpp --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
-      - clang-format --style=file:clang-format-config.yaml {{.GENERATED_DIR}}/{{.IFACE}}/cpp/include/*.hpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/src/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/examples/*.cpp -i
+      - clang-format --style=file:clang-format-config.yaml {{.GENERATED_DIR}}/{{.IFACE}}/cpp/include/*.hpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/src/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/examples/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/tests/*.cpp -i
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -223,7 +224,24 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: cpp:compile:{{ .ITEM }}
-  
+
+  cpp:unittest:*:
+    desc: Run C++ unit tests for an interface
+    deps:
+      - task: cpp:compile:{{index .MATCH 0}}
+    sources:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/**"
+    cmds:
+      - cd "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/build" && ctest --output-on-failure
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  cpp:unittest:
+    desc: Run C++ unit tests for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: cpp:unittest:{{ .ITEM }}
+
   rust:generate:*:
     desc: Generate Rust code for an interface
     sources:
