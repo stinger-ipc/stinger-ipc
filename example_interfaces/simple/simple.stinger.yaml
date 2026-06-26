@@ -43,10 +43,16 @@ methods:
       - name: your_number
         type: integer
         description: Your favorite number.
+        schema:
+          minimum: 0
+          maximum: 100
     returnValues:
       - name: my_number
         type: integer
         description: My favorite number
+        schema:
+          minimum: 0
+          maximum: 100
   
 properties:
 

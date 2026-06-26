@@ -36,6 +36,28 @@ model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
 {%endfor%}
 {%endmacro%}
 
+{# Emits a validate_schema() method that checks each field declaring a JSON schema.
+   The method is always generated; when no field declares a schema it simply returns True. #}
+{%macro validate_schema_method(arg_list)%}
+{%set schema_args = arg_list | selectattr('value_schema') | list%}
+
+def validate_schema(self) -> bool:
+    """Validate fields that declare a JSON schema constraint.
+
+    Returns ``True`` if all schema-constrained fields conform to their schema,
+    or if no field declares a schema.  Raises ``jsonschema.ValidationError`` if
+    a constrained field's value does not conform.  Fields without a schema are
+    still validated structurally by Pydantic.
+    """
+    {%-for arg in schema_args%}
+    {%-if loop.first%}
+    _data = self.model_dump(mode="json", by_alias=True)
+    {%-endif%}
+    jsonschema.validate(_data["{{arg.name}}"], json.loads(r'{{arg.value_schema | tojson}}'))
+    {%-endfor%}
+    return True
+{%endmacro%}
+
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
@@ -44,6 +66,9 @@ UTC = timezone.utc
 {%endif%}
 from typing import Optional, Union, List
 import base64
+{%if stinger.uses_schemas()%}import json
+import jsonschema
+{%endif%}
 {%if stinger.uses_enums()%}from enum import IntEnum{%endif%}
 
 {%- if config.python.python37 %}
@@ -91,6 +116,7 @@ class {{ie_name | UpperCamelCase }}(IntEnum):
 class {{istruct_name | UpperCamelCase }}(BaseModel):
     """ Interface struct `{{istruct_name}}`. """
     {{field_list(istruct.members)|indent(4)}}
+    {{validate_schema_method(istruct.members)|indent(4)}}
 {%endfor%}
 
 # There are {{stinger.signals|length}} signal definitions
@@ -101,6 +127,7 @@ class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
     {{signal.documentation}}{%endif%}
     """
     {{field_list(signal.arg_list)|indent(4)}}
+    {{validate_schema_method(signal.arg_list)|indent(4)}}
 {%endfor%}
 
 # There are {{stinger.properties|length}} property definitions
@@ -111,6 +138,7 @@ class {{prop.python.model_class_name}}(BaseModel):
     {{prop.documentation}}{%endif%}
     """
     {{field_list(prop.arg_list)|indent(4)}}
+    {{validate_schema_method(prop.arg_list)|indent(4)}}
 {%endfor%}
 
 # There are {{stinger.methods|length}} method definitions
@@ -121,6 +149,7 @@ class {{method.python.request_class_name}}(BaseModel):
     {{method.documentation}}{%endif%}
     """
     {{field_list(method.arg_list)|indent(4)}}
+    {{validate_schema_method(method.arg_list)|indent(4)}}
 
 class {{method.python.response_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` response object. {%if method.documentation%}
@@ -128,4 +157,5 @@ class {{method.python.response_class_name}}(BaseModel):
     {{method.documentation}}{%endif%}
     """
     {{field_list(method.return_arg_list)|indent(4)}}
+    {{validate_schema_method(method.return_arg_list)|indent(4)}}
 {%endfor%}

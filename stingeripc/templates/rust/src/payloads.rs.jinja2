@@ -560,6 +560,37 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 {%endfor%}
 {%-endmacro %}
 
+{# Emits an `impl` block with a validate_schema() method for a struct.  The method
+   is always generated; fields that declare a JSON schema constraint are checked
+   against their schema using the `jsonschema` crate, and a struct with no such
+   fields simply returns Ok(()). #}
+{%macro validate_schema_impl(struct_name, arg_list) -%}
+{%-set schema_args = arg_list | selectattr('value_schema') | list -%}
+#[allow(dead_code)]
+impl {{struct_name}} {
+    /// Validate fields that declare a JSON schema constraint.
+    ///
+    /// Returns `Ok(())` if all schema-constrained fields conform to their schema,
+    /// or if no field declares a schema.  Returns `Err` with a description if a
+    /// constrained field's value does not conform.
+    pub fn validate_schema(&self) -> Result<(), String> {
+        {%-for arg in schema_args%}
+        {
+            let schema: serde_json::Value = serde_json::from_str(r##"{{arg.value_schema | tojson}}"##)
+                .map_err(|e| format!("embedded schema for field '{{arg.name}}' is invalid: {}", e))?;
+            let instance = serde_json::to_value(&self.{{arg.name | snake_case}})
+                .map_err(|e| format!("could not serialize field '{{arg.name}}': {}", e))?;
+            let validator = jsonschema::validator_for(&schema)
+                .map_err(|e| format!("could not build validator for field '{{arg.name}}': {}", e))?;
+            validator.validate(&instance)
+                .map_err(|e| format!("field '{{arg.name}}' failed schema validation: {}", e))?;
+        }
+        {%-endfor%}
+        Ok(())
+    }
+}
+{%-endmacro %}
+
 // --- INTERFACE STRUCTURES ---
 
 {%for struct_name, struct in stinger.structs.items() %}
@@ -568,6 +599,7 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 pub struct {{struct_name | UpperCamelCase}} {
     {{ arg_members(struct.members) }}
 }
+{{ validate_schema_impl(struct_name | UpperCamelCase, struct.members) }}
 {%endfor%}
 
 // ---- METHODS ----
@@ -582,6 +614,7 @@ pub struct {{struct_name | UpperCamelCase}} {
 pub struct {{method_name | UpperCamelCase}}RequestObject {
     {{ arg_members(method.arg_list) }}
 }
+{{ validate_schema_impl((method_name | UpperCamelCase) ~ "RequestObject", method.arg_list) }}
 
 
 #[allow(dead_code)]
@@ -590,6 +623,7 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
 pub struct {{method.return_value_name | UpperCamelCase}} {
     {{ arg_members(method.return_arg_list) }}
 }
+{{ validate_schema_impl(method.return_value_name | UpperCamelCase, method.return_arg_list) }}
 {%-endfor%}
 
 // ---- SIGNALS ----
@@ -600,6 +634,7 @@ pub struct {{method.return_value_name | UpperCamelCase}} {
 pub struct {{sig_name | UpperCamelCase}}SignalPayload {
     {{ arg_members(sig.arg_list) }}
 }
+{{ validate_schema_impl((sig_name | UpperCamelCase) ~ "SignalPayload", sig.arg_list) }}
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}
@@ -609,6 +644,7 @@ pub struct {{sig_name | UpperCamelCase}}SignalPayload {
 pub struct {{prop_name | UpperCamelCase}}Property {
     {{ arg_members(prop.arg_list) }}
 }
+{{ validate_schema_impl((prop_name | UpperCamelCase) ~ "Property", prop.arg_list) }}
 {%endfor%}
 
 

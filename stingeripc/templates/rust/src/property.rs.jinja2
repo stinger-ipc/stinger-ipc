@@ -15,4 +15,35 @@ pub struct {{stinger.name | UpperCamelCase}}InitialPropertyValues {
     pub {{prop_name | snake_case}}_version: u32,
     {%endfor%}
 }
+
+#[allow(dead_code)]
+impl {{stinger.name | UpperCamelCase}}InitialPropertyValues {
+    /// Validate the initial values of properties that declare a JSON schema constraint.
+    ///
+    /// Returns `Ok(())` if all schema-constrained properties conform to their schema,
+    /// or if no property declares a schema.  Returns `Err` with a description if a
+    /// constrained property's value does not conform.
+    pub fn validate_schema(&self) -> Result<(), String> {
+        {%-for prop_name, prop in stinger.properties.items()%}
+        {%-set prop_schema_args = prop.arg_list | selectattr('value_schema') | list%}
+        {%-if prop_schema_args%}
+        {%-if prop.arg_list | length > 1%}
+        self.{{prop_name | snake_case}}.validate_schema()?;
+        {%-else%}
+        {
+            let schema: serde_json::Value = serde_json::from_str(r##"{{prop.arg_list[0].value_schema | tojson}}"##)
+                .map_err(|e| format!("embedded schema for property '{{prop_name}}' is invalid: {}", e))?;
+            let instance = serde_json::to_value(&self.{{prop_name | snake_case}})
+                .map_err(|e| format!("could not serialize property '{{prop_name}}': {}", e))?;
+            let validator = jsonschema::validator_for(&schema)
+                .map_err(|e| format!("could not build validator for property '{{prop_name}}': {}", e))?;
+            validator.validate(&instance)
+                .map_err(|e| format!("property '{{prop_name}}' failed schema validation: {}", e))?;
+        }
+        {%-endif%}
+        {%-endif%}
+        {%-endfor%}
+        Ok(())
+    }
+}
 {%endif%}

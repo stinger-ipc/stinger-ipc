@@ -164,6 +164,19 @@ class StingerSpec:
     def uses_enums(self) -> bool:
         return bool(self.enums)
 
+    def uses_schemas(self) -> bool:
+        """True if any argument anywhere in the interface declares a JSON schema constraint."""
+        all_args = []
+        for signal in self.signals.values():
+            all_args += signal.arg_list
+        for prop in self.properties.values():
+            all_args += prop.arg_list
+        for method in self.methods.values():
+            all_args += method.arg_list + method.return_arg_list
+        for struct in self.structs.values():
+            all_args += struct.members
+        return any(arg.value_schema for arg in all_args)
+
     def get_interface_enum(self, name: str) -> InterfaceEnum:
         if name in self.enums:
             return self.enums[name]

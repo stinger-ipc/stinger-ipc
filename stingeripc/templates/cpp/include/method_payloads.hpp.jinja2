@@ -26,6 +26,8 @@ namespace {{stinger.name|snake_case}} {
 struct {{method_name | UpperCamelCase}}RequestArguments {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static {{method_name | UpperCamelCase}}RequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Validates fields that declare a JSON schema constraint.  Returns true if all such fields conform to their schema (or if none declare one).
+    bool ValidateSchema() const;
     {%-if method.arg_list | length > 0 %}
     // Values...
     {%-for arg in method.arg_list %}
@@ -37,6 +39,8 @@ struct {{method_name | UpperCamelCase}}RequestArguments {
 struct {{method_name | UpperCamelCase}}ReturnValues {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static {{method_name | UpperCamelCase}}ReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Validates fields that declare a JSON schema constraint.  Returns true if all such fields conform to their schema (or if none declare one).
+    bool ValidateSchema() const;
     {%-if method.return_arg_list | length > 0 %}
     // Values...
     {%-for arg in method.return_arg_list %}

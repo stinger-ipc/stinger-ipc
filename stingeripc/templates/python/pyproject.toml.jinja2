@@ -8,6 +8,7 @@ dependencies = [
     "pydantic{%if config.python.python37%}==2.5.3{%else%}>=2.11.7{%endif%}",
     "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
+    "jsonschema>=4.0.0", # Not the best json schema library.  TODO: use a faster one.
     "pyqttier>=0.2.5",
     "stinger-python-utils>=0.1.8",
     {%if config.python.python37%}"typing-extensions>=4.0.0",{%endif%}
