@@ -1,0 +1,117 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+Unit tests for the {{stinger.name}} interface.  These exercise the (de)serialization
+round-trip and schema-validation code paths of the generated payload structures without
+requiring a broker connection.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+*/
+
+#include <gtest/gtest.h>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <string>
+
+#include "structs.hpp"
+#include "signal_payloads.hpp"
+#include "method_payloads.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
+{%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
+
+using namespace {%for ns in config.cpp.namespace%}{{ns}}::{%endfor%}{{stinger.name|snake_case}};
+
+namespace {
+
+// Serializes any generated payload/struct (anything exposing AddToRapidJsonObject)
+// to a compact JSON string.
+template <typename T>
+std::string serializeToString(const T& obj)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    obj.AddToRapidJsonObject(doc, doc.GetAllocator());
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    return buf.GetString();
+}
+
+} // anonymous namespace
+
+{%for sig_name, sig in stinger.signals.items()%}
+// --- {{sig_name}} signal payload ---
+TEST(SignalPayloadSerialization, {{sig_name | UpperCamelCase}}RoundTrip)
+{
+    {{sig_name | UpperCamelCase}}Payload original{ {%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string firstJson = serializeToString(original);
+
+    rapidjson::Document doc;
+    ASSERT_FALSE(doc.Parse(firstJson.c_str()).HasParseError()) << "Serialized payload is not valid JSON: " << firstJson;
+    ASSERT_TRUE(doc.IsObject());
+
+    auto roundTripped = {{sig_name | UpperCamelCase}}Payload::FromRapidJsonObject(doc);
+    const std::string secondJson = serializeToString(roundTripped);
+
+    EXPECT_EQ(firstJson, secondJson);
+    // Exercise the schema-validation code path.
+    (void)roundTripped.ValidateSchema();
+}
+{%endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+// --- {{method_name}} method request arguments ---
+TEST(MethodRequestSerialization, {{method_name | UpperCamelCase}}RoundTrip)
+{
+    {{method_name | UpperCamelCase}}RequestArguments original{ {%for arg in method.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string firstJson = serializeToString(original);
+
+    rapidjson::Document doc;
+    ASSERT_FALSE(doc.Parse(firstJson.c_str()).HasParseError()) << "Serialized request is not valid JSON: " << firstJson;
+    ASSERT_TRUE(doc.IsObject());
+
+    auto roundTripped = {{method_name | UpperCamelCase}}RequestArguments::FromRapidJsonObject(doc);
+    const std::string secondJson = serializeToString(roundTripped);
+
+    EXPECT_EQ(firstJson, secondJson);
+    (void)roundTripped.ValidateSchema();
+}
+
+// --- {{method_name}} method return values ---
+TEST(MethodReturnSerialization, {{method_name | UpperCamelCase}}RoundTrip)
+{
+    {{method_name | UpperCamelCase}}ReturnValues original{ {%for arg in method.return_arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string firstJson = serializeToString(original);
+
+    rapidjson::Document doc;
+    ASSERT_FALSE(doc.Parse(firstJson.c_str()).HasParseError()) << "Serialized return values are not valid JSON: " << firstJson;
+    ASSERT_TRUE(doc.IsObject());
+
+    auto roundTripped = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc);
+    const std::string secondJson = serializeToString(roundTripped);
+
+    EXPECT_EQ(firstJson, secondJson);
+    (void)roundTripped.ValidateSchema();
+}
+{%endfor%}
+
+{%for prop_name, prop in stinger.properties.items()%}
+// --- {{prop_name}} property ---
+TEST(PropertySerialization, {{prop_name | UpperCamelCase}}RoundTrip)
+{
+    {{prop.name | UpperCamelCase}}Property original{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string firstJson = serializeToString(original);
+
+    rapidjson::Document doc;
+    ASSERT_FALSE(doc.Parse(firstJson.c_str()).HasParseError()) << "Serialized property is not valid JSON: " << firstJson;
+    ASSERT_TRUE(doc.IsObject());
+
+    auto roundTripped = {{prop.name | UpperCamelCase}}Property::FromRapidJsonObject(doc);
+    const std::string secondJson = serializeToString(roundTripped);
+
+    EXPECT_EQ(firstJson, secondJson);
+    (void)roundTripped.ValidateSchema();
+}
+{%endfor%}

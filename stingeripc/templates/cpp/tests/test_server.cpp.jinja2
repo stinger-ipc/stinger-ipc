@@ -1,0 +1,217 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+Unit tests for the {{stinger.name}} server.  These use the MockConnection from
+stinger-cpp-utils to drive the server without a real MQTT broker:
+  - construction registers the expected request/update subscriptions,
+  - emitting a signal publishes it to the broker,
+  - a simulated incoming method request invokes the registered handler and publishes a response,
+  - setting a property publishes its value, and a simulated update request is re-published.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+*/
+
+#include <gtest/gtest.h>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <stinger/utils/mockconnection.hpp>
+#include <stinger/utils/format.hpp>
+#include <stinger/mqtt/message.hpp>
+#include <stinger/error/return_codes.hpp>
+
+#include "server.hpp"
+#include "structs.hpp"
+#include "signal_payloads.hpp"
+#include "method_payloads.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
+{%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
+
+using namespace {%for ns in config.cpp.namespace%}{{ns}}::{%endfor%}{{stinger.name|snake_case}};
+
+namespace {
+
+constexpr const char* kClientId = "test-server-client";
+constexpr const char* kServiceId = "test-service";
+
+// Serializes a generated payload/struct (anything exposing AddToRapidJsonObject)
+// to a compact JSON string.
+template <typename T>
+std::string serializeToString(const T& obj)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    obj.AddToRapidJsonObject(doc, doc.GetAllocator());
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    return buf.GetString();
+}
+
+// The server starts a service-advertisement thread in its constructor; tearing it
+// down joins that thread, which can take up to a second.  To keep the suite fast,
+// the server is constructed once per suite and shared across tests.  Each test
+// clears the broker's published-message log so assertions stay isolated.
+class {{stinger.cpp.server_class_name}}Test : public ::testing::Test
+{
+protected:
+    static std::shared_ptr<stinger::utils::MockConnection> _conn;
+    static std::unique_ptr<{{stinger.cpp.server_class_name}}> _server;
+
+    static void SetUpTestSuite()
+    {
+        _conn = std::make_shared<stinger::utils::MockConnection>(kClientId);
+        _server = std::make_unique<{{stinger.cpp.server_class_name}}>(_conn, kServiceId{%for topic_param in config.topics.params %}, "test-{{topic_param}}"{%endfor%});
+    }
+
+    static void TearDownTestSuite()
+    {
+        // Destroy the server (stops its advertisement thread) before the connection.
+        _server.reset();
+        _conn.reset();
+    }
+
+    void SetUp() override
+    {
+        _conn->ClearPublishedMessages();
+    }
+
+    // Mirrors the topic parameters the server uses internally so tests can
+    // reconstruct the exact concrete topic strings.
+    static std::map<std::string, std::string> topicArgs()
+    {
+        std::map<std::string, std::string> params;
+        params["service_id"] = kServiceId;
+        params["interface_name"] = {{stinger.cpp.server_class_name}}::NAME;
+        params["client_id"] = _conn->GetClientId();
+        {%-for topic_param in config.topics.params %}
+        params["{{topic_param}}"] = "test-{{topic_param}}";
+        {%-endfor%}
+        return params;
+    }
+};
+
+std::shared_ptr<stinger::utils::MockConnection> {{stinger.cpp.server_class_name}}Test::_conn;
+std::unique_ptr<{{stinger.cpp.server_class_name}}> {{stinger.cpp.server_class_name}}Test::_server;
+
+} // anonymous namespace
+
+// The server should subscribe to one topic per method request and per property update.
+TEST_F({{stinger.cpp.server_class_name}}Test, SubscribesToExpectedTopics)
+{
+    const std::size_t expected = {{ stinger.methods|length + stinger.properties|length }};
+    EXPECT_EQ(_conn->GetSubscriptions().size(), expected);
+
+    {%-for method_name, method in stinger.methods.items() %}
+    EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{method.request_topic()}}", topicArgs()))) << "Not subscribed to {{method_name}} request topic";
+    {%-endfor%}
+    {%-for prop_name, prop in stinger.properties.items() %}
+    EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{prop.update_topic()}}", topicArgs()))) << "Not subscribed to {{prop_name}} update topic";
+    {%-endfor%}
+}
+
+{%for sig_name, sig in stinger.signals.items()%}
+{%-if sig.arg_list | selectattr('value_schema') | list | length == 0 %}
+// Emitting `{{sig_name}}` should publish the signal to the broker.
+TEST_F({{stinger.cpp.server_class_name}}Test, {{sig_name | UpperCamelCase}}EmitPublishes)
+{
+    const std::string topic = stinger::utils::format("{{sig.topic()}}", topicArgs());
+    _conn->ClearPublishedMessages();
+
+    auto pending = _server->emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+
+    auto published = _conn->GetPublishedMessages(topic);
+    ASSERT_EQ(published.size(), 1u);
+
+    rapidjson::Document doc;
+    EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published signal payload is not valid JSON";
+    EXPECT_TRUE(doc.IsObject());
+}
+{%endif%}
+{%endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+{%-if method.arg_list | selectattr('value_schema') | list | length == 0 %}
+// A simulated `{{method_name}}` request should invoke the registered handler and publish a response.
+TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}RequestInvokesHandler)
+{
+    // Captured by value (shared_ptr) so the registered handler stays valid for the
+    // lifetime of the shared server, even after this test returns.
+    auto handlerCalled = std::make_shared<bool>(false);
+    _server->register{{method_name | UpperCamelCase}}Handler([handlerCalled]({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.cpp.return_value_class}}
+    {
+        *handlerCalled = true;
+        {%-if method.return_value_type == 'multiple'%}
+        return {{method.return_value_name | UpperCamelCase}}{ {{method.get_return_value_random_example_value('c++')}} };
+        {%-elif method.return_value_type == 'struct'%}
+        return {{method.get_return_value_random_example_value('c++')}};
+        {%-elif method.return_value_type is not false %}
+        return {{method.get_return_value_random_example_value('c++')}};
+        {%-endif%}
+    });
+
+    {%if method.arg_list | length > 0 %}
+    {{method_name | UpperCamelCase}}RequestArguments requestArgs{ {%for arg in method.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string payload = serializeToString(requestArgs);
+    {%else%}
+    const std::string payload = "{}";
+    {%endif%}
+
+    const std::string requestTopic = stinger::utils::format("{{method.request_topic()}}", topicArgs());
+    const std::string responseTopic = stinger::utils::format("{{method.response_topic()}}", topicArgs());
+    const std::vector<std::byte> correlationData{ std::byte{0x01}, std::byte{0x02} };
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, payload, correlationData, responseTopic);
+
+    _conn->ClearPublishedMessages();
+    _conn->SimulateIncomingMessage(msg);
+
+    EXPECT_TRUE(*handlerCalled);
+    // The server publishes a response (success or error) to the response topic.
+    EXPECT_EQ(_conn->GetPublishedMessages(responseTopic).size(), 1u);
+}
+{%endif%}
+{%endfor%}
+
+{%for prop_name, prop in stinger.properties.items()%}
+{%-if prop.arg_list | selectattr('value_schema') | list | length == 0 %}
+// Setting `{{prop_name}}` on the server should publish its value to the broker.
+TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}SetterPublishesValue)
+{
+    const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicArgs());
+    _conn->ClearPublishedMessages();
+
+    _server->update{{prop_name | UpperCamelCase}}Property({%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+
+    auto published = _conn->GetPublishedMessages(valueTopic);
+    ASSERT_EQ(published.size(), 1u);
+
+    rapidjson::Document doc;
+    EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published property value is not valid JSON";
+    EXPECT_TRUE(doc.IsObject());
+}
+
+// A simulated `{{prop_name}}` update request should be applied and re-published as the new value.
+TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}UpdateRequestIsRepublished)
+{
+    const std::string updateTopic = stinger::utils::format("{{prop.update_topic()}}", topicArgs());
+    const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicArgs());
+
+    {{prop_name | UpperCamelCase}}Property newValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string payload = serializeToString(newValue);
+    const std::vector<std::byte> correlationData{ std::byte{0x01} };
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, payload, 1, correlationData, "test/response");
+
+    _conn->ClearPublishedMessages();
+    _conn->SimulateIncomingMessage(msg);
+
+    EXPECT_EQ(_conn->GetPublishedMessages(valueTopic).size(), 1u);
+}
+{%endif%}
+{%endfor%}

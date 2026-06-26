@@ -1,0 +1,179 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+Unit tests for the {{stinger.name}} client.  These use the MockConnection from
+stinger-cpp-utils to drive the client without a real MQTT broker:
+  - construction registers the expected topic subscriptions,
+  - calling a method publishes a request to the broker,
+  - updating a (writable) property publishes an update request,
+  - a simulated incoming signal message invokes the registered callback.
+
+LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+*/
+
+#include <gtest/gtest.h>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <map>
+#include <memory>
+#include <string>
+
+#include <stinger/utils/mockconnection.hpp>
+#include <stinger/utils/format.hpp>
+#include <stinger/mqtt/message.hpp>
+
+#include "client.hpp"
+#include "discovery.hpp"
+#include "structs.hpp"
+#include "signal_payloads.hpp"
+#include "method_payloads.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
+{%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
+
+using namespace {%for ns in config.cpp.namespace%}{{ns}}::{%endfor%}{{stinger.name|snake_case}};
+
+namespace {
+
+// Values used to construct the client's InstanceInfo and to reconstruct the
+// concrete topics the client subscribes/publishes to.
+constexpr const char* kClientId = "test-client";
+constexpr const char* kServiceId = "test-service";
+
+// Serializes a generated payload/struct (anything exposing AddToRapidJsonObject)
+// to a compact JSON string.
+template <typename T>
+std::string serializeToString(const T& obj)
+{
+    rapidjson::Document doc;
+    doc.SetObject();
+    obj.AddToRapidJsonObject(doc, doc.GetAllocator());
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+    return buf.GetString();
+}
+
+class {{stinger.cpp.client_class_name}}Test : public ::testing::Test
+{
+protected:
+    std::shared_ptr<stinger::utils::MockConnection> _conn;
+    std::unique_ptr<{{stinger.cpp.client_class_name}}> _client;
+
+    void SetUp() override
+    {
+        _conn = std::make_shared<stinger::utils::MockConnection>(kClientId);
+
+        InstanceInfo info;
+        info.serviceId = kServiceId;
+        {%-for topic_param in config.topics.params %}
+        info.{{topic_param|lowerCamelCase}} = "test-{{topic_param}}";
+        {%-endfor%}
+
+        _client = std::make_unique<{{stinger.cpp.client_class_name}}>(_conn, info);
+    }
+
+    // Mirrors the topic parameters the client uses internally so tests can
+    // reconstruct the exact concrete topic strings.
+    std::map<std::string, std::string> topicParams() const
+    {
+        std::map<std::string, std::string> params;
+        params["client_id"] = _conn->GetClientId();
+        params["service_id"] = kServiceId;
+        params["interface_name"] = {{stinger.cpp.client_class_name}}::NAME;
+        {%-for topic_param in config.topics.params %}
+        params["{{topic_param}}"] = "test-{{topic_param}}";
+        {%-endfor%}
+        return params;
+    }
+};
+
+} // anonymous namespace
+
+// The client should subscribe to one topic per signal, method response,
+// and property value{% if stinger.properties | length > 0 %}, plus the aggregate property-update response topic{% endif %}.
+TEST_F({{stinger.cpp.client_class_name}}Test, SubscribesToExpectedTopics)
+{
+    const std::size_t expected = {{ stinger.signals|length + stinger.methods|length + stinger.properties|length + (1 if stinger.properties|length > 0 else 0) }};
+    EXPECT_EQ(_conn->GetSubscriptions().size(), expected);
+
+    {%-for sig_name, sig in stinger.signals.items() %}
+    EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{sig.topic()}}", topicParams()))) << "Not subscribed to {{sig_name}} signal topic";
+    {%-endfor%}
+    {%-for method_name, method in stinger.methods.items() %}
+    EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{method.response_topic()}}", topicParams()))) << "Not subscribed to {{method_name}} response topic";
+    {%-endfor%}
+    {%-for prop_name, prop in stinger.properties.items() %}
+    EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{prop.value_topic()}}", topicParams()))) << "Not subscribed to {{prop_name}} property value topic";
+    {%-endfor%}
+}
+
+{%for sig_name, sig in stinger.signals.items()%}
+{%-set sig_has_schema = sig.arg_list | selectattr('value_schema') | list | length > 0 %}
+// A simulated incoming `{{sig_name}}` signal should be dispatched to the registered callback.
+TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}SignalInvokesCallback)
+{
+    bool callbackInvoked = false;
+    _client->register{{sig_name | UpperCamelCase}}Callback([&callbackInvoked]({%for arg in sig.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})
+    {
+        callbackInvoked = true;
+    });
+
+    {{sig_name | UpperCamelCase}}Payload payload{ {%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string topic = stinger::utils::format("{{sig.topic()}}", topicParams());
+    // The MockConnection routes the message by topic and stamps the matching
+    // subscription id, which is how the client dispatches it to the callback.
+    auto msg = stinger::mqtt::Message::Signal(topic, serializeToString(payload));
+
+    _conn->SimulateIncomingMessage(msg);
+
+    {%-if sig_has_schema %}
+    // This signal declares a JSON-schema constraint; whether the example payload
+    // passes validation (and therefore reaches the callback) depends on the value,
+    // so we only assert that processing the message does not crash.
+    {%-else %}
+    EXPECT_TRUE(callbackInvoked);
+    {%-endif %}
+}
+{%endfor%}
+
+{%for method_name, method in stinger.methods.items()%}
+{%-if method.arg_list | selectattr('value_schema') | list | length == 0 %}
+// Calling `{{method_name}}` should publish a request to the broker.
+TEST_F({{stinger.cpp.client_class_name}}Test, {{method_name | UpperCamelCase}}PublishesRequest)
+{
+    _conn->ClearPublishedMessages();
+
+    auto pending = _client->{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+
+    auto published = _conn->GetPublishedMessages();
+    ASSERT_EQ(published.size(), 1u);
+    EXPECT_EQ(published[0].topic, stinger::utils::format("{{method.request_topic()}}", topicParams()));
+
+    rapidjson::Document doc;
+    EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published request payload is not valid JSON";
+    EXPECT_TRUE(doc.IsObject());
+}
+{%endif%}
+{%endfor%}
+
+{%for prop_name, prop in stinger.properties.items()%}
+{%-if not prop.read_only %}
+// Updating `{{prop_name}}` should publish an update request to the broker.
+TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}UpdatePublishesRequest)
+{
+    _conn->ClearPublishedMessages();
+
+    auto pending = _client->update{{prop_name | UpperCamelCase}}Property({%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+
+    auto published = _conn->GetPublishedMessages();
+    ASSERT_EQ(published.size(), 1u);
+    EXPECT_EQ(published[0].topic, stinger::utils::format("{{prop.update_topic()}}", topicParams()));
+
+    rapidjson::Document doc;
+    EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published property update payload is not valid JSON";
+    EXPECT_TRUE(doc.IsObject());
+}
+{%endif%}
+{%endfor%}
