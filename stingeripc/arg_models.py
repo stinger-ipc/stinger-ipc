@@ -30,15 +30,25 @@ RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "op
 class Arg(BaseModel):
     """Represents an argument to a method, signal, or property.  This is the base class for all argument types."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
     name: str = Field(..., description="The name of the argument")
     description: str | None = Field(default=None, description="A description of the argument")
     optional: bool = Field(default=False, description="Whether the argument is optional")
     arg_type: ArgType = Field(default=ArgType.UNKNOWN, description="The type of the argument")
+    value_schema: dict[str, Any] | None = Field(
+        default=None,
+        alias="schema",
+        description="An optional JSON Schema (limited to the subset supported by the RapidJSON C++ validator) that further constrains the value.",
+    )
 
     def try_set_description_from_spec(self, spec: Mapping[str, Any]) -> "Arg":
         if "description" in spec and isinstance(spec["description"], str):
             self.description = spec["description"].strip()
+        return self
+
+    def try_set_schema_from_spec(self, spec: Mapping[str, Any]) -> "Arg":
+        if "schema" in spec and isinstance(spec["schema"], Mapping):
+            self.value_schema = dict(spec["schema"])
         return self
 
     def __str__(self) -> str:
@@ -87,6 +97,7 @@ class Arg(BaseModel):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 enum_arg.optional = opt
             enum_arg.try_set_description_from_spec(spec)
+            enum_arg.try_set_schema_from_spec(spec)
             return enum_arg
 
         if spec["type"] == "struct":
@@ -102,6 +113,7 @@ class Arg(BaseModel):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 st_arg.optional = opt
             st_arg.try_set_description_from_spec(spec)
+            st_arg.try_set_schema_from_spec(spec)
             return st_arg
 
         if spec["type"] == "datetime":
@@ -111,6 +123,7 @@ class Arg(BaseModel):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 dt_arg.optional = opt
             dt_arg.try_set_description_from_spec(spec)
+            dt_arg.try_set_schema_from_spec(spec)
             return dt_arg
 
         if spec["type"] == "duration":
@@ -120,6 +133,7 @@ class Arg(BaseModel):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 dur_arg.optional = opt
             dur_arg.try_set_description_from_spec(spec)
+            dur_arg.try_set_schema_from_spec(spec)
             return dur_arg
 
         if spec["type"] == "binary":
@@ -129,6 +143,7 @@ class Arg(BaseModel):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 bin_arg.optional = opt
             bin_arg.try_set_description_from_spec(spec)
+            bin_arg.try_set_schema_from_spec(spec)
             return bin_arg
 
         if spec["type"] == "array":
@@ -145,6 +160,7 @@ class Arg(BaseModel):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 array_arg.optional = opt
             array_arg.try_set_description_from_spec(spec)
+            array_arg.try_set_schema_from_spec(spec)
             return array_arg
 
         raise RuntimeError(f"unknown arg type: {arg_spec['type']}")
@@ -249,6 +265,7 @@ class ArgPrimitive(Arg):
         arg: ArgPrimitive = cls(name=arg_spec["name"], primitive_type=arg_primitive_type)
 
         arg.try_set_description_from_spec(arg_spec)
+        arg.try_set_schema_from_spec(arg_spec)
         return arg
 
 
