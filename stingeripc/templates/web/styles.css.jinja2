@@ -208,11 +208,45 @@ td input.ng-invalid.ng-dirty {
     letter-spacing: 0.5px;
 }
 
+@keyframes title-flash {
+    0% { background-color: #e53935; }
+    100% { background-color: #3a6ea5; }
+}
+
+.component-title.flash {
+    animation: title-flash 0.8s ease-out;
+}
+
 .component-doc {
     font-size: 0.96em;
     font-style: italic;
     color: #4a5a6a;
     margin-bottom: 8px;
+}
+
+details.component-doc > summary {
+    cursor: pointer;
+    font-style: normal;
+    font-weight: 600;
+    color: #3a6ea5;
+    user-select: none;
+    list-style: none;
+}
+
+details.component-doc > summary::-webkit-details-marker {
+    display: none;
+}
+
+details.component-doc > summary::before {
+    content: "\F0142"; /* mdi chevron-right */
+    font-family: "Material Design Icons";
+    display: inline-block;
+    margin-right: 4px;
+    transition: transform 0.15s ease;
+}
+
+details.component-doc[open] > summary::before {
+    transform: rotate(90deg);
 }
 
 .component-doc p {
@@ -224,6 +258,17 @@ td input.ng-invalid.ng-dirty {
     margin-top: 10px;
     font-weight: 500;
     color: #2d4a6a;
+}
+
+.method-response-status {
+    margin-top: 10px;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #2e7d32;
+}
+
+.method-response-status .mdi {
+    margin-right: 4px;
 }
 
 table.arglist {
