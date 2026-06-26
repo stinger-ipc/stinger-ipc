@@ -248,16 +248,24 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
-        {
-            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
-            hashmap.insert(correlation_id, sender);
-        }
-
         let data = {{method_name | UpperCamelCase}}RequestObject {
             {%-for arg in method.arg_list%}
             {{arg.name|snake_case}},
             {%-endfor%}
         };
+        {%-if method.arg_list | length > 0 %}
+        if let Err(e) = data.validate_schema() {
+            error!("Request payload for {{method_name}} failed schema validation, not sending: {}", e);
+            let _ = sender.send(MethodReturnCode::ClientSerializationError(format!("Request payload failed schema validation: {}", e)));
+            return receiver;
+        }
+        {%-endif%}
+
+        {
+            let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+            hashmap.insert(correlation_id, sender);
+        }
+
         let topic_param_map = HashMap::from([
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), self.service_instance_id.clone()),
@@ -291,6 +299,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 {%if method.return_arg_list |length > 0%}
                 let return_obj: {{method_name|UpperCamelCase}}ReturnValues = serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
                     .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
+                return_obj.validate_schema().map_err(MethodReturnCode::ClientDeserializationError)?;
                 {%endif%}
                 {%if method.return_arg_list |length == 0 %}
                 Ok(())
@@ -544,6 +553,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             // Single argument, extract it from payload and send to channel.
                             match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
                                 Ok(pl) => {
+                                    if let Err(e) = pl.validate_schema() {
+                                        warn!("Received '{{signal_name}}' signal payload failed schema validation: {}", e);
+                                        continue;
+                                    }
                                     let _send_result = chan.send(pl.{{signal.arg_list[0].name|snake_case}});
                                 },
                                 Err(e) => {
@@ -555,6 +568,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             // {{signal.arg_list|length}} arguments, send the entire struct to the channel.
                             match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
                                 Ok(pl) => {
+                                    if let Err(e) = pl.validate_schema() {
+                                        warn!("Received '{{signal_name}}' signal payload failed schema validation: {}", e);
+                                        continue;
+                                    }
                                     let _send_result = chan.send(pl);
                                 },
                                 Err(e) => {
@@ -573,6 +590,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                 // JSON deserialize into {{prop_name | UpperCamelCase}}Property struct
                                 match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property>(&msg.payload) {
                                     Ok(pl) => {
+                                        if let Err(e) = pl.validate_schema() {
+                                            warn!("Received '{{prop_name}}' property value failed schema validation: {}", e);
+                                            return;
+                                        }
                                         // Get a write-guard and set the local copy of the property value.
                                         let mut guard = props_copy.{{prop_name | snake_case}}.write().await;
                                         {%if prop.arg_list | length == 1 %}
