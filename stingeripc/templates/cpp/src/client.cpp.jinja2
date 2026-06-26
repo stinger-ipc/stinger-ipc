@@ -134,6 +134,11 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
                     }
                 }
                 {%endfor%}{# for signal args #}
+                {{sig_name | UpperCamelCase}}Payload signalPayload{ {%for arg in sig.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+                if (!signalPayload.ValidateSchema()) {
+                    _broker->Log(LOG_WARNING, "Received '{{sig_name}}' signal payload failed schema validation; ignoring.");
+                    return;
+                }
                 std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
                 for (const auto& cb : _{{sig_name | lowerCamelCase}}SignalCallbacks)
                 {
@@ -187,10 +192,16 @@ std::future<{{method.cpp.return_value_class}}> {{stinger.cpp.client_class_name}}
 
     rapidjson::Document doc;
     doc.SetObject();
-
-    {%for arg in method.arg_list%}
-    {{ser.addToValue('doc', arg, 'doc.GetAllocator()') | indent(4)}}
-    {%endfor%}
+    {%if method.arg_list | length > 0 %}
+    {{method_name | UpperCamelCase}}RequestArguments requestArgs{ {%for arg in method.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    if (!requestArgs.ValidateSchema()) {
+        _broker->Log(LOG_WARNING, "Request payload for '{{method_name}}' failed schema validation; not sending.");
+        _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData].set_exception(
+            std::make_exception_ptr(std::runtime_error("Request payload for '{{method_name}}' failed schema validation")));
+        return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData].get_future();
+    }
+    requestArgs.AddToRapidJsonObject(doc, doc.GetAllocator());
+    {%endif%}
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -274,6 +285,11 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     }
     {{prop.name | UpperCamelCase}}Property tempValue;
     {{deser.deserialize('tempValue', prop.arg_list, 'doc') | indent(4)}}
+
+    if (!tempValue.ValidateSchema()) {
+        _broker->Log(LOG_WARNING, "Received '{{prop_name}}' property update failed schema validation; ignoring.");
+        return;
+    }
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);

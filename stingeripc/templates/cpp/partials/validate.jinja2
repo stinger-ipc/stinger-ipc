@@ -1,0 +1,31 @@
+{#- Emits the definition of a ValidateSchema() method for a payload/struct.
+    The method is always generated; fields that declare a JSON schema constraint
+    are checked against it with RapidJSON, and a struct with no such fields simply
+    returns true.  The owning struct must expose AddToRapidJsonObject().
+    Requires <rapidjson/schema.h> and <rapidjson/document.h> in the including file. -#}
+{%-macro validate_schema_body(class_name, arg_list)%}
+{%-set schema_args = arg_list | selectattr('value_schema') | list%}
+bool {{class_name}}::ValidateSchema() const
+{
+    {%-if schema_args%}
+    rapidjson::Document doc;
+    doc.SetObject();
+    AddToRapidJsonObject(doc, doc.GetAllocator());
+    {%-for arg in schema_args%}
+    {
+        rapidjson::Document schemaDoc;
+        if (schemaDoc.Parse(R"stingerschema({{arg.value_schema | tojson}})stingerschema").HasParseError()) {
+            return false;
+        }
+        rapidjson::SchemaDocument schema(schemaDoc);
+        rapidjson::SchemaValidator validator(schema);
+        auto itr = doc.FindMember("{{arg.name}}");
+        if (itr != doc.MemberEnd() && !itr->value.Accept(validator)) {
+            return false;
+        }
+    }
+    {%-endfor%}
+    {%-endif%}
+    return true;
+}
+{%-endmacro%}

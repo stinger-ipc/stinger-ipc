@@ -1,7 +1,9 @@
 {% import "partials/deserialize.jinja2"  as deser %}
 {% import "partials/serialize.jinja2" as ser %}
+{% import "partials/validate.jinja2" as val %}
 #include "property_structs.hpp"
 #include <rapidjson/document.h>
+#include <rapidjson/schema.h>
 
 {%for ns in config.cpp.namespace%}
 namespace {{ns}} {
@@ -23,6 +25,7 @@ void {{prop.name | UpperCamelCase}}Property::AddToRapidJsonObject(rapidjson::Val
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }
+{{ val.validate_schema_body((prop.name | UpperCamelCase) ~ "Property", prop.arg_list) }}
 {% endfor %}
 
 } // namespace {{stinger.name|snake_case}}

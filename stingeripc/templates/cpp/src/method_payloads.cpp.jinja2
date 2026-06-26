@@ -2,39 +2,10 @@
 #include "method_payloads.hpp"
 {% import "partials/deserialize.jinja2"  as deser %}
 {% import "partials/serialize.jinja2" as ser %}
+{% import "partials/validate.jinja2" as val %}
 #include <rapidjson/document.h>
 #include <rapidjson/schema.h>
 #include <stinger/utils/conversions.hpp>
-
-{#- Emits the definition of a ValidateSchema() method.  The method is always
-    generated; fields that declare a JSON schema constraint are checked, and a
-    struct with no such fields simply returns true. -#}
-{%-macro validate_schema_body(class_name, arg_list)%}
-{%-set schema_args = arg_list | selectattr('value_schema') | list%}
-bool {{class_name}}::ValidateSchema() const
-{
-    {%-if schema_args%}
-    rapidjson::Document doc;
-    doc.SetObject();
-    AddToRapidJsonObject(doc, doc.GetAllocator());
-    {%-for arg in schema_args%}
-    {
-        rapidjson::Document schemaDoc;
-        if (schemaDoc.Parse(R"stingerschema({{arg.value_schema | tojson}})stingerschema").HasParseError()) {
-            return false;
-        }
-        rapidjson::SchemaDocument schema(schemaDoc);
-        rapidjson::SchemaValidator validator(schema);
-        auto itr = doc.FindMember("{{arg.name}}");
-        if (itr != doc.MemberEnd() && !itr->value.Accept(validator)) {
-            return false;
-        }
-    }
-    {%-endfor%}
-    {%-endif%}
-    return true;
-}
-{%-endmacro%}
 
 {%for ns in config.cpp.namespace%}
 namespace {{ns}} {
@@ -57,7 +28,7 @@ void {{method_name | UpperCamelCase}}RequestArguments::AddToRapidJsonObject(rapi
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }
-{{ validate_schema_body((method_name | UpperCamelCase) ~ "RequestArguments", method.arg_list) }}
+{{ val.validate_schema_body((method_name | UpperCamelCase) ~ "RequestArguments", method.arg_list) }}
 
 // --- (De-)Serialization for {{method_name}} method return type ---
 {{method_name | UpperCamelCase}}ReturnValues {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -74,7 +45,7 @@ void {{method_name | UpperCamelCase}}ReturnValues::AddToRapidJsonObject(rapidjso
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }
-{{ validate_schema_body((method_name | UpperCamelCase) ~ "ReturnValues", method.return_arg_list) }}
+{{ val.validate_schema_body((method_name | UpperCamelCase) ~ "ReturnValues", method.return_arg_list) }}
 {% endfor %}
 
 } // namespace {{stinger.name|snake_case}}

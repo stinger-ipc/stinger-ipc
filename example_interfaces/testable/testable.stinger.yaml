@@ -187,6 +187,16 @@ signals:
         type: integer
         description: The integer value.
   
+  jsonSchemaValidatedInt:
+    documentation: A signal with a single integer parameter that is validated against a JSON schema.
+    payload:
+      - name: value
+        type: integer
+        description: The integer value.
+        schema:
+          minimum: 0
+          maximum: 100
+
   singleOptionalInt:
     documentation: A signal with a single optional integer parameter.
     payload:
@@ -216,6 +226,16 @@ signals:
         type: string
         description: The string value.
   
+  jsonSchemaValidatedString:
+    documentation: A signal with a single string parameter that is validated against a JSON schema.
+    payload:
+      - name: value
+        type: string
+        description: The string value.
+        schema:
+          minLength: 1
+          maxLength: 10
+
   singleOptionalString:
     documentation: A signal with a single optional string parameter.
     payload:
