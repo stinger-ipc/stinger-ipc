@@ -14,6 +14,7 @@
 #include "structs.hpp"
 #include "server.hpp"
 #include "method_payloads.hpp"
+#include "signal_payloads.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include <stinger/utils/iconnection.hpp>
 #include <stinger/utils/format.hpp>
@@ -139,12 +140,18 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(const stinger::mqtt::Mes
 {%for sig_name, sig in stinger.signals.items()%}
 std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp.func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
+    {{sig_name | UpperCamelCase}}Payload signalPayload{ {%for arg in sig.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    if (!signalPayload.ValidateSchema()) {
+        _broker->Log(LOG_WARNING, "Payload for '{{sig_name}}' signal failed schema validation; not emitting.");
+        std::promise<bool> failedPromise;
+        failedPromise.set_value(false);
+        return failedPromise.get_future();
+    }
+
     rapidjson::Document doc;
     doc.SetObject();
+    signalPayload.AddToRapidJsonObject(doc, doc.GetAllocator());
 
-    {%-for arg in sig.arg_list%}
-    {{ser.addToValue('doc', arg, 'doc.GetAllocator()') | indent}}
-    {%-endfor%}
     rapidjson::StringBuffer buf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
     doc.Accept(writer);
@@ -185,6 +192,14 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
     }
     {%if method.arg_list | length > 0 %}
     auto requestArgs = {{method_name | UpperCamelCase}}RequestArguments::FromRapidJsonObject(doc);
+    if (!requestArgs.ValidateSchema()) {
+        _broker->Log(LOG_WARNING, "Request payload for {{method_name}} failed schema validation.");
+        if (optResponseTopic) {
+            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::CLIENT_DESERIALIZATION_ERROR);
+            _broker->Publish(errMsg);
+        }
+        return;
+    }
     {%endif%}
     try
     {
@@ -200,6 +215,12 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         // Method has multiple return values.
         auto returnValues = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
         {%endif%}
+        if (!returnValues.ValidateSchema()) {
+            _broker->Log(LOG_WARNING, "Response payload for {{method_name}} failed schema validation.");
+            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::SERVER_SERIALIZATION_ERROR);
+            _broker->Publish(errMsg);
+            return;
+        }
 
         if (optResponseTopic)
         {
@@ -282,6 +303,10 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
     rapidjson::Document doc;
     if (_{{prop_name | lowerCamelCase}}Property)
     {
+        if (!_{{prop_name | lowerCamelCase}}Property->ValidateSchema()) {
+            _broker->Log(LOG_WARNING, "Value for '{{prop_name}}' property failed schema validation; not publishing.");
+            return;
+        }
         doc.SetObject();
         _{{prop_name | lowerCamelCase}}Property->AddToRapidJsonObject(doc, doc.GetAllocator());
     }

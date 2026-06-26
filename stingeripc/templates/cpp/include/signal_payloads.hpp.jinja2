@@ -27,6 +27,8 @@ namespace {{stinger.name|snake_case}} {
 struct {{signal_name | UpperCamelCase}}Payload {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     static {{signal_name | UpperCamelCase}}Payload FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Validates fields that declare a JSON schema constraint.  Returns true if all such fields conform to their schema (or if none declare one).
+    bool ValidateSchema() const;
     {%-if signal.arg_list | length > 0 %}
     // Values...
     {%-for arg in signal.arg_list %}
