@@ -6,6 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <sstream>
+#include <syslog.h>
 
 {%for ns in config.cpp.namespace%}
 namespace {{ns}} {
@@ -138,10 +139,15 @@ std::vector<InstanceInfo> {{stinger.name|UpperCamelCase}}Discovery::GetInstances
 
 void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const stinger::mqtt::Message& msg)
 {
+    if (msg.properties.debugInfo.has_value())
+    {
+        _broker->Log(LOG_INFO, "Discovery DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
+    }
+
     // Check content type
     if (!msg.properties.contentType.has_value() || msg.properties.contentType.value() != "application/json")
     {
-        std::cerr << "Invalid content type in Discovery message. Expected 'application/json'" << std::endl;
+        _broker->Log(LOG_WARNING, "Invalid content type in Discovery message. Expected 'application/json'");
         return;
     }
 

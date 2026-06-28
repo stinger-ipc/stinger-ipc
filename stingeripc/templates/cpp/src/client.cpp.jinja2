@@ -87,6 +87,10 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
     if (subscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId)
     {
         _broker->Log(LOG_INFO, "Handling {{sig_name}} signal");
+        if (msg.properties.debugInfo.has_value())
+        {
+            _broker->Log(LOG_INFO, "{{sig_name}} signal debug from server: %s", msg.properties.debugInfo->c_str());
+        }
         rapidjson::Document doc;
         try {
             if (_{{sig_name | camelCase}}SignalCallbacks.size() > 0)
@@ -227,6 +231,10 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         const stinger::mqtt::Message& msg) 
 {
     _broker->Log(LOG_DEBUG, "In response handler for {{method_name}}");
+    if (msg.properties.debugInfo.has_value())
+    {
+        _broker->Log(LOG_INFO, "{{method_name}} response debug from server: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
+    }
     
     {%if method.return_value_type is not false%}
     rapidjson::Document doc;
@@ -272,6 +280,10 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
 {%for prop_name, prop in stinger.properties.items()%}
 void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const stinger::mqtt::Message& msg)
 {
+    if (msg.properties.debugInfo.has_value())
+    {
+        _broker->Log(LOG_INFO, "{{prop_name}} property update debug from server: %s",  msg.properties.debugInfo->c_str());
+    }
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok)

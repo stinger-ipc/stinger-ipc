@@ -101,6 +101,10 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(const stinger::mqtt::Mes
     {%if not loop.first%}else {%endif%}if (subscriptionId == _{{method_name | camelCase}}MethodSubscriptionId)
     {
         _broker->Log(LOG_INFO,"Message to `%s` matched as {{method_name}} method request.", msg.topic.c_str());
+        if (msg.properties.debugInfo.has_value())
+        {
+            _broker->Log(LOG_INFO, "Received DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
+        }
         rapidjson::Document doc;
         try {
             if (_{{method_name | camelCase}}Handler)
@@ -297,6 +301,10 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
 
 void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const stinger::mqtt::Message& msg)
 {
+    if (msg.properties.debugInfo.has_value())
+    {
+        _broker->Log(LOG_INFO, "Received DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
+    }
     rapidjson::Document doc;
     rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
     if (!ok)
