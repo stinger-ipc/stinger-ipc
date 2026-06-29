@@ -45,7 +45,14 @@
           {{ arglist(arg.members, new_model_parts, read_only) }}
         </div>
         {%elif arg.arg_type|lower == "argtype.binary"%}
+        {%if arg.content_type and arg.content_type.startswith('image/')%}
+        <img class="binary-image" ng-if="{{modelpath}}.{{arg.name}}" ng-src="data:{{arg.content_type}};base64,{{ '{{' }}{{modelpath}}.{{arg.name}}{{ '}}' }}" alt="{{arg.name}}" />
+        {%if not read_only%}
+        <input type="text" ng-model="{{modelpath}}.{{arg.name}}" placeholder="base64 image data" />
+        {%endif%}
+        {%else%}
         Binary: <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%endif%}
         {%elif arg.arg_type|lower == "argtype.array"%}
         {%if arg.element.arg_type|lower == "argtype.struct"%}
         <table class="arglist array-of-struct">
