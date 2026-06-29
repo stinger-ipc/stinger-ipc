@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from pathlib import Path
@@ -114,11 +115,16 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
 
     INPUT_FILE is the .stinger.yaml file
     """
-    schema_file = Path(__file__).parent.parent / "schema" / "schema.yaml"
+    input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
+    stingeripc_version = (input_obj.get("stingeripc") or {}).get("version")
+    if not stingeripc_version:
+        print(f"❌  [bold red]Missing required 'stingeripc.version' field in {input_file}[/bold red]")
+        sys.exit(1)
+    schema_dir = Path(__file__).parent.parent / "schema"
+    schema_compat = "0.2" if stingeripc_version.startswith("0.2") else "0.1"
+    schema_file = schema_dir / schema_compat / "schema.yaml"
     schema_obj = yaml.load(schema_file.open("r"), Loader=yamlloader.ordereddict.Loader)
     validator = jsonschema_rs.validator_for(schema_obj)
-
-    input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
 
     error_count = 0
     for error in validator.iter_errors(input_obj):
@@ -154,6 +160,7 @@ def hello():
 
 
 def run():
+    logging.getLogger("stevedore").setLevel(logging.WARNING)
     app()
 
 

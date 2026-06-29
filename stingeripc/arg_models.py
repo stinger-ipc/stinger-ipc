@@ -27,6 +27,17 @@ YamlIfaceProperty = dict[str, str | bool | YamlArgList]
 RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
 
 
+def _spec_version_at_least(version: Optional[str], minimum: tuple[int, ...]) -> bool:
+    """Return True if the dotted version string is >= the given minimum version tuple."""
+    if not version:
+        return False
+    try:
+        parts = tuple(int(p) for p in version.split("."))
+    except ValueError:
+        return False
+    return parts >= minimum
+
+
 class Arg(BaseModel):
     """Represents an argument to a method, signal, or property.  This is the base class for all argument types."""
 
@@ -142,6 +153,9 @@ class Arg(BaseModel):
                 if not isinstance(opt, bool):
                     raise InvalidStingerStructure("'optional' in arg structure must be a boolean")
                 bin_arg.optional = opt
+            bin_arg.content_type = spec.get("contentType")
+            if bin_arg.content_type is None and _spec_version_at_least(stinger_spec.spec_version, (0, 2, 0)):
+                raise InvalidStingerStructure(f"Binary arg '{spec['name']}' requires a 'contentType' for stinger spec version 0.2.0 or later")
             bin_arg.try_set_description_from_spec(spec)
             bin_arg.try_set_schema_from_spec(spec)
             return bin_arg
@@ -390,6 +404,7 @@ class ArgDuration(Arg):
 class ArgBinary(Arg):
 
     arg_type: ArgType = Field(default=ArgType.BINARY, description="The type of the argument, which is 'binary' for this class")
+    content_type: Optional[str] = Field(default=None, description="The MIME content type of the binary data. Required for schema version 0.2+, optional for earlier versions.")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)

@@ -88,6 +88,7 @@ class StingerSpec:
         self.enums: dict[str, InterfaceEnum] = {}
         self.structs: dict[str, InterfaceStruct] = {}
         self.constants: dict[str, InterfaceConstant] = {}
+        self._spec_version: Optional[str] = None
 
     @property
     def method_return_codes(self) -> dict[int, str]:
@@ -191,6 +192,11 @@ class StingerSpec:
         return self._version
 
     @property
+    def spec_version(self) -> Optional[str]:
+        """The stingeripc schema/format version this spec was loaded from (e.g. '0.2.0')."""
+        return self._spec_version
+
+    @property
     def signal_qos(self) -> int:
         return 2
 
@@ -239,6 +245,7 @@ class StingerSpec:
             raise InvalidStingerStructure(f"Unsupported stinger spec version {stinger['stingeripc']['version']}")
 
         stinger_spec = StingerSpec(stinger["interface"], config)
+        stinger_spec._spec_version = stinger["stingeripc"]["version"]
 
         from stingeripc.ipc_signal import IpcSignal
         from stingeripc.ipc_method import IpcMethod
