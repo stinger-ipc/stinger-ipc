@@ -1,0 +1,83 @@
+{#
+    Rendering helpers for Pydantic payload models (signals, methods, properties
+    and structs).  These macros turn interface arguments into Pydantic field
+    declarations and generate the optional JSON-schema validation method.
+
+    Import into a template with:
+        {% import "partials/payloads.jinja2" as payloads %}
+
+    Imported macros do not inherit the calling template's context, so anything
+    they need is passed in explicitly.  The macros rely only on the argument
+    models and on the environment's global filters (snake_case, tojson, ...).
+#}
+
+{#
+    Renders a single Pydantic field declaration for one interface argument.
+
+    The Python type is taken straight from ``arg.python.annotation`` (which
+    already applies ``Optional[...]`` wrapping), so every non-binary type shares
+    the same code path.  Binary and array-of-binary arguments additionally get
+    base64 (de)serialization validators because JSON has no native binary type.
+#}
+{%- macro field_declaration(arg) -%}
+{%- set field_desc %}Field({% if arg.description %}description="{{ arg.description }}", {% endif %}{% if (arg.name|snake_case) != arg.name %}alias="{{ arg.name }}"{% endif %}){% endset -%}
+{%- set type_name = arg.arg_type.name.lower() -%}
+{%- if type_name == 'binary' -%}
+{{ arg.name|snake_case }}: Annotated[{{ arg.python.annotation }}, {{ field_desc }}, PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode('utf-8'){% if arg.optional %} if v is not None else None{% endif %})]
+{%- elif type_name == 'array' and arg.element.arg_type.name.lower() == 'binary' -%}
+{{ arg.name|snake_case }}: Annotated[{{ arg.python.annotation }}, {{ field_desc }}, PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]), PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr])]
+{%- else -%}
+{{ arg.name|snake_case }}: Annotated[{{ arg.python.annotation }}, {{ field_desc }}]
+{%- endif -%}
+{%- endmacro -%}
+
+{# Renders the model config plus a field declaration for every argument. #}
+{%- macro field_list(arg_list) -%}
+model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
+{% for arg in arg_list %}{{ field_declaration(arg) }}
+{% endfor -%}
+{%- endmacro -%}
+
+{#
+    Emits a ``validate_schema()`` method that checks each field declaring a JSON
+    schema.  The method is always generated; when no field declares a schema it
+    simply returns True.  When at least one field has a schema, the model is also
+    wired to validate automatically on construction and before JSON serialization.
+#}
+{%- macro validate_schema_method(arg_list) -%}
+{%- set schema_args = arg_list | selectattr('value_schema') | list -%}
+
+def validate_schema(self) -> bool:
+    """Validate fields that declare a JSON schema constraint.
+
+    Returns ``True`` if all schema-constrained fields conform to their schema,
+    or if no field declares a schema.  Raises ``ValueError`` if a constrained
+    field's value does not conform; when this runs during model construction or
+    parsing, Pydantic surfaces that as a ``pydantic.ValidationError``.  Fields
+    without a schema are still validated structurally by Pydantic.
+    """
+    {%- if schema_args %}
+    _data = self.model_dump(mode="json", by_alias=True)
+    try:
+    {%- for arg in schema_args %}
+        jsonschema.validate(_data["{{ arg.name }}"], json.loads(r'{{ arg.value_schema | tojson }}'))
+    {%- endfor %}
+    except jsonschema.ValidationError as exc:
+        raise ValueError(f"{type(self).__name__} failed JSON schema validation: {exc.message}") from exc
+    {%- endif %}
+    return True
+
+{%- if schema_args %}
+
+@model_validator(mode="after")
+def _validate_schema_after(self):
+    """Automatically run validate_schema() whenever this model is constructed or parsed (e.g. model_validate_json)."""
+    self.validate_schema()
+    return self
+
+def model_dump_json(self, *args, **kwargs) -> str:  # type: ignore[override]
+    """Validate the schema just before serializing this model to JSON."""
+    self.validate_schema()
+    return super().model_dump_json(*args, **kwargs)
+{%- endif -%}
+{%- endmacro -%}

@@ -7,16 +7,13 @@ This is the Client for the {{stinger.name}} interface.
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
 """
-
+{% import "partials/imports.jinja2" as imports %}
 from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
 import json
 import logging
-from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
-{%if config.python.python37 %}
-UTC = timezone.utc
-{%endif%}
+{{ imports.datetime_types(config) }}
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
 from pyqttier.interface import IBrokerConnection
@@ -114,8 +111,6 @@ class {{stinger.python.client_class_name}}:
     def {{prop_name|snake_case}}(self, value: {{prop_spec.python.setter_value_annotation}}):
         """ Serializes and publishes the '{{prop_name}}' property.
         """
-        #if not isinstance(value, {{prop_spec.python.local_type}}){%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} and value is not None and not (isinstance(value, {{prop_spec.python.model_class_name}})){%endif%}:
-        #    raise ValueError("The '{{prop_name}}' property must be a {{prop_spec.python.class_name}}{%if (prop_spec.arg_list|length==1) and (prop_spec.arg_list[0].optional) %} or None or {{prop_spec.python.model_class_name}}.{%endif%}")
         {%if prop_spec.arg_list | length > 1 -%}
         # value must be the model object.
         property_obj = value

@@ -7,17 +7,14 @@ This is the Server for the {{stinger.name}} interface.
 LICENSE: This generated code is not subject to any license restrictions from the generator itself.
 TODO: Get license text from stinger file
 """
-
+{% import "partials/imports.jinja2" as imports %}
 import json
 import logging
 import threading
 import signal
 from time import sleep
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
-{%if config.python.python37 %}
-UTC = timezone.utc
-{%endif%}
+{{ imports.datetime_types(config) }}
 import isodate
 import asyncio
 import inspect

@@ -1,13 +1,11 @@
 """
 Tests for {{stinger.name}} client.
 """
+{% import "partials/imports.jinja2" as imports %}
 import pytest
 import sys
 from pathlib import Path
-from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
-{%if config.python.python37 %}
-UTC = timezone.utc
-{%endif%}
+{{ imports.datetime_types(config) }}
 from {{stinger.name | loweronly}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance
 {%if stinger.properties | length > 0 -%}
 from {{stinger.name | loweronly}}ipc.property import {{stinger.name | UpperCamelCase}}InitialPropertyValues
