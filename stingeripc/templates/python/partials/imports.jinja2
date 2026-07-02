@@ -1,0 +1,24 @@
+{#
+    Shared import / boilerplate snippets used across generated Python modules.
+
+    Import into a template with, for example:
+        {% import "partials/imports.jinja2" as imports %}
+    then call:
+        {{ imports.datetime_types(config) }}
+
+    Imported macros do not inherit the calling template's context, so anything
+    they need (such as ``config``) must be passed in explicitly.
+#}
+
+{#
+    Imports the datetime types used throughout the generated code.
+
+    ``datetime.UTC`` only exists on Python 3.11+, so for the Python 3.7 target we
+    import ``timezone`` instead and alias ``UTC`` to ``timezone.utc``.
+#}
+{%- macro datetime_types(config) -%}
+from datetime import datetime, timedelta, {% if not config.python.python37 %}UTC{% else %}timezone{% endif %}
+{% if config.python.python37 %}
+UTC = timezone.utc
+{% endif %}
+{%- endmacro -%}

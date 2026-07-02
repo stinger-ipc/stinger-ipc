@@ -284,6 +284,8 @@ $defs:
         description: >
           The MIME content type of the binary data (e.g. "image/png",
           "application/octet-stream").
+        not:
+          const: "application/json"
     required:
       - contentType
 
