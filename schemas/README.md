@@ -18,7 +18,12 @@ Properties: `values`
 
 All arguments have required `name` and `type` fields.  See below for valid `type` values.
 
-All arguments can have an optional `description` field which takes a string.  All arguments can have an optional `optional` field which takes a boolean; by default, arguments are not optional.
+All arguments can have optional fields:
+* `description` (string) — describes the argument
+* `optional` (boolean) — whether the argument is optional; defaults to false
+* `example` — an example value used in demo code and documentation (not yet supported)
+* `index` (integer ≥ 1) — payload ordering index required for some serialization formats
+* `schema` (object) — a JSON Schema that further constrains the value (not yet supported)
 
 Struct and enum arguments must have respective `structName` and `enumName` fields, where the value is the name of a struct or enum as defined in the stinger file.  When the parent component has a `version` field, struct and enum arguments should also include `structVersion` and `enumVersion` fields respectively.
 
