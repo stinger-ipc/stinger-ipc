@@ -11,6 +11,7 @@
 #include <ctime>
 #include <syslog.h>
 #include <sstream>
+#include <typeinfo>
 #include <stinger/utils/iconnection.hpp>
 #include <stinger/utils/uuid.hpp>
 #include <stinger/utils/format.hpp>
@@ -137,7 +138,18 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
                 std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
                 for (const auto& cb : _{{sig_name | lowerCamelCase}}SignalCallbacks)
                 {
-                    cb({%for arg in sig.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+                    try
+                    {
+                        cb({%for arg in sig.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+                    }
+                    catch (const std::exception& e)
+                    {
+                        _broker->Log(LOG_ERR, "Exception in {{sig_name}} signal callback [%s]: %s", typeid(e).name(), e.what());
+                    }
+                    catch (...)
+                    {
+                        _broker->Log(LOG_ERR, "Unknown exception in {{sig_name}} signal callback");
+                    }
                 }
             }
         }
@@ -286,7 +298,18 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
         for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
         {
             // Don't need a mutex since we're using tempValue.
-            cb({%for arg in prop.arg_list %}tempValue.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+            try
+            {
+                cb({%for arg in prop.arg_list %}tempValue.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+            }
+            catch (const std::exception& e)
+            {
+                _broker->Log(LOG_ERR, "Exception in {{prop_name}} property callback [%s]: %s", typeid(e).name(), e.what());
+            }
+            catch (...)
+            {
+                _broker->Log(LOG_ERR, "Unknown exception in {{prop_name}} property callback");
+            }
         }
     }
 }

@@ -24,7 +24,7 @@ include(FetchContent)
 FetchContent_Declare(
 	stinger-cpp-utils
 	GIT_REPOSITORY https://github.com/stinger-ipc/stinger-cpp-utils.git
-	GIT_TAG main  # or specify a specific tag/commit
+	GIT_TAG v0.7.5  # or specify a specific tag/commit
 )
 FetchContent_MakeAvailable(stinger-cpp-utils)
 

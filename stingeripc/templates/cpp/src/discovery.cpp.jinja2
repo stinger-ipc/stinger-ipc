@@ -6,6 +6,8 @@
 #include <iostream>
 #include <algorithm>
 #include <sstream>
+#include <syslog.h>
+#include <typeinfo>
 
 {%for ns in config.cpp.namespace%}
 namespace {{ns}} {
@@ -276,7 +278,18 @@ void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const stinger::mqtt::M
         // Call the discovery callback if set
         if (_discovery_callback)
         {
-            _discovery_callback(*infoPtr);
+            try
+            {
+                _discovery_callback(*infoPtr);
+            }
+            catch (const std::exception& e)
+            {
+                _broker->Log(LOG_ERR, "Exception in discovery callback [%s]: %s", typeid(e).name(), e.what());
+            }
+            catch (...)
+            {
+                _broker->Log(LOG_ERR, "Unknown exception in discovery callback");
+            }
         }
     }
 } // end of _onMessage
