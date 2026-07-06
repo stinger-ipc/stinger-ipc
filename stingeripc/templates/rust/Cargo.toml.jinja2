@@ -17,28 +17,32 @@ futures = "0.3.31"
 stinger-mqtt-trait = "0.7.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
-jsonschema = "0.46"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 chrono = "0.4.42"
-iso8601-duration = "0.2.0"
 derive_builder = "0.20"
-base64 = "0.22.1"
 tracing = { version = "0.1.41", optional = true }
 tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter", "fmt"] }
 bytes = "1.10.1"
 async-trait = { version = "0.1", optional = true } # For server-side async traits
 stinger-rwlock-watch = "0.3.7"
 strfmt = "0.2.5"
-jsonpath-rust = { version = "0.7", optional = true } 
+jsonpath-rust = { version = "0.7", optional = true }
+{%- if stinger.uses_schemas() %}
+jsonschema = "0.46" # Only needed because this interface declares JSON schema constraints.
+{%- endif %}
+{%- if stinger.uses_binary() %}
+base64 = "0.22.1" # Only needed because this interface has binary fields.
+{%- endif %}
+{%- if stinger.uses_duration() %}
+iso8601-duration = "0.2.0" # Only needed because this interface has duration fields.
+{%- endif %}
 
 [dependencies.uuid]
 version = "1.17.0"
 features = [
-    "v4",                # Lets you generate random UUIDs
-    "fast-rng",          # Use a faster (but still sufficiently random) RNG
-    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+    "v4", # Lets you generate random UUIDs
 ]
 
 [dev-dependencies]

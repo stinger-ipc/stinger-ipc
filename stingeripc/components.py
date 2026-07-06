@@ -167,16 +167,51 @@ class StingerSpec:
 
     def uses_schemas(self) -> bool:
         """True if any argument anywhere in the interface declares a JSON schema constraint."""
-        all_args = []
+        return any(arg.value_schema for arg in self._all_args())
+
+    def _all_args(self) -> list["Arg"]:
+        """Flat list of every argument that appears anywhere in the interface.
+
+        Struct members and array element types are included recursively so that
+        callers can reason about the full set of data types actually used.
+        """
+        top_level: list["Arg"] = []
         for signal in self.signals.values():
-            all_args += signal.arg_list
+            top_level += signal.arg_list
         for prop in self.properties.values():
-            all_args += prop.arg_list
+            top_level += prop.arg_list
         for method in self.methods.values():
-            all_args += method.arg_list + method.return_arg_list
+            top_level += method.arg_list + method.return_arg_list
         for struct in self.structs.values():
-            all_args += struct.members
-        return any(arg.value_schema for arg in all_args)
+            top_level += struct.members
+
+        collected: list["Arg"] = []
+        stack = list(top_level)
+        while stack:
+            arg = stack.pop()
+            collected.append(arg)
+            element = getattr(arg, "element", None)
+            if element is not None:
+                stack.append(element)
+            members = getattr(arg, "members", None)
+            if members is not None:
+                stack.extend(members)
+        return collected
+
+    def _uses_arg_type(self, arg_type: ArgType) -> bool:
+        return any(arg.arg_type == arg_type for arg in self._all_args())
+
+    def uses_binary(self) -> bool:
+        """True if any argument anywhere in the interface is a binary field."""
+        return self._uses_arg_type(ArgType.BINARY)
+
+    def uses_datetime(self) -> bool:
+        """True if any argument anywhere in the interface is a datetime field."""
+        return self._uses_arg_type(ArgType.DATETIME)
+
+    def uses_duration(self) -> bool:
+        """True if any argument anywhere in the interface is a duration field."""
+        return self._uses_arg_type(ArgType.DURATION)
 
     def get_interface_enum(self, name: str) -> InterfaceEnum:
         if name in self.enums:

@@ -25,8 +25,10 @@ use strfmt::strfmt;
 use crate::discovery::DiscoveredService;
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+{%- if stinger.uses_duration() %}
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
+{%- endif %}
 use std::sync::{Arc, Mutex};
 use tokio::sync::{broadcast{%if stinger.methods|length > 0 or stinger.properties|length > 0 -%}, oneshot{%endif-%}{%if stinger.properties|length > 0 -%}, watch{%endif-%}};
 use tokio::task::JoinError;
@@ -239,6 +241,24 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     }
     {%endfor%}
 
+    {%if stinger.methods | length > 0 %}
+    /// Builds the topic-template parameters that stay constant for the lifetime of
+    /// this client (interface name, service instance id, client id and any
+    /// configured topic parameters).  Callers insert the request-specific keys
+    /// (such as `method_name`) before formatting a concrete topic.  Centralizing
+    /// this avoids repeating the same map literal at every call site.
+    fn base_topic_params(&self) -> HashMap<String, String> {
+        HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), self.service_instance_id.clone()),
+            ("client_id".to_string(), self.client_id.clone()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
+            {%-endfor%}
+        ])
+    }
+    {%endif%}
+
     {%for method_name, method in stinger.methods.items()-%}
 
     async fn start_{{method_name|snake_case}}(
@@ -266,15 +286,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             hashmap.insert(correlation_id, sender);
         }
 
-        let topic_param_map = HashMap::from([
-            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
-            ("service_id".to_string(), self.service_instance_id.clone()),
-            ("method_name".to_string(), "{{method_name}}".to_string()),
-            ("client_id".to_string(), self.client_id.clone()),
-            {%-for topic_param in config.topics.params%}
-            ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
-            {%-endfor%}
-        ]);
+        let mut topic_param_map = self.base_topic_params();
+        topic_param_map.insert("method_name".to_string(), "{{method_name}}".to_string());
         let request_topic: String = strfmt("{{method.request_topic()}}", &topic_param_map).unwrap();
         let response_topic: String = strfmt("{{method.response_topic()}}", &topic_param_map).unwrap();
         let msg = message::request(&request_topic, &data, correlation_id, response_topic).unwrap();

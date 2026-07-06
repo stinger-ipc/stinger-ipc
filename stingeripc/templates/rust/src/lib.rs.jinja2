@@ -21,6 +21,11 @@ pub mod discovery;
 #[cfg(feature = "payloads")]
 pub mod payloads;
 
+{%- if stinger.uses_binary() or stinger.uses_datetime() or stinger.uses_duration() %}
+#[cfg(feature = "payloads")]
+pub mod serde_formats;
+{%- endif %}
+
 #[cfg(feature = "client")]
 pub mod client;
 
