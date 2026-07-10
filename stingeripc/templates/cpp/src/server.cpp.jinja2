@@ -170,6 +170,9 @@ std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamel
     {%-endfor%}
     auto topic = stinger::utils::format("{{sig.topic()}}", topicArgs);
     auto msg = stinger::mqtt::Message::Signal(topic, buf.GetString());
+    {%-if sig.version%}
+    msg.properties.version = "{{sig.version}}";
+    {%-endif%}
     return _broker->Publish(msg);
 }
 {%endfor%}
@@ -200,6 +203,9 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         _broker->Log(LOG_WARNING, "Request payload for {{method_name}} failed schema validation.");
         if (optResponseTopic) {
             auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::CLIENT_DESERIALIZATION_ERROR);
+            {%-if method.version%}
+            errMsg.properties.version = "{{method.version}}";
+            {%-endif%}
             _broker->Publish(errMsg);
         }
         return;
@@ -222,6 +228,9 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         if (!returnValues.ValidateSchema()) {
             _broker->Log(LOG_WARNING, "Response payload for {{method_name}} failed schema validation.");
             auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::SERVER_SERIALIZATION_ERROR);
+            {%-if method.version%}
+            errMsg.properties.version = "{{method.version}}";
+            {%-endif%}
             _broker->Publish(errMsg);
             return;
         }
@@ -238,6 +247,9 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
             responseJson.Accept(writer);
 
             auto msg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, buf.GetString(), optCorrelationData, stinger::error::MethodReturnCode::SUCCESS);
+            {%-if method.version%}
+            msg.properties.version = "{{method.version}}";
+            {%-endif%}
             _broker->Publish(msg);
         }
     }
@@ -246,6 +258,9 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         _broker->Log(LOG_ERR, "Exception in {{method_name}} method handler [%s]: %s", typeid(e).name(), e.what());
         if (optResponseTopic) {
             auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, e.code());
+            {%-if method.version%}
+            errMsg.properties.version = "{{method.version}}";
+            {%-endif%}
             _broker->Publish(errMsg);
         }
     }
@@ -254,6 +269,9 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         _broker->Log(LOG_ERR, "Exception in {{method_name}} method handler [%s]: %s", typeid(e).name(), e.what());
         if (optResponseTopic) {
             auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::SERVER_ERROR);
+            {%-if method.version%}
+            errMsg.properties.version = "{{method.version}}";
+            {%-endif%}
             _broker->Publish(errMsg);
         }
     }
@@ -262,6 +280,9 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         _broker->Log(LOG_ERR, "Unknown exception in {{method_name}} method handler");
         if (optResponseTopic) {
             auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::UNKNOWN_ERROR);
+            {%-if method.version%}
+            errMsg.properties.version = "{{method.version}}";
+            {%-endif%}
             _broker->Publish(errMsg);
         }
     }
@@ -334,6 +355,9 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
 
     auto topic = stinger::utils::format("{{prop.value_topic()}}", topicArgs);
     auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _last{{prop_name | UpperCamelCase}}PropertyVersion);
+    {%-if prop.version%}
+    msg.properties.version = "{{prop.version}}";
+    {%-endif%}
     _broker->Publish(msg);
 }
 
