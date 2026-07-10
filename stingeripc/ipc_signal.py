@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from .components import InterfaceComponent, Arg
 from .lang_symb import LanguageSymbolMixin
@@ -17,12 +17,17 @@ class IpcSignal(InterfaceComponent):
         InterfaceComponent.__init__(self, name, root)
         LanguageSymbolMixin.enhance(self, self._config)
         self._arg_list: list[Arg] = []
+        self._version: Optional[str] = None
 
     def add_arg(self, arg: Arg) -> IpcSignal:
         if arg.name in [a.name for a in self._arg_list]:
             raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
         self._arg_list.append(arg)
         return self
+
+    @property
+    def version(self) -> Optional[str]:
+        return self._version
 
     @property
     def arg_list(self) -> list[Arg]:
@@ -52,6 +57,9 @@ class IpcSignal(InterfaceComponent):
                 raise InvalidStingerStructure("Arg must have name and type.")
             new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
             signal.add_arg(new_arg)
+
+        if "version" in signal_spec:
+            signal._version = signal_spec["version"]
 
         signal.try_set_documentation_from_spec(signal_spec)
 

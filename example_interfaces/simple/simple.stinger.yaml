@@ -45,7 +45,7 @@ methods:
         description: Your favorite number.
         schema:
           minimum: 0
-          maximum: 100
+          maximum: 10000
     returnValues:
       - name: my_number
         type: integer

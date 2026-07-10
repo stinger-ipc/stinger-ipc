@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from .components import InterfaceComponent, Arg
 from .lang_symb import LanguageSymbolMixin
@@ -18,6 +18,7 @@ class IpcProperty(InterfaceComponent):
         LanguageSymbolMixin.enhance(self, self._config)
         self._arg_list: list[Arg] = []
         self._read_only = False
+        self._version: Optional[str] = None
 
     def add_arg(self, arg: Arg) -> IpcProperty:
         if arg.name in [a.name for a in self._arg_list]:
@@ -39,6 +40,10 @@ class IpcProperty(InterfaceComponent):
         template_topic = self._config.topics.property_update_responses
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
         return template_topic
+
+    @property
+    def version(self) -> Optional[str]:
+        return self._version
 
     @property
     def arg_list(self) -> list[Arg]:
@@ -72,6 +77,9 @@ class IpcProperty(InterfaceComponent):
             if not isinstance(r_o, bool):
                 raise InvalidStingerStructure("'readOnly' in property structure must be a boolean")
             prop_obj._read_only = r_o
+
+        if "version" in prop_spec:
+            prop_obj._version = prop_spec["version"]
 
         prop_obj.try_set_documentation_from_spec(prop_spec)
 

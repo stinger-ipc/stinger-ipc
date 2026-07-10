@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from .components import InterfaceComponent, Arg
 from .lang_symb import LanguageSymbolMixin
@@ -19,6 +19,7 @@ class IpcMethod(InterfaceComponent):
         self._arg_list: list[Arg] = []
         self._return_value: Arg | list[Arg] | None = None
         self._return_arg_list: list[Arg] = []
+        self._version: Optional[str] = None
 
     def add_arg(self, arg: Arg) -> IpcMethod:
         if arg.name in [a.name for a in self._arg_list]:
@@ -72,6 +73,10 @@ class IpcMethod(InterfaceComponent):
             return self._return_value.name
         else:
             return self.name
+
+    @property
+    def version(self) -> Optional[str]:
+        return self._version
 
     @property
     def return_value_type(self) -> str | bool:
@@ -132,6 +137,9 @@ class IpcMethod(InterfaceComponent):
                     raise InvalidStingerStructure("Return value must have name and type.")
                 new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
                 method.add_return_value(new_arg)
+
+        if "version" in method_spec:
+            method._version = method_spec["version"]
 
         method.try_set_documentation_from_spec(method_spec)
 

@@ -19,5 +19,6 @@ build/
 .mypy_cache/
 .task/
 .venv/
+.infisical.json
 
 pytest-warnings.json
