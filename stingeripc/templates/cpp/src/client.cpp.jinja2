@@ -277,11 +277,23 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         promiseItr->second.set_value();
         {%elif method.return_arg_list | length == 1%}
         // Method has a single return value.
-        auto returnValue = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc).{{method.return_arg_list[0].name|lowerCamelCase}};
-        promiseItr->second.set_value(returnValue);
+        auto returnValues = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc);
+        if (!returnValues.ValidateSchema()) {
+            _broker->Log(LOG_WARNING, "Response payload for '{{method_name}}' failed schema validation.");
+            promiseItr->second.set_exception(
+                std::make_exception_ptr(std::runtime_error("Response payload for '{{method_name}}' failed schema validation")));
+            return;
+        }
+        promiseItr->second.set_value(returnValues.{{method.return_arg_list[0].name|lowerCamelCase}});
         {%else%}
         // Method has multiple return values.
         auto returnValues = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc);
+        if (!returnValues.ValidateSchema()) {
+            _broker->Log(LOG_WARNING, "Response payload for '{{method_name}}' failed schema validation.");
+            promiseItr->second.set_exception(
+                std::make_exception_ptr(std::runtime_error("Response payload for '{{method_name}}' failed schema validation")));
+            return;
+        }
         promiseItr->second.set_value(returnValues);
         {%endif%}
     }

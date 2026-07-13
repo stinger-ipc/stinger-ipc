@@ -319,7 +319,11 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%-endfor%}
         ]);
         let topic = strfmt("{{sig.topic()}}", &topic_param_map).unwrap();
+        {%if sig.version -%}
+        let msg = message::stable_signal(&topic, &data, "{{sig.version}}").unwrap();
+        {%else -%}
         let msg = message::signal(&topic, &data).unwrap();
+        {%endif -%}
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
         Self::oneshot_to_future(ch).await
@@ -346,7 +350,11 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%-endfor%}
         ]);
         let topic = strfmt("{{sig.topic()}}", &topic_param_map).unwrap();
+        {%if sig.version -%}
+        let msg = message::stable_signal(&topic, &data, "{{sig.version}}").unwrap();
+        {%else -%}
         let msg = message::signal(&topic, &data).unwrap();
+        {%endif -%}
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
     }

@@ -20,6 +20,27 @@ tasks:
       - task: web:generate
       - task: protobuf:check
 
+  python:
+    desc: Generate, test, and type check all Python interfaces
+    deps:
+      - task: python:generate
+      - task: python:unittest
+      - task: python:mypy
+
+  cpp:
+    desc: Generate, compile, and test all C++ interfaces
+    deps:
+      - task: cpp:generate
+      - task: cpp:compile
+      - task: cpp:unittest
+
+  rust:
+    desc: Generate, check, and test all Rust interfaces
+    deps:
+      - task: rust:generate
+      - task: rust:check
+      - task: rust:unittest
+
   validate:*:
     desc: Validate a specific interface schema
     sources:
