@@ -158,6 +158,18 @@ wheels = [
 ]
 
 [[package]]
+name = "jacobs-json-doc"
+version = "0.17.0a0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ruamel-yaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/92/6f/0f2a6b212dfb83ee6114ce87bda149ad49265fe04b703b8ff8363edfbe9f/jacobs_json_doc-0.17.0a0.tar.gz", hash = "sha256:7f18d55a80cbecc12fc47c7e3ad823caabb6818b0a454ba0e4287c81374533a4", size = 46305, upload-time = "2026-07-15T01:04:45.884Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/64/b23e416a3e02f561bacf73d20493e5d02b6c0aa3e04141fd96a8686f4b3b/jacobs_json_doc-0.17.0a0-py3-none-any.whl", hash = "sha256:0cd991e75da2dc7054515d8b0021b13491175b03145f0452d42aeec39b74af45", size = 15281, upload-time = "2026-07-15T01:04:44.921Z" },
+]
+
+[[package]]
 name = "jacobs-json-schema"
 version = "0.4.2"
 source = { registry = "https://pypi.org/simple" }
@@ -740,11 +752,12 @@ wheels = [
 
 [[package]]
 name = "stinger-ipc"
-version = "0.9.3"
+version = "0.9.6"
 source = { editable = "." }
 dependencies = [
     { name = "go-task-bin" },
     { name = "jacobs-jinja-too" },
+    { name = "jacobs-json-doc" },
     { name = "jsonschema-rs" },
     { name = "packaging" },
     { name = "pydantic" },
@@ -772,6 +785,7 @@ dev = [
 requires-dist = [
     { name = "go-task-bin", specifier = ">=3.46.2" },
     { name = "jacobs-jinja-too", specifier = ">=0.2.12" },
+    { name = "jacobs-json-doc", specifier = "==0.17.0a0" },
     { name = "jsonschema-rs", specifier = ">=0.34.0" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "pydantic", specifier = ">=2.11.7" },
