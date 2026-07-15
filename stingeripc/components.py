@@ -1472,7 +1472,7 @@ class StingerSpec(LanguageSymbolMixin):
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if "version" not in stinger["stingeripc"]:
             raise InvalidStingerStructure("Stinger spec version not present")
-        if stinger["stingeripc"]["version"] not in ["0.0.7", "0.1.0"]:
+        if stinger["stingeripc"]["version"] not in ["0.0.7", "0.1.0", "0.1.1"]:
             raise InvalidStingerStructure(f"Unsupported stinger spec version {stinger['stingeripc']['version']}")
 
         stinger_spec = StingerSpec(stinger["interface"], config)

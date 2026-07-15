@@ -16,7 +16,7 @@ use stinger_mqtt_trait::{Mqtt5PubSub};
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 use crate::message;
 use std::collections::HashMap;
-{%if stinger.methods|length > 0 -%}
+{%if stinger.methods|length > 0 or stinger.properties|length > 0 -%}
 use uuid::Uuid;
 {%endif-%}
 use serde_json;
@@ -28,7 +28,7 @@ use crate::payloads::{MethodReturnCode, *};
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
 use std::sync::{Arc, Mutex};
-use tokio::sync::{broadcast{%if stinger.methods|length > 0 -%}, oneshot{%endif-%}{%if stinger.properties|length > 0 -%}, watch{%endif-%}};
+use tokio::sync::{broadcast{%if stinger.methods|length > 0 or stinger.properties|length > 0 -%}, oneshot{%endif-%}{%if stinger.properties|length > 0 -%}, watch{%endif-%}};
 use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -89,7 +89,7 @@ struct {{stinger.name | UpperCamelCase}}Properties {
 #[derive(Clone)]
 pub struct {{stinger.rust.client_struct_name}}<C: Mqtt5PubSub> {
     mqtt_client: C,
-    {%if stinger.methods | length > 0 %}/// Temporarily holds oneshot channels for responses to method calls.
+    {%if stinger.methods | length > 0 or stinger.properties | length > 0 %}/// Temporarily holds oneshot channels for responses to method calls and property update requests.
     pending_responses: Arc<Mutex<HashMap<Uuid, oneshot::Sender<MethodReturnCode>>>>,
     {%endif%}
 
@@ -215,7 +215,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         // Create {{stinger.rust.client_struct_name}} structure.
         {{stinger.rust.client_struct_name}} {
             mqtt_client: connection,
-            {%if stinger.methods | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
+            {%if stinger.methods | length > 0 or stinger.properties | length > 0 %}pending_responses: Arc::new(Mutex::new(HashMap::new())),{%endif%}
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,
             {%if stinger.properties|length > 0 %}
@@ -359,7 +359,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&mut self) -> Result<(), JoinError> {
 
-        {%if stinger.methods | length > 0%}// Clone the Arc pointer to the map.  This will be moved into the loop_task.
+        {%if stinger.methods | length > 0 or stinger.properties | length > 0%}// Clone the Arc pointer to the map.  This will be moved into the loop_task.
         let resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<MethodReturnCode>>>> = self.pending_responses.clone();
         {%endif%}
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
@@ -471,7 +471,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         break;
                     }
                 };
-                {% if stinger.methods|length > 0 %}
+                {% if stinger.methods|length > 0 or stinger.properties|length > 0 %}
                 let opt_corr_id: Option<Uuid> = msg.correlation_data.as_ref().and_then(|b| {
                     // Try parsing as 16-byte binary UUID first
                     if b.len() == 16 {
@@ -484,7 +484,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                     }
                 });
                 let return_code = {{stinger.rust.client_struct_name}}::<C>::get_return_code_from_message(&msg);
-                {%endif%} {# if there are some methods #}
+                {%endif%} {# if there are some methods or properties #}
 
                 if let Some(subscription_id) = msg.subscription_id {
                     match subscription_id {
