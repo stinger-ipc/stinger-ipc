@@ -5,7 +5,7 @@ from .loading import parse_yaml_file, parse_yaml_io
 from .components import InvalidStingerStructure, StingerSpec
 from .config import StingerConfig
 
-VERSIONS_SUPPORTED = ["0.0.7", "0.1.0"]
+VERSIONS_SUPPORTED = ["0.0.7", "0.1.0", "0.1.1"]
 
 
 class StingerInterface(StingerSpec):
