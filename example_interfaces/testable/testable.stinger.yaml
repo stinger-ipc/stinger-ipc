@@ -32,6 +32,9 @@ structures:
         type: string
         description: A name.
 
+  lunch:
+    $ref: "full.stinger.yaml#/structures/lunch"
+
   AllTypes:
     members:
       - name: the_bool
