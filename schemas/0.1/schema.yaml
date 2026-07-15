@@ -136,7 +136,7 @@ enums:
           version:
             properties:
               members:
-              $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
+                $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   structs: false # Use 'structures' instead
   struct: false # Use 'structures' instead
