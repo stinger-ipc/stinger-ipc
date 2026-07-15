@@ -59,47 +59,47 @@ properties:
       - version
 
 enums:
-    type: object
-    propertyNames:
-      pattern: "^[a-zA-Z0-9_-]+$"
-      not: 
-        $ref: "#/$defs/reservedKeywords"
-    additionalProperties:
-      oneOf:
-      - type: object
-        properties:
-          $ref:
+  type: object
+  propertyNames:
+    pattern: "^[a-zA-Z0-9_-]+$"
+    not: 
+      $ref: "#/$defs/reservedKeywords"
+  additionalProperties:
+    oneOf:
+    - type: object
+      properties:
+        $ref:
+          type: string
+      additionalProperties: false
+    - type: object
+      properties:
+        values:
+          type: array
+          uniqueItems: true
+          minItems: 1
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                pattern: "^[a-zA-Z0-9_-]+$"
+              description:
+                $ref: "#/$defs/enumValueDescription"
+              documentation: false
+              value:
+                type: integer
+            required:
+              - name
+          version:
             type: string
-        additionalProperties: false
-      - type: object
-        properties:
-          values:
-            type: array
-            uniqueItems: true
-            minItems: 1
-            items:
-              type: object
-              properties:
-                name:
-                  type: string
-                  pattern: "^[a-zA-Z0-9_-]+$"
-                description:
-                  $ref: "#/$defs/enumValueDescription"
-                documentation: false
-                value:
-                  type: integer
-              required:
-                - name
-            version:
-              type: string
-              pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
-              description: >
-                A semantic version that can be used to determine data consistency in this specification.
-          documentation:
-            $ref: "#/$defs/documentation"
-          description: false
-        required:
-          - values
+            pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+            description: >
+              A semantic version that can be used to determine data consistency in this specification.
+        documentation:
+          $ref: "#/$defs/documentation"
+        description: false
+      required:
+        - values
 
   enumerations: false # Use 'enums' instead
   enum: false # Use 'enums' instead

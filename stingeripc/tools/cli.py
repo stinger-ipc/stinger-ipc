@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from rich import print
+from ruamel.yaml import YAML
 from typing_extensions import Annotated
 from typing import Optional
 import jsonschema_rs
@@ -69,7 +70,7 @@ def asyncapi(
     INPUT_FILE is the .stinger.yaml file
     OUTPUT_DIR is the directory that will receive the generated asyncapi.yaml
     """
-    input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
+    input_obj = parse_yaml_file(input_file)
 
     config_obj = StingerConfig()
     if config:
@@ -88,13 +89,10 @@ def asyncapi(
     print(f"🟢   [bold cyan]LOAD:[/bold cyan] {input_file}")
     if consumer:
         print(f"💠 CONSUMER {consumer}")
-        with input_file.open(mode="r") as f:
-            yaml_obj = yaml.load(f, Loader=yamlloader.ordereddict.Loader)
-            stinger_yaml = filtering.filter_by_consumer(yaml_obj, consumer)
-            stinger = StingerInterface.from_dict(stinger_yaml, config_obj)
+        stinger_yaml = filtering.filter_by_consumer(input_obj, consumer)
     else:
-        with input_file.open(mode="r") as f:
-            stinger = StingerInterface.from_yaml(f, config_obj)
+        stinger_yaml = input_obj
+    stinger = StingerInterface.from_dict(stinger_yaml, config_obj)
 
     result = stinger_to_asyncapi(stinger, config_obj)
 
@@ -102,8 +100,11 @@ def asyncapi(
         os.makedirs(output_dir)
 
     output_file = output_dir / "asyncapi.yaml"
+    yaml = YAML(typ="safe")
+    yaml.default_flow_style = False
+    yaml.allow_unicode = True
     with output_file.open("w") as f:
-        yaml.dump(result, f, default_flow_style=False, allow_unicode=True)
+        yaml.dump(result, f)
 
     print(f"✅  [bold green]AsyncAPI specification written to {output_file}[/bold green]")
 
@@ -122,7 +123,9 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
     schema_dir = Path(__file__).parent.parent / "schema"
     schema_compat = "0.2" if stingeripc_version.startswith("0.2") else "0.1"
     schema_file = schema_dir / schema_compat / "schema.yaml"
-    schema_obj = yaml.load(schema_file.open("r"), Loader=yamlloader.ordereddict.Loader)
+    yaml = YAML(typ="safe")
+    with schema_file.open("r") as f:
+        schema_obj = yaml.load(f)
     validator = jsonschema_rs.validator_for(schema_obj)
 
     error_count = 0
