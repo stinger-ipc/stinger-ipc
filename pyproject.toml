@@ -1,6 +1,6 @@
 [project]
 name = "stinger-ipc"
-version = "0.9.7a2"
+version = "0.9.7a3"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -11,17 +11,15 @@ classifiers = [
 dependencies = [
     "go-task-bin>=3.46.2",
     "jacobs-jinja-too>=0.2.12",
-    "jacobs-json-doc==0.17.0a0",
+    "jacobs-json-doc==0.17.0a1",
     "jsonschema-rs>=0.34.0",
     "packaging>=25.0",
     "pydantic>=2.11.7",
     "pydantic-asyncapi>=0.3.0",
-    "pyyaml>=6.0.2",
     "ruamel-yaml>=0.18.14",
     "semantic-version>=2.10.0",
     "stevedore>=5.5.0",
     "typer>=0.16.1",
-    "yamlloader>=1.5.1",
 ]
 
 [dependency-groups]
@@ -31,8 +29,6 @@ dev = [
     "mypy>=1.16.0",
     "paho-mqtt>=2.1.0",
     "pytest>=9.0.3",
-    "pyyaml>=6.0.2",
-    "types-pyyaml>=6.0.12.20250516",
 ]
 
 [tool.black]

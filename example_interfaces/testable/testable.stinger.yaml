@@ -33,7 +33,7 @@ structures:
         description: A name.
 
   lunch:
-    $ref: "full.stinger.yaml#/structures/lunch"
+    $ref: "extra.yaml#/structures/lunch"
 
   AllTypes:
     members:
@@ -54,7 +54,8 @@ structures:
         description: An enum type
       - name: an_entry_object
         type: struct
-        structName: entry
+        structName: lunch
+        structVersion: 1.2.3
         description: A struct type.
       - name: date_and_time
         type: datetime

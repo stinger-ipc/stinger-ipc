@@ -8,41 +8,11 @@ from pathlib import Path
 from rich import print
 import importlib.resources
 import re
-from jacobsjsondoc import PrepopulatedFetcher, ParseOptions
-from jacobsjsondoc.document import create_document
-from jacobsjsondoc.options import RefResolutionMode
+from stingeripc.loading import parse_yaml_file
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface, __version__, topic_util
 from stingeripc.filtering import filter_by_consumer
 from stingeripc.config import load_config, StingerConfig
-
-# logging.basicConfig(level=logging.INFO)
-
-
-def _to_plain(value: Any) -> Any:
-    """Recursively convert a jacobs-json-doc parsed document into plain Python types."""
-    if isinstance(value, dict):
-        return {k: _to_plain(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_to_plain(v) for v in value]
-    if isinstance(value, bool) or value is None:
-        return value
-    if isinstance(value, int):
-        return int(value)
-    if isinstance(value, float):
-        return float(value)
-    if isinstance(value, str):
-        return str(value)
-    return value
-
-
-def _parse_yaml(text: str) -> Any:
-    """Parse YAML text with jacobs-json-doc, resolving $ref references in place."""
-    fetcher = PrepopulatedFetcher()
-    fetcher.prepopulate(None, text)
-    options = ParseOptions()
-    options.ref_resolution_mode = RefResolutionMode.RESOLVE_REFERENCES
-    return create_document(uri=None, fetcher=fetcher, options=options)
 
 
 def main(
@@ -80,8 +50,7 @@ def main(
         print(f"🔧{k:>10.10}: {v}")
 
     print(f"🟢   [bold cyan]LOAD:[/bold cyan] {inname}")
-    with inname.open(mode="r") as f:
-        yaml_obj = _to_plain(_parse_yaml(f.read()))
+    yaml_obj = parse_yaml_file(inname)
     if consumer:
         print(f"💠 CONSUMER {consumer}")
         stinger_yaml = filter_by_consumer(yaml_obj, consumer)

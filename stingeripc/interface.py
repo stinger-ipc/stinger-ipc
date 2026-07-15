@@ -1,8 +1,7 @@
 from typing import Any, Dict, IO, Union
+from pathlib import Path
 
-import yaml
-import yamlloader
-
+from .loading import parse_yaml_file, parse_yaml_io
 from .components import InvalidStingerStructure, StingerSpec
 from .config import StingerConfig
 
@@ -16,7 +15,7 @@ class StingerInterface(StingerSpec):
 
     @classmethod
     def from_yaml(cls, yaml_input: Union[str, IO], config: StingerConfig) -> StingerSpec:
-        yaml_obj = yaml.load(yaml_input, Loader=yamlloader.ordereddict.Loader)
+        yaml_obj = parse_yaml_file(yaml_input) if isinstance(yaml_input, (str, Path)) else parse_yaml_io(yaml_input)
         return cls.new_spec_from_stinger(yaml_obj, config)
 
     @classmethod

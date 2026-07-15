@@ -6,8 +6,7 @@ from typing_extensions import Annotated
 from typing import Optional
 import jsonschema_rs
 import typer
-import yaml
-import yamlloader
+from stingeripc.loading import parse_yaml_file
 
 from stingeripc import filtering
 from stingeripc.config import StingerConfig
@@ -62,10 +61,10 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
     INPUT_FILE is the .stinger.yaml file
     """
     schema_file = Path(__file__).parent.parent / "schema" / "schema.yaml"
-    schema_obj = yaml.load(schema_file.open("r"), Loader=yamlloader.ordereddict.Loader)
+    schema_obj = parse_yaml_file(schema_file)
     validator = jsonschema_rs.validator_for(schema_obj)
 
-    input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
+    input_obj = parse_yaml_file(input_file)
 
     error_count = 0
     for error in validator.iter_errors(input_obj):
