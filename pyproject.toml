@@ -12,7 +12,7 @@ dependencies = [
     "asyncapi3>=0.0.2",
     "go-task-bin>=3.46.2",
     "jacobs-jinja-too>=0.2.12",
-    "jacobs-json-doc==0.17.0a0",
+    "jacobs-json-doc==0.17.0a1",
     "jsonschema-rs>=0.34.0",
     "packaging>=25.0",
     "pydantic>=2.11.7",

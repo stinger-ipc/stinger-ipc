@@ -8,9 +8,7 @@ from pathlib import Path
 from rich import print
 import importlib.resources
 import re
-from jacobsjsondoc import PrepopulatedFetcher, ParseOptions
-from jacobsjsondoc.document import create_document
-from jacobsjsondoc.options import RefResolutionMode
+from stingeripc.loading import parse_yaml_file
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface, __version__, topic_util
 from stingeripc.filtering import filter_by_consumer
@@ -78,8 +76,7 @@ def main(
         print(f"🔧{k:>10.10}: {v}")
 
     print(f"🟢   [bold cyan]LOAD:[/bold cyan] {inname}")
-    with inname.open(mode="r") as f:
-        yaml_obj = _to_plain(_parse_yaml(f.read()))
+    yaml_obj = parse_yaml_file(inname)
     if consumer:
         print(f"💠 CONSUMER {consumer}")
         stinger_yaml = filter_by_consumer(yaml_obj, consumer)

@@ -196,14 +196,14 @@ wheels = [
 
 [[package]]
 name = "jacobs-json-doc"
-version = "0.17.0a0"
+version = "0.17.0a1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ruamel-yaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/92/6f/0f2a6b212dfb83ee6114ce87bda149ad49265fe04b703b8ff8363edfbe9f/jacobs_json_doc-0.17.0a0.tar.gz", hash = "sha256:7f18d55a80cbecc12fc47c7e3ad823caabb6818b0a454ba0e4287c81374533a4", size = 46305, upload-time = "2026-07-15T01:04:45.884Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/44/d0/c07be5d5385d69282649816ef005b6d3345546f65f2fbf7e0b052d48bcf5/jacobs_json_doc-0.17.0a1.tar.gz", hash = "sha256:fc8ee82e1e69c1986894460e4dd07f2fa3f69a3602a40eb146efccd042151f4b", size = 46338, upload-time = "2026-07-15T20:47:39.994Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/64/b23e416a3e02f561bacf73d20493e5d02b6c0aa3e04141fd96a8686f4b3b/jacobs_json_doc-0.17.0a0-py3-none-any.whl", hash = "sha256:0cd991e75da2dc7054515d8b0021b13491175b03145f0452d42aeec39b74af45", size = 15281, upload-time = "2026-07-15T01:04:44.921Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/5e/195135c625f249ac3ba329bb34d3c111ce7d17ca0437dda75515d8f3dac2/jacobs_json_doc-0.17.0a1-py3-none-any.whl", hash = "sha256:74a0b001c61602e8af13b6e6f00040be13ca019ab543afc4f86a23209edcf72d", size = 15335, upload-time = "2026-07-15T20:47:38.382Z" },
 ]
 
 [[package]]
@@ -978,7 +978,7 @@ requires-dist = [
     { name = "asyncapi3", specifier = ">=0.0.2" },
     { name = "go-task-bin", specifier = ">=3.46.2" },
     { name = "jacobs-jinja-too", specifier = ">=0.2.12" },
-    { name = "jacobs-json-doc", specifier = "==0.17.0a0" },
+    { name = "jacobs-json-doc", specifier = "==0.17.0a1" },
     { name = "jsonschema-rs", specifier = ">=0.34.0" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "pydantic", specifier = ">=2.11.7" },

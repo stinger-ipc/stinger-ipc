@@ -114,7 +114,7 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
 
     INPUT_FILE is the .stinger.yaml file
     """
-    input_obj = yaml.load(input_file.open("r"), Loader=yamlloader.ordereddict.Loader)
+    input_obj = parse_yaml_file(input_file)
     stingeripc_version = (input_obj.get("stingeripc") or {}).get("version")
     if not stingeripc_version:
         print(f"❌  [bold red]Missing required 'stingeripc.version' field in {input_file}[/bold red]")
