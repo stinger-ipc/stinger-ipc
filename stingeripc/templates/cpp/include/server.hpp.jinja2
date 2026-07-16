@@ -43,7 +43,7 @@ public:
     static constexpr const char NAME[] = "{{stinger.name}}";
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
-    {{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, {%for topic_param in config.topics.params %}const std::string& {{topic_param | lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId{%for topic_param in config.topics.params %}, const std::string& {{topic_param | lowerCamelCase}}{%endfor%});
 
     virtual ~{{stinger.cpp.server_class_name}}();
 
