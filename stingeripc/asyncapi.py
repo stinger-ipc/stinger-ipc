@@ -606,6 +606,79 @@ class AsyncApiPropertyHelper:
         )
 
 
+def _interface_info_schema(config: StingerConfig) -> Schema:
+    properties: dict[str, Any] = {
+        "interface_name": {"type": "string"},
+        "title": {"type": "string"},
+        "version": {"type": "string"},
+        "instance": {"type": "string"},
+        "connection_topic": {"type": "string"},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "methods": {
+            "type": "object",
+            "additionalProperties": {"type": "string"},
+            "description": "Maps method names to their version string, for methods that declare a version.",
+        },
+    }
+    required = ["interface_name", "title", "version", "instance", "connection_topic", "timestamp"]
+    for topic_param in config.topics.params:
+        properties[topic_param] = {"type": "string"}
+        required.append(topic_param)
+    return Schema(type="object", properties=properties, required=required)
+
+
+class AsyncApiInterfaceInfoHelper:
+    def __init__(self, spec: StingerSpec, config: StingerConfig):
+        self.spec = spec
+        self.config = config
+
+    def channel_name(self) -> str:
+        return "interface_info"
+
+    def get_payload_schema(self) -> Schema:
+        return _interface_info_schema(self.config)
+
+    def get_message(self) -> models.Message:
+        return models.Message(
+            name="InterfaceInfo",
+            summary=f"Advertisement/discovery information for the '{self.spec.name}' interface.",
+            description="The server periodically publishes this message (with a message-expiry interval) so that clients can discover running instances of the interface and the versions of the methods they support.",
+            payload=self.get_payload_schema(),
+            contentType="application/json",
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+        )
+
+    def to_channel(self) -> models.Channel:
+        message = self.get_message()
+        address = self.spec.interface_info_topic()
+        return models.Channel(
+            address=address,
+            description=f"Advertisement/discovery channel for the '{self.spec.name}' interface.",
+            messages=models.message.Messages(root={self.channel_name(): message}),
+            parameters=_parameters_for_address(address, self.config),
+        )
+
+    def to_operation(self) -> models.Operation:
+        name = self.channel_name()
+        return models.Operation(
+            summary=f"Receive '{self.spec.name}' interface advertisement/discovery information.",
+            description="""
+            The server publishes this message periodically (with a message-expiry interval) so that clients can discover running server instances and the method versions they advertise.
+
+            ```plantuml
+            Server -> MQTT Broker: Interface Info (with message expiry)
+            Client -> MQTT Broker: Subscribe
+            MQTT Broker -> Client: Interface Info
+            ```
+            """,
+            action="receive",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=1, retain=False)),
+            tags=[models.base.Tag(name="discovery")],
+        )
+
+
 def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) -> dict:
     """Convert a StingerSpec to an AsyncAPI 3.0 specification dict."""
     config_obj = config or StingerConfig()
@@ -618,6 +691,9 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
 
     channels: dict[str, models.Channel] = {}
     operations: dict[str, models.Operation] = {}
+    interface_info_helper = AsyncApiInterfaceInfoHelper(spec, config_obj)
+    channels[interface_info_helper.channel_name()] = interface_info_helper.to_channel()
+    operations[interface_info_helper.channel_name()] = interface_info_helper.to_operation()
     for name, signal in spec.signals.items():
         signal_helper = AsyncApiSignalHelper(signal, config_obj)
         channels[name] = signal_helper.to_channel()
@@ -648,6 +724,7 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
                 models.base.Tag(name="signal"),
                 models.base.Tag(name="method"),
                 models.base.Tag(name="property"),
+                models.base.Tag(name="discovery"),
             ],
         ),
         components=models.Components(

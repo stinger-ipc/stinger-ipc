@@ -512,6 +512,7 @@ mod tests {
             interface_name: "{{stinger.name}}".into(),
             title: "{{stinger.title}}".into(),
             version: "{{stinger.version}}".into(),
+            methods: HashMap::new(),
             instance: service_id.clone(),
             connection_topic: format!("sample/{}", service_id),
             timestamp: "2024-01-01T00:00:00Z".into(),

@@ -57,6 +57,17 @@ void InstanceInfo::UpdateFromRapidJsonObject(const rapidjson::Value& jsonObj)
         {{topic_param|lowerCamelCase}} = jsonObj["{{topic_param}}"].GetString();
     }
     {%-endfor%}
+    if (jsonObj.HasMember("methods") && jsonObj["methods"].IsObject())
+    {
+        methods.clear();
+        for (auto it = jsonObj["methods"].MemberBegin(); it != jsonObj["methods"].MemberEnd(); ++it)
+        {
+            if (it->value.IsString())
+            {
+                methods[it->name.GetString()] = it->value.GetString();
+            }
+        }
+    }
 };
 
 void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
@@ -73,6 +84,15 @@ void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Doc
         parent.AddMember("{{topic_param}}", rapidjson::Value({{topic_param|lowerCamelCase}}.value().c_str(), allocator), allocator);
     }
     {%-endfor%}
+    if (!methods.empty())
+    {
+        rapidjson::Value methodsObj(rapidjson::kObjectType);
+        for (const auto& [methodName, methodVersion] : methods)
+        {
+            methodsObj.AddMember(rapidjson::Value(methodName.c_str(), allocator), rapidjson::Value(methodVersion.c_str(), allocator), allocator);
+        }
+        parent.AddMember("methods", methodsObj, allocator);
+    }
 }
 
 {{stinger.name|UpperCamelCase}}Discovery::{{stinger.name|UpperCamelCase}}Discovery(std::shared_ptr<stinger::utils::IConnection> broker)

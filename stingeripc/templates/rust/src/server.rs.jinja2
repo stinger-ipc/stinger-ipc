@@ -684,6 +684,15 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%endif%}{# properties exist#}
         {%endif%} {# any methods or properties #}
 
+        // Static map of method names to their declared version, used in periodic interface info advertisements.
+        let interface_info_methods: HashMap<String, String> = HashMap::from([
+            {%-for method_name, method in stinger.methods.items()%}
+            {%-if method.version%}
+            ("{{method_name}}".to_string(), "{{method.version}}".to_string()),
+            {%-endif%}
+            {%-endfor%}
+        ]);
+
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
@@ -697,6 +706,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                     .interface_name("{{stinger.name}}".to_string())
                     .title("{{stinger.title}}".to_string())
                     .version("{{stinger.version}}".to_string())
+                    .methods(interface_info_methods.clone())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
                     {%-for topic_param in config.topics.params%}

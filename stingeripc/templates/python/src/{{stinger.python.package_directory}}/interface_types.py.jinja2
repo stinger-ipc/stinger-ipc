@@ -13,7 +13,7 @@ TODO: Get license text from stinger file
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 {{ imports.datetime_types(config) }}
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Dict
 import base64
 {%if stinger.uses_schemas()%}import json
 import jsonschema
@@ -43,6 +43,7 @@ class {{stinger.name|UpperCamelCase}}InterfaceInfo(BaseModel):
     interface_name: str = Field(default="{{stinger.name}}")
     title: str = Field(default="{{stinger.title or stinger.name}}")
     version: str = Field(default="{{stinger.version}}")
+    methods: Dict[str, str] = Field(default_factory=dict, description="Maps method names to their version string, for methods that declare a version.")
     instance: str
     connection_topic: str
     timestamp: str

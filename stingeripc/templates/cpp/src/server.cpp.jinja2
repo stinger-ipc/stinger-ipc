@@ -420,6 +420,13 @@ void {{stinger.cpp.server_class_name}}::_advertisementThreadLoop()
         {%for topic_param in config.topics.params %}
         doc.AddMember("{{topic_param}}", rapidjson::Value(_{{topic_param|lowerCamelCase}}TopicParam.c_str(), allocator), allocator);
         {%endfor%}
+        {
+            rapidjson::Value methodsObj(rapidjson::kObjectType);
+            {%for method_name, method in stinger.methods.items()%}{%if method.version%}
+            methodsObj.AddMember("{{method_name}}", rapidjson::Value("{{method.version}}", allocator), allocator);
+            {%endif%}{%endfor%}
+            doc.AddMember("methods", methodsObj, allocator);
+        }
 
         // Convert to JSON string
         rapidjson::StringBuffer buf;

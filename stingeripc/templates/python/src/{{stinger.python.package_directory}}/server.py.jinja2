@@ -169,6 +169,13 @@ class {{stinger.python.server_class_name}}:
             instance=self._instance_id,
             connection_topic=(self._conn.online_topic or ""),
             timestamp=datetime.now(UTC).isoformat(),
+            methods={
+                {%- for method_name, method in stinger.methods.items() %}
+                {%- if method.version %}
+                "{{method_name}}": "{{method.version}}",
+                {%- endif %}
+                {%- endfor %}
+            },
             {%- for topic_param in config.topics.params %}
             {{topic_param|snake_case}}=self._topic_template_kwargs["{{topic_param|snake_case}}"],
             {%- endfor %}
