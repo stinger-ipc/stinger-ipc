@@ -505,7 +505,7 @@ class {{stinger.python.server_class_name}}Builder:
     """
 
     def __init__(self):
-        {%if (stinger.methods|length + stinger.properties|length) == 0 %}pass{%endif%}
+        {%if stinger.methods|length == 0 and (not config.properties.stinger_owned_values or stinger.properties|length == 0) %}pass{%endif%}
         {%for method_name, method in stinger.methods.items()%}
         self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
         {%-endfor%}

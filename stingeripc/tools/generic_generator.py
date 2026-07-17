@@ -8,15 +8,11 @@ from pathlib import Path
 from rich import print
 import importlib.resources
 import re
-import yaml
+from stingeripc.loading import parse_yaml_file
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface, __version__, topic_util
 from stingeripc.filtering import filter_by_consumer
 from stingeripc.config import load_config, StingerConfig
-import yaml
-import yamlloader
-
-# logging.basicConfig(level=logging.INFO)
 
 
 def main(
@@ -54,15 +50,13 @@ def main(
         print(f"🔧{k:>10.10}: {v}")
 
     print(f"🟢   [bold cyan]LOAD:[/bold cyan] {inname}")
+    yaml_obj = parse_yaml_file(inname)
     if consumer:
         print(f"💠 CONSUMER {consumer}")
-        with inname.open(mode="r") as f:
-            yaml_obj = yaml.load(f, Loader=yamlloader.ordereddict.Loader)
-            stinger_yaml = filter_by_consumer(yaml_obj, consumer)
-            stinger = StingerInterface.from_dict(stinger_yaml, config_obj)
+        stinger_yaml = filter_by_consumer(yaml_obj, consumer)
+        stinger = StingerInterface.from_dict(stinger_yaml, config_obj)
     else:
-        with inname.open(mode="r") as f:
-            stinger = StingerInterface.from_yaml(f, config_obj)
+        stinger = StingerInterface.from_dict(yaml_obj, config_obj)
 
     print(f"🚥 [bold cyan]SIGNALS:[/bold cyan] {len(stinger.signals)}")
     print(f"💠 [bold cyan]METHODS:[/bold cyan] {len(stinger.methods)}")

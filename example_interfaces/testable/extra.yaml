@@ -1,0 +1,24 @@
+structures:
+
+  lunch:
+    documentation: Structure representing a lunch order.
+    version: 1.2.3
+    members:
+      - name: drink
+        type: boolean
+        description: Whether or not lunch comes with a drink
+      - name: sandwich
+        type: string
+        description: The type of sandwich which will be served.
+      - name: crackers
+        type: float
+        description: The number of crackers that come with lunch.
+      - name: order_number
+        type: integer
+        optional: true
+      - name: time_of_lunch
+        type: datetime
+        description: The time when lunch is served.
+      - name: duration_of_lunch
+        type: duration
+        description: The amount of time lunch lasts.

@@ -586,9 +586,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
 
         let sub_ids = self.subscription_ids.clone();
 
-        {%-if stinger.methods|length > 0 %}
+        {%-if stinger.methods|length > 0 or stinger.properties|length > 0 %}
         let publisher = self.mqtt_client.clone();
-        {%endif%}{#} end method exist#}
+        {%endif%}{#} end method or property exist#}
 
         {%-if stinger.properties|length > 0%}
         let props = self.properties.clone();

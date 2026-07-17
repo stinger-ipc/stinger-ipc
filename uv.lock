@@ -158,6 +158,18 @@ wheels = [
 ]
 
 [[package]]
+name = "jacobs-json-doc"
+version = "0.17.0a1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ruamel-yaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/44/d0/c07be5d5385d69282649816ef005b6d3345546f65f2fbf7e0b052d48bcf5/jacobs_json_doc-0.17.0a1.tar.gz", hash = "sha256:fc8ee82e1e69c1986894460e4dd07f2fa3f69a3602a40eb146efccd042151f4b", size = 46338, upload-time = "2026-07-15T20:47:39.994Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/5e/195135c625f249ac3ba329bb34d3c111ce7d17ca0437dda75515d8f3dac2/jacobs_json_doc-0.17.0a1-py3-none-any.whl", hash = "sha256:74a0b001c61602e8af13b6e6f00040be13ca019ab543afc4f86a23209edcf72d", size = 15335, upload-time = "2026-07-15T20:47:38.382Z" },
+]
+
+[[package]]
 name = "jacobs-json-schema"
 version = "0.4.2"
 source = { registry = "https://pypi.org/simple" }
@@ -740,21 +752,20 @@ wheels = [
 
 [[package]]
 name = "stinger-ipc"
-version = "0.9.3"
+version = "0.9.7a3"
 source = { editable = "." }
 dependencies = [
     { name = "go-task-bin" },
     { name = "jacobs-jinja-too" },
+    { name = "jacobs-json-doc" },
     { name = "jsonschema-rs" },
     { name = "packaging" },
     { name = "pydantic" },
     { name = "pydantic-asyncapi" },
-    { name = "pyyaml" },
     { name = "ruamel-yaml" },
     { name = "semantic-version" },
     { name = "stevedore" },
     { name = "typer" },
-    { name = "yamlloader" },
 ]
 
 [package.dev-dependencies]
@@ -764,24 +775,21 @@ dev = [
     { name = "mypy" },
     { name = "paho-mqtt" },
     { name = "pytest" },
-    { name = "pyyaml" },
-    { name = "types-pyyaml" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "go-task-bin", specifier = ">=3.46.2" },
     { name = "jacobs-jinja-too", specifier = ">=0.2.12" },
+    { name = "jacobs-json-doc", specifier = "==0.17.0a1" },
     { name = "jsonschema-rs", specifier = ">=0.34.0" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pydantic-asyncapi", specifier = ">=0.3.0" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "ruamel-yaml", specifier = ">=0.18.14" },
     { name = "semantic-version", specifier = ">=2.10.0" },
     { name = "stevedore", specifier = ">=5.5.0" },
     { name = "typer", specifier = ">=0.16.1" },
-    { name = "yamlloader", specifier = ">=1.5.1" },
 ]
 
 [package.metadata.requires-dev]
@@ -791,8 +799,6 @@ dev = [
     { name = "mypy", specifier = ">=1.16.0" },
     { name = "paho-mqtt", specifier = ">=2.1.0" },
     { name = "pytest", specifier = ">=9.0.3" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "types-pyyaml", specifier = ">=6.0.12.20250516" },
 ]
 
 [[package]]
@@ -808,15 +814,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5e/ed/ef06584ccdd5c410df0837951ecd7e15d9a6144ea1bd4c73cecab1a89891/typer-0.26.7.tar.gz", hash = "sha256:e314a34c617e419c091b2830dda3ea1f257134ff593061a8f5b9717ab8dddb3a", size = 201709, upload-time = "2026-06-03T07:18:06.843Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/24/25/2201973529af2c954de0bb725323c3aaed6d7f0ceee8f550dec9185df013/typer-0.26.7-py3-none-any.whl", hash = "sha256:5c87cfbc5d34491c5346ebf49c23e18d56ccb863268d3a8d592b26087c2f5e58", size = 122456, upload-time = "2026-06-03T07:18:05.732Z" },
-]
-
-[[package]]
-name = "types-pyyaml"
-version = "6.0.12.20260518"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b8/83/4a1afc3fbfcf5b8d46fc390cd95ed6b0dc9010a265f4e9f46314efffa37a/types_pyyaml-6.0.12.20260518.tar.gz", hash = "sha256:d917f83fb38462550338c1297faedd860b3ec83912b96b1e3d73255f7473e466", size = 17850, upload-time = "2026-05-18T06:01:58.675Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/a2/c01db32be2ae7d6a1689972f3c492b149ee4e164b12fdfd9f64b50888215/types_pyyaml-6.0.12.20260518-py3-none-any.whl", hash = "sha256:d2150f75a231c9fe9c7463bd29487d93e60bac90400287351384bc2284eba7cd", size = 20312, upload-time = "2026-05-18T06:01:57.368Z" },
 ]
 
 [[package]]
@@ -838,16 +835,4 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/55/e3/70399cb7dd41c10ac53367ae42139cf4b1ca5f36bb3dc6c9d33acdb43655/typing_inspection-0.4.2.tar.gz", hash = "sha256:ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464", size = 75949, upload-time = "2025-10-01T02:14:41.687Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl", hash = "sha256:4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7", size = 14611, upload-time = "2025-10-01T02:14:40.154Z" },
-]
-
-[[package]]
-name = "yamlloader"
-version = "1.6.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pyyaml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/e6/81677e777ca8a3588012f74e215050e3001e39d253076beb1c3306fc9460/yamlloader-1.6.0.tar.gz", hash = "sha256:918232976c9910d079ef74b3266ff9ef674228609aa56e67718b3992940a823f", size = 77622, upload-time = "2025-11-10T15:34:30.228Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d2/8a/132113ebc0f5ef3e893c4c75b058f70206b80a8a69ba46fbaeb5d409eb32/yamlloader-1.6.0-py3-none-any.whl", hash = "sha256:d9ea9948759732eab65e1dbcea510f1582b9c096aab33c893bf55ae9d58783e8", size = 7804, upload-time = "2025-11-10T15:34:29.04Z" },
 ]

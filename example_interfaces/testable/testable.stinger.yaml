@@ -32,6 +32,9 @@ structures:
         type: string
         description: A name.
 
+  lunch:
+    $ref: "extra.yaml#/structures/lunch"
+
   AllTypes:
     members:
       - name: the_bool
@@ -51,7 +54,8 @@ structures:
         description: An enum type
       - name: an_entry_object
         type: struct
-        structName: entry
+        structName: lunch
+        structVersion: 1.2.3
         description: A struct type.
       - name: date_and_time
         type: datetime

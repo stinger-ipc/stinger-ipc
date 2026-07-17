@@ -1,8 +1,8 @@
 import unittest
-import yaml
-import yamlloader
 import os.path
 import jsonschema_rs
+
+from stingeripc.loading import parse_yaml_file
 
 example_stinger_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../example_interfaces"))
 schema_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../schemas/schema.yaml"))
@@ -11,13 +11,11 @@ schema_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__fi
 class SchemaValidation:
 
     def test_validates(self):
-        with open(schema_path) as fp:
-            schema_obj = yaml.load(fp, Loader=yamlloader.ordereddict.Loader)
+        schema_obj = parse_yaml_file(schema_path)
         validator = jsonschema_rs.validator_for(schema_obj)
 
         param_only_path = os.path.join(example_stinger_path, self.directory, self.stinger_name)
-        with open(param_only_path) as fp:
-            interface = yaml.load(fp, Loader=yamlloader.ordereddict.Loader)
+        interface = parse_yaml_file(param_only_path)
 
         errors = list(validator.iter_errors(interface))
         if errors:

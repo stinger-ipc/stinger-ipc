@@ -17,6 +17,7 @@ properties:
           - "0.0.8"
           - "0.0.9"
           - "0.1.0"
+          - "0.1.1"
     required:
       - version
 
@@ -64,35 +65,41 @@ properties:
       not: 
         $ref: "#/$defs/reservedKeywords"
     additionalProperties:
-      type: object
-      properties:
-        values:
-          type: array
-          uniqueItems: true
-          minItems: 1
-          items:
-            type: object
-            properties:
-              name:
-                type: string
-                pattern: "^[a-zA-Z0-9_-]+$"
-              description:
-                $ref: "#/$defs/enumValueDescription"
-              documentation: false
-              value:
-                type: integer
-            required:
-              - name
-          version:
+      oneOf:
+      - type: object
+        properties:
+          $ref:
             type: string
-            pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
-            description: >
-              A semantic version that can be used to determine data consistency in this specification.
-        documentation:
-          $ref: "#/$defs/documentation"
-        description: false
-      required:
-        - values
+        additionalProperties: false
+      - type: object
+        properties:
+          values:
+            type: array
+            uniqueItems: true
+            minItems: 1
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  pattern: "^[a-zA-Z0-9_-]+$"
+                description:
+                  $ref: "#/$defs/enumValueDescription"
+                documentation: false
+                value:
+                  type: integer
+              required:
+                - name
+            version:
+              type: string
+              pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+              description: >
+                A semantic version that can be used to determine data consistency in this specification.
+          documentation:
+            $ref: "#/$defs/documentation"
+          description: false
+        required:
+          - values
 
   enumerations: false # Use 'enums' instead
   enum: false # Use 'enums' instead
@@ -105,25 +112,31 @@ properties:
       not: 
         $ref: "#/$defs/reservedKeywords"
     additionalProperties:
-      type: object
-      properties:
-        members:
-          $ref: "#/$defs/payload"
-        documentation:
-          $ref: "#/$defs/documentation"
-        description: false
-        version:
+      oneOf:
+      - type: object
+        properties:
+          $ref:
             type: string
-            pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
-            description: >
-              A semantic version that can be used to determine data consistency in this specification.
-      required:
-        - members
-      dependencies:
-        version:
-          properties:
-            members:
-              $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
+        additionalProperties: false
+      - type: object
+        properties:
+          members:
+            $ref: "#/$defs/payload"
+          documentation:
+            $ref: "#/$defs/documentation"
+          description: false
+          version:
+              type: string
+              pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+              description: >
+                A semantic version that can be used to determine data consistency in this specification.
+        required:
+          - members
+        dependencies:
+          version:
+            properties:
+              members:
+                $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   structs: false # Use 'structures' instead
   struct: false # Use 'structures' instead

@@ -1,0 +1,55 @@
+stingeripc:
+  version: 0.1.1
+
+interface:
+  name: prop-only
+  version: 0.0.1
+  title: Property Only Interface
+  summary: Example StingerAPI interface which only has properties, plus a struct and an enum.
+
+structures:
+
+  address:
+    documentation: Structure representing a mailing address.
+    members:
+      - name: street
+        type: string
+        description: The street address.
+      - name: city
+        type: string
+        description: The city name.
+      - name: state
+        type: string
+        description: The state or province.
+      - name: postal_code
+        type: string
+        description: The postal or ZIP code.
+      - name: country
+        type: enum
+        enumName: country
+
+enums:
+
+  country:
+    documentation: A small set of supported countries.
+    values:
+      - name: USA
+        description: United States of America.
+      - name: Canada
+      - name: Mexico
+
+properties:
+
+  home_address:
+    documentation: The current home address.
+    values:
+      - name: address
+        type: struct
+        structName: address
+
+  favorite_country:
+    documentation: The user's favorite country.
+    values:
+      - name: country
+        type: enum
+        enumName: country
