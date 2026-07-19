@@ -270,6 +270,11 @@ class StingerSpec:
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, property_name="+")
         return topic_template
 
+    def all_signals_topic(self) -> str:
+        topic_template = self._config.topics.signals
+        topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, signal_name="+")
+        return topic_template
+
     @classmethod
     def new_spec_from_stinger(cls, stinger: dict[str, Any], config: StingerConfig) -> StingerSpec:
         if "stingeripc" not in stinger:

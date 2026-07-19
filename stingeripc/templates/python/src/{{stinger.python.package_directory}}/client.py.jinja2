@@ -44,6 +44,9 @@ logging.basicConfig(level=logging.DEBUG)
 {%for prop_name, prop in stinger.properties.items()-%}
 {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType = Union[Callable[[{{prop.python.annotation}}], None], Callable[[Any, {{prop.python.annotation}}], None]]
 {%endfor%}
+UnmatchedSignalCallbackType = Callable[[Message], None]
+
+UNINITIALIZED_SUBSCRIPTION_ID = -1
 
 class DiscoveredInstance(BaseModel):
     instance_id: str
@@ -82,7 +85,9 @@ class {{stinger.python.client_class_name}}:
         {%-for sig_name in stinger.signals.keys()-%}
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}: List[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
         {%endfor-%}
-        {%-if stinger.methods|length > 0-%}
+        self._all_signals_subscription_id = UNINITIALIZED_SUBSCRIPTION_ID
+        self._unmatched_signal_callbacks: List[UnmatchedSignalCallbackType] = []
+        {%if stinger.methods|length > 0%}
         self._all_methods_response_topic = "{{stinger.all_methods_response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
         self._logger.debug("Subscribing to method response topic %s", self._all_methods_response_topic)
         self._conn.subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
@@ -149,6 +154,12 @@ class {{stinger.python.client_class_name}}:
         for cb in callbacks:
             cb(**kwargs)
 
+    def _receive_unmatched_signal_message(self, message: Message):
+        if len(message.subscription_ids) == 1 and message.subscription_ids[0] == self._all_signals_subscription_id:
+            self._logger.warning("Received unmatched signal message on topic %s", message.topic)
+            for cb in self._unmatched_signal_callbacks:
+                cb(message)
+    
     {%for sig_name, sig in stinger.signals.items()-%}
     def _receive_{{sig_name|snake_case}}_signal_message(self, message: Message):
         if message.content_type is None or message.content_type != 'application/json':
@@ -236,6 +247,15 @@ class {{stinger.python.client_class_name}}:
         return handler
     {%endfor%}
 
+    def unmatched_signal_handler(self, handler: UnmatchedSignalCallbackType):
+        """ Registers a callback invoked for signal messages that did not match any specific
+        signal handler (i.e. only matched the all-signals subscription).  Can be used as a decorator.
+        """
+        self._unmatched_signal_callbacks.append(handler)
+        if self._all_signals_subscription_id == UNINITIALIZED_SUBSCRIPTION_ID:
+            self._all_signals_subscription_id = self._conn.subscribe("{{stinger.all_signals_topic()}}".format(**self._topic_template_kwargs), self._receive_unmatched_signal_message) # type: ignore[str-format]
+        return handler
+
     {%for method_name, method in stinger.methods.items()%}
     def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
         """ Calling this method with individual arguments initiates a `{{method_name}}` IPC method call.
@@ -303,6 +323,7 @@ class {{stinger.python.client_class_name}}Builder:
         {%for prop_name in stinger.properties.keys()-%}
         self._property_updated_callbacks_for_{{prop_name | snake_case}}: List[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         {%endfor-%}
+        self._unmatched_signal_callbacks: List[UnmatchedSignalCallbackType] = []
 
     {%for sig_name, sig in stinger.signals.items()%}
     def receive_{{sig_name | snake_case }}(self, handler):
@@ -314,6 +335,15 @@ class {{stinger.python.client_class_name}}Builder:
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(wrapper)
         return wrapper
     {%endfor%}
+
+    def unmatched_signal_handler(self, handler: UnmatchedSignalCallbackType):
+        """ Used as a decorator for methods which handle signals that did not match any specific signal handler.
+        """
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+        self._unmatched_signal_callbacks.append(wrapper)
+        return wrapper
 
     {%for prop_name, prop in stinger.properties.items()%}
     def {{prop_name|snake_case}}_updated(self, handler: {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType):
@@ -338,6 +368,11 @@ class {{stinger.python.client_class_name}}Builder:
             else:
                 client.receive_{{sig_name | snake_case}}({{sig_name | snake_case }}_cb)
         {%endfor%}
+        for unmatched_signal_cb in self._unmatched_signal_callbacks:
+            if binding:
+                client.unmatched_signal_handler(unmatched_signal_cb.__get__(binding, binding.__class__))
+            else:
+                client.unmatched_signal_handler(unmatched_signal_cb)
         {%for prop_name, prop in stinger.properties.items()%}
         for {{prop_name | snake_case}}_cb in self._property_updated_callbacks_for_{{prop_name | snake_case}}:
             if binding:
